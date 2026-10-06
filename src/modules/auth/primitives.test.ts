@@ -163,7 +163,9 @@ describe('QR local', () => {
   it('gera SVG sem referências externas', () => {
     const svg = totpQrSvg('otpauth://totp/HealthMind:Conta?secret=JBSWY3DPEHPK3PXP');
     expect(svg.startsWith('<svg')).toBe(true);
-    expect(svg).not.toMatch(/https?:\/\/(?!www\.w3\.org\/2000\/svg)/);
+    // A única URL permitida é o namespace do SVG (comparação exata, não por regex de host).
+    const urls = svg.match(/https?:\/\/[^\s"'<>]+/g) ?? [];
+    expect(urls).toEqual(['http://www.w3.org/2000/svg']);
     expect(svg).not.toContain('JBSWY3DPEHPK3PXP');
     expect(svg).toContain('aria-hidden="true"');
   });
