@@ -53,5 +53,23 @@ própria Fase 1a (ADR-0017), com teste; ficam listados para rastreabilidade.
 | PR1a-R2-B7 | O limite usa o relógio da aplicação (`p_now`) e o expurgo usa `now()` do banco. Com diferença de relógio, uma janela ativa pode ser apagada. Correção: mesmo relógio ou folga de 5 min no expurgo. | LEG-S05 | Aberto |
 | PR1a-R2-B8 | O teste de guarda das actions só detecta `export async function`. Escapam `export const x = async` e `route.ts` em `(app)`. Correção: iterar os exports do módulo ou usar regra de ESLint. | LEG-S04 | Aberto |
 
+### Terceira revisão (escopo: commit a9fde4f, correções da ADR-0018)
+
+Nenhum achado crítico ou alto. As correções M1–M3 da ADR-0018 resolvem o caso comum. Por decisão do
+responsável pelo projeto, os achados médios e baixos ficam registrados aqui, sem correção nesta fase.
+
+| ID | Sev. | Achado | Referência | Status |
+|---|---|---|---|---|
+| PR1a-R3-M1 | Média | O limite por destinatário (`registerAccount`/`resendAccount`) pode ser contornado com subendereçamento (`x+1@`, `x.y@gmail.com`), porque `normalizeEmail` só faz trim e minúsculas. **Correção:** usar a caixa canônica só na chave do limite (sem `+tag`; no Gmail, sem pontos), com teste. | LEG-S05, ADR-0018 | Aberto |
+| PR1a-R3-B1 | Baixa | Não há teto diário. Os baldes de cadastro, reenvio e reset são independentes (3/h cada, ~216 e-mails/dia). Um terceiro também consegue suprimir o aviso "já existe uma conta". **Correção:** balde compartilhado por destinatário, de 24 h. | LEG-S05 | Aberto |
+| PR1a-R3-B2 | Baixa | O link de verificação pode valer além do expurgo de 7 dias ("link inválido" sem explicação). Há também uma micro-corrida em `verifyEmail` (P2025, erro 500) se o expurgo rodar no meio. **Correção:** limitar o TTL ao prazo de expurgo e usar `updateMany` em `verifyEmail`. | LEG-S04 | Aberto |
+| PR1a-R3-B3 | Baixa | O titular não é avisado de que o cadastro sem confirmação é excluído em 7 dias. **Correção:** incluir o prazo em `auth.signup.checkEmailBody` e em `auth.verify.pendingBody`, e no rascunho da Política (`LEGAL-REVIEW`). | LEG-G04, ROPA T1 | Aberto |
+| PR1a-R3-B4 | Baixa | O teste do expurgo (M1) não tem casos negativos. Falta provar que preserva: o segredo de MFA ativo, o segredo pendente com menos de 1 dia e a conta antiga verificada por reset. Falta também conferir a cascata e os campos zerados. | LEG-S04, LEG-R* | Aberto |
+| PR1a-R3-B5 | Baixa | Testes de limite são instáveis na virada da hora: a janela é fixa e alinhada à hora, e o relógio de teste parte de `new Date()`. Uma falha foi observada. **Correção:** alinhar o relógio de `createTestAuth` ao meio da janela. **Risco:** falha intermitente da CI. | Confiabilidade (LEG-S05) | Aberto |
+| PR1a-R3-B6 | Baixa | Na ativação do TOTP, segredo vencido e bloqueio por conta devolvem o mesmo "código inválido". Além disso, o aviso `mfa_locked` vai para quem ainda não tem MFA. **Correção:** erros distintos (`setup_expired`/`locked`) e evento próprio. | LEG-S04 | Aberto |
+| PR1a-R3-B7 | Baixa | O segredo TOTP pendente, inútil após 15 min, fica guardado por até ~30 h. **Correção:** expurgo após 1 h e zerar o segredo ao detectar o vencimento. | LEG-R* | Aberto |
+| PR1a-R3-B8 | Baixa | A docstring do job está desatualizada. O `DELETE FROM users` do expurgo pressupõe que só tabelas de auth referenciam `users` em CASCADE. Uma FK futura com RESTRICT (AuditLog) quebraria o expurgo inteiro; com CASCADE, apagaria provas (LEG-R03). **Correção:** documentar a premissa e criar teste que lista as FKs para `users`. **Atenção na Fase 1b.** | LEG-R03, LEG-S06 | Aberto |
+| PR1a-R3-B9 | Baixa | O bloqueio do limite por destinatário não é registrado em log, o que deixa uma campanha de assédio invisível. **Correção:** `logger.warn('auth.mail_rate_limited', { operation })`, sem e-mail. | LEG-S05, LEG-R04 | Aberto |
+
 ## Resolvidas
 _(nenhuma)_
