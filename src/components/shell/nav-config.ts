@@ -1,0 +1,84 @@
+import {
+  Activity,
+  Apple,
+  Bot,
+  FileText,
+  History,
+  House,
+  ListChecks,
+  type LucideIcon,
+  Moon,
+  NotebookPen,
+  Orbit,
+  PersonStanding,
+  Pill,
+  Settings,
+  ShieldCheck,
+  Smile,
+  Target,
+} from 'lucide-react';
+import type { Route } from 'next';
+
+export type NavKey =
+  | 'home'
+  | 'sleep'
+  | 'mood'
+  | 'habits'
+  | 'journal'
+  | 'body'
+  | 'nutrition'
+  | 'activity'
+  | 'medications'
+  | 'goals'
+  | 'timeline'
+  | 'twin'
+  | 'ai'
+  | 'reports'
+  | 'settings'
+  | 'privacy';
+
+export interface NavItem {
+  key: NavKey;
+  href: Route;
+  icon: LucideIcon;
+}
+
+/** Itens da sidebar, na ordem da §9. */
+export const SIDEBAR_ITEMS: readonly NavItem[] = [
+  { key: 'home', href: '/inicio', icon: House },
+  { key: 'sleep', href: '/sono', icon: Moon },
+  { key: 'mood', href: '/humor', icon: Smile },
+  { key: 'habits', href: '/habitos', icon: ListChecks },
+  { key: 'journal', href: '/diario', icon: NotebookPen },
+  { key: 'body', href: '/corpo', icon: PersonStanding },
+  { key: 'nutrition', href: '/alimentacao', icon: Apple },
+  { key: 'activity', href: '/atividade', icon: Activity },
+  { key: 'medications', href: '/medicamentos', icon: Pill },
+  { key: 'goals', href: '/metas', icon: Target },
+  { key: 'timeline', href: '/timeline', icon: History },
+  { key: 'twin', href: '/twin', icon: Orbit },
+  { key: 'ai', href: '/ia', icon: Bot },
+  { key: 'reports', href: '/relatorios', icon: FileText },
+  { key: 'settings', href: '/configuracoes', icon: Settings },
+];
+
+export const PRIVACY_ITEM: NavItem = { key: 'privacy', href: '/privacidade', icon: ShieldCheck };
+
+export const ALL_NAV_ITEMS: readonly NavItem[] = [...SIDEBAR_ITEMS, PRIVACY_ITEM];
+
+export const NAV_ITEMS_BY_KEY = Object.fromEntries(
+  ALL_NAV_ITEMS.map((item) => [item.key, item]),
+) as Record<NavKey, NavItem>;
+
+/** Itens que ficam no "Mais" da navegação inferior (os demais estão na própria barra). */
+export const MORE_ITEMS: readonly NavItem[] = ALL_NAV_ITEMS.filter(
+  (item) => !['home', 'twin', 'timeline'].includes(item.key),
+);
+
+export function isActivePath(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function navItemForPath(pathname: string): NavItem | undefined {
+  return ALL_NAV_ITEMS.find((item) => isActivePath(pathname, item.href));
+}

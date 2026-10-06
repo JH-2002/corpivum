@@ -1,0 +1,11 @@
+# Revisão obrigatória para conteúdo isento da varredura de alegações clínicas (LEG-M03)
+# e para áreas sensíveis. Para valer como bloqueio, a branch principal precisa exigir
+# "Require review from Code Owners" (OPEN_ISSUES OI-13). Quando houver revisor jurídico ou
+# clínico com conta no GitHub, adicione-o às linhas correspondentes.
+/messages/                              @JH-2002
+/tests/content/                         @JH-2002
+/docs/legal/                            @JH-2002
+/docs/privacy/                          @JH-2002
+/docs/INTENDED_USE.md                   @JH-2002
+/docker/postgres/                       @JH-2002
+/.github/                               @JH-2002

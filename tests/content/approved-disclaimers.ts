@@ -1,0 +1,28 @@
+/**
+ * Avisos obrigatórios APROVADOS do namespace `disclaimer.*` (LEG-M03), com o texto exato.
+ * Este namespace é isento da varredura de alegações proibidas; por isso qualquer chave nova, removida ou
+ * com texto alterado quebra o teste até ser aprovada aqui, num PR revisado (ver .github/CODEOWNERS).
+ * Textos são RASCUNHO, sujeitos a `LEGAL-REVIEW` e revisão clínica (docs/legal/OPEN_ISSUES.md OI-09).
+ */
+export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
+  'disclaimer.wellbeingOnly':
+    'O HealthMind 360 é uma ferramenta de bem-estar e autoacompanhamento. Não diagnostica, não trata e não monitora doenças, e não substitui profissional de saúde.',
+  'disclaimer.notMedicalDevice':
+    'Este aplicativo não é um dispositivo médico e não faz recomendações de diagnóstico ou tratamento.',
+  'disclaimer.medications': 'Siga a orientação do seu prescritor.',
+  'disclaimer.medicationsScope':
+    'O app não sugere doses, não verifica interações e não altera nada automaticamente.',
+  'disclaimer.brainModel':
+    'Modelo aproximado e educacional. É uma estimativa a partir do que você relatou, não uma medição cerebral.',
+  'disclaimer.neurochemistry':
+    'Conteúdo educativo. Não é medição laboratorial e não indica níveis de neurotransmissores no seu corpo.',
+  'disclaimer.aiGenerated':
+    'Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.',
+  'disclaimer.reportFooter':
+    'Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.',
+  'disclaimer.riskSupport':
+    'Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).',
+  'disclaimer.draftLegal': 'RASCUNHO — revisão jurídica obrigatória.',
+};
+
+export const APPROVED_DISCLAIMER_KEYS = Object.keys(APPROVED_DISCLAIMERS);

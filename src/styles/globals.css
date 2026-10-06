@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* Tema escuro por classe (`.dark` no <html>), definida antes da hidratação em src/app/theme-script.tsx. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  /* Cores semânticas: utilitários como bg-surface, text-fg-muted, border-border */
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-neutral-50: var(--hm-neutral-50);
+  --color-neutral-100: var(--hm-neutral-100);
+  --color-neutral-200: var(--hm-neutral-200);
+  --color-neutral-300: var(--hm-neutral-300);
+  --color-neutral-400: var(--hm-neutral-400);
+  --color-neutral-500: var(--hm-neutral-500);
+  --color-neutral-600: var(--hm-neutral-600);
+  --color-neutral-700: var(--hm-neutral-700);
+  --color-neutral-800: var(--hm-neutral-800);
+  --color-neutral-900: var(--hm-neutral-900);
+
+  --color-bg: var(--hm-bg);
+  --color-surface: var(--hm-surface);
+  --color-surface-muted: var(--hm-surface-muted);
+  --color-fg: var(--hm-fg);
+  --color-fg-muted: var(--hm-fg-muted);
+  --color-border: var(--hm-border);
+  --color-border-strong: var(--hm-border-strong);
+  --color-focus: var(--hm-focus);
+
+  --color-primary: var(--hm-primary);
+  --color-primary-hover: var(--hm-primary-hover);
+  --color-primary-fg: var(--hm-primary-fg);
+  --color-primary-soft: var(--hm-primary-soft);
+  --color-primary-soft-fg: var(--hm-primary-soft-fg);
+  --color-secondary: var(--hm-secondary);
+  --color-secondary-fg: var(--hm-secondary-fg);
+  --color-secondary-soft: var(--hm-secondary-soft);
+  --color-secondary-soft-fg: var(--hm-secondary-soft-fg);
+
+  --color-success: var(--hm-success);
+  --color-success-soft: var(--hm-success-soft);
+  --color-warning: var(--hm-warning);
+  --color-warning-soft: var(--hm-warning-soft);
+  --color-danger: var(--hm-danger);
+  --color-danger-soft: var(--hm-danger-soft);
+  --color-info: var(--hm-info);
+  --color-info-soft: var(--hm-info-soft);
+
+  --color-sleep: var(--hm-domain-sleep);
+  --color-mood: var(--hm-domain-mood);
+  --color-activity: var(--hm-domain-activity);
+  --color-nutrition: var(--hm-domain-nutrition);
+  --color-body: var(--hm-domain-body);
+  --color-journal: var(--hm-domain-journal);
+  --color-medications: var(--hm-domain-medications);
+
+  /* Tipografia: uma família sans-serif, 6 tamanhos */
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --text-*: initial;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 2rem;
+  --text-2xl: 2rem;
+  --text-2xl--line-height: 2.5rem;
+
+  /* Espaçamento: escala de 4px (p-1 = 4px, p-2 = 8px, ...) */
+  --spacing: 0.25rem;
+
+  /* Raios e sombras em 3 níveis */
+  --radius-*: initial;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-full: 9999px;
+  --shadow-*: initial;
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 26 / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(15 23 26 / 0.1);
+  --shadow-lg: 0 12px 32px -8px rgb(15 23 26 / 0.18);
+
+  /* Breakpoints usados pelo shell: md = tablet, lg = desktop */
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+
+  /* Foco sempre visível ao navegar por teclado (WCAG 2.4.7 / 2.4.13) */
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Números tabulares em dados (§6) */
+  .tabular,
+  data,
+  time {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Respeita a preferência por menos movimento (§35) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

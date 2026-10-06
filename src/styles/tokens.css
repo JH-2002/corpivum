@@ -1,0 +1,112 @@
+/*
+ * Design tokens do HealthMind 360 (§5, §6). Fonte única: valores aqui, utilitários Tailwind em globals.css.
+ * Todos os pares texto/fundo são verificados em tests/design/contrast.test.ts (WCAG 2.2 AA, LEG-X01).
+ * Cores em hexadecimal de 6 dígitos para que o teste consiga ler.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Neutros (10 tons) */
+  --hm-neutral-50: #f6f8f9;
+  --hm-neutral-100: #eceff1;
+  --hm-neutral-200: #d9dfe2;
+  --hm-neutral-300: #bcc5ca;
+  --hm-neutral-400: #8f9ba2;
+  --hm-neutral-500: #66737b;
+  --hm-neutral-600: #4d5961;
+  --hm-neutral-700: #384249;
+  --hm-neutral-800: #242c31;
+  --hm-neutral-900: #151b1f;
+
+  /* Superfícies e texto */
+  --hm-bg: #f6f8f9;
+  --hm-surface: #ffffff;
+  --hm-surface-muted: #eceff1;
+  --hm-fg: #151b1f;
+  --hm-fg-muted: #4d5961;
+  --hm-border: #d9dfe2;
+  --hm-border-strong: #66737b;
+  --hm-focus: #0b5c6e;
+
+  /* Marca: primária azul-petróleo, secundária verde-água */
+  --hm-primary: #0b5c6e;
+  --hm-primary-hover: #084b5a;
+  --hm-primary-fg: #ffffff;
+  --hm-primary-soft: #dff0f3;
+  --hm-primary-soft-fg: #08414e;
+  --hm-secondary: #0d6b63;
+  --hm-secondary-fg: #ffffff;
+  --hm-secondary-soft: #dcf3ef;
+  --hm-secondary-soft-fg: #0a4f49;
+
+  /* Estados */
+  --hm-success: #1b6e37;
+  --hm-success-soft: #e3f4e8;
+  --hm-warning: #7a4f00;
+  --hm-warning-soft: #fdf1d8;
+  --hm-danger: #b42318;
+  --hm-danger-soft: #fdeceb;
+  --hm-info: #1d5fa8;
+  --hm-info-soft: #e5f0fb;
+
+  /* Domínios */
+  --hm-domain-sleep: #4338ca;
+  --hm-domain-mood: #9a4a06;
+  --hm-domain-activity: #166534;
+  --hm-domain-nutrition: #b2400b;
+  --hm-domain-body: #1d4ed8;
+  --hm-domain-journal: #6d28d9;
+  --hm-domain-medications: #475569;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --hm-neutral-50: #151b1f;
+  --hm-neutral-100: #1d272c;
+  --hm-neutral-200: #2b373d;
+  --hm-neutral-300: #3d4a51;
+  --hm-neutral-400: #5b6a72;
+  --hm-neutral-500: #7d8c93;
+  --hm-neutral-600: #a7b4ba;
+  --hm-neutral-700: #c5cfd3;
+  --hm-neutral-800: #dde4e7;
+  --hm-neutral-900: #eef2f4;
+
+  --hm-bg: #0e1417;
+  --hm-surface: #151d21;
+  --hm-surface-muted: #1d272c;
+  --hm-fg: #e8eef0;
+  --hm-fg-muted: #a7b4ba;
+  --hm-border: #2b373d;
+  --hm-border-strong: #7d8c93;
+  --hm-focus: #6fd0e2;
+
+  --hm-primary: #5cc3d6;
+  --hm-primary-hover: #7fd2e1;
+  --hm-primary-fg: #06262e;
+  --hm-primary-soft: #123840;
+  --hm-primary-soft-fg: #bfeaf2;
+  --hm-secondary: #4fd1bf;
+  --hm-secondary-fg: #062a26;
+  --hm-secondary-soft: #113a35;
+  --hm-secondary-soft-fg: #bff0e8;
+
+  --hm-success: #5fd68a;
+  --hm-success-soft: #12301d;
+  --hm-warning: #f5c04e;
+  --hm-warning-soft: #33280d;
+  --hm-danger: #f88a82;
+  --hm-danger-soft: #3a1513;
+  --hm-info: #7db4f5;
+  --hm-info-soft: #13263d;
+
+  --hm-domain-sleep: #a5b4fc;
+  --hm-domain-mood: #fcd34d;
+  --hm-domain-activity: #86efac;
+  --hm-domain-nutrition: #fdba74;
+  --hm-domain-body: #93c5fd;
+  --hm-domain-journal: #c4b5fd;
+  --hm-domain-medications: #cbd5e1;
+}

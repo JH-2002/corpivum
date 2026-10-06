@@ -1,0 +1,208 @@
+{
+  "common": {
+    "appName": "HealthMind 360",
+    "tagline": "Seu bem-estar em um só lugar",
+    "skipToContent": "Pular para o conteúdo",
+    "close": "Fechar",
+    "retry": "Tentar novamente",
+    "demoBadge": "DEMO",
+    "demoBadgeDescription": "Você está vendo dados fictícios de demonstração.",
+    "comingSoon": "Disponível em breve"
+  },
+  "nav": {
+    "mainLabel": "Navegação principal",
+    "mobileLabel": "Navegação inferior",
+    "collapse": "Recolher menu lateral",
+    "expand": "Expandir menu lateral",
+    "home": "Início",
+    "sleep": "Sono",
+    "mood": "Humor e energia",
+    "habits": "Hábitos",
+    "journal": "Diário",
+    "body": "Corpo",
+    "nutrition": "Alimentação",
+    "activity": "Atividade",
+    "medications": "Medicamentos",
+    "goals": "Metas",
+    "timeline": "Timeline",
+    "twin": "Health Twin",
+    "twinShort": "Twin",
+    "ai": "HealthMind AI",
+    "reports": "Relatórios",
+    "settings": "Configurações",
+    "privacy": "Central de Privacidade",
+    "more": "Mais",
+    "moreTitle": "Mais seções",
+    "log": "Registrar"
+  },
+  "header": {
+    "notifications": "Notificações",
+    "notificationsEmpty": "Nenhuma notificação por enquanto.",
+    "accountMenu": "Menu da conta",
+    "profile": "Perfil",
+    "settings": "Configurações",
+    "privacy": "Central de Privacidade",
+    "signOut": "Sair"
+  },
+  "quickLog": {
+    "open": "Registrar",
+    "title": "O que você quer registrar?",
+    "description": "Escolha o tipo de registro. Os formulários chegam nas próximas versões.",
+    "sleep": "Sono",
+    "mood": "Humor e energia",
+    "habit": "Hábito",
+    "journal": "Diário",
+    "body": "Peso e medidas",
+    "meal": "Refeição",
+    "water": "Água",
+    "activity": "Atividade",
+    "medication": "Medicamento"
+  },
+  "period": {
+    "label": "Período",
+    "7d": "7 dias",
+    "30d": "30 dias",
+    "90d": "90 dias",
+    "12m": "12 meses",
+    "custom": "Personalizado",
+    "from": "De",
+    "to": "Até",
+    "apply": "Aplicar",
+    "range": "{from} a {to}",
+    "currentRange": "Período selecionado: {from} a {to}",
+    "invalidRange": "A data inicial precisa ser anterior ou igual à data final, e nenhuma pode estar no futuro."
+  },
+  "theme": {
+    "label": "Tema",
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Do sistema"
+  },
+  "states": {
+    "loading": "Carregando…",
+    "errorTitle": "Não foi possível carregar",
+    "errorDescription": "Algo não saiu como esperado. Tente novamente em instantes.",
+    "noDataTitle": "Sem registros neste período",
+    "noDataDescription": "Escolha outro período ou faça um novo registro.",
+    "partialTitle": "Dados parciais",
+    "partialDescription": "Faltam registros em parte do período. O que aparece aqui foi calculado só com os dados existentes."
+  },
+  "badges": {
+    "label": "Origem do dado: {badge}",
+    "MEDIDO": "Medido",
+    "MEDIDO_hint": "Veio de um dispositivo ou integração.",
+    "INFORMADO": "Informado",
+    "INFORMADO_hint": "Você registrou este dado.",
+    "ESTIMADO": "Estimado",
+    "ESTIMADO_hint": "Cálculo direto a partir dos dados que você informou.",
+    "INFERIDO": "Inferido",
+    "INFERIDO_hint": "Padrão ou associação calculada a partir dos seus registros.",
+    "RECOMENDADO": "Recomendado",
+    "RECOMENDADO_hint": "Sugestão do sistema, que você pode aceitar ou dispensar.",
+    "DEMO": "Demo",
+    "DEMO_hint": "Dado fictício de demonstração."
+  },
+  "pages": {
+    "home": {
+      "title": "Seu estado atual",
+      "emptyTitle": "Boas-vindas ao HealthMind 360",
+      "emptyDescription": "Quando você registrar sono, humor ou hábitos, seu resumo aparece aqui. Leva poucos segundos.",
+      "cta": "Fazer o primeiro registro"
+    },
+    "sleep": {
+      "title": "Sono",
+      "emptyTitle": "Nenhum registro de sono ainda",
+      "emptyDescription": "Registre a hora em que deitou e acordou para acompanhar duração e regularidade."
+    },
+    "mood": {
+      "title": "Humor e energia",
+      "emptyTitle": "Nenhum registro de humor ainda",
+      "emptyDescription": "Anote como você está em uma escala rápida. Dá para incluir uma nota curta, se quiser."
+    },
+    "habits": {
+      "title": "Hábitos",
+      "emptyTitle": "Nenhum hábito criado",
+      "emptyDescription": "Crie um hábito com a frequência que fizer sentido para você."
+    },
+    "journal": {
+      "title": "Diário",
+      "emptyTitle": "Seu diário está em branco",
+      "emptyDescription": "Escreva livremente. O conteúdo não é compartilhado sem a sua escolha."
+    },
+    "body": {
+      "title": "Corpo",
+      "emptyTitle": "Nenhuma medida registrada",
+      "emptyDescription": "Registre peso, altura ou medidas, se quiser acompanhar a evolução."
+    },
+    "nutrition": {
+      "title": "Alimentação",
+      "emptyTitle": "Nenhuma refeição registrada",
+      "emptyDescription": "Anote refeições e água de forma simples, sem contar nada que você não queira."
+    },
+    "activity": {
+      "title": "Atividade",
+      "emptyTitle": "Nenhuma atividade registrada",
+      "emptyDescription": "Registre caminhadas, treinos ou qualquer movimento do seu dia."
+    },
+    "medications": {
+      "title": "Medicamentos",
+      "emptyTitle": "Nenhum medicamento registrado",
+      "emptyDescription": "Registre os medicamentos que você já usa para receber lembretes nos horários que você definir."
+    },
+    "goals": {
+      "title": "Metas",
+      "emptyTitle": "Nenhuma meta definida",
+      "emptyDescription": "Defina metas no seu ritmo. Você pode revisar ou pausar quando quiser."
+    },
+    "timeline": {
+      "title": "Timeline",
+      "emptyTitle": "Sua linha do tempo está vazia",
+      "emptyDescription": "Seus registros aparecem aqui, organizados por dia."
+    },
+    "twin": {
+      "title": "Health Twin",
+      "emptyTitle": "Seu Health Twin ainda não tem dados",
+      "emptyDescription": "Com algumas medidas e registros, a visualização em 3D ganha forma."
+    },
+    "ai": {
+      "title": "HealthMind AI",
+      "emptyTitle": "Assistente desativado",
+      "emptyDescription": "O assistente só funciona se você ativar o consentimento específico. Nada é enviado sem a sua escolha."
+    },
+    "reports": {
+      "title": "Relatórios",
+      "emptyTitle": "Nenhum relatório ainda",
+      "emptyDescription": "Relatórios semanais, mensais e anuais ficam disponíveis depois dos primeiros registros."
+    },
+    "settings": {
+      "title": "Configurações",
+      "emptyTitle": "Configurações",
+      "emptyDescription": "Tema, unidades, lembretes e segurança da conta ficarão aqui."
+    },
+    "privacy": {
+      "title": "Central de Privacidade",
+      "emptyTitle": "Central de Privacidade",
+      "emptyDescription": "Aqui você vai gerenciar consentimentos, ver o que é tratado, exportar ou excluir seus dados."
+    },
+    "more": {
+      "title": "Mais"
+    },
+    "notFound": {
+      "title": "Página não encontrada",
+      "description": "O endereço pode ter mudado.",
+      "back": "Voltar ao início"
+    }
+  },
+  "disclaimer": {
+    "wellbeingOnly": "O HealthMind 360 é uma ferramenta de bem-estar e autoacompanhamento. Não diagnostica, não trata e não monitora doenças, e não substitui profissional de saúde.",
+    "notMedicalDevice": "Este aplicativo não é um dispositivo médico e não faz recomendações de diagnóstico ou tratamento.",
+    "medications": "Siga a orientação do seu prescritor.",
+    "medicationsScope": "O app não sugere doses, não verifica interações e não altera nada automaticamente.",
+    "brainModel": "Modelo aproximado e educacional. É uma estimativa a partir do que você relatou, não uma medição cerebral.",
+    "neurochemistry": "Conteúdo educativo. Não é medição laboratorial e não indica níveis de neurotransmissores no seu corpo.",
+    "aiGenerated": "Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.",
+    "reportFooter": "Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.",
+    "riskSupport": "Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).",
+    "draftLegal": "RASCUNHO — revisão jurídica obrigatória."
+  }
+}

@@ -1,0 +1,23 @@
+/**
+ * Fila de jobs (lembretes, relatórios, exportações, purga). Região no Brasil (LEG-S10).
+ * Payload aceita só valores primitivos: carregue IDs, nunca conteúdo sensível — o job busca
+ * o dado no banco com o contexto do usuário.
+ */
+export type JobPayload = Readonly<Record<string, string | number | boolean | null>>;
+
+export interface EnqueueOptions {
+  /** Execução agendada; padrão: imediata. */
+  runAt?: Date;
+  maxAttempts?: number;
+}
+
+export type JobHandler = (
+  payload: JobPayload,
+  context: { jobId: string; attempt: number },
+) => Promise<void>;
+
+export interface JobQueue {
+  readonly id: string;
+  enqueue(name: string, payload: JobPayload, options?: EnqueueOptions): Promise<string>;
+  register(name: string, handler: JobHandler): void;
+}
