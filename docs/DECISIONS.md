@@ -249,3 +249,19 @@ A DEK em claro é zerada após o uso.
   `errorFormat: 'minimal'` e o serviço sem lançar conteúdo, o risco é baixo. `instrumentation.ts` fica para
   quando houver ferramenta de erros (Fase 7, LEG-R04).
 
+## ADR-0018 — Segunda revisão de privacidade da Fase 1a
+**Contexto.** A segunda revisão confirmou que o achado alto e os seis médios anteriores foram corrigidos e
+testados. Não apontou nada crítico nem alto. Apontou 3 médios novos e 8 baixos.
+**Decisão (corrigido, cada um com teste em `tests/db/auth-flows.test.ts`).**
+- **M1, retenção:** o expurgo (`app.auth_purge_expired`, job `auth.purge_expired`) também apaga contas com
+  e-mail nunca verificado 7 dias após o cadastro, com sessões e tokens em cascata. Também apaga o segredo
+  TOTP de ativações não concluídas 1 dia após o início (coluna `totp_setup_started_at`). ROPA T1 atualizado.
+  Quem perder a janela pode se cadastrar de novo.
+- **M2, ativação do TOTP:**
+  - a confirmação usa o mesmo limite `mfaAccount` do 2º fator;
+  - o segredo pendente vale 15 min;
+  - uma sessão roubada não consegue testar códigos sem limite.
+- **M3, assédio por e-mail:** os limites `registerAccount` e `resendAccount` (3 por hora por destinatário,
+  com chave HMAC) são checados dentro do trabalho adiado, então a resposta e o tempo não mudam.
+**Baixos:** registrados em docs/legal/OPEN_ISSUES.md (PR1a-R2-B1 a B8), por decisão do responsável.
+

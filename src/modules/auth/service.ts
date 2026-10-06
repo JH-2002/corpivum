@@ -53,6 +53,15 @@ export const SESSION_TOUCH_MS = 5 * 60 * 1000;
 export const VERIFY_EMAIL_TTL_S = 24 * 60 * 60;
 export const RESET_PASSWORD_TTL_S = 30 * 60;
 const TOTP_ISSUER = 'HealthMind 360';
+export const TOTP_SETUP_TTL_MS = 15 * 60 * 1000;
+
+export interface PurgeResult {
+  sessions: number;
+  tokens: number;
+  buckets: number;
+  unverified_users: number;
+  pending_totp: number;
+}
 
 export interface ResolvedSession {
   sessionId: string;
@@ -255,6 +264,8 @@ export function createAuthService(deps: AuthDeps) {
         SELECT * FROM app.auth_create_user(${email}, ${passwordHash}, ${AGE_GATE_VERSION})`;
       const row = rows[0];
       await background(async () => {
+        // Limite por destinatário dentro do trabalho adiado: não muda resposta nem tempo (anti-enumeração).
+        if (!(await limit('registerAccount', email))) return;
         if (row?.created) {
           const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
           await mail.send({
@@ -293,6 +304,7 @@ export function createAuthService(deps: AuthDeps) {
           SELECT * FROM app.auth_find_user_id(${email})`;
         const row = rows[0];
         if (!row || row.email_verified) return;
+        if (!(await limit('resendAccount', email))) return;
         const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
         await mail.send({
           to: email,
@@ -537,7 +549,7 @@ export function createAuthService(deps: AuthDeps) {
         const { count } = await withUser(userId, (tx) =>
           tx.user.updateMany({
             where: { id: userId, mfaEnabledAt: null },
-            data: { totpSecret: encrypted, totpLastUsedStep: null },
+            data: { totpSecret: encrypted, totpLastUsedStep: null, totpSetupStartedAt: now() },
           }),
         );
         if (count === 0) return { ok: false };
@@ -555,17 +567,26 @@ export function createAuthService(deps: AuthDeps) {
       currentSessionId: string,
       code: string,
     ): Promise<{ ok: true; recoveryCodes: string[] } | { ok: false }> {
-      const enabled = await withUser(userId, (tx) =>
-        tx.user.findUniqueOrThrow({ where: { id: userId }, select: { mfaEnabledAt: true } }),
+      const pending = await withUser(userId, (tx) =>
+        tx.user.findUniqueOrThrow({
+          where: { id: userId },
+          select: { mfaEnabledAt: true, totpSetupStartedAt: true },
+        }),
       );
-      if (enabled.mfaEnabledAt) return { ok: false };
+      if (pending.mfaEnabledAt || !pending.totpSetupStartedAt) return { ok: false };
+      // Segredo pendente vale 15 min; depois disso, é preciso recomeçar (com a senha).
+      if (now().getTime() - pending.totpSetupStartedAt.getTime() > TOTP_SETUP_TTL_MS) {
+        return { ok: false };
+      }
+      // Mesmo limite por conta do 2º fator: uma sessão roubada não testa códigos à vontade.
+      if (!(await mfaAccountAllowed(userId))) return { ok: false };
       if (!(await acceptTotp(userId, code))) return { ok: false };
       const codes = generateRecoveryCodes();
       // Ativação condicional na mesma transação: duas confirmações simultâneas não geram dois conjuntos.
       const activated = await withUser(userId, async (tx) => {
         const { count } = await tx.user.updateMany({
           where: { id: userId, mfaEnabledAt: null },
-          data: { mfaEnabledAt: now() },
+          data: { mfaEnabledAt: now(), totpSetupStartedAt: null },
         });
         if (count === 0) return false;
         await replaceRecoveryCodes(tx, userId, codes);
@@ -620,14 +641,22 @@ export function createAuthService(deps: AuthDeps) {
     },
 
     /**
-     * Expurgo de dados de autenticação vencidos (ROPA T1/T5): sessões revogadas ou expiradas, tokens
-     * usados ou vencidos e janelas de limite encerradas. Agendamento pela JobQueue: Fase 1b.
+     * Expurgo de dados de autenticação vencidos (ROPA T1/T5, job `auth.purge_expired`): sessões e tokens
+     * vencidos há mais de 1 dia, janelas de limite encerradas, contas com e-mail nunca verificado após
+     * 7 dias e segredos TOTP de ativações abandonadas após 1 dia.
      */
-    async purgeExpired(): Promise<{ sessions: number; tokens: number; buckets: number }> {
-      const rows = await db.$queryRaw<Array<{ sessions: number; tokens: number; buckets: number }>>`
-        SELECT * FROM app.auth_purge_expired()`;
-      const r = rows[0] ?? { sessions: 0, tokens: 0, buckets: 0 };
-      logger.info('auth.purge_expired', { count: r.sessions + r.tokens + r.buckets });
+    async purgeExpired(): Promise<PurgeResult> {
+      const rows = await db.$queryRaw<Array<PurgeResult>>`SELECT * FROM app.auth_purge_expired()`;
+      const r = rows[0] ?? {
+        sessions: 0,
+        tokens: 0,
+        buckets: 0,
+        unverified_users: 0,
+        pending_totp: 0,
+      };
+      logger.info('auth.purge_expired', {
+        count: r.sessions + r.tokens + r.buckets + r.unverified_users + r.pending_totp,
+      });
       return r;
     },
   };

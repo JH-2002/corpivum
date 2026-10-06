@@ -40,5 +40,18 @@ própria Fase 1a (ADR-0017), com teste; ficam listados para rastreabilidade.
 | PR1a-B9 | URI `otpauth://` (com o segredo) ia ao cliente sem uso. | Minimização | Resolvido: só QR e chave manual |
 | PR1a-B10 | `test:db`/e2e apagavam tabelas do banco do `.env` sem trava. | Regra 6 | Resolvido: recusam banco não local fora da CI |
 
+### Segunda revisão (ADR-0018)
+
+| ID | Achado | Referência | Status |
+|---|---|---|---|
+| PR1a-R2-B1 | Desativar o MFA consome o limite `mfaAccount` antes de checar a senha. Uma sessão roubada pode travar o login com MFA do titular por 1 h e disparar o aviso de bloqueio. Correção: checar a senha antes. | LEG-S04 | Aberto |
+| PR1a-R2-B2 | `mfaAccount` conta também tentativas certas: mais de 10 logins com MFA por hora bloqueiam. Durante o bloqueio por conta, a mensagem "entre novamente" não resolve. Correção: contar só falhas e trocar o texto para "tente de novo em até 1 hora". | LEG-S04 | Aberto |
+| PR1a-R2-B3 | `CLIENT_IP_HEADER` aceita `x-forwarded-for` e usa o 1º valor, que o cliente controla em hospedagens que só acrescentam ao cabeçalho. Sem o cabeçalho, todo mundo cai em `'unknown'` sem alerta. Correção: recusar `x-forwarded-for` no schema e registrar `auth.client_ip_missing`. | LEG-S05 | Aberto |
+| PR1a-R2-B4 | `regenerateRecoveryCodes` e `resetPassword` não enviam `security-alert`. | LEG-S04 | Aberto |
+| PR1a-R2-B5 | O runtime pode alterar qualquer coluna de `sessions` (`mfa_pending`, `token_hash`, `user_id`…). Correção: UPDATE só em `last_seen_at`, `idle_expires_at`, `revoked_at`, `mfa_attempts` e `updated_at`, com teste. | LEG-S03 | Aberto |
+| PR1a-R2-B6 | O job de expurgo não é singleton. Com fila real, cada instância cria uma cadeia nova. Na fila em memória, um `drain` acima de 60 s reexecuta o job. Correção: "enqueue if absent" e status `running`. | LEG-R*, OI-14 | Aberto (Fase 7, com a fila real) |
+| PR1a-R2-B7 | O limite usa o relógio da aplicação (`p_now`) e o expurgo usa `now()` do banco. Com diferença de relógio, uma janela ativa pode ser apagada. Correção: mesmo relógio ou folga de 5 min no expurgo. | LEG-S05 | Aberto |
+| PR1a-R2-B8 | O teste de guarda das actions só detecta `export async function`. Escapam `export const x = async` e `route.ts` em `(app)`. Correção: iterar os exports do módulo ou usar regra de ESLint. | LEG-S04 | Aberto |
+
 ## Resolvidas
 _(nenhuma)_

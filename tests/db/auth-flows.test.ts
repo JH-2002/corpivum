@@ -718,6 +718,110 @@ describe('pedido da Fase 1a: achados médios com teste cada (ADR-0017)', () => {
   });
 });
 
+describe('segunda revisão: médios M1–M3 (ADR-0018)', () => {
+  it('M1: expurgo apaga conta nunca verificada após 7 dias e segredo TOTP abandonado após 1 dia', async () => {
+    const t = createTestAuth(db);
+    const verified = await createVerifiedUser(t);
+    const stale = uniqueEmail('nunca-verificou');
+    const fresh = uniqueEmail('recente');
+    const cookie = (await t.service.checkAge('1990-01-01', new Headers())) as { cookie: string };
+    await t.service.register(
+      { email: stale, password: PASSWORD, ageOkCookie: cookie.cookie },
+      freshMeta(),
+    );
+    await t.service.register(
+      { email: fresh, password: PASSWORD, ageOkCookie: cookie.cookie },
+      freshMeta(),
+    );
+    await admin.query(`UPDATE users SET created_at = now() - interval '8 days' WHERE email = $1`, [
+      stale,
+    ]);
+    // Conta verificada antiga não é afetada.
+    await admin.query(`UPDATE users SET created_at = now() - interval '30 days' WHERE id = $1`, [
+      verified.userId,
+    ]);
+    const setup = await t.service.startTotpSetup(verified.userId, PASSWORD);
+    expect(setup.ok).toBe(true);
+    await admin.query(
+      `UPDATE users SET totp_setup_started_at = now() - interval '2 days' WHERE id = $1`,
+      [verified.userId],
+    );
+
+    const r = await t.service.purgeExpired();
+    expect(r.unverified_users).toBeGreaterThanOrEqual(1);
+    expect(r.pending_totp).toBeGreaterThanOrEqual(1);
+    const emails = await admin.query('SELECT email FROM users WHERE email = ANY($1)', [
+      [stale, fresh, verified.email],
+    ]);
+    expect(emails.rows.map((x: { email: string }) => x.email).sort()).toEqual(
+      [fresh, verified.email].sort(),
+    );
+    const u = await admin.query('SELECT totp_secret FROM users WHERE id = $1', [verified.userId]);
+    expect(u.rows[0].totp_secret).toBeNull();
+  });
+
+  it('M2: confirmação da ativação do TOTP tem limite por conta e o segredo pendente expira', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    const s = await t.service.resolveSession(u.token);
+    const setup = await t.service.startTotpSetup(u.userId, PASSWORD);
+    if (!setup.ok) throw new Error('setup');
+    const secret = base32Decode(setup.manualKey);
+    for (let i = 0; i < 10; i++) {
+      expect((await t.service.confirmTotpSetup(u.userId, s?.sessionId ?? '', '000000')).ok).toBe(
+        false,
+      );
+    }
+    // 11ª: recusada mesmo com o código certo.
+    const right = totpAt(secret, t.clock.now.getTime());
+    expect(await t.service.confirmTotpSetup(u.userId, s?.sessionId ?? '', right)).toEqual({
+      ok: false,
+    });
+
+    // Segredo pendente expira em 15 min.
+    const t2 = createTestAuth(db);
+    const v = await createVerifiedUser(t2);
+    const s2 = await t2.service.resolveSession(v.token);
+    const setup2 = await t2.service.startTotpSetup(v.userId, PASSWORD);
+    if (!setup2.ok) throw new Error('setup');
+    t2.clock.now = new Date(t2.clock.now.getTime() + 16 * 60 * 1000);
+    const late = totpAt(base32Decode(setup2.manualKey), t2.clock.now.getTime());
+    expect(await t2.service.confirmTotpSetup(v.userId, s2?.sessionId ?? '', late)).toEqual({
+      ok: false,
+    });
+  });
+
+  it('M3: e-mails de cadastro e de verificação têm limite por destinatário, mesmo com IPs diferentes', async () => {
+    const t = createTestAuth(db);
+    const existing = await createVerifiedUser(t);
+    const cookie = (await t.service.checkAge('1990-01-01', new Headers())) as { cookie: string };
+    for (let i = 0; i < 6; i++) {
+      const r = await t.service.register(
+        { email: existing.email, password: PASSWORD, ageOkCookie: cookie.cookie },
+        freshMeta(),
+      );
+      expect(r).toEqual({ ok: true }); // resposta não muda com o bloqueio
+    }
+    const notices = t.mail.outbox.filter(
+      (m) => m.to === existing.email && m.template === 'account-exists',
+    );
+    // 3 por hora por destinatário, contando o cadastro original da conta: 2 avisos.
+    expect(notices).toHaveLength(2);
+
+    const pendingEmail = uniqueEmail('pendente');
+    await t.service.register(
+      { email: pendingEmail, password: PASSWORD, ageOkCookie: cookie.cookie },
+      freshMeta(),
+    );
+    for (let i = 0; i < 6; i++) await t.service.resendVerification(pendingEmail, freshMeta());
+    const verifications = t.mail.outbox.filter(
+      (m) => m.to === pendingEmail && m.template === 'email-verification',
+    );
+    // 1 do cadastro + 3 reenvios por hora.
+    expect(verifications).toHaveLength(4);
+  });
+});
+
 describe('logs sem dado sensível (LEG-R04)', () => {
   it('fluxos completos não registram e-mail, senha, token, código ou data', async () => {
     const t = createTestAuth(db);

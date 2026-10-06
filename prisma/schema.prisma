@@ -13,22 +13,24 @@ datasource db {
 
 /// Conta. Dados não sensíveis (base: execução de contrato). Para 18+ guarda só a declaração (LEG-F01).
 model User {
-  id               String    @id @default(uuid(7)) @db.Uuid
+  id                 String    @id @default(uuid(7)) @db.Uuid
   /// Normalizado (trim + minúsculas) pela aplicação.
-  email            String    @unique
-  emailVerifiedAt  DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  email              String    @unique
+  emailVerifiedAt    DateTime? @map("email_verified_at") @db.Timestamptz(3)
   /// Argon2id em formato PHC.
-  passwordHash     String    @map("password_hash")
-  adultAttestedAt  DateTime  @map("adult_attested_at") @db.Timestamptz(3)
-  ageGateVersion   String    @map("age_gate_version")
-  mfaEnabledAt     DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
+  passwordHash       String    @map("password_hash")
+  adultAttestedAt    DateTime  @map("adult_attested_at") @db.Timestamptz(3)
+  ageGateVersion     String    @map("age_gate_version")
+  mfaEnabledAt       DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
   /// Segredo TOTP cifrado (envelope ADR-0016, contexto users.totp_secret).
-  totpSecret       Bytes?    @map("totp_secret")
+  totpSecret         Bytes?    @map("totp_secret")
   /// Último passo TOTP aceito: códigos de passo <= este são recusados (anti-reuso).
-  totpLastUsedStep BigInt?   @map("totp_last_used_step")
-  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  totpLastUsedStep   BigInt?   @map("totp_last_used_step")
+  /// Início da ativação do TOTP (segredo pendente). Pendente vence em 15 min e é apagado em 1 dia.
+  totpSetupStartedAt DateTime? @map("totp_setup_started_at") @db.Timestamptz(3)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   sessions      Session[]
   recoveryCodes RecoveryCode[]

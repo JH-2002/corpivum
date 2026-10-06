@@ -12,6 +12,9 @@ export const RATE_LIMITS = {
   resetIp: { windowSeconds: 60 * 60, max: 5 },
   resetAccount: { windowSeconds: 60 * 60, max: 3 },
   resendIp: { windowSeconds: 60 * 60, max: 5 },
+  /** E-mails de cadastro ("já existe uma conta") e de verificação por destinatário: evita assédio. */
+  registerAccount: { windowSeconds: 60 * 60, max: 3 },
+  resendAccount: { windowSeconds: 60 * 60, max: 3 },
   /** Tentativas de 2º fator por CONTA (somadas entre sessões pendentes): barra força bruta do TOTP. */
   mfaAccount: { windowSeconds: 60 * 60, max: 10 },
   /** Reautenticação (senha atual) em ações da conta, por usuário. */
