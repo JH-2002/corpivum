@@ -1,0 +1,69 @@
+# HealthMind 360
+
+Plataforma pessoal de acompanhamento de bem-estar (sono, humor, hábitos, corpo, alimentação,
+atividade, diário, medicamentos informados pelo usuário) com visualização 3D e assistente de IA.
+Público: adultos (18+) no Brasil. Idioma principal: pt-BR.
+
+## Leia antes de planejar
+- `docs/LEGAL_REQUIREMENTS.md`: requisitos legais com IDs `LEG-xx`
+- `docs/SPEC_ADDENDUM.md`: substituições e acréscimos ao spec
+- `docs/PRODUCT_SPEC.md`: visão, UX, visual, módulos (spec original)
+- `docs/INTENDED_USE.md`, `docs/DECISIONS.md`, `docs/legal/OPEN_ISSUES.md`
+
+Em conflito: LEGAL_REQUIREMENTS > SPEC_ADDENDUM > PRODUCT_SPEC.
+
+## Posicionamento (inegociável)
+Produto de bem-estar e autoacompanhamento. NÃO é dispositivo médico: não diagnostica, não trata,
+não monitora doenças, não sugere doses, não substitui profissional de saúde. Nenhum texto de
+interface ou resposta de IA pode contradizer isso.
+
+## Regras inegociáveis
+1. Dado de saúde é dado pessoal sensível. Nunca tratar sem `ConsentRecord` ativo para a finalidade.
+2. Nunca vender ou compartilhar dados de saúde. Sem SDKs de publicidade, sem trackers de terceiros.
+3. Envio ao LLM exige consentimento próprio (padrão desligado) e envio mínimo.
+4. Menores de 18 não criam conta e não têm dado persistido.
+5. Nunca logar conteúdo de saúde, diário, medicamentos ou mensagens da IA. Só metadados.
+6. Nunca usar dados reais em desenvolvimento (apenas seed sintético). Nunca commitar segredos.
+7. Todo dado exibido tem selo: MEDIDO | INFORMADO | ESTIMADO | INFERIDO | RECOMENDADO | DEMO.
+8. Nunca afirmar estado cerebral, nível de neurotransmissor, liberação de substância, transtorno
+   ou diagnóstico.
+9. Sinais de risco → orientação profissional; emergência SAMU 192; apoio emocional CVV 188.
+10. Texto jurídico é RASCUNHO marcado `LEGAL-REVIEW`. Nunca escrever "em conformidade com a LGPD".
+
+## Stack
+Next.js (App Router) · React · TypeScript strict · Tailwind · React Three Fiber + Drei · Recharts ·
+PostgreSQL · Prisma · Auth.js · Zod · Vitest · Playwright · pnpm.
+Adaptadores trocáveis: `LlmProvider`, `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQueue`,
+`AgeSignalProvider`, `WearableProvider`. Módulos em `src/modules/<dominio>`.
+
+## Armadilhas conhecidas (não ignore)
+- **Auth.js + e-mail/senha:** o provider Credentials usa JWT por padrão. Exigimos sessões em banco
+  (listáveis e revogáveis, LEG-S04). Implemente a sessão em tabela própria e valide-a a cada
+  requisição. Se não for viável com Auth.js, pare e proponha alternativa em DECISIONS.md.
+- **Prisma + RLS:** a aplicação conecta com o papel `app_user` (não é dono das tabelas, sem
+  BYPASSRLS). Migrações usam `app_migrator`. Toda consulta com dados de usuário roda em transação
+  que executa `SET LOCAL app.user_id = '<id>'` (extensão do Prisma Client). Políticas RLS usam
+  `current_setting('app.user_id', true)`. Sem o setting, a consulta deve retornar zero linhas.
+- **Região:** banco, storage, filas e execução das funções no Brasil (ex.: sa-east-1 / `gru1`).
+  Qualquer serviço fora do Brasil entra em `docs/privacy/SUBPROCESSORS.md`.
+- **Teste de strings proibidas:** varre os arquivos i18n e falha com alegações clínicas, EXCETO nas
+  chaves do namespace `disclaimer.*`, que contêm negações obrigatórias ("não diagnostica...").
+- **Criptografia de campo × busca:** campos criptografados não são pesquisáveis no banco. No MVP não
+  há busca textual no conteúdo do diário (filtros só por data e campos não sensíveis).
+
+## Convenções
+- Sem `any`. Zod em toda entrada. Erros tipados. Strings de UI em i18n.
+- WCAG 2.2 AA: foco visível, teclado, aria-label, `prefers-reduced-motion`, cor nunca como único canal.
+- 3D com lazy loading, fallback sem WebGL e `prefers-reduced-motion`.
+
+## Fluxo de trabalho
+- Plano antes de codar, uma fase por sessão, commits pequenos.
+- Antes de encerrar: `pnpm lint && pnpm typecheck && pnpm test`.
+- Decisões → `docs/DECISIONS.md`. Dívida legal → marcar `LEGAL-REVIEW` e registrar em
+  `docs/legal/OPEN_ISSUES.md`.
+- Ao tocar em dados sensíveis, auth, consentimento, IA, exportação ou logs, rode o subagente
+  `privacy-reviewer` antes de finalizar.
+
+## Definition of Done
+Funciona · tem teste · acessível · responsivo (320–1920px) · sem dado sensível em log · estados
+loading/empty/error/no-data/partial-data · requisitos LEG-xx afetados atendidos e citados no commit/PR.
