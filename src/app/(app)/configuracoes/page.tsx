@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import {
   ModulePage,
@@ -13,15 +14,27 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
+  const t = await getTranslations('auth.security');
   return (
     <ModulePage
       page="settings"
       href="/configuracoes"
       state={await resolvePreviewState(searchParams)}
     >
-      <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-        <ThemeSelector />
-      </section>
+      <div className="flex flex-col gap-6">
+        <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
+          <ThemeSelector />
+        </section>
+        <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
+          <Link
+            href="/configuracoes/seguranca"
+            className="font-semibold text-primary underline underline-offset-2"
+          >
+            {t('link')}
+          </Link>
+          <p className="text-sm text-fg-muted">{t('linkDescription')}</p>
+        </section>
+      </div>
     </ModulePage>
   );
 }

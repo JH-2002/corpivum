@@ -15,6 +15,7 @@ export const ROUTES = [
   { path: '/ia', title: 'HealthMind AI' },
   { path: '/relatorios', title: 'Relatórios' },
   { path: '/configuracoes', title: 'Configurações' },
+  { path: '/configuracoes/seguranca', title: 'Configurações' },
   { path: '/privacidade', title: 'Central de Privacidade' },
   { path: '/mais', title: 'Mais' },
 ] as const;

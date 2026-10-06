@@ -1,4 +1,5 @@
 import { randomInt } from 'node:crypto';
+import { RECOVERY_CODE_COUNT } from './constants';
 import { hmac } from './crypto';
 
 /**
@@ -6,7 +7,6 @@ import { hmac } from './crypto';
  * no formato xxxxx-xxxxx. Guardados só como HMAC-SHA-256 com pepper: com essa entropia, Argon2 não acrescenta
  * proteção e o HMAC permite busca exata pelo hash.
  */
-export const RECOVERY_CODE_COUNT = 10;
 // Sem 0/O/1/I/L para evitar confusão na leitura.
 const ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
 

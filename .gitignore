@@ -17,6 +17,7 @@ coverage/
 playwright-report/
 test-results/
 blob-report/
+e2e/.auth/
 
 # ambiente e segredos: nunca commitar (CLAUDE.md regra 6)
 .env

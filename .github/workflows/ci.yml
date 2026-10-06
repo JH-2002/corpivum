@@ -1,5 +1,5 @@
 # CI: lint, typecheck, testes, build, e2e, papéis do banco, auditoria de dependências, SAST e segredos.
-# Requisitos: LEG-S09 (varredura de dependências e SAST), LEG-X01, LEG-M03, LEG-S03.
+# Requisitos: LEG-S09 (varredura de dependências e SAST), LEG-X01, LEG-M03, LEG-S03, LEG-S04, LEG-F01.
 # Actions fixadas por SHA (supply chain); o Dependabot propõe as atualizações.
 name: CI
 
@@ -35,6 +35,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prisma generate
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
@@ -56,9 +57,17 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Gerar .env efêmero com senhas aleatórias
+        run: sh scripts/ci-make-env.sh
+      - run: docker compose up -d --wait db
+      - run: pnpm exec prisma generate
+      - run: pnpm db:deploy
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
+      # Inclui cadastro, menor sem linha no banco, revogação de sessão e CSP (LEG-S04, LEG-F01, LEG-S05).
       - run: pnpm test:e2e
+      - if: always()
+        run: docker compose down -v
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -66,10 +75,10 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  db-roles:
-    name: Papéis do Postgres (app_migrator / app_user)
+  db:
+    name: Banco (papéis, RLS, auth com Postgres)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -81,13 +90,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Gerar .env efêmero com senhas aleatórias
-        run: |
-          pw="$(openssl rand -hex 16)"
-          key="$(openssl rand -base64 32)"
-          sed -e "s/troque-localmente/${pw}/g" -e "s|^KMS_LOCAL_MASTER_KEY=|KMS_LOCAL_MASTER_KEY=${key}|" .env.example > .env
+        run: sh scripts/ci-make-env.sh
       - run: docker compose up -d --wait db
-      - run: pnpm db:verify-roles
       - run: pnpm exec prisma validate
+      - run: pnpm exec prisma generate
+      - run: pnpm db:deploy
+      # Papéis, RLS em toda tabela, funções SECURITY DEFINER com search_path fixo (LEG-S03, ADR-0015).
+      - run: pnpm db:verify-roles
+      # Isolamento entre usuários, consulta sem contexto, revogação, menor sem linha, enumeração,
+      # bloqueio por tentativas, reset, TOTP/recuperação e logs sem dado sensível.
+      - run: pnpm test:db
       - if: always()
         run: docker compose down -v
 

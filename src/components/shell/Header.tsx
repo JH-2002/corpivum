@@ -4,6 +4,7 @@ import { Bell, CircleUser, LogOut, Plus, Settings, ShieldCheck, User } from 'luc
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { logoutAction } from '@/app/(auth)/actions';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from './Disclosure';
 import { navItemForPath } from './nav-config';
@@ -92,16 +93,12 @@ export function Header({ isDemo = false }: { isDemo?: boolean }) {
               </Link>
             </li>
             <li>
-              {/* Sem autenticação nesta fase (Fase 1a). */}
-              <button
-                type="button"
-                disabled
-                className={`${menuItemClass} cursor-not-allowed text-fg-muted`}
-              >
-                <LogOut className="size-4" aria-hidden="true" />
-                {t('header.signOut')}
-                <span className="ml-auto text-xs">{t('common.comingSoon')}</span>
-              </button>
+              <form action={logoutAction}>
+                <button type="submit" className={menuItemClass}>
+                  <LogOut className="size-4" aria-hidden="true" />
+                  {t('header.signOut')}
+                </button>
+              </form>
             </li>
           </ul>
         </Disclosure>

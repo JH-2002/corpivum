@@ -85,6 +85,34 @@ try {
   }
   check('conexão de runtime não consegue CREATE TABLE', createDenied);
 
+  // Fase 1a (ADR-0015): toda tabela de public tem RLS; a de migrações fica fora do alcance do runtime.
+  const { rows: tables } = await migrator.query(
+    `SELECT c.relname, c.relrowsecurity AS rls
+       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r'`,
+  );
+  const appTables = tables.filter((t) => t.relname !== '_prisma_migrations');
+  if (appTables.length > 0) {
+    check(
+      'toda tabela da aplicação tem RLS habilitado',
+      appTables.every((t) => t.rls),
+    );
+  }
+  if (tables.some((t) => t.relname === '_prisma_migrations')) {
+    const { rows: mig } = await migrator.query(
+      `SELECT has_table_privilege('app_user', 'public._prisma_migrations',
+              'SELECT,INSERT,UPDATE,DELETE') AS any`,
+    );
+    check('app_user sem acesso a _prisma_migrations', mig[0] && !mig[0].any);
+  }
+  const { rows: definers } = await migrator.query(
+    `SELECT count(*)::int AS n FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE p.prosecdef AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+        AND NOT EXISTS (SELECT 1 FROM unnest(coalesce(p.proconfig, '{}')) c
+                         WHERE c LIKE 'search_path=%')`,
+  );
+  check('funções SECURITY DEFINER com search_path fixo', definers[0]?.n === 0);
+
   const { rows: who } = await runtime.query('SELECT current_user AS u');
   check('DATABASE_URL conecta como app_user', who[0]?.u === 'app_user');
 } catch (error) {

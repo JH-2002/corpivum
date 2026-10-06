@@ -1,5 +1,6 @@
 import { argon2, randomBytes } from 'node:crypto';
 import { promisify } from 'node:util';
+import { PASSWORD_MAX, PASSWORD_MIN } from './constants';
 import { constantTimeEqual } from './crypto';
 
 /**
@@ -7,9 +8,6 @@ import { constantTimeEqual } from './crypto';
  * m=19 MiB, t=2, p=1. Formato PHC: $argon2id$v=19$m=19456,t=2,p=1$<salt>$<hash> (base64 sem padding).
  */
 const argon2Async = promisify(argon2);
-
-export const PASSWORD_MIN = 12;
-export const PASSWORD_MAX = 128;
 
 const PARAMS = { memory: 19456, passes: 2, parallelism: 1, tagLength: 32 } as const;
 const SALT_BYTES = 16;
