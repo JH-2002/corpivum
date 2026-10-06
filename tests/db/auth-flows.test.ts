@@ -427,6 +427,21 @@ describe('MFA: TOTP e códigos de recuperação (LEG-S04)', () => {
     expect(await t.service.resolveSession(pending)).toBeNull();
   });
 
+  it('limite por conta: novas sessões pendentes não renovam as tentativas de TOTP', async () => {
+    const t = createTestAuth(db);
+    const u = await enableMfa(t);
+    // 10 erros por hora por conta, espalhados em várias sessões pendentes.
+    for (let i = 0; i < 10; i++) {
+      const p = await pendingLogin(t, u.email);
+      expect((await t.service.verifyMfa(p, '000000', META)).ok).toBe(false);
+      if (i % 4 === 3) t.clock.now = new Date(t.clock.now.getTime() + 16 * 60 * 1000);
+    }
+    t.clock.now = new Date(t.clock.now.getTime() + 60_000);
+    const p = await pendingLogin(t, u.email);
+    const r = await t.service.verifyMfa(p, totpAt(u.secret, t.clock.now.getTime()), META);
+    expect(r).toEqual({ ok: false, error: 'locked' });
+  });
+
   it('o segredo TOTP fica cifrado e regenerar códigos invalida os anteriores', async () => {
     const t = createTestAuth(db);
     const u = await enableMfa(t);

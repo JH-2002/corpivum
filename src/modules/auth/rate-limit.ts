@@ -12,6 +12,8 @@ export const RATE_LIMITS = {
   resetIp: { windowSeconds: 60 * 60, max: 5 },
   resetAccount: { windowSeconds: 60 * 60, max: 3 },
   resendIp: { windowSeconds: 60 * 60, max: 5 },
+  /** Tentativas de 2º fator por CONTA (somadas entre sessões pendentes): barra força bruta do TOTP. */
+  mfaAccount: { windowSeconds: 60 * 60, max: 10 },
 } as const;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

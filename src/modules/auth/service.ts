@@ -304,7 +304,9 @@ export function createAuthService(deps: AuthDeps) {
           select: { mfaAttempts: true },
         }),
       );
-      if (attempts.mfaAttempts > MFA_MAX_ATTEMPTS) {
+      // Limite por conta: abrir novas sessões pendentes não renova as tentativas.
+      const accountOk = await limit('mfaAccount', userId);
+      if (attempts.mfaAttempts > MFA_MAX_ATTEMPTS || !accountOk) {
         await withUser(userId, (tx) =>
           tx.session.update({ where: { id: s.session_id }, data: { revokedAt: now() } }),
         );
