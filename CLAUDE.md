@@ -32,14 +32,15 @@ interface ou resposta de IA pode contradizer isso.
 
 ## Stack
 Next.js (App Router) · React · TypeScript strict · Tailwind · React Three Fiber + Drei · Recharts ·
-PostgreSQL · Prisma · Auth.js · Zod · Vitest · Playwright · pnpm.
+PostgreSQL · Prisma · auth próprio (ADR-0014; Auth.js descartado) · Zod · Vitest · Playwright · pnpm.
 Adaptadores trocáveis: `LlmProvider`, `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQueue`,
 `AgeSignalProvider`, `WearableProvider`. Módulos em `src/modules/<dominio>`.
 
 ## Armadilhas conhecidas (não ignore)
-- **Auth.js + e-mail/senha:** o provider Credentials usa JWT por padrão. Exigimos sessões em banco
-  (listáveis e revogáveis, LEG-S04). Implemente a sessão em tabela própria e valide-a a cada
-  requisição. Se não for viável com Auth.js, pare e proponha alternativa em DECISIONS.md.
+- **Autenticação:** o Credentials do Auth.js só funciona com JWT, então usamos módulo próprio
+  (`src/modules/auth`, ADR-0014). Sessão opaca em tabela, validada a cada requisição (LEG-S04). O pré-login
+  usa funções SECURITY DEFINER com `search_path` fixo, sem SQL dinâmico e com retorno mínimo (ADR-0015).
+  Comparações de segredo só via `constantTimeEqual`.
 - **Prisma + RLS:** a aplicação conecta com o papel `app_user` (não é dono das tabelas, sem
   BYPASSRLS). Migrações usam `app_migrator`. Toda consulta com dados de usuário roda em transação
   que executa `SET LOCAL app.user_id = '<id>'` (extensão do Prisma Client). Políticas RLS usam
@@ -67,3 +68,13 @@ Adaptadores trocáveis: `LlmProvider`, `KmsProvider`, `StorageProvider`, `MailPr
 ## Definition of Done
 Funciona · tem teste · acessível · responsivo (320–1920px) · sem dado sensível em log · estados
 loading/empty/error/no-data/partial-data · requisitos LEG-xx afetados atendidos e citados no commit/PR.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

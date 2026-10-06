@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
+import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 import { THEME_INIT_SCRIPT } from '@/components/theme/theme';
 import '@/styles/globals.css';
@@ -24,11 +25,13 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Nonce da CSP gerado no proxy (ADR-0006: o script de tema passa a ter nonce).
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-dvh antialiased">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>

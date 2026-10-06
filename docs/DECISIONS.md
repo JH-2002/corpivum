@@ -153,3 +153,115 @@ a análise tenha terminado.
 de SAST (LEG-S09), junto com o Semgrep.
 **Consequências.** Sem a aba Security nem o histórico de alertas no GitHub. Se o Code Security for
 habilitado, voltar ao upload padrão.
+
+## ADR-0014 — Autenticação própria em vez do Auth.js (Fase 1a, LEG-S04)
+**Contexto.** LEG-S04 exige sessões em banco, listáveis e revogáveis, com revogação valendo na próxima
+requisição. No Auth.js v5, o provider Credentials (e-mail/senha) só funciona com `session.strategy: 'jwt'`.
+Sessão em banco só sairia sobrescrevendo `jwt.encode/decode`, um uso sem suporte que pode quebrar a cada
+atualização. Além disso, o adapter genérico consulta usuários e sessões antes de existir `app.user_id`, o que
+obrigaria a abrir exceções no RLS (LEG-S03).
+**Alternativas descartadas.**
+- Auth.js com contorno no JWT: uso sem suporte e frágil.
+- Better Auth: tem sessões em banco e 2FA, mas o adapter Prisma genérico exigiria tabelas de auth fora do RLS
+  ou com políticas permissivas, e seria mais uma dependência grande lidando com credenciais.
+**Decisão.** Módulo próprio em `src/modules/auth`, sem biblioteca de auth:
+- Senha com Argon2id via `crypto.argon2` nativo do Node 24 (parâmetros OWASP), em formato PHC.
+- Sessão opaca: token de 32 bytes, só `sha256(token)` no banco. Cookie `__Host-hm_session`
+  (HttpOnly, Secure, SameSite=Lax). O registro é validado no banco a cada requisição.
+- TOTP RFC 6238 implementado com `node:crypto`, com bloqueio de reuso do passo. Códigos de recuperação de uso
+  único, guardados só como HMAC. QR gerado localmente (sem serviço externo).
+- Toda comparação de segredo passa por `constantTimeEqual`.
+- Login, cadastro e recuperação respondem de forma idêntica exista ou não o e-mail.
+- Limites de tentativa no Postgres, com chaves HMAC (IP nunca em claro).
+**Consequências.** O código de auth é nosso para manter. Por isso o pentest precisa cobri-lo com prioridade
+(CHECKLIST_GO_LIVE). OAuth ou passkeys no futuro exigem novo ADR.
+
+## ADR-0015 — RLS e funções SECURITY DEFINER para o pré-login (Fase 1a, LEG-S03)
+**Decisão.**
+- `app.current_user_id()` lê `current_setting('app.user_id', true)`; vazio ou ausente vira NULL, e então
+  nenhuma linha passa. Ela recebe `GRANT EXECUTE` explícito para `app_user` (ADR-0012).
+- Tabelas de usuário com `ENABLE ROW LEVEL SECURITY` e políticas `USING/WITH CHECK` por `user_id`.
+- O runtime abre transação e executa `set_config('app.user_id', $1, true)`, o equivalente parametrizado de
+  `SET LOCAL` (`withUser`, `forUser` em `src/lib/db`).
+- Operações sem usuário conhecido (login, resolver sessão, consumir token, rate limit) usam funções
+  `SECURITY DEFINER` com dono `app_migrator`. Regras:
+  - `search_path` fixo na definição e objetos qualificados com schema;
+  - sem SQL dinâmico;
+  - retorno com o mínimo de colunas;
+  - `EXECUTE` só para `app_user`.
+
+  Um teste lê `pg_proc` e falha se houver função SECURITY DEFINER sem `search_path` fixo.
+- As tabelas de tokens e de rate limit não têm DML direto para `app_user`: o acesso é só pelas funções.
+**Consequências.** As tabelas usam ENABLE sem FORCE. O dono (`app_migrator`) não é limitado pelo RLS, e é isso que
+permite as funções SECURITY DEFINER. O runtime nunca usa esse papel (`parseEnv` e `db:verify-roles` garantem).
+
+## ADR-0016 — Formato do envelope de criptografia de campo (Fase 1a, LEG-S02)
+**Decisão.** `src/lib/crypto/field.ts` cifra cada valor com uma DEK nova (AES-256-GCM), obtida do `KmsProvider`
+com o contexto `{ userId, table, column }`. O mesmo contexto canônico entra como AAD também na cifragem do
+dado. Formato em `bytea`:
+`0x01 | len(keyId) u8 | keyId | len(encDEK) u16 | encDEK | iv(12) | tag(16) | ciphertext`.
+A DEK em claro é zerada após o uso.
+**Consequências.** Uma chamada ao KMS por escrita e por leitura. Avaliar cache de DEK quando houver KMS real
+(Fase 7). A rotação de chave usa o `keyId` do envelope (docs/runbooks/KEY_ROTATION.md).
+
+## ADR-0017 — Endurecimento após a revisão de privacidade da Fase 1a
+**Contexto.** O `privacy-reviewer` não apontou nada crítico. Encontrou 1 problema alto, 7 médios e 10 baixos.
+**Decisão (corrigido nesta fase).**
+- **Força bruta do 2º fator:** limite `mfaAccount` (10 por hora por conta) para TOTP e códigos de
+  recuperação, somado entre sessões pendentes e também usado ao desativar o MFA. Ao bloquear (bloqueio
+  temporário de 1 h), o titular recebe um e-mail `security-alert` (`mfa_locked`), uma vez por janela. O
+  limite por sessão (5) continua.
+- **Enumeração por tempo:** o trabalho que depende de a conta existir (token e e-mail) roda depois da resposta,
+  via `after()` do Next (`defer` injetado no serviço). Recuperação, reenvio e cadastro respondem no mesmo
+  tempo com ou sem conta.
+- **Reautenticação:** ativar o MFA exige a senha atual. Toda verificação de senha atual tem limite
+  `reauthUser` (10 a cada 15 min). Ligar ou desligar o MFA e trocar a senha enviam um e-mail
+  `security-alert`, só com o tipo do evento.
+- **Login bloqueado** responde sem calcular Argon2: evita esgotar CPU e memória. O bloqueio não revela se a
+  conta existe, porque e-mails inexistentes também são contados.
+- **Guarda de sessão em toda página e server action de `(app)`**, além do layout: na navegação pelo
+  cliente, o layout não é renderizado de novo. Um teste varre páginas e actions e falha se alguma não chamar
+  `requireVerifiedSession()`; um e2e revoga a sessão e navega pelo cliente.
+- **IP para limites:** `CLIENT_IP_HEADER` é obrigatório em produção (cabeçalho escrito pela hospedagem). Em
+  dev, vale o último salto de X-Forwarded-For; o primeiro, que o cliente controla, nunca é usado.
+- **Expurgo:** `app.auth_purge_expired()` apaga sessões revogadas ou expiradas e tokens usados ou vencidos há
+  mais de 1 dia, e as janelas de limite encerradas. Job `auth.purge_expired` registrado em
+  `src/instrumentation.ts`, a cada 6 h, reagendado ao terminar; em dev/test a fila em memória é consumida
+  no próprio servidor. Fila real: Fase 7 (OPEN_ISSUES OI-14).
+- **Banco:** as políticas usam `(SELECT app.current_user_id())`, avaliado uma vez por consulta. Em `users`, o
+  runtime só faz UPDATE nas colunas que precisa alterar: `id`, `email`, `adult_attested_at` e
+  `age_gate_version` ficam imutáveis.
+- **Outros:**
+  - cookies `__Host-` apagados com os mesmos atributos (o `delete()` do Next não envia `Secure`);
+  - a ação do age gate também respeita `hm_age_block`;
+  - Prisma com `errorFormat: 'minimal'`;
+  - o `uri` otpauth não vai ao cliente;
+  - a confirmação do TOTP é condicional e atômica;
+  - `test:db` e e2e recusam banco que não seja local fora da CI.
+
+**Aceito por ora (registrado em OPEN_ISSUES; os 10 achados baixos estão listados lá com status).**
+- **OI-15:** bloqueio por conta permite travar o login de alguém só sabendo o e-mail (5 tentativas por 15 min).
+  Mitigações possíveis: atraso progressivo e exceção para aparelho conhecido. Ficou para depois, para não
+  enfraquecer a proteção contra força bruta.
+- **Pepper dos códigos de recuperação = `SESSION_SECRET`** (com separação de domínio). Girar esse segredo
+  invalida os códigos. Documentado em docs/runbooks/KEY_ROTATION.md; um segredo próprio pode entrar na Fase 7.
+- **Erros não tratados do Next** ainda saem pelo `console.error` da plataforma. Com o Prisma em
+  `errorFormat: 'minimal'` e o serviço sem lançar conteúdo, o risco é baixo. `instrumentation.ts` fica para
+  quando houver ferramenta de erros (Fase 7, LEG-R04).
+
+## ADR-0018 — Segunda revisão de privacidade da Fase 1a
+**Contexto.** A segunda revisão confirmou que o achado alto e os seis médios anteriores foram corrigidos e
+testados. Não apontou nada crítico nem alto. Apontou 3 médios novos e 8 baixos.
+**Decisão (corrigido, cada um com teste em `tests/db/auth-flows.test.ts`).**
+- **M1, retenção:** o expurgo (`app.auth_purge_expired`, job `auth.purge_expired`) também apaga contas com
+  e-mail nunca verificado 7 dias após o cadastro, com sessões e tokens em cascata. Também apaga o segredo
+  TOTP de ativações não concluídas 1 dia após o início (coluna `totp_setup_started_at`). ROPA T1 atualizado.
+  Quem perder a janela pode se cadastrar de novo.
+- **M2, ativação do TOTP:**
+  - a confirmação usa o mesmo limite `mfaAccount` do 2º fator;
+  - o segredo pendente vale 15 min;
+  - uma sessão roubada não consegue testar códigos sem limite.
+- **M3, assédio por e-mail:** os limites `registerAccount` e `resendAccount` (3 por hora por destinatário,
+  com chave HMAC) são checados dentro do trabalho adiado, então a resposta e o tempo não mudam.
+**Baixos:** registrados em docs/legal/OPEN_ISSUES.md (PR1a-R2-B1 a B8), por decisão do responsável.
+

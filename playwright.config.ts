@@ -16,13 +16,21 @@ export default defineConfig({
     timezoneId: 'America/Sao_Paulo',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    // Cria a pessoa sintética e salva a sessão; os testes do app reutilizam (Fase 1a, LEG-S04).
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/pessoa.json' },
+      dependencies: ['setup'],
+    },
+  ],
   webServer: {
     // No CI roda contra o build de produção (gerado antes, no job); localmente, contra o dev server.
     command: isCI ? `pnpm start --port ${PORT}` : `pnpm dev --port ${PORT}`,
-    url: `http://localhost:${PORT}/inicio`,
+    url: `http://localhost:${PORT}/entrar`,
     reuseExistingServer: !isCI,
     timeout: 120_000,
-    env: { APP_ENV: 'test', NEXT_TELEMETRY_DISABLED: '1' },
+    env: { APP_ENV: 'test', NEXT_TELEMETRY_DISABLED: '1', APP_URL: `http://localhost:${PORT}` },
   },
 });

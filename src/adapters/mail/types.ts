@@ -5,6 +5,10 @@
 export type MailTemplateId =
   | 'email-verification'
   | 'password-reset'
+  /** Cadastro tentado com e-mail já existente (anti-enumeração, ADR-0014). */
+  | 'account-exists'
+  /** Aviso de mudança de segurança (MFA ligado/desligado, senha trocada). Só o tipo do evento. */
+  | 'security-alert'
   | 'reminder'
   | 'export-ready'
   | 'privacy-request-received';

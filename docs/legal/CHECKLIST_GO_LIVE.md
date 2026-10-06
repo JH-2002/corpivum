@@ -8,6 +8,7 @@
 - [ ] Escolher região de hospedagem e confirmar residência de dados, backups **e execução das funções** no Brasil (LEG-S10)
 - [ ] Configurar retenção de backup ≤ prazo de purga e testar restauração em ambiente real (LEG-S07)
 - [ ] Contratar pentest independente e tratar os achados
+- [ ] Pedir ao pentest atenção especial ao **módulo de autenticação próprio** (ADR-0014): sessões (fixação e revogação), enumeração de e-mail e diferença de tempo de resposta, contorno dos limites de tentativa (IP, variações de maiúsculas no e-mail), TOTP (reuso e força bruta), códigos de recuperação, tokens de verificação e reset, funções SECURITY DEFINER e RLS, CSRF e CSP
 - [ ] Revisão clínica dos textos de saúde, das fórmulas e dos fluxos de risco por profissionais habilitados
 - [ ] Definir canal de suporte e de atendimento a titulares com SLA compatível com 15 dias (LEG-D07)
 - [ ] Lançar primeiro em beta fechado com poucos usuários adultos antes de abrir ao público

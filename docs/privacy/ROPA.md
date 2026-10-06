@@ -1,6 +1,6 @@
 # Registro das Operações de Tratamento (ROPA) — LGPD art. 37
 
-> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.1 (Fase 0) · LEG-G01
+> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.2 (Fase 1a) · LEG-G01
 > Controlador: `{{CONTROLADOR}}` · Encarregado: `{{ENCARREGADO}}` · Contato: `{{CONTATO_ENCARREGADO}}`
 
 Bases legais propostas conforme a matriz de `docs/LEGAL_REQUIREMENTS.md` §A (sujeitas a OPEN_ISSUES OI-01).
@@ -8,11 +8,12 @@ Atualizar este registro sempre que surgir nova finalidade, categoria de dado ou 
 
 | # | Operação | Finalidade | Titulares | Categorias de dados | Sensível? | Base legal proposta | Compartilhamento | Retenção | Medidas de segurança |
 |---|---|---|---|---|---|---|---|---|---|
-| T1 | Conta e autenticação | Criar e manter a conta | Usuários 18+ | Nome, e-mail, hash de senha, MFA, sessões | Não | Execução de contrato (art. 7º, V) | Hospedagem, banco, e-mail | Enquanto a conta existir; depois LEG-D04 | Hash forte, MFA, sessões revogáveis (LEG-S04) |
+| T1 | Conta e autenticação | Criar e manter a conta | Usuários 18+ | E-mail, hash Argon2id da senha, data/hora da declaração de maioridade e versão do age gate (**sem data de nascimento**), segredo TOTP cifrado, hashes dos códigos de recuperação, sessões (hash do token, rótulo grosso do aparelho, datas; **sem IP**), tokens de verificação/redefinição (só hash) | Não | Execução de contrato (art. 7º, V) | Hospedagem, banco, e-mail | Conta: enquanto existir, depois LEG-D04; **conta com e-mail nunca verificado: apagada 7 dias após o cadastro**; segredo TOTP de ativação não concluída: apagado 1 dia após o início. Sessões: válidas até 30 dias (7 ociosos); a linha é apagada 1 dia após revogar ou expirar. Tokens: válidos 24 h / 30 min; apagados 1 dia após uso ou vencimento (job `auth.purge_expired` a cada 6 h; OI-14) | Argon2id, MFA TOTP, sessões em banco revogáveis, RLS, criptografia de campo, comparações em tempo constante (LEG-S02–S04, ADR-0014/0015) |
 | T2 | Registros de bem-estar | Funcionamento do app | Usuários 18+ | Sono, humor, hábitos, diário, peso/medidas, alimentação, atividade, medicamentos informados | **Sim** | Consentimento específico (art. 11, I) | Hospedagem, banco | Enquanto a conta existir; purga em `PURGE_DAYS` após exclusão | RLS, criptografia de campo (LEG-S02/S03) |
 | T3 | Assistente de IA | Conversa sobre os próprios dados | Usuários que consentiram | Agregados e trechos escolhidos | **Sim** | Consentimento próprio, padrão desligado | Provedor de LLM `{{LLM}}` | `{{RETENCAO_IA}}` | Minimização, camada de saída, logs só com metadados (LEG-I01–I08) |
 | T4 | Registros de acesso | Obrigação legal, se aplicável | Usuários | IP, data/hora | Não | Marco Civil art. 15, se aplicável (OI-06) | Hospedagem | `ACCESS_LOG_RETENTION_DAYS` (180) | Tabela separada, expurgo automático (LEG-R02) |
-| T5 | Segurança da conta | Prevenção a abuso | Usuários | Tentativas de login, IP | Não | Legítimo interesse (art. 7º, IX) | — | `{{RETENCAO_SEGURANCA}}` | Rate limiting (LEG-S05) |
+| T5 | Segurança da conta | Prevenção a abuso | Usuários e visitantes | Contagem de tentativas por janela, com chave HMAC de IP/e-mail (**nunca em claro**) | Não | Legítimo interesse (art. 7º, IX) | — | Até o fim da janela (15 min a 1 h); apagado pelo expurgo (job `auth.purge_expired` a cada 6 h; OI-14) | Rate limiting no Postgres, sem acesso direto do runtime (LEG-S05) |
+| T5a | Age gate 18+ | Impedir cadastro de menores (LEG-F01) | Visitantes no cadastro | Data de nascimento **só durante a requisição** | Não | Legítimo interesse / proteção de menores | — | **Não armazenada**: nem banco, nem log, nem cookie. Menor: cookie de sessão `hm_age_block=1` sem identificador. Adulto: cookie assinado `hm_age_ok` de 30 min sem a data | Teste automatizado: menor não gera linha em nenhuma tabela (LEG-F01). `LEGAL-REVIEW` OI-02 |
 | T6 | Prova de consentimento e pedidos do titular | Exercício regular de direitos | Usuários e ex-usuários | Registro de consentimento, pedidos (dados mínimos) | Não | Arts. 7º VI e 16 | — | `{{RETENCAO_PROVA}}` (OI-04) | AuditLog sem conteúdo (LEG-S06) |
 | T7 | Lembretes e notificações | Parte do serviço consentido | Usuários | E-mail, horários, tipo de lembrete | Pode indicar saúde (medicamento) | Consentimento T2 | E-mail `{{EMAIL}}` | Enquanto ativo | E-mail sem conteúdo de saúde |
 | T8 | Comunicações de marketing | Divulgação | Usuários que consentiram | E-mail | Não | Consentimento separado | E-mail `{{EMAIL}}` | Até revogação | Opt-in, revogação em 1–2 cliques |

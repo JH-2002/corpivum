@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { Header } from '@/components/shell/Header';
@@ -6,10 +6,15 @@ import { QuickLogDialog } from '@/components/shell/QuickLogDialog';
 import { ShellProvider } from '@/components/shell/ShellProvider';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/ui/SkipLink';
+import { requireVerifiedSession } from '@/modules/auth/server';
 
-/** App shell (§7): sidebar (tablet/desktop), header, conteúdo e navegação inferior (mobile). */
-export default function AppLayout({ children }: { children: ReactNode }) {
-  const t = useTranslations('disclaimer');
+/**
+ * App shell (§7): sidebar (tablet/desktop), header, conteúdo e navegação inferior (mobile).
+ * Guarda da área logada: sessão validada no banco a cada requisição e e-mail verificado (LEG-S04).
+ */
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  await requireVerifiedSession();
+  const t = await getTranslations('disclaimer');
 
   return (
     <ShellProvider>

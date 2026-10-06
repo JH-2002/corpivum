@@ -1,0 +1,43 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+import { ResetPasswordForm } from '@/components/auth/AuthForms';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('auth.reset');
+  return { title: t('title') };
+}
+
+export default async function ResetPasswordPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const t = await getTranslations('auth');
+  const { token } = await searchParams;
+  const hasToken = typeof token === 'string' && token.length > 0;
+
+  return (
+    <>
+      <h1 className="mb-2 text-2xl font-bold">{t('reset.title')}</h1>
+      {hasToken ? (
+        <>
+          <p className="mb-4 text-sm text-fg-muted">{t('reset.description')}</p>
+          <ResetPasswordForm token={token.slice(0, 64)} />
+        </>
+      ) : (
+        <>
+          <p role="status" className="mb-4">
+            {t('reset.missingToken')}
+          </p>
+          <Link
+            href="/recuperar-senha"
+            className="font-semibold text-primary underline underline-offset-2"
+          >
+            {t('forgot.title')}
+          </Link>
+        </>
+      )}
+    </>
+  );
+}
