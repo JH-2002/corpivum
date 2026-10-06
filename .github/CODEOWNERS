@@ -1,0 +1,8 @@
+# Revisão obrigatória para conteúdo isento da varredura de alegações clínicas (LEG-M03)
+# e para áreas sensíveis. Substitua pelo usuário/time responsável no GitHub.
+/messages/                              @{{REVISOR_CONTEUDO}}
+/tests/content/                         @{{REVISOR_CONTEUDO}}
+/docs/legal/                            @{{REVISOR_JURIDICO}}
+/docs/privacy/                          @{{REVISOR_JURIDICO}}
+/docker/postgres/                       @{{REVISOR_SEGURANCA}}
+/.github/workflows/                     @{{REVISOR_SEGURANCA}}
