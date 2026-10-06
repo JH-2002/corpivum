@@ -32,14 +32,15 @@ interface ou resposta de IA pode contradizer isso.
 
 ## Stack
 Next.js (App Router) · React · TypeScript strict · Tailwind · React Three Fiber + Drei · Recharts ·
-PostgreSQL · Prisma · Auth.js · Zod · Vitest · Playwright · pnpm.
+PostgreSQL · Prisma · auth próprio (ADR-0014; Auth.js descartado) · Zod · Vitest · Playwright · pnpm.
 Adaptadores trocáveis: `LlmProvider`, `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQueue`,
 `AgeSignalProvider`, `WearableProvider`. Módulos em `src/modules/<dominio>`.
 
 ## Armadilhas conhecidas (não ignore)
-- **Auth.js + e-mail/senha:** o provider Credentials usa JWT por padrão. Exigimos sessões em banco
-  (listáveis e revogáveis, LEG-S04). Implemente a sessão em tabela própria e valide-a a cada
-  requisição. Se não for viável com Auth.js, pare e proponha alternativa em DECISIONS.md.
+- **Autenticação:** o Credentials do Auth.js só funciona com JWT, então usamos módulo próprio
+  (`src/modules/auth`, ADR-0014). Sessão opaca em tabela, validada a cada requisição (LEG-S04). O pré-login
+  usa funções SECURITY DEFINER com `search_path` fixo, sem SQL dinâmico e com retorno mínimo (ADR-0015).
+  Comparações de segredo só via `constantTimeEqual`.
 - **Prisma + RLS:** a aplicação conecta com o papel `app_user` (não é dono das tabelas, sem
   BYPASSRLS). Migrações usam `app_migrator`. Toda consulta com dados de usuário roda em transação
   que executa `SET LOCAL app.user_id = '<id>'` (extensão do Prisma Client). Políticas RLS usam

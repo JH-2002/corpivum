@@ -153,3 +153,53 @@ a análise tenha terminado.
 de SAST (LEG-S09), junto com o Semgrep.
 **Consequências.** Sem a aba Security nem o histórico de alertas no GitHub. Se o Code Security for
 habilitado, voltar ao upload padrão.
+
+## ADR-0014 — Autenticação própria em vez do Auth.js (Fase 1a, LEG-S04)
+**Contexto.** LEG-S04 exige sessões em banco, listáveis e revogáveis, com revogação valendo na próxima
+requisição. No Auth.js v5, o provider Credentials (e-mail/senha) só funciona com `session.strategy: 'jwt'`.
+Sessão em banco só sairia sobrescrevendo `jwt.encode/decode`, um uso sem suporte que pode quebrar a cada
+atualização. Além disso, o adapter genérico consulta usuários e sessões antes de existir `app.user_id`, o que
+obrigaria a abrir exceções no RLS (LEG-S03).
+**Alternativas descartadas.**
+- Auth.js com contorno no JWT: uso sem suporte e frágil.
+- Better Auth: tem sessões em banco e 2FA, mas o adapter Prisma genérico exigiria tabelas de auth fora do RLS
+  ou com políticas permissivas, e seria mais uma dependência grande lidando com credenciais.
+**Decisão.** Módulo próprio em `src/modules/auth`, sem biblioteca de auth:
+- Senha com Argon2id via `crypto.argon2` nativo do Node 24 (parâmetros OWASP), em formato PHC.
+- Sessão opaca: token de 32 bytes, só `sha256(token)` no banco. Cookie `__Host-hm_session`
+  (HttpOnly, Secure, SameSite=Lax). O registro é validado no banco a cada requisição.
+- TOTP RFC 6238 implementado com `node:crypto`, com bloqueio de reuso do passo. Códigos de recuperação de uso
+  único, guardados só como HMAC. QR gerado localmente (sem serviço externo).
+- Toda comparação de segredo passa por `constantTimeEqual`.
+- Login, cadastro e recuperação respondem de forma idêntica exista ou não o e-mail.
+- Limites de tentativa no Postgres, com chaves HMAC (IP nunca em claro).
+**Consequências.** O código de auth é nosso para manter. Por isso o pentest precisa cobri-lo com prioridade
+(CHECKLIST_GO_LIVE). OAuth ou passkeys no futuro exigem novo ADR.
+
+## ADR-0015 — RLS e funções SECURITY DEFINER para o pré-login (Fase 1a, LEG-S03)
+**Decisão.**
+- `app.current_user_id()` lê `current_setting('app.user_id', true)`; vazio ou ausente vira NULL, e então
+  nenhuma linha passa. Ela recebe `GRANT EXECUTE` explícito para `app_user` (ADR-0012).
+- Tabelas de usuário com `ENABLE ROW LEVEL SECURITY` e políticas `USING/WITH CHECK` por `user_id`.
+- O runtime abre transação e executa `set_config('app.user_id', $1, true)`, o equivalente parametrizado de
+  `SET LOCAL` (`withUser`, `forUser` em `src/lib/db`).
+- Operações sem usuário conhecido (login, resolver sessão, consumir token, rate limit) usam funções
+  `SECURITY DEFINER` com dono `app_migrator`. Regras:
+  - `search_path` fixo na definição e objetos qualificados com schema;
+  - sem SQL dinâmico;
+  - retorno com o mínimo de colunas;
+  - `EXECUTE` só para `app_user`.
+
+  Um teste lê `pg_proc` e falha se houver função SECURITY DEFINER sem `search_path` fixo.
+- As tabelas de tokens e de rate limit não têm DML direto para `app_user`: o acesso é só pelas funções.
+**Consequências.** As tabelas usam ENABLE sem FORCE. O dono (`app_migrator`) não é limitado pelo RLS, e é isso que
+permite as funções SECURITY DEFINER. O runtime nunca usa esse papel (`parseEnv` e `db:verify-roles` garantem).
+
+## ADR-0016 — Formato do envelope de criptografia de campo (Fase 1a, LEG-S02)
+**Decisão.** `src/lib/crypto/field.ts` cifra cada valor com uma DEK nova (AES-256-GCM), obtida do `KmsProvider`
+com o contexto `{ userId, table, column }`. O mesmo contexto canônico entra como AAD também na cifragem do
+dado. Formato em `bytea`:
+`0x01 | len(keyId) u8 | keyId | len(encDEK) u16 | encDEK | iv(12) | tag(16) | ciphertext`.
+A DEK em claro é zerada após o uso.
+**Consequências.** Uma chamada ao KMS por escrita e por leitura. Avaliar cache de DEK quando houver KMS real
+(Fase 7). A rotação de chave usa o `keyId` do envelope (docs/runbooks/KEY_ROTATION.md).
