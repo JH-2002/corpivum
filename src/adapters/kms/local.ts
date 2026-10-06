@@ -25,7 +25,9 @@ export class LocalKmsProvider implements KmsProvider {
   async generateDataKey(): Promise<DataKey> {
     const plaintext = randomBytes(KEY_BYTES);
     const iv = randomBytes(IV_BYTES);
-    const cipher = createCipheriv('aes-256-gcm', this.#masterKey, iv);
+    const cipher = createCipheriv('aes-256-gcm', this.#masterKey, iv, {
+      authTagLength: TAG_BYTES,
+    });
     const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
     return {
       plaintext: new Uint8Array(plaintext),
@@ -40,7 +42,9 @@ export class LocalKmsProvider implements KmsProvider {
     }
     const buf = Buffer.from(encrypted);
     try {
-      const decipher = createDecipheriv('aes-256-gcm', this.#masterKey, buf.subarray(0, IV_BYTES));
+      const decipher = createDecipheriv('aes-256-gcm', this.#masterKey, buf.subarray(0, IV_BYTES), {
+        authTagLength: TAG_BYTES,
+      });
       decipher.setAuthTag(buf.subarray(IV_BYTES, IV_BYTES + TAG_BYTES));
       const body = buf.subarray(IV_BYTES + TAG_BYTES);
       return new Uint8Array(Buffer.concat([decipher.update(body), decipher.final()]));
