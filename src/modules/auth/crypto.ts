@@ -21,8 +21,9 @@ export function constantTimeEqual(a: Bytes, b: Bytes): boolean {
   return timingSafeEqual(da, db);
 }
 
-export function sha256(value: Bytes): Buffer {
-  return createHash('sha256').update(toBuffer(value)).digest();
+/** SHA-256 como `Uint8Array` próprio (formato aceito pelo Prisma em colunas `Bytes`). */
+export function sha256(value: Bytes): Uint8Array<ArrayBuffer> {
+  return new Uint8Array(createHash('sha256').update(toBuffer(value)).digest());
 }
 
 /** HMAC-SHA-256 com separação de domínio: chaves de finalidades diferentes nunca colidem. */

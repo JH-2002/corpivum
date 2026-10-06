@@ -27,6 +27,6 @@ export function looksLikeRecoveryCode(input: string): boolean {
   return /^[a-z0-9]{10}$/.test(normalizeRecoveryCode(input));
 }
 
-export function hashRecoveryCode(pepper: Uint8Array, code: string): Buffer {
-  return hmac(pepper, 'recovery-code', normalizeRecoveryCode(code));
+export function hashRecoveryCode(pepper: Uint8Array, code: string): Uint8Array<ArrayBuffer> {
+  return new Uint8Array(hmac(pepper, 'recovery-code', normalizeRecoveryCode(code)));
 }

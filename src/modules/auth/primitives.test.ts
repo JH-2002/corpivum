@@ -114,7 +114,7 @@ describe('códigos de recuperação', () => {
     const [code = ''] = generateRecoveryCodes(1);
     expect(normalizeRecoveryCode(` ${code.toUpperCase()} `)).toBe(code.replace('-', ''));
     expect(looksLikeRecoveryCode(code)).toBe(true);
-    const h = hashRecoveryCode(pepper, code);
+    const h = Buffer.from(hashRecoveryCode(pepper, code));
     expect(h.equals(hashRecoveryCode(pepper, code.toUpperCase()))).toBe(true);
     expect(h.toString('utf8')).not.toContain(code);
     expect(h.equals(hashRecoveryCode(randomBytes(32), code))).toBe(false);

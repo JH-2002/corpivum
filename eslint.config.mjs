@@ -33,6 +33,46 @@ const config = [
     },
   },
   {
+    // LEG-S03: só src/lib/db e o módulo auth (funções SECURITY DEFINER) usam o client cru.
+    // O resto acessa dados por `withUser`/`forUser` de '@/lib/db', que fixam app.user_id.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/lib/db/**', 'src/modules/auth/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@/lib/db/client',
+                '@/lib/db/rls',
+                '@/generated/prisma',
+                '@/generated/prisma/*',
+              ],
+              message: 'Use withUser/forUser de @/lib/db (LEG-S03, ADR-0015).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // ADR-0014: segredos só são comparados com constantTimeEqual.
+    files: ['src/modules/auth/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...['left', 'right'].flatMap((side) =>
+          ['name', 'property.name'].map((prop) => ({
+            selector: `BinaryExpression[operator=/^[!=]==?$/][${side}.${prop}=/(token|hash|code|secret|sig|otp)/i]`,
+            message: 'Compare segredos com constantTimeEqual (ADR-0014).',
+          })),
+        ),
+      ],
+    },
+  },
+  {
     files: ['scripts/**', 'tests/**', 'e2e/**', '**/*.config.*'],
     rules: { 'no-console': 'off' },
   },

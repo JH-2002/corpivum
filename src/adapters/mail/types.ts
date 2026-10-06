@@ -5,6 +5,8 @@
 export type MailTemplateId =
   | 'email-verification'
   | 'password-reset'
+  /** Cadastro tentado com e-mail já existente (anti-enumeração, ADR-0014). */
+  | 'account-exists'
   | 'reminder'
   | 'export-ready'
   | 'privacy-request-received';

@@ -25,6 +25,12 @@ const envSchema = z
     APP_REGION: z.string().min(1),
     DATABASE_URL: z.url(),
     MIGRATION_DATABASE_URL: z.url().optional(),
+    /** Base dos links enviados por e-mail (verificação, redefinição). https obrigatório em produção. */
+    APP_URL: z.url(),
+    /** Segredos de auth (ADR-0014), 32+ bytes em base64. Cookies do fluxo e pepper dos códigos de recuperação. */
+    SESSION_SECRET: z.string(),
+    /** Pepper das chaves HMAC de limite de tentativas (IP/e-mail nunca em claro). */
+    RATE_LIMIT_SECRET: z.string(),
 
     PURGE_DAYS: days.default(30),
     // LEG-R02: teto de 6 meses; só sobe por decisão registrada (OPEN_ISSUES OI-06).
@@ -55,6 +61,15 @@ const envSchema = z
       issue('DATABASE_URL', 'o runtime deve usar o papel app_user (LEG-S03)');
     }
 
+    for (const key of ['SESSION_SECRET', 'RATE_LIMIT_SECRET'] as const) {
+      if (Buffer.from(env[key], 'base64').length < 32) {
+        issue(key, 'precisa ter pelo menos 32 bytes em base64');
+      }
+    }
+    if (env.SESSION_SECRET === env.RATE_LIMIT_SECRET) {
+      issue('RATE_LIMIT_SECRET', 'deve ser diferente de SESSION_SECRET');
+    }
+
     if (env.KMS_PROVIDER === 'local') {
       const key = env.KMS_LOCAL_MASTER_KEY ?? '';
       if (Buffer.from(key, 'base64').length !== 32) {
@@ -82,6 +97,9 @@ const envSchema = z
         if (env[key as keyof typeof devOnly] === value) {
           issue(key, `"${value}" não é permitido em produção`);
         }
+      }
+      if (!env.APP_URL.startsWith('https://')) {
+        issue('APP_URL', 'deve usar https em produção (LEG-S01)');
       }
       // A credencial de migração não fica disponível ao runtime de produção (LEG-S03).
       if (env.MIGRATION_DATABASE_URL) {

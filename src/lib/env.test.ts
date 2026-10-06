@@ -8,6 +8,9 @@ const base = {
   APP_REGION: 'gru1',
   DATABASE_URL: 'postgresql://app_user:x@localhost:5432/healthmind',
   KMS_LOCAL_MASTER_KEY: validKey,
+  APP_URL: 'http://localhost:3000',
+  SESSION_SECRET: Buffer.alloc(32, 1).toString('base64'),
+  RATE_LIMIT_SECRET: Buffer.alloc(32, 2).toString('base64'),
 };
 
 function issuesOf(source: Record<string, string | undefined>): readonly string[] {
@@ -110,5 +113,20 @@ describe('parseEnv', () => {
     }
     expect(message).not.toBe('');
     expect(message).not.toContain('SENHA-SECRETA');
+  });
+
+  it('exige segredos de auth com 32+ bytes e diferentes entre si (ADR-0014)', () => {
+    expect(hasIssue({ ...base, SESSION_SECRET: 'curto' }, 'SESSION_SECRET')).toBe(true);
+    expect(hasIssue({ ...base, RATE_LIMIT_SECRET: undefined }, 'RATE_LIMIT_SECRET')).toBe(true);
+    expect(hasIssue({ ...base, RATE_LIMIT_SECRET: base.SESSION_SECRET }, 'RATE_LIMIT_SECRET')).toBe(
+      true,
+    );
+  });
+
+  it('exige APP_URL com https em produção (LEG-S01)', () => {
+    expect(hasIssue({ ...base, APP_ENV: 'production' }, 'APP_URL')).toBe(true);
+    expect(
+      hasIssue({ ...base, APP_ENV: 'production', APP_URL: 'https://app.exemplo.test' }, 'APP_URL'),
+    ).toBe(false);
   });
 });
