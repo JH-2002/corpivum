@@ -1,0 +1,11 @@
+// Fase 0: apenas datasource e generator. Os modelos (User, Session, ConsentRecord, ...) entram na Fase 1a,
+// junto com as políticas RLS. A URL de conexão fica em prisma.config.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

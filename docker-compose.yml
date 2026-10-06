@@ -1,0 +1,28 @@
+# Ambiente de DESENVOLVIMENTO local. Apenas dados sintéticos (CLAUDE.md regra 6).
+# Senhas vêm do arquivo .env (não versionado). Veja .env.example.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:?defina POSTGRES_SUPERUSER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?defina POSTGRES_SUPERUSER_PASSWORD no .env}
+      POSTGRES_DB: postgres
+      APP_DB_NAME: ${APP_DB_NAME:-healthmind}
+      APP_MIGRATOR_PASSWORD: ${APP_MIGRATOR_PASSWORD:?defina APP_MIGRATOR_PASSWORD no .env}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?defina APP_USER_PASSWORD no .env}
+      TZ: UTC
+    ports:
+      # Exposto só na máquina local.
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  db-data:
