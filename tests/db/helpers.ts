@@ -8,6 +8,7 @@ import { ConsoleMailProvider } from '@/adapters/mail/console';
 import { createDbClient, type Db } from '@/lib/db/client';
 import { createLogger, type LogRecord } from '@/lib/logger';
 import { createAuthService, type AuthService } from '@/modules/auth/service';
+import { stableTestClock } from '../support/clock';
 import { assertDisposableDatabase } from './safety';
 
 /** Tabelas do schema public (exceto controle de migrações), para limpeza e contagem. */
@@ -78,7 +79,8 @@ export function createTestAuth(
       return send(m);
     };
   }
-  const clock = { now: new Date() };
+  // Longe da virada da hora: janelas fixas de 1 h não zeram no meio do teste (PR1a-R3-B5).
+  const clock = { now: stableTestClock() };
   const sessionSecret = randomBytes(32);
   const service = createAuthService({
     db,
