@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.9.1",
   "engines": {
     "node": ">=24"
   },
@@ -21,7 +22,8 @@
     "db:down": "docker compose down",
     "db:verify-roles": "node scripts/verify-db-roles.mjs",
     "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "audit": "pnpm audit --audit-level=high"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

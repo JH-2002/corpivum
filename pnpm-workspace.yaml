@@ -4,3 +4,14 @@ allowBuilds:
   '@swc/core': false
   prisma: true
   unrs-resolver: false
+
+# Correções de segurança em dependências transitivas do CLI do Prisma (ver docs/DECISIONS.md, ADR-0009).
+overrides:
+  deepmerge-ts: ^8.0.2
+  mysql2: ^3.24.5
+
+# Exceções de auditoria: só sem correção disponível e sem alcance em runtime. Revisar mensalmente (ADR-0009).
+auditConfig:
+  ignoreGhsas:
+    # braces (via eslint-config-next > fast-glob): só no lint, sobre globs do próprio repositório.
+    - GHSA-vfj7-8cjw-p6xm
