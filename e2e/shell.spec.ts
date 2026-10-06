@@ -1,0 +1,101 @@
+import { expect, test } from '@playwright/test';
+
+test.describe('seletor de período global (§10)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('mostra o intervalo em texto e persiste ao trocar de página', async ({ page }) => {
+    await page.goto('/inicio');
+    const select = page.getByLabel('Período');
+    await expect(select).toHaveValue('30d');
+    await select.selectOption('7d');
+    await expect(page.getByText(/^\d{2}\/\d{2}\/\d{4} a \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
+
+    await page
+      .getByRole('navigation', { name: 'Navegação principal' })
+      .getByRole('link', { name: 'Sono' })
+      .click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Sono' })).toBeVisible();
+    await expect(page.getByLabel('Período')).toHaveValue('7d');
+
+    await page.reload();
+    await expect(page.getByLabel('Período')).toHaveValue('7d');
+  });
+
+  test('personalizado valida o intervalo e aplica datas válidas', async ({ page }) => {
+    await page.goto('/inicio');
+    await page.getByLabel('Período').selectOption('custom');
+    await page.getByLabel('De', { exact: true }).fill('2026-03-10');
+    await page.getByLabel('Até', { exact: true }).fill('2026-03-01');
+    await page.getByRole('button', { name: 'Aplicar' }).click();
+    await expect(
+      page.getByText('A data inicial precisa ser anterior', { exact: false }),
+    ).toHaveAttribute('role', 'alert');
+    await expect(page.getByLabel('De', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+
+    await page.getByLabel('Até', { exact: true }).fill('2026-03-20');
+    await page.getByRole('button', { name: 'Aplicar' }).click();
+    await expect(page.getByText('10/03/2026 a 20/03/2026', { exact: true })).toBeVisible();
+  });
+});
+
+test.describe('estados de tela (§34)', () => {
+  test('vazio por padrão, com convite acolhedor e sem gráficos', async ({ page }) => {
+    await page.goto('/inicio');
+    await expect(
+      page.getByRole('heading', { name: 'Boas-vindas ao HealthMind 360' }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Fazer o primeiro registro' })).toBeVisible();
+  });
+
+  test('loading, error, no-data e partial', async ({ page }) => {
+    await page.goto('/sono?state=loading');
+    await expect(page.getByRole('status').filter({ hasText: 'Carregando' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+
+    await page.goto('/sono?state=error');
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Não foi possível carregar' }),
+    ).toBeVisible();
+    await page.getByRole('link', { name: 'Tentar novamente' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Nenhum registro de sono ainda' }),
+    ).toBeVisible();
+
+    await page.goto('/sono?state=no-data');
+    await expect(page.getByText('Sem registros neste período')).toBeVisible();
+
+    await page.goto('/sono?state=partial');
+    await expect(page.getByText('Dados parciais')).toBeVisible();
+  });
+});
+
+test.describe('avisos obrigatórios', () => {
+  test('rodapé com aviso de bem-estar em todas as páginas do app', async ({ page }) => {
+    await page.goto('/inicio');
+    await expect(page.getByRole('contentinfo')).toContainText('Não diagnostica, não trata');
+  });
+
+  test('medicamentos mostra o aviso fixo (LEG-M02)', async ({ page }) => {
+    await page.goto('/medicamentos');
+    await expect(page.getByText('Siga a orientação do seu prescritor.')).toBeVisible();
+  });
+});
+
+test.describe('tema', () => {
+  test('escolha de tema escuro aplica e persiste', async ({ page }) => {
+    await page.goto('/configuracoes');
+    await page.getByText('Escuro', { exact: true }).click();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    await page.reload();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    await page.getByText('Claro', { exact: true }).click();
+    await expect(page.locator('html')).not.toHaveClass(/dark/);
+  });
+});
+
+test('/ redireciona para /inicio', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/inicio$/);
+});
