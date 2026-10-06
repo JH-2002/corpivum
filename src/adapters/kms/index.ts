@@ -4,6 +4,7 @@ import { LocalKmsProvider } from './local';
 import type { KmsProvider } from './types';
 
 export type * from './types';
+export { canonicalContext } from './types';
 
 export function createKmsProvider(
   env: Pick<Env, 'KMS_PROVIDER' | 'KMS_LOCAL_MASTER_KEY'>,

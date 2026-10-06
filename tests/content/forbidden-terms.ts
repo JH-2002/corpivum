@@ -125,6 +125,29 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
       /\b(em\s+)?conformidade\s+com\s+a\s+lgpd\b|\b(100%|totalmente)\s+(conforme|adequad\w*|compliant)\b|\bcertificad\w*\s+(pela\s+)?(anvisa|lgpd|anpd)/,
     reason: 'Nunca afirmar conformidade legal (CLAUDE.md regra 10).',
   },
+  {
+    id: 'relieve-condition',
+    pattern: new RegExp(
+      `\\b(reduz|alivi|combat|melhor|control|ameniz|elimin|venc|supera)\\w*\\s+(\\w+\\s+){0,4}${CONDITIONS}`,
+    ),
+    reason: 'Sem alegação de efeito sobre condição de saúde (LEG-M01).',
+  },
+  {
+    id: 'brain-assertion',
+    pattern: /\b(seu\s+)?cerebro\s+(esta|fica|anda|ficou|estava)\b/,
+    reason: 'Nunca afirmar estado cerebral (regra 8, LEG-M05).',
+  },
+  {
+    id: 'you-are-condition',
+    pattern:
+      /\b(voce|vc)\s+(esta|parece|e|anda|ficou)\s+(\w+\s+)?(deprimid|ansios|bipolar|viciad|compulsiv)\w*/,
+    reason: 'Nunca afirmar condição da pessoa (CLAUDE.md regra 8).',
+  },
+  {
+    id: 'clinical-report',
+    pattern: /\blaudos?\b|\bavaliac(ao|oes)\s+clinicas?\b|\bprontuario/,
+    reason: 'Relatórios não são laudo nem avaliação clínica (§29, LEG-M01).',
+  },
 ];
 
 /** Minúsculas e sem diacríticos, para casar "diagnóstico" e "DIAGNOSTICO" com o mesmo padrão. */

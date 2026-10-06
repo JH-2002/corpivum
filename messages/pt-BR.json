@@ -127,7 +127,7 @@
     "journal": {
       "title": "Diário",
       "emptyTitle": "Seu diário está em branco",
-      "emptyDescription": "Escreva livremente. O conteúdo é guardado de forma protegida e só você tem acesso."
+      "emptyDescription": "Escreva livremente. O conteúdo não é compartilhado sem a sua escolha."
     },
     "body": {
       "title": "Corpo",

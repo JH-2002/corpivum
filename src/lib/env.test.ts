@@ -4,6 +4,7 @@ import { parseEnv } from './env';
 
 const validKey = Buffer.alloc(32, 7).toString('base64');
 const base = {
+  APP_ENV: 'development',
   APP_REGION: 'gru1',
   DATABASE_URL: 'postgresql://app_user:x@localhost:5432/healthmind',
   KMS_LOCAL_MASTER_KEY: validKey,
@@ -19,6 +20,9 @@ function issuesOf(source: Record<string, string | undefined>): readonly string[]
   return [];
 }
 
+const hasIssue = (source: Record<string, string | undefined>, key: string) =>
+  issuesOf(source).some((i) => i.startsWith(key));
+
 describe('parseEnv', () => {
   it('aplica os prazos padrão de retenção', () => {
     const env = parseEnv(base);
@@ -27,9 +31,14 @@ describe('parseEnv', () => {
     expect(env.BACKUP_RETENTION_DAYS).toBe(30);
   });
 
+  it('exige APP_ENV explícito (sem cair em development por omissão)', () => {
+    expect(hasIssue({ ...base, APP_ENV: undefined }, 'APP_ENV')).toBe(true);
+  });
+
   it('falha se a retenção de backup exceder PURGE_DAYS (LEG-S07)', () => {
-    const issues = issuesOf({ ...base, PURGE_DAYS: '30', BACKUP_RETENTION_DAYS: '35' });
-    expect(issues.some((i) => i.startsWith('BACKUP_RETENTION_DAYS'))).toBe(true);
+    expect(
+      hasIssue({ ...base, PURGE_DAYS: '30', BACKUP_RETENTION_DAYS: '35' }, 'BACKUP_RETENTION_DAYS'),
+    ).toBe(true);
   });
 
   it('aceita retenção de backup igual ao prazo de purga', () => {
@@ -38,28 +47,68 @@ describe('parseEnv', () => {
     ).not.toThrow();
   });
 
-  it('exige chave KMS local de 32 bytes', () => {
-    const issues = issuesOf({ ...base, KMS_LOCAL_MASTER_KEY: 'curta' });
-    expect(issues.some((i) => i.startsWith('KMS_LOCAL_MASTER_KEY'))).toBe(true);
+  it('limita ACCESS_LOG_RETENTION_DAYS a 180 dias (LEG-R02)', () => {
+    expect(
+      hasIssue({ ...base, ACCESS_LOG_RETENTION_DAYS: '365' }, 'ACCESS_LOG_RETENTION_DAYS'),
+    ).toBe(true);
   });
 
-  it('recusa adaptadores fake/local em produção', () => {
-    const issues = issuesOf({ ...base, APP_ENV: 'production' });
-    expect(issues).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('LLM_PROVIDER'),
-        expect.stringContaining('KMS_PROVIDER'),
-        expect.stringContaining('MAIL_PROVIDER'),
-      ]),
-    );
+  it('exige chave KMS local de 32 bytes', () => {
+    expect(hasIssue({ ...base, KMS_LOCAL_MASTER_KEY: 'curta' }, 'KMS_LOCAL_MASTER_KEY')).toBe(true);
+  });
+
+  it.each(['app_migrator', 'postgres'])('recusa runtime conectando como %s (LEG-S03)', (user) => {
+    expect(
+      hasIssue({ ...base, DATABASE_URL: `postgresql://${user}:x@localhost/db` }, 'DATABASE_URL'),
+    ).toBe(true);
+  });
+
+  it.each(['public', 'public/exports', './public'])(
+    'recusa storage local em %s (LEG-D03)',
+    (dir) => {
+      expect(hasIssue({ ...base, STORAGE_LOCAL_DIR: dir }, 'STORAGE_LOCAL_DIR')).toBe(true);
+    },
+  );
+
+  describe('produção', () => {
+    const prod = { ...base, APP_ENV: 'production' };
+
+    it('recusa adaptadores fake/local', () => {
+      expect(issuesOf(prod)).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('LLM_PROVIDER'),
+          expect.stringContaining('KMS_PROVIDER'),
+          expect.stringContaining('STORAGE_PROVIDER'),
+          expect.stringContaining('MAIL_PROVIDER'),
+          expect.stringContaining('JOB_QUEUE'),
+        ]),
+      );
+    });
+
+    it('recusa a credencial de migração no runtime (LEG-S03)', () => {
+      expect(
+        hasIssue(
+          { ...prod, MIGRATION_DATABASE_URL: 'postgresql://app_migrator:x@h/db' },
+          'MIGRATION_DATABASE_URL',
+        ),
+      ).toBe(true);
+    });
+
+    it('exige região no Brasil (LEG-S10)', () => {
+      expect(hasIssue({ ...prod, APP_REGION: 'us-east-1' }, 'APP_REGION')).toBe(true);
+      expect(hasIssue({ ...prod, APP_REGION: 'gru1' }, 'APP_REGION')).toBe(false);
+    });
   });
 
   it('não expõe valores de variáveis na mensagem de erro', () => {
-    const secret = 'postgresql://app_user:SENHA-SECRETA@host/db';
+    const secret = 'postgresql://app_migrator:SENHA-SECRETA@host/db';
+    let message = '';
     try {
       parseEnv({ ...base, DATABASE_URL: secret, PURGE_DAYS: 'abc' });
     } catch (error) {
-      expect(String(error)).not.toContain('SENHA-SECRETA');
+      message = String(error);
     }
+    expect(message).not.toBe('');
+    expect(message).not.toContain('SENHA-SECRETA');
   });
 });

@@ -7,7 +7,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { APPROVED_DISCLAIMER_KEYS } from './approved-disclaimers';
+import { APPROVED_DISCLAIMER_KEYS, APPROVED_DISCLAIMERS } from './approved-disclaimers';
 import { findForbiddenTerms, FORBIDDEN_TERMS } from './forbidden-terms';
 
 const MESSAGES_DIR = fileURLToPath(new URL('../../messages', import.meta.url));
@@ -48,10 +48,10 @@ describe('strings proibidas (LEG-M03)', () => {
     expect(violations).toEqual([]);
   });
 
-  it.each(catalogs)('$file tem todos os avisos obrigatórios preenchidos', ({ entries }) => {
+  it.each(catalogs)('$file tem os avisos obrigatórios com o texto aprovado', ({ entries }) => {
     const byKey = new Map(entries);
-    for (const key of APPROVED_DISCLAIMER_KEYS) {
-      expect(byKey.get(key)?.trim(), `aviso obrigatório ausente: ${key}`).toBeTruthy();
+    for (const [key, approved] of Object.entries(APPROVED_DISCLAIMERS)) {
+      expect(byKey.get(key), `aviso ausente ou alterado sem aprovação: ${key}`).toBe(approved);
     }
     expect(byKey.get('disclaimer.medications')).toBe('Siga a orientação do seu prescritor.');
     expect(byKey.get('disclaimer.riskSupport')).toMatch(/\b188\b/);
@@ -92,9 +92,28 @@ describe('detector de alegações proibidas', () => {
     'clinically-proven': 'Método clinicamente comprovado',
     'medical-grade': 'Precisão médica no seu bolso',
     'lgpd-compliance-claim': 'Plataforma em conformidade com a LGPD',
+    'relieve-condition': 'Alivia o estresse e a insônia',
+    'brain-assertion': 'Seu cérebro está sobrecarregado',
+    'you-are-condition': 'Você está deprimido',
+    'clinical-report': 'Laudo do seu sono',
   };
 
+  /** Variações relatadas na revisão de privacidade: todas precisam ser detectadas. */
+  const MORE_FORBIDDEN = [
+    'Reduz a ansiedade em 7 dias',
+    'Combate a depressão',
+    'Melhora sua ansiedade',
+    'Você está ansiosa demais',
+    'Seu relatório vale como avaliação clínica',
+  ];
+
+  it.each(MORE_FORBIDDEN)('detecta variação: %s', (text) => {
+    expect(findForbiddenTerms(text).length).toBeGreaterThan(0);
+  });
+
   const ALLOWED_EXAMPLES = [
+    'Melhore sua rotina de sono com pequenas pausas',
+    'Pausas curtas ajudam a reduzir o cansaço do dia',
     'Tratamento de dados pessoais conforme sua escolha',
     'Registre seu sono e humor',
     'Siga a orientação de quem acompanha você',

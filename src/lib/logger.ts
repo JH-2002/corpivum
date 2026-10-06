@@ -1,7 +1,8 @@
 /**
  * Logger estruturado que aceita SOMENTE metadados tipados (CLAUDE.md regra 5, LEG-R04).
  * Não há campo livre: conteúdo de saúde, diário, medicamentos ou mensagens da IA não cabe aqui.
- * Para adicionar um campo, inclua-o em `LogMeta` e justifique no PR.
+ * Em tempo de execução, só as chaves de `FIELDS` passam, e textos precisam ter formato de identificador.
+ * Para adicionar um campo, inclua-o em `LogMeta` e em `FIELDS` e justifique no PR.
  */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -31,6 +32,59 @@ const LEVEL_ORDER: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, e
 /** Nome do evento: `dominio.acao`, só minúsculas, dígitos, `_` e `.`. */
 const EVENT_PATTERN = /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$/;
 
+/** Formatos aceitos por campo, verificados em tempo de execução (o tipo só barra objetos literais). */
+const IDENTIFIER = /^[A-Za-z0-9_.:-]{1,64}$/;
+const MASKED_EMAIL = /^[^@\s]?\*\*\*@[^@\s]?\*\*\*(\.[a-z0-9-]{1,24})?$/i;
+type FieldKind = 'identifier' | 'number' | 'identifierOrNumber' | 'maskedEmail';
+
+const FIELDS: Record<keyof LogMeta, FieldKind> = {
+  requestId: 'identifier',
+  userId: 'identifier',
+  adapter: 'identifier',
+  operation: 'identifier',
+  durationMs: 'number',
+  status: 'identifierOrNumber',
+  errorCode: 'identifier',
+  model: 'identifier',
+  inputTokens: 'number',
+  outputTokens: 'number',
+  jobName: 'identifier',
+  jobId: 'identifier',
+  attempt: 'number',
+  template: 'identifier',
+  recipient: 'maskedEmail',
+  count: 'number',
+  region: 'identifier',
+};
+
+export const REDACTED = '[redacted]';
+
+function sanitizeValue(kind: FieldKind, value: unknown): string | number {
+  const isNumber = typeof value === 'number' && Number.isFinite(value);
+  const isText = typeof value === 'string';
+  switch (kind) {
+    case 'number':
+      return isNumber ? value : REDACTED;
+    case 'identifierOrNumber':
+      return isNumber ? value : isText && IDENTIFIER.test(value) ? value : REDACTED;
+    case 'identifier':
+      return isText && IDENTIFIER.test(value) ? value : REDACTED;
+    case 'maskedEmail':
+      return isText && MASKED_EMAIL.test(value) ? value : REDACTED;
+  }
+}
+
+/** Copia só campos da allowlist; valores fora do formato esperado viram `[redacted]` (LEG-R04). */
+export function sanitizeMeta(meta: unknown): LogMeta {
+  if (typeof meta !== 'object' || meta === null) return {};
+  const out: Record<string, string | number> = {};
+  for (const [key, kind] of Object.entries(FIELDS) as Array<[keyof LogMeta, FieldKind]>) {
+    const value = (meta as Record<string, unknown>)[key];
+    if (value !== undefined) out[key] = sanitizeValue(kind, value);
+  }
+  return out as LogMeta;
+}
+
 export interface LogRecord extends LogMeta {
   ts: string;
   level: LogLevel;
@@ -59,7 +113,7 @@ export function createLogger(options: { minLevel?: LogLevel; sink?: LogSink } = 
   const write = (level: LogLevel, event: string, meta: LogMeta = {}) => {
     if (LEVEL_ORDER[level] < LEVEL_ORDER[minLevel]) return;
     const safeEvent = EVENT_PATTERN.test(event) ? event : 'log.invalid_event_name';
-    sink({ ...meta, ts: new Date().toISOString(), level, event: safeEvent });
+    sink({ ...sanitizeMeta(meta), ts: new Date().toISOString(), level, event: safeEvent });
   };
 
   return {

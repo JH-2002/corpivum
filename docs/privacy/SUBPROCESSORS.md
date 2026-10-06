@@ -30,5 +30,5 @@ vendidos nem compartilhados para vantagem econômica (LGPD art. 11, §4º).
 | Registro npm / imagens Docker (postgres, semgrep, gitleaks) | Download de dependências e ferramentas | Nenhum dado de usuário | Global |
 | Registro de regras do Semgrep | Download de regras públicas | Nenhum dado; executado com `--metrics=off` | Global |
 
-Não usados: SDKs de publicidade, analytics de terceiros, fontes remotas (Google Fonts) e telemetria do Next.js
-(`NEXT_TELEMETRY_DISABLED=1`).
+Não usados: SDKs de publicidade, analytics de terceiros, fontes remotas (Google Fonts), telemetria do Next.js
+(`NEXT_TELEMETRY_DISABLED=1`) e telemetria da CLI do Prisma (`CHECKPOINT_DISABLE=1`, no `.env` e na CI).

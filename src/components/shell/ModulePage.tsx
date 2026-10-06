@@ -27,10 +27,12 @@ export type PageSearchParams = Promise<Record<string, string | string[] | undefi
 
 /**
  * Pré-visualização de estados por `?state=loading|error|no-data|partial`, para revisão visual e
- * testes e2e. Desligada em produção.
+ * testes e2e. Só em APP_ENV=development|test.
  */
 export async function resolvePreviewState(searchParams: PageSearchParams): Promise<ViewState> {
-  if (process.env.APP_ENV === 'production') return 'empty';
+  // Falha fechada: só liga com APP_ENV explicitamente de desenvolvimento ou teste.
+  const appEnv = process.env.APP_ENV;
+  if (appEnv !== 'development' && appEnv !== 'test') return 'empty';
   const { state } = await searchParams;
   return VIEW_STATES.find((s) => s === state) ?? 'empty';
 }

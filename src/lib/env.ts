@@ -1,17 +1,34 @@
+import path from 'node:path';
 import { z } from 'zod';
 import { EnvValidationError } from './errors';
 
 const days = z.coerce.number().int().positive();
 
+/** Regiões aceitas em produção: todas no Brasil (LEG-S10). Incluir nova região exige registro em DECISIONS. */
+export const BRAZIL_REGIONS = ['gru1', 'sa-east-1', 'brazilsouth', 'southamerica-east1'] as const;
+
+/** Papéis que nunca podem ser usados pelo runtime (LEG-S03). */
+const FORBIDDEN_RUNTIME_DB_USERS = ['app_migrator', 'postgres'];
+
+function dbUser(url: string): string {
+  try {
+    return decodeURIComponent(new URL(url).username);
+  } catch {
+    return '';
+  }
+}
+
 const envSchema = z
   .object({
-    APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    // Obrigatório e sem padrão: esquecer de defini-lo não pode cair em "development" (ADR-0007).
+    APP_ENV: z.enum(['development', 'test', 'production']),
     APP_REGION: z.string().min(1),
     DATABASE_URL: z.url(),
     MIGRATION_DATABASE_URL: z.url().optional(),
 
     PURGE_DAYS: days.default(30),
-    ACCESS_LOG_RETENTION_DAYS: days.default(180),
+    // LEG-R02: teto de 6 meses; só sobe por decisão registrada (OPEN_ISSUES OI-06).
+    ACCESS_LOG_RETENTION_DAYS: days.max(180).default(180),
     BACKUP_RETENTION_DAYS: days.default(30),
 
     LLM_PROVIDER: z.enum(['fake']).default('fake'),
@@ -25,28 +42,35 @@ const envSchema = z
     WEARABLE_PROVIDER: z.enum(['disabled']).default('disabled'),
   })
   .superRefine((env, ctx) => {
+    const issue = (key: string, message: string) =>
+      ctx.addIssue({ code: 'custom', path: [key], message });
+
     // LEG-S07 / LEG-D04: backups não podem sobreviver ao prazo de purga.
     if (env.BACKUP_RETENTION_DAYS > env.PURGE_DAYS) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['BACKUP_RETENTION_DAYS'],
-        message: 'deve ser menor ou igual a PURGE_DAYS (LEG-S07)',
-      });
+      issue('BACKUP_RETENTION_DAYS', 'deve ser menor ou igual a PURGE_DAYS (LEG-S07)');
+    }
+
+    // LEG-S03: o runtime conecta como app_user, nunca como dono das tabelas ou superusuário.
+    if (FORBIDDEN_RUNTIME_DB_USERS.includes(dbUser(env.DATABASE_URL))) {
+      issue('DATABASE_URL', 'o runtime deve usar o papel app_user (LEG-S03)');
     }
 
     if (env.KMS_PROVIDER === 'local') {
       const key = env.KMS_LOCAL_MASTER_KEY ?? '';
       if (Buffer.from(key, 'base64').length !== 32) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['KMS_LOCAL_MASTER_KEY'],
-          message: 'precisa ter 32 bytes em base64',
-        });
+        issue('KMS_LOCAL_MASTER_KEY', 'precisa ter 32 bytes em base64');
       }
     }
 
-    // Implementações locais/fake nunca rodam em produção.
+    // LEG-D03: o storage local nunca pode ficar dentro de public/, que o Next serve sem autenticação.
+    const storageDir = path.resolve(env.STORAGE_LOCAL_DIR);
+    const publicDir = path.resolve('public');
+    if (storageDir === publicDir || storageDir.startsWith(publicDir + path.sep)) {
+      issue('STORAGE_LOCAL_DIR', 'não pode ficar dentro de public/ (LEG-D03)');
+    }
+
     if (env.APP_ENV === 'production') {
+      // Implementações locais/fake nunca rodam em produção.
       const devOnly = {
         LLM_PROVIDER: 'fake',
         KMS_PROVIDER: 'local',
@@ -56,12 +80,19 @@ const envSchema = z
       } as const;
       for (const [key, value] of Object.entries(devOnly)) {
         if (env[key as keyof typeof devOnly] === value) {
-          ctx.addIssue({
-            code: 'custom',
-            path: [key],
-            message: `"${value}" não é permitido em produção`,
-          });
+          issue(key, `"${value}" não é permitido em produção`);
         }
+      }
+      // A credencial de migração não fica disponível ao runtime de produção (LEG-S03).
+      if (env.MIGRATION_DATABASE_URL) {
+        issue('MIGRATION_DATABASE_URL', 'não deve estar definido no runtime de produção (LEG-S03)');
+      }
+      // LEG-S10: execução no Brasil.
+      if (!(BRAZIL_REGIONS as readonly string[]).includes(env.APP_REGION)) {
+        issue(
+          'APP_REGION',
+          `deve ser uma região no Brasil: ${BRAZIL_REGIONS.join(', ')} (LEG-S10)`,
+        );
       }
     }
   });

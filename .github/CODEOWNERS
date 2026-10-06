@@ -1,5 +1,7 @@
 # Revisão obrigatória para conteúdo isento da varredura de alegações clínicas (LEG-M03)
-# e para áreas sensíveis. Substitua pelo usuário/time responsável no GitHub.
+# e para áreas sensíveis. PENDENTE (OPEN_ISSUES OI-13): substituir os placeholders por usuários/times reais
+# e ativar "Require review from Code Owners" na proteção da branch principal. Enquanto houver
+# placeholder, o GitHub ignora estas regras.
 /messages/                              @{{REVISOR_CONTEUDO}}
 /tests/content/                         @{{REVISOR_CONTEUDO}}
 /docs/legal/                            @{{REVISOR_JURIDICO}}

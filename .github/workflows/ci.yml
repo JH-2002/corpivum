@@ -17,6 +17,7 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: '1'
+  CHECKPOINT_DISABLE: '1'
   APP_ENV: test
 
 jobs:

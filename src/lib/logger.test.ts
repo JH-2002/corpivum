@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createLogger, maskEmail, type LogRecord } from './logger';
+import { createLogger, maskEmail, REDACTED, type LogRecord } from './logger';
 
 function capture() {
   const records: LogRecord[] = [];
@@ -17,6 +17,38 @@ describe('logger', () => {
     const { records, logger } = capture();
     logger.info('usuário escreveu: dormi mal');
     expect(records[0]?.event).toBe('log.invalid_event_name');
+  });
+
+  it('descarta chaves fora da allowlist mesmo vindas de objeto não literal', () => {
+    const { records, logger } = capture();
+    const meta = { userId: 'u1', journalText: 'dormi mal e chorei' };
+    logger.info('journal.created', meta);
+    expect(records[0]).toMatchObject({ userId: 'u1' });
+    expect(JSON.stringify(records[0])).not.toContain('dormi mal');
+  });
+
+  it('troca texto livre em campos de identificador por [redacted]', () => {
+    const { records, logger } = capture();
+    logger.info('ai.request', {
+      operation: 'conteúdo livre: tomei 2 comprimidos',
+      recipient: 'pessoa@exemplo.com',
+      durationMs: Number.NaN,
+      status: 200,
+      template: 'email-verification',
+    });
+    expect(records[0]).toMatchObject({
+      operation: REDACTED,
+      recipient: REDACTED,
+      durationMs: REDACTED,
+      status: 200,
+      template: 'email-verification',
+    });
+  });
+
+  it('aceita destinatário já mascarado', () => {
+    const { records, logger } = capture();
+    logger.info('mail.sent', { recipient: maskEmail('maria@exemplo.com.br') });
+    expect(records[0]?.recipient).toBe('m***@e***.br');
   });
 
   it('respeita o nível mínimo', () => {

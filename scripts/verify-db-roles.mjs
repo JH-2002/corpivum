@@ -39,6 +39,12 @@ try {
   check('app_migrator não é superusuário', appMigrator && !appMigrator.rolsuper);
   check('app_migrator sem BYPASSRLS', appMigrator && !appMigrator.rolbypassrls);
 
+  // NOINHERIT não impede SET ROLE: app_user não pode ser membro de nenhum outro papel.
+  const { rows: memberships } = await migrator.query(
+    `SELECT count(*)::int AS n FROM pg_auth_members WHERE member = 'app_user'::regrole`,
+  );
+  check('app_user não é membro de outros papéis', memberships[0]?.n === 0);
+
   const { rows: owners } = await migrator.query(
     `SELECT pg_get_userbyid(d.datdba) AS db_owner,
             pg_get_userbyid(n.nspowner) AS schema_owner,

@@ -12,8 +12,25 @@ export interface DataKey {
   keyId: string;
 }
 
+/**
+ * Contexto de cifragem (equivalente ao EncryptionContext da AWS KMS): amarra a DEK cifrada a quem e onde ela
+ * é usada (ex.: { userId, table, column }). Decifrar com contexto diferente falha, o que impede trocar um
+ * valor cifrado entre linhas ou usuários. Só identificadores, nunca conteúdo.
+ */
+export type EncryptionContext = Readonly<Record<string, string>>;
+
 export interface KmsProvider {
   readonly id: string;
-  generateDataKey(): Promise<DataKey>;
-  decryptDataKey(encrypted: Uint8Array, keyId: string): Promise<Uint8Array>;
+  generateDataKey(context: EncryptionContext): Promise<DataKey>;
+  decryptDataKey(
+    encrypted: Uint8Array,
+    keyId: string,
+    context: EncryptionContext,
+  ): Promise<Uint8Array>;
+}
+
+/** Serialização canônica (chaves ordenadas) do contexto, usada como AAD. */
+export function canonicalContext(context: EncryptionContext): Buffer {
+  const entries = Object.entries(context).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return Buffer.from(JSON.stringify(entries), 'utf8');
 }

@@ -26,6 +26,7 @@ function captureLogger() {
 describe('createAdapters', () => {
   it('monta todas as implementações locais a partir do env', () => {
     const env = parseEnv({
+      APP_ENV: 'test',
       APP_REGION: 'gru1',
       DATABASE_URL: 'postgresql://app_user:x@localhost/db',
       KMS_LOCAL_MASTER_KEY: masterKey,
@@ -64,25 +65,40 @@ describe('FakeLlmProvider', () => {
 });
 
 describe('LocalKmsProvider', () => {
+  const ctx = { userId: 'u1', table: 'journal_entry', column: 'content' };
+
   it('cifra e decifra a chave de dados (envelope)', async () => {
     const kms = new LocalKmsProvider(masterKey);
-    const dataKey = await kms.generateDataKey();
+    const dataKey = await kms.generateDataKey(ctx);
     expect(dataKey.plaintext).toHaveLength(32);
     expect(Buffer.from(dataKey.encrypted).includes(Buffer.from(dataKey.plaintext))).toBe(false);
-    const decrypted = await kms.decryptDataKey(dataKey.encrypted, dataKey.keyId);
+    const decrypted = await kms.decryptDataKey(dataKey.encrypted, dataKey.keyId, ctx);
     expect(Buffer.from(decrypted).equals(Buffer.from(dataKey.plaintext))).toBe(true);
   });
 
   it('rejeita DEK adulterada ou chave mestra diferente', async () => {
     const kms = new LocalKmsProvider(masterKey);
-    const { encrypted, keyId } = await kms.generateDataKey();
+    const { encrypted, keyId } = await kms.generateDataKey(ctx);
     const tampered = new Uint8Array(encrypted);
     tampered[tampered.length - 1]! ^= 0xff;
-    await expect(kms.decryptDataKey(tampered, keyId)).rejects.toBeInstanceOf(AdapterError);
+    await expect(kms.decryptDataKey(tampered, keyId, ctx)).rejects.toBeInstanceOf(AdapterError);
 
     const other = new LocalKmsProvider(Buffer.alloc(32, 2).toString('base64'));
-    await expect(other.decryptDataKey(encrypted, keyId)).rejects.toBeInstanceOf(AdapterError);
-    await expect(kms.decryptDataKey(encrypted, 'outra-chave')).rejects.toBeInstanceOf(AdapterError);
+    await expect(other.decryptDataKey(encrypted, keyId, ctx)).rejects.toBeInstanceOf(AdapterError);
+    await expect(kms.decryptDataKey(encrypted, 'outra-chave', ctx)).rejects.toBeInstanceOf(
+      AdapterError,
+    );
+  });
+
+  it('falha com contexto diferente (impede trocar valor cifrado entre usuários)', async () => {
+    const kms = new LocalKmsProvider(masterKey);
+    const { encrypted, keyId } = await kms.generateDataKey(ctx);
+    await expect(
+      kms.decryptDataKey(encrypted, keyId, { ...ctx, userId: 'u2' }),
+    ).rejects.toBeInstanceOf(AdapterError);
+    // A ordem das chaves do contexto não importa.
+    const reordered = { column: 'content', userId: 'u1', table: 'journal_entry' };
+    await expect(kms.decryptDataKey(encrypted, keyId, reordered)).resolves.toHaveLength(32);
   });
 
   it('recusa chave mestra com tamanho inválido', () => {
@@ -128,7 +144,7 @@ describe('LocalStorageProvider', () => {
 describe('ConsoleMailProvider', () => {
   it('guarda a mensagem e loga só template e destinatário mascarado', async () => {
     const { records, logger } = captureLogger();
-    const mail = new ConsoleMailProvider(logger);
+    const mail = new ConsoleMailProvider({ logger, keepOutbox: true });
     await mail.send({
       to: 'pessoa@exemplo.com',
       template: 'email-verification',
@@ -139,6 +155,12 @@ describe('ConsoleMailProvider', () => {
     expect(logged).toContain('email-verification');
     expect(logged).not.toContain('pessoa@exemplo.com');
     expect(logged).not.toContain('segredo');
+  });
+
+  it('não guarda mensagens (nem tokens) fora de teste', async () => {
+    const mail = new ConsoleMailProvider({ logger: captureLogger().logger });
+    await mail.send({ to: 'a@b.com', template: 'password-reset', params: { url: 'x' } });
+    expect(mail.outbox).toHaveLength(0);
   });
 });
 

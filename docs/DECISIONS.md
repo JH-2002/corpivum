@@ -112,3 +112,34 @@ Telemetria do Next desligada (`NEXT_TELEMETRY_DISABLED=1`) na CI e no `.env.exam
 - `StateView` cobre loading/empty/error/no-data/partial. Fora de produção, `?state=` força um estado para
   revisão visual e testes e2e.
 **Consequências.** As fases seguintes substituem o estado vazio pelo conteúdo real, mantendo os 5 estados.
+
+## ADR-0012 — Endurecimento após a revisão de privacidade da Fase 0
+**Contexto.** O `privacy-reviewer` não apontou nada crítico, mas encontrou 1 problema alto, 4 médios e 9 baixos.
+Todos foram tratados nesta fase ou registrados para as próximas.
+**Decisão.**
+- `APP_ENV` passa a ser **obrigatório, sem valor padrão**: esquecer de defini-lo não liga mais os
+  adaptadores de desenvolvimento (que antes passavam pela trava de produção). A pré-visualização
+  `?state=` só liga com `APP_ENV` igual a `development` ou `test`, falhando fechada.
+- `parseEnv` agora também:
+  - recusa `DATABASE_URL` com `app_migrator` ou `postgres`;
+  - em produção, recusa `MIGRATION_DATABASE_URL` e exige `APP_REGION` numa lista de regiões no Brasil;
+  - limita `ACCESS_LOG_RETENTION_DAYS` a 180;
+  - recusa storage local dentro de `public/`.
+- O logger filtra em tempo de execução: só as chaves de uma lista permitida passam, e o texto precisa ter
+  formato de identificador (destinatário só no formato mascarado). Qualquer outro valor vira `[redacted]`.
+- O `KmsProvider` recebe um **contexto de cifragem** (`{ userId, table, column }`), usado como AAD no
+  AES-GCM. Decifrar com outro contexto falha. A Fase 1a deve usar o mesmo contexto na cifragem dos campos.
+- `ConsoleMailProvider` só guarda as mensagens (que podem conter tokens) com `APP_ENV=test`, e no máximo 50.
+- Os avisos `disclaimer.*` aprovados ficam com o **texto exato** no teste: qualquer alteração exige
+  aprovação. O CODEOWNERS ainda usa placeholders (OPEN_ISSUES OI-13).
+- O glossário ganhou "reduz/alivia/combate/melhora + condição", "cérebro está...", "você está
+  deprimido(a)/ansioso(a)" e "laudo/avaliação clínica".
+- A telemetria da CLI do Prisma foi desligada com `CHECKPOINT_DISABLE=1`, no `.env.example` e na CI.
+- `db:verify-roles` também verifica que `app_user` não é membro de outro papel. `NOINHERIT` não impede
+  `SET ROLE`.
+**Notas para as próximas fases.**
+- **Fase 1a:** os privilégios padrão revogam `EXECUTE` de `PUBLIC`. Toda função usada por política RLS
+  (ex.: `app.current_user_id()`) precisa de `GRANT EXECUTE ... TO app_user` explícito na migração. Sem isso,
+  a consulta falha com permission denied (falha fechada).
+- **Fase 6:** o `StorageProvider` precisa ganhar a operação de link de download autenticado e expirável
+  (teto de 24h, LEG-D03) antes de existir qualquer exportação. O contrato atual não tem URL pública.

@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { AdapterError } from '@/lib/errors';
-import type { DataKey, KmsProvider } from './types';
+import { canonicalContext, type DataKey, type EncryptionContext, type KmsProvider } from './types';
 
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
@@ -8,7 +8,7 @@ const KEY_BYTES = 32;
 
 /**
  * KMS local para DESENVOLVIMENTO: a chave mestra vem do ambiente (KMS_LOCAL_MASTER_KEY).
- * Recusado em produção pela validação de env. Formato da DEK cifrada: iv | tag | ciphertext.
+ * Recusado em produção pela validação de env. Formato da DEK cifrada: iv | tag | ciphertext; o contexto entra como AAD.
  */
 export class LocalKmsProvider implements KmsProvider {
   readonly id = 'local';
@@ -22,12 +22,13 @@ export class LocalKmsProvider implements KmsProvider {
     this.#keyId = keyId;
   }
 
-  async generateDataKey(): Promise<DataKey> {
+  async generateDataKey(context: EncryptionContext): Promise<DataKey> {
     const plaintext = randomBytes(KEY_BYTES);
     const iv = randomBytes(IV_BYTES);
     const cipher = createCipheriv('aes-256-gcm', this.#masterKey, iv, {
       authTagLength: TAG_BYTES,
     });
+    cipher.setAAD(canonicalContext(context));
     const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
     return {
       plaintext: new Uint8Array(plaintext),
@@ -36,7 +37,11 @@ export class LocalKmsProvider implements KmsProvider {
     };
   }
 
-  async decryptDataKey(encrypted: Uint8Array, keyId: string): Promise<Uint8Array> {
+  async decryptDataKey(
+    encrypted: Uint8Array,
+    keyId: string,
+    context: EncryptionContext,
+  ): Promise<Uint8Array> {
     if (keyId !== this.#keyId || encrypted.length !== IV_BYTES + TAG_BYTES + KEY_BYTES) {
       throw new AdapterError('kms.local', 'decrypt');
     }
@@ -45,6 +50,7 @@ export class LocalKmsProvider implements KmsProvider {
       const decipher = createDecipheriv('aes-256-gcm', this.#masterKey, buf.subarray(0, IV_BYTES), {
         authTagLength: TAG_BYTES,
       });
+      decipher.setAAD(canonicalContext(context));
       decipher.setAuthTag(buf.subarray(IV_BYTES, IV_BYTES + TAG_BYTES));
       const body = buf.subarray(IV_BYTES + TAG_BYTES);
       return new Uint8Array(Buffer.concat([decipher.update(body), decipher.final()]));
