@@ -1,5 +1,6 @@
-// Fase 0: apenas datasource e generator. Os modelos (User, Session, ConsentRecord, ...) entram na Fase 1a,
-// junto com as políticas RLS. A URL de conexão fica em prisma.config.ts.
+// Fase 1a: conta, sessões em banco, MFA, tokens e limites de tentativa (LEG-S03, LEG-S04).
+// As políticas RLS e as funções SECURITY DEFINER ficam no SQL das migrações (ADR-0015).
+// A URL de conexão fica em prisma.config.ts.
 
 generator client {
   provider = "prisma-client"
@@ -8,4 +9,106 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+/// Conta. Dados não sensíveis (base: execução de contrato). Para 18+ guarda só a declaração (LEG-F01).
+model User {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  /// Normalizado (trim + minúsculas) pela aplicação.
+  email            String    @unique
+  emailVerifiedAt  DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  /// Argon2id em formato PHC.
+  passwordHash     String    @map("password_hash")
+  adultAttestedAt  DateTime  @map("adult_attested_at") @db.Timestamptz(3)
+  ageGateVersion   String    @map("age_gate_version")
+  mfaEnabledAt     DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
+  /// Segredo TOTP cifrado (envelope ADR-0016, contexto users.totp_secret).
+  totpSecret       Bytes?    @map("totp_secret")
+  /// Último passo TOTP aceito: códigos de passo <= este são recusados (anti-reuso).
+  totpLastUsedStep BigInt?   @map("totp_last_used_step")
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  sessions      Session[]
+  recoveryCodes RecoveryCode[]
+  authTokens    AuthToken[]
+
+  @@map("users")
+}
+
+/// Sessão em banco, listável e revogável (LEG-S04). Só o hash do token é guardado.
+model Session {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  tokenHash     Bytes     @unique @map("token_hash")
+  /// Rótulo grosso do dispositivo (ex.: "Chrome · Windows"). Sem IP.
+  deviceLabel   String    @map("device_label")
+  mfaPending    Boolean   @default(false) @map("mfa_pending")
+  /// Tentativas de TOTP/recuperação nesta sessão pendente.
+  mfaAttempts   Int       @default(0) @map("mfa_attempts")
+  lastSeenAt    DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  idleExpiresAt DateTime  @map("idle_expires_at") @db.Timestamptz(3)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Código de recuperação do MFA, de uso único. Só HMAC-SHA-256 (LEG-S04).
+model RecoveryCode {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  Bytes     @unique @map("code_hash")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("recovery_codes")
+}
+
+enum AuthTokenPurpose {
+  verify_email
+  reset_password
+
+  @@map("auth_token_purpose")
+}
+
+/// Token de uso único (verificação de e-mail, redefinição de senha). Só o hash. Sem DML direto do runtime.
+model AuthToken {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  purpose   AuthTokenPurpose
+  tokenHash Bytes            @unique @map("token_hash")
+  expiresAt DateTime         @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime?        @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_tokens")
+}
+
+/// Janela fixa de limite de tentativas. Chave = HMAC (IP/e-mail nunca em claro). Sem DML direto do runtime.
+model RateLimitBucket {
+  keyHash     Bytes    @map("key_hash")
+  windowStart DateTime @map("window_start") @db.Timestamptz(3)
+  count       Int      @default(0)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([keyHash, windowStart])
+  @@index([expiresAt])
+  @@map("rate_limit_buckets")
 }
