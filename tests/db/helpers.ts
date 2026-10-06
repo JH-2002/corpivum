@@ -57,10 +57,27 @@ export interface TestAuth {
   sessionSecret: Uint8Array;
 }
 
-export function createTestAuth(db: Db, opts: { ageSignal?: AgeSignalProvider } = {}): TestAuth {
+export function createTestAuth(
+  db: Db,
+  opts: {
+    ageSignal?: AgeSignalProvider;
+    /** Atraso artificial do envio de e-mail (simula provedor real). */
+    mailDelayMs?: number;
+    /** Coleta tarefas adiadas em vez de rodar em linha (como o `after()` do Next). */
+    deferred?: Array<Promise<void>>;
+  } = {},
+): TestAuth {
   const logs: LogRecord[] = [];
   const logger = createLogger({ minLevel: 'debug', sink: (r) => logs.push(r) });
   const mail = new ConsoleMailProvider({ logger, keepOutbox: true });
+  if (opts.mailDelayMs) {
+    const send = mail.send.bind(mail);
+    const delay = opts.mailDelayMs;
+    mail.send = async (m) => {
+      await new Promise((r) => setTimeout(r, delay));
+      return send(m);
+    };
+  }
   const clock = { now: new Date() };
   const sessionSecret = randomBytes(32);
   const service = createAuthService({
@@ -73,6 +90,9 @@ export function createTestAuth(db: Db, opts: { ageSignal?: AgeSignalProvider } =
     rateLimitSecret: randomBytes(32),
     appUrl: 'http://localhost:3000',
     now: () => clock.now,
+    ...(opts.deferred
+      ? { defer: (task: () => Promise<void>) => void opts.deferred?.push(task()) }
+      : {}),
   });
   return { service, mail, logs, clock, sessionSecret };
 }

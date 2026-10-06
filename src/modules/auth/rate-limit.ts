@@ -23,16 +23,25 @@ export type RateLimitName = keyof typeof RATE_LIMITS;
 /** Tentativas de MFA por sessão pendente; ao exceder, a sessão é revogada. */
 export const MFA_MAX_ATTEMPTS = 5;
 
+export interface RateLimitResult {
+  allowed: boolean;
+  /** Tentativas na janela atual, contando esta. */
+  hits: number;
+  /** Esta tentativa foi a primeira acima do limite (o bloqueio começou agora). */
+  justLocked: boolean;
+}
+
 export async function rateLimitHit(
   db: Db,
   secret: Uint8Array,
   name: RateLimitName,
   subject: string,
   now: Date,
-): Promise<boolean> {
+): Promise<RateLimitResult> {
   const { windowSeconds, max } = RATE_LIMITS[name];
   const key = hmac(secret, 'rate-limit', `${name}:${subject}`);
-  const rows = await db.$queryRaw<Array<{ allowed: boolean }>>`
-    SELECT allowed FROM app.rate_limit_hit(${key}, ${windowSeconds}::int, ${max}::int, ${now}::timestamptz)`;
-  return rows[0]?.allowed === true;
+  const rows = await db.$queryRaw<Array<{ allowed: boolean; hits: number }>>`
+    SELECT allowed, hits FROM app.rate_limit_hit(${key}, ${windowSeconds}::int, ${max}::int, ${now}::timestamptz)`;
+  const hits = rows[0]?.hits ?? max + 1;
+  return { allowed: rows[0]?.allowed === true, hits, justLocked: hits === max + 1 };
 }

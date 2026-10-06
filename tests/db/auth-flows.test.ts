@@ -1,4 +1,7 @@
+import { createHash } from 'node:crypto';
 import type pg from 'pg';
+import { MemoryJobQueue } from '@/adapters/jobs/memory';
+import { AUTH_PURGE_INTERVAL_MS, registerAuthJobs, scheduleAuthPurge } from '@/modules/auth/jobs';
 import type { Db } from '@/lib/db/client';
 import { withUserOn } from '@/lib/db/rls';
 import { normalizeRecoveryCode } from '@/modules/auth/recovery';
@@ -333,28 +336,28 @@ describe('redefinição de senha (LEG-S04)', () => {
   });
 });
 
+async function enableMfa(t: TestAuth) {
+  const u = await createVerifiedUser(t);
+  const s = await t.service.resolveSession(u.token);
+  const setup = await t.service.startTotpSetup(u.userId, PASSWORD);
+  if (!setup.ok) throw new Error('setup');
+  const secret = base32Decode(setup.manualKey);
+  const confirm = await t.service.confirmTotpSetup(
+    u.userId,
+    s?.sessionId ?? '',
+    totpAt(secret, t.clock.now.getTime()),
+  );
+  if (!confirm.ok) throw new Error('confirm');
+  return { ...u, secret, codes: confirm.recoveryCodes, setup };
+}
+
+async function pendingLogin(t: TestAuth, email: string) {
+  const r = await t.service.login({ email, password: PASSWORD }, freshMeta());
+  if (!r.ok || !r.mfaRequired) throw new Error('esperava MFA');
+  return r.token;
+}
+
 describe('MFA: TOTP e códigos de recuperação (LEG-S04)', () => {
-  async function enableMfa(t: TestAuth) {
-    const u = await createVerifiedUser(t);
-    const s = await t.service.resolveSession(u.token);
-    const setup = await t.service.startTotpSetup(u.userId, PASSWORD);
-    if (!setup.ok) throw new Error('setup');
-    const secret = base32Decode(setup.manualKey);
-    const confirm = await t.service.confirmTotpSetup(
-      u.userId,
-      s?.sessionId ?? '',
-      totpAt(secret, t.clock.now.getTime()),
-    );
-    if (!confirm.ok) throw new Error('confirm');
-    return { ...u, secret, codes: confirm.recoveryCodes, setup };
-  }
-
-  async function pendingLogin(t: TestAuth, email: string) {
-    const r = await t.service.login({ email, password: PASSWORD }, freshMeta());
-    if (!r.ok || !r.mfaRequired) throw new Error('esperava MFA');
-    return r.token;
-  }
-
   it('login com MFA cria sessão pendente que não dá acesso; o código troca a sessão', async () => {
     const t = createTestAuth(db);
     const u = await enableMfa(t);
@@ -596,6 +599,122 @@ describe('endurecimento pós-revisão (ADR-0017)', () => {
         tx.user.update({ where: { id: u.userId }, data: { adultAttestedAt: new Date(0) } }),
       ),
     ).rejects.toThrow();
+  });
+});
+
+describe('pedido da Fase 1a: achados médios com teste cada (ADR-0017)', () => {
+  it('bloqueio do 2º fator por conta avisa o titular por e-mail uma única vez', async () => {
+    const t = createTestAuth(db);
+    const u = await enableMfa(t);
+    const alerts = () =>
+      t.mail.outbox.filter(
+        (m) => m.template === 'security-alert' && m.params.event === 'mfa_locked',
+      );
+    for (let i = 0; i < 12; i++) {
+      const p = await pendingLogin(t, u.email);
+      await t.service.verifyMfa(p, '000000', META);
+      if (i % 4 === 3) {
+        await admin.query(
+          "DELETE FROM rate_limit_buckets WHERE expires_at - window_start = interval '15 minutes'",
+        );
+      }
+    }
+    expect(alerts()).toHaveLength(1);
+    expect(alerts()[0]?.to).toBe(u.email);
+  });
+
+  it('códigos de recuperação errados contam no mesmo limite da conta', async () => {
+    const t = createTestAuth(db);
+    const u = await enableMfa(t);
+    for (let i = 0; i < 10; i++) {
+      const p = await pendingLogin(t, u.email);
+      expect((await t.service.verifyMfa(p, 'aaaaa-bbbbb', META)).ok).toBe(false);
+      if (i % 4 === 3) {
+        await admin.query(
+          "DELETE FROM rate_limit_buckets WHERE expires_at - window_start = interval '15 minutes'",
+        );
+      }
+    }
+    // Mesmo um código de recuperação válido é recusado durante o bloqueio temporário.
+    const p = await pendingLogin(t, u.email);
+    expect(await t.service.verifyMfa(p, u.codes[0] ?? '', META)).toEqual({
+      ok: false,
+      error: 'locked',
+    });
+  });
+
+  it('recuperação e reenvio respondem no mesmo tempo com ou sem conta (e-mail lento)', async () => {
+    const deferred: Array<Promise<void>> = [];
+    const base = createTestAuth(db);
+    const u = await createVerifiedUser(base);
+    const pending = await createVerifiedUser(base);
+    await admin.query('UPDATE users SET email_verified_at = NULL WHERE id = $1', [pending.userId]);
+    const t = createTestAuth(db, { mailDelayMs: 300, deferred });
+    const time = async (fn: () => Promise<void>) => {
+      const start = performance.now();
+      await fn();
+      return performance.now() - start;
+    };
+    const existing = await time(() => t.service.requestPasswordReset(u.email, freshMeta()));
+    const missing = await time(() =>
+      t.service.requestPasswordReset(uniqueEmail('nada'), freshMeta()),
+    );
+    const resendPending = await time(() =>
+      t.service.resendVerification(pending.email, freshMeta()),
+    );
+    const resendMissing = await time(() =>
+      t.service.resendVerification(uniqueEmail('nada'), freshMeta()),
+    );
+    for (const ms of [existing, missing, resendPending, resendMissing])
+      expect(ms).toBeLessThan(150);
+    // O trabalho real acontece depois da resposta.
+    await Promise.all(deferred);
+    expect(t.mail.outbox.map((m) => [m.to, m.template])).toEqual([
+      [u.email, 'password-reset'],
+      [pending.email, 'email-verification'],
+    ]);
+  });
+
+  it('desativar o MFA exige reautenticação por senha, com limite de Argon2 por conta', async () => {
+    const t = createTestAuth(db);
+    const u = await enableMfa(t);
+    t.clock.now = new Date(t.clock.now.getTime() + 60_000);
+    const code = totpAt(u.secret, t.clock.now.getTime());
+    for (let i = 0; i < 10; i++) {
+      expect(await t.service.disableMfa(u.userId, 'senha errada sintética', code)).toBe(false);
+    }
+    // 11ª: bloqueado antes do Argon2, mesmo com senha e código certos.
+    expect(await t.service.disableMfa(u.userId, PASSWORD, code)).toBe(false);
+  });
+
+  it('job de expurgo roda pela fila, apaga o vencido e se reagenda', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    const other = await t.service.login({ email: u.email, password: PASSWORD }, freshMeta());
+    if (!other.ok) throw new Error('login');
+    await admin.query(
+      `UPDATE sessions SET revoked_at = now() - interval '2 days'
+        WHERE user_id = $1 AND token_hash <> $2`,
+      [u.userId, createHash('sha256').update(u.token).digest()],
+    );
+    const queue = new MemoryJobQueue();
+    const start = new Date();
+    let clock = start;
+    registerAuthJobs(queue, t.service, () => clock);
+    const first = await scheduleAuthPurge(queue, start);
+    expect(await queue.drain(start)).toBe(1);
+    expect(queue.statusOf(first)).toBe('done');
+    const { rows } = await admin.query(
+      'SELECT count(*)::int AS n FROM sessions WHERE user_id = $1',
+      [u.userId],
+    );
+    expect(rows[0].n).toBe(1);
+    expect(await t.service.resolveSession(u.token)).not.toBeNull();
+    // Reagendado para daqui a 6 h.
+    clock = new Date(start.getTime() + 60_000);
+    expect(await queue.drain(clock)).toBe(0);
+    clock = new Date(start.getTime() + AUTH_PURGE_INTERVAL_MS);
+    expect(await queue.drain(clock)).toBe(1);
   });
 });
 

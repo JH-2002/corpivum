@@ -207,8 +207,10 @@ A DEK em claro é zerada após o uso.
 ## ADR-0017 — Endurecimento após a revisão de privacidade da Fase 1a
 **Contexto.** O `privacy-reviewer` não apontou nada crítico. Encontrou 1 problema alto, 7 médios e 10 baixos.
 **Decisão (corrigido nesta fase).**
-- **Força bruta do 2º fator:** limite `mfaAccount` (10 por hora por conta), somado entre sessões pendentes e
-  também usado ao desativar o MFA. O limite por sessão (5) continua.
+- **Força bruta do 2º fator:** limite `mfaAccount` (10 por hora por conta) para TOTP e códigos de
+  recuperação, somado entre sessões pendentes e também usado ao desativar o MFA. Ao bloquear (bloqueio
+  temporário de 1 h), o titular recebe um e-mail `security-alert` (`mfa_locked`), uma vez por janela. O
+  limite por sessão (5) continua.
 - **Enumeração por tempo:** o trabalho que depende de a conta existir (token e e-mail) roda depois da resposta,
   via `after()` do Next (`defer` injetado no serviço). Recuperação, reenvio e cadastro respondem no mesmo
   tempo com ou sem conta.
@@ -217,13 +219,15 @@ A DEK em claro é zerada após o uso.
   `security-alert`, só com o tipo do evento.
 - **Login bloqueado** responde sem calcular Argon2: evita esgotar CPU e memória. O bloqueio não revela se a
   conta existe, porque e-mails inexistentes também são contados.
-- **Guarda de sessão em toda página de `(app)`**, além do layout: na navegação pelo cliente, o layout não é
-  renderizado de novo. Um teste varre as páginas e falha se alguma não chamar `requireVerifiedSession()`.
+- **Guarda de sessão em toda página e server action de `(app)`**, além do layout: na navegação pelo
+  cliente, o layout não é renderizado de novo. Um teste varre páginas e actions e falha se alguma não chamar
+  `requireVerifiedSession()`; um e2e revoga a sessão e navega pelo cliente.
 - **IP para limites:** `CLIENT_IP_HEADER` é obrigatório em produção (cabeçalho escrito pela hospedagem). Em
   dev, vale o último salto de X-Forwarded-For; o primeiro, que o cliente controla, nunca é usado.
 - **Expurgo:** `app.auth_purge_expired()` apaga sessões revogadas ou expiradas e tokens usados ou vencidos há
-  mais de 1 dia, e as janelas de limite encerradas. O agendamento pela JobQueue fica para a Fase 1b
-  (OPEN_ISSUES OI-14).
+  mais de 1 dia, e as janelas de limite encerradas. Job `auth.purge_expired` registrado em
+  `src/instrumentation.ts`, a cada 6 h, reagendado ao terminar; em dev/test a fila em memória é consumida
+  no próprio servidor. Fila real: Fase 7 (OPEN_ISSUES OI-14).
 - **Banco:** as políticas usam `(SELECT app.current_user_id())`, avaliado uma vez por consulta. Em `users`, o
   runtime só faz UPDATE nas colunas que precisa alterar: `id`, `email`, `adult_attested_at` e
   `age_gate_version` ficam imutáveis.
@@ -235,7 +239,7 @@ A DEK em claro é zerada após o uso.
   - a confirmação do TOTP é condicional e atômica;
   - `test:db` e e2e recusam banco que não seja local fora da CI.
 
-**Aceito por ora (registrado em OPEN_ISSUES).**
+**Aceito por ora (registrado em OPEN_ISSUES; os 10 achados baixos estão listados lá com status).**
 - **OI-15:** bloqueio por conta permite travar o login de alguém só sabendo o e-mail (5 tentativas por 15 min).
   Mitigações possíveis: atraso progressivo e exceção para aparelho conhecido. Ficou para depois, para não
   enfraquecer a proteção contra força bruta.

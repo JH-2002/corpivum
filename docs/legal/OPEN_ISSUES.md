@@ -19,8 +19,26 @@
 | OI-11 | Subprocessadores | Escolher hospedagem, banco, storage, filas, e-mail e monitoramento com região no Brasil; assinar DPAs; preencher `docs/privacy/SUBPROCESSORS.md`. | LEG-S10, LEG-D06 | Fase 7 | Aberta |
 | OI-12 | Encarregado | Nomear o encarregado e publicar o canal de contato (`{{ENCARREGADO}}`). | LEG-G03 | Fase 1b | Aberta |
 | OI-13 | Revisão de avisos | CODEOWNERS preenchido com @JH-2002. Falta: (a) incluir revisor jurídico/clínico quando houver; (b) exigir aprovação de Code Owners na branch `main` (em repositório privado, requer plano GitHub Pro/Team). Até lá, a revisão de `disclaimer.*` depende do teste de texto aprovado e do checklist de PR. | LEG-M03 | Fase 0 | Parcial |
-| OI-14 | Retenção técnica | Agendar o expurgo de dados de autenticação (`app.auth_purge_expired`) na JobQueue e confirmar a folga de 1 dia para investigação de abuso. | LEG-R*, ROPA T1/T5, ADR-0017 | Fase 1b | Aberta |
+| OI-14 | Retenção técnica | Expurgo de dados de autenticação: job `auth.purge_expired` a cada 6 h já agendado (`src/instrumentation.ts`). Falta: (a) fila real com workers na hospedagem (hoje a fila em memória é consumida no próprio servidor); (b) confirmar com o jurídico a folga de 1 dia para investigação de abuso. | LEG-R*, ROPA T1/T5, ADR-0017 | Fase 7 | Parcial |
 | OI-15 | Disponibilidade da conta | O bloqueio de login por conta (5 por 15 min) permite que terceiros travem o acesso de alguém sabendo só o e-mail. Avaliar atraso progressivo ou exceção para aparelho conhecido, sem reabrir a enumeração. | LEG-S04, ADR-0017 | Fase 7 | Aberta |
+
+## Achados de severidade baixa do `privacy-reviewer` (Fase 1a)
+
+Registrados aqui por decisão do responsável pelo projeto. Os marcados como resolvidos foram corrigidos na
+própria Fase 1a (ADR-0017), com teste; ficam listados para rastreabilidade.
+
+| ID | Achado | Referência | Status |
+|---|---|---|---|
+| PR1a-B1 | `cookies().delete()` não apaga cookie `__Host-` (Set-Cookie sem `Secure`); o token revogado ficava no navegador. | LEG-S04 | Resolvido: sobrescrita com os mesmos atributos e `maxAge: 0` |
+| PR1a-B2 | Bloqueio por conta permite travar o login de terceiros sabendo só o e-mail (também `resetAccount`). | LEG-S04 | **Aberto**, ver OI-15 |
+| PR1a-B3 | Pepper dos códigos de recuperação é o `SESSION_SECRET`: girá-lo invalida todos os códigos. | LEG-S04 | **Aberto**: efeito documentado em KEY_ROTATION; segredo próprio na Fase 7 |
+| PR1a-B4 | Pequena diferença de tempo no cadastro (e-mail novo × existente). | ADR-0014 | Resolvido: token e e-mail após a resposta (`after()`) |
+| PR1a-B5 | Erros do Prisma/Next fora do logger podem ecoar argumentos (hashes). | LEG-R04 | **Parcial**: Prisma com `errorFormat: 'minimal'`; `onRequestError` com ferramenta de erros na Fase 7 |
+| PR1a-B6 | `hm_age_block` só era checado nas páginas, não nas server actions do cadastro. | LEG-F01 | Resolvido: checado também nas actions |
+| PR1a-B7 | Políticas RLS chamavam função plpgsql por linha. | LEG-S03 | Resolvido: `(SELECT app.current_user_id())` |
+| PR1a-B8 | `app_user` podia alterar qualquer coluna de `users`. | LEG-S03 | Resolvido: UPDATE só nas colunas mutáveis (teste) |
+| PR1a-B9 | URI `otpauth://` (com o segredo) ia ao cliente sem uso. | Minimização | Resolvido: só QR e chave manual |
+| PR1a-B10 | `test:db`/e2e apagavam tabelas do banco do `.env` sem trava. | Regra 6 | Resolvido: recusam banco não local fora da CI |
 
 ## Resolvidas
 _(nenhuma)_

@@ -103,8 +103,23 @@ export function createAuthService(deps: AuthDeps) {
   const { db, kms, mail, logger } = deps;
   const now = deps.now ?? (() => new Date());
   const withUser = <T>(userId: string, fn: (tx: Tx) => Promise<T>) => withUserOn(db, userId, fn);
-  const limit = (name: RateLimitName, subject: string) =>
+  const limitHit = (name: RateLimitName, subject: string) =>
     rateLimitHit(db, deps.rateLimitSecret, name, subject, now());
+  const limit = async (name: RateLimitName, subject: string) =>
+    (await limitHit(name, subject)).allowed;
+
+  /**
+   * Limite de 2º fator por CONTA (TOTP e códigos de recuperação, somados entre sessões). Ao bloquear,
+   * avisa o titular por e-mail uma vez por janela (bloqueio temporário de 1 h).
+   */
+  async function mfaAccountAllowed(userId: string): Promise<boolean> {
+    const r = await limitHit('mfaAccount', userId);
+    if (r.justLocked) {
+      logger.warn('auth.mfa_account_locked', { userId });
+      await notifySecurity(userId, 'mfa_locked');
+    }
+    return r.allowed;
+  }
   const link = (path: string, token: string) => {
     const url = new URL(path, deps.appUrl);
     url.searchParams.set('token', token);
@@ -127,7 +142,7 @@ export function createAuthService(deps: AuthDeps) {
   /** Aviso ao titular sobre mudança de segurança da conta (só o tipo do evento, sem dados). */
   async function notifySecurity(
     userId: string,
-    event: 'mfa_enabled' | 'mfa_disabled' | 'password_changed',
+    event: 'mfa_enabled' | 'mfa_disabled' | 'password_changed' | 'mfa_locked',
   ) {
     await background(async () => {
       const user = await withUser(userId, (tx) =>
@@ -346,7 +361,7 @@ export function createAuthService(deps: AuthDeps) {
         }),
       );
       // Limite por conta: abrir novas sessões pendentes não renova as tentativas.
-      const accountOk = await limit('mfaAccount', userId);
+      const accountOk = await mfaAccountAllowed(userId);
       if (attempts.mfaAttempts > MFA_MAX_ATTEMPTS || !accountOk) {
         await withUser(userId, (tx) =>
           tx.session.update({ where: { id: s.session_id }, data: { revokedAt: now() } }),
@@ -586,7 +601,7 @@ export function createAuthService(deps: AuthDeps) {
 
     /** Desativar o MFA exige senha e um código (TOTP ou recuperação). */
     async disableMfa(userId: string, password: string, code: string): Promise<boolean> {
-      if (!(await limit('mfaAccount', userId))) return false;
+      if (!(await mfaAccountAllowed(userId))) return false;
       if (!(await checkCurrentPassword(userId, password))) return false;
       const accepted = looksLikeRecoveryCode(code)
         ? await consumeRecoveryCode(userId, code)

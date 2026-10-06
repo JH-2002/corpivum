@@ -138,6 +138,33 @@ test('encerrar a sessão em outro aparelho derruba o acesso na próxima requisi�
   await phone.close();
 });
 
+test('revogada, a sessão cai também na navegação pelo cliente (sem recarregar)', async ({
+  browser,
+}) => {
+  const email = e2eEmail('softnav');
+  await createVerifiedUser(email);
+  const ctxA = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const ctxB = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const a = await ctxA.newPage();
+  const b = await ctxB.newPage();
+  await login(a, email);
+  await login(b, email);
+  await expect(b.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
+
+  await a.goto('/configuracoes/seguranca');
+  await a.getByRole('button', { name: 'Encerrar todas as outras' }).click();
+  await expect(a.getByText('Nenhuma outra sessão ativa.')).toBeVisible();
+
+  // Navegação pelo cliente (clique num link do menu): nada de recarregar a página.
+  await b
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('link', { name: 'Sono' })
+    .click();
+  await expect(b).toHaveURL(/\/entrar$/);
+  await ctxA.close();
+  await ctxB.close();
+});
+
 test.describe('acessibilidade das telas de conta (axe)', () => {
   for (const path of ['/entrar', '/cadastro', '/recuperar-senha', '/redefinir-senha']) {
     test(`${path} sem violações`, async ({ page }) => {
