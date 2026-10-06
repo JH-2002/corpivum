@@ -143,3 +143,13 @@ Todos foram tratados nesta fase ou registrados para as próximas.
   a consulta falha com permission denied (falha fechada).
 - **Fase 6:** o `StorageProvider` precisa ganhar a operação de link de download autenticado e expirável
   (teto de 24h, LEG-D03) antes de existir qualquer exportação. O contrato atual não tem URL pública.
+
+## ADR-0013 — CodeQL sem Code Scanning no repositório privado (Fase 0)
+**Contexto.** O repositório `JH-2002/healthmind360` é privado e de conta pessoal, sem GitHub Code Security.
+Por isso o Code Scanning não aceita o envio do SARIF. A primeira execução da CI falhou nesse envio, embora
+a análise tenha terminado.
+**Decisão.** O CodeQL (`security-extended`) roda com `upload: never`. O SARIF é guardado como artefato por
+30 dias, e o job **falha se houver qualquer achado**, com anotações no PR. A análise continua sendo um portão
+de SAST (LEG-S09), junto com o Semgrep.
+**Consequências.** Sem a aba Security nem o histórico de alertas no GitHub. Se o Code Security for
+habilitado, voltar ao upload padrão.
