@@ -36,14 +36,18 @@ export async function revokeOtherSessionsAction(): Promise<void> {
   revalidatePath(PATH);
 }
 
-export async function startMfaAction(_prev: FormState): Promise<FormState> {
+export async function startMfaAction(_prev: FormState, form: FormData): Promise<FormState> {
   const session = await requireVerifiedSession();
   const t = await getTranslations('auth.errors');
-  const result = await getAuthService().startTotpSetup(session.userId);
-  if (!result.ok) return { status: 'error', message: t('generic') };
+  const parsed = passwordOnlySchema.safeParse(formToObject(form));
+  const result = parsed.success
+    ? await getAuthService().startTotpSetup(session.userId, parsed.data.password)
+    : { ok: false as const };
+  // Senha errada, limite atingido ou MFA já ativo: mesma mensagem.
+  if (!result.ok) return { status: 'error', fieldErrors: { password: t('invalidPassword') } };
   return {
     status: 'success',
-    data: { qrSvg: result.qrSvg, manualKey: result.manualKey, uri: result.uri },
+    data: { qrSvg: result.qrSvg, manualKey: result.manualKey },
   };
 }
 

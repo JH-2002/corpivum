@@ -31,6 +31,11 @@ const envSchema = z
     SESSION_SECRET: z.string(),
     /** Pepper das chaves HMAC de limite de tentativas (IP/e-mail nunca em claro). */
     RATE_LIMIT_SECRET: z.string(),
+    /** Cabeçalho com o IP do cliente escrito pela hospedagem (ex.: x-real-ip). Obrigatório em produção. */
+    CLIENT_IP_HEADER: z
+      .string()
+      .regex(/^[a-z0-9-]{1,64}$/)
+      .optional(),
 
     PURGE_DAYS: days.default(30),
     // LEG-R02: teto de 6 meses; só sobe por decisão registrada (OPEN_ISSUES OI-06).
@@ -97,6 +102,10 @@ const envSchema = z
         if (env[key as keyof typeof devOnly] === value) {
           issue(key, `"${value}" não é permitido em produção`);
         }
+      }
+      // LEG-S05: sem cabeçalho confiável, o limite por IP seria contornável.
+      if (!env.CLIENT_IP_HEADER) {
+        issue('CLIENT_IP_HEADER', 'obrigatório em produção (IP confiável para limites, LEG-S05)');
       }
       if (!env.APP_URL.startsWith('https://')) {
         issue('APP_URL', 'deve usar https em produção (LEG-S01)');

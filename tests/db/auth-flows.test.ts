@@ -1,5 +1,6 @@
 import type pg from 'pg';
 import type { Db } from '@/lib/db/client';
+import { withUserOn } from '@/lib/db/rls';
 import { normalizeRecoveryCode } from '@/modules/auth/recovery';
 import { base32Decode, totpAt } from '@/modules/auth/totp';
 import {
@@ -336,7 +337,7 @@ describe('MFA: TOTP e códigos de recuperação (LEG-S04)', () => {
   async function enableMfa(t: TestAuth) {
     const u = await createVerifiedUser(t);
     const s = await t.service.resolveSession(u.token);
-    const setup = await t.service.startTotpSetup(u.userId);
+    const setup = await t.service.startTotpSetup(u.userId, PASSWORD);
     if (!setup.ok) throw new Error('setup');
     const secret = base32Decode(setup.manualKey);
     const confirm = await t.service.confirmTotpSetup(
@@ -434,7 +435,12 @@ describe('MFA: TOTP e códigos de recuperação (LEG-S04)', () => {
     for (let i = 0; i < 10; i++) {
       const p = await pendingLogin(t, u.email);
       expect((await t.service.verifyMfa(p, '000000', META)).ok).toBe(false);
-      if (i % 4 === 3) t.clock.now = new Date(t.clock.now.getTime() + 16 * 60 * 1000);
+      // Zera só as janelas de 15 min (limites de login); a de 1 h do MFA por conta continua.
+      if (i % 4 === 3) {
+        await admin.query(
+          "DELETE FROM rate_limit_buckets WHERE expires_at - window_start = interval '15 minutes'",
+        );
+      }
     }
     t.clock.now = new Date(t.clock.now.getTime() + 60_000);
     const p = await pendingLogin(t, u.email);
@@ -475,6 +481,124 @@ describe('MFA: TOTP e códigos de recuperação (LEG-S04)', () => {
   });
 });
 
+describe('endurecimento pós-revisão (ADR-0017)', () => {
+  it('ativar MFA exige a senha atual', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    expect(await t.service.startTotpSetup(u.userId, 'senha errada sintética')).toEqual({
+      ok: false,
+    });
+    const ok = await t.service.startTotpSetup(u.userId, PASSWORD);
+    expect(ok.ok).toBe(true);
+    expect(ok).not.toHaveProperty('uri');
+  });
+
+  it('reautenticação tem limite por usuário', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    for (let i = 0; i < 10; i++) {
+      await t.service.startTotpSetup(u.userId, 'senha errada sintética');
+    }
+    // 11ª tentativa bloqueada mesmo com a senha certa.
+    expect(await t.service.startTotpSetup(u.userId, PASSWORD)).toEqual({ ok: false });
+  });
+
+  it('MFA ligado e senha trocada geram aviso de segurança ao titular', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    const s = await t.service.resolveSession(u.token);
+    const setup = await t.service.startTotpSetup(u.userId, PASSWORD);
+    if (!setup.ok) throw new Error('setup');
+    await t.service.confirmTotpSetup(
+      u.userId,
+      s?.sessionId ?? '',
+      totpAt(base32Decode(setup.manualKey), t.clock.now.getTime()),
+    );
+    await t.service.changePassword(
+      u.userId,
+      s?.sessionId ?? '',
+      PASSWORD,
+      'outra senha sintética longa',
+    );
+    const alerts = t.mail.outbox.filter((m) => m.to === u.email && m.template === 'security-alert');
+    expect(alerts.map((m) => m.params.event)).toEqual(['mfa_enabled', 'password_changed']);
+  });
+
+  it('confirmações simultâneas do TOTP geram um único conjunto de códigos', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    const s = await t.service.resolveSession(u.token);
+    const setup = await t.service.startTotpSetup(u.userId, PASSWORD);
+    if (!setup.ok) throw new Error('setup');
+    const secret = base32Decode(setup.manualKey);
+    const now = t.clock.now.getTime();
+    const results = await Promise.all([
+      t.service.confirmTotpSetup(u.userId, s?.sessionId ?? '', totpAt(secret, now)),
+      t.service.confirmTotpSetup(u.userId, s?.sessionId ?? '', totpAt(secret, now + 30_000)),
+    ]);
+    expect(results.filter((r) => r.ok).length).toBeLessThanOrEqual(1);
+    const { rows } = await admin.query(
+      'SELECT count(*)::int AS n FROM recovery_codes WHERE user_id = $1',
+      [u.userId],
+    );
+    expect([0, 10]).toContain(rows[0].n);
+  });
+
+  it('login bloqueado responde sem calcular Argon2', async () => {
+    const t = createTestAuth(db);
+    const email = uniqueEmail('cpu');
+    const meta = freshMeta();
+    for (let i = 0; i < 5; i++) await t.service.login({ email, password: 'x'.repeat(12) }, meta);
+    const start = performance.now();
+    const r = await t.service.login({ email, password: 'x'.repeat(12) }, meta);
+    expect(r.ok).toBe(false);
+    expect(performance.now() - start).toBeLessThan(15);
+  });
+
+  it('expurgo remove sessões, tokens e janelas vencidas e mantém o que vale', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    const other = await t.service.login({ email: u.email, password: PASSWORD }, freshMeta());
+    if (!other.ok) throw new Error('login');
+    const s = await t.service.resolveSession(other.token);
+    await t.service.revokeSession(u.userId, s?.sessionId ?? '');
+    await admin.query(`UPDATE sessions SET revoked_at = now() - interval '2 days' WHERE id = $1`, [
+      s?.sessionId,
+    ]);
+    await t.service.requestPasswordReset(u.email, freshMeta());
+    await admin.query(
+      `UPDATE auth_tokens SET expires_at = now() - interval '2 days' WHERE user_id = $1`,
+      [u.userId],
+    );
+    await admin.query(`UPDATE rate_limit_buckets SET expires_at = now() - interval '1 s'`);
+
+    const r = await t.service.purgeExpired();
+    expect(r.sessions).toBeGreaterThanOrEqual(1);
+    expect(r.tokens).toBeGreaterThanOrEqual(1);
+    expect(r.buckets).toBeGreaterThanOrEqual(1);
+    expect(await t.service.resolveSession(u.token)).not.toBeNull();
+    const left = await admin.query(
+      'SELECT count(*)::int AS n FROM rate_limit_buckets WHERE expires_at <= now()',
+    );
+    expect(left.rows[0].n).toBe(0);
+  });
+
+  it('runtime não altera colunas imutáveis de users', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    await expect(
+      withUserOn(db, u.userId, (tx) =>
+        tx.user.update({ where: { id: u.userId }, data: { email: 'outro@exemplo.test' } }),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      withUserOn(db, u.userId, (tx) =>
+        tx.user.update({ where: { id: u.userId }, data: { adultAttestedAt: new Date(0) } }),
+      ),
+    ).rejects.toThrow();
+  });
+});
+
 describe('logs sem dado sensível (LEG-R04)', () => {
   it('fluxos completos não registram e-mail, senha, token, código ou data', async () => {
     const t = createTestAuth(db);
@@ -488,7 +612,7 @@ describe('logs sem dado sensível (LEG-R04)', () => {
     const login = await t.service.login({ email, password: NEW }, freshMeta());
     if (!login.ok) throw new Error('login');
     const s = await t.service.resolveSession(login.token);
-    const setup = await t.service.startTotpSetup(u.userId);
+    const setup = await t.service.startTotpSetup(u.userId, NEW);
     if (!setup.ok) throw new Error('setup');
     const totp = totpAt(base32Decode(setup.manualKey), t.clock.now.getTime());
     const confirm = await t.service.confirmTotpSetup(u.userId, s?.sessionId ?? '', totp);

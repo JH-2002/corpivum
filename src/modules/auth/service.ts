@@ -39,6 +39,12 @@ export interface AuthDeps {
   rateLimitSecret: Uint8Array;
   appUrl: string;
   now?: () => Date;
+  /**
+   * Executa trabalho fora da resposta (no Next: `after()`). Sem `defer`, roda em linha (testes).
+   * Usado para o que depende de a conta existir (token + e-mail): o tempo de resposta fica igual com ou
+   * sem conta (anti-enumeração).
+   */
+  defer?: (task: () => Promise<void>) => void;
 }
 
 export const SESSION_ABSOLUTE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -105,6 +111,35 @@ export function createAuthService(deps: AuthDeps) {
     return url.toString();
   };
   const totpCtx = (userId: string) => ({ userId, table: 'users', column: 'totp_secret' });
+
+  async function background(task: () => Promise<void>): Promise<void> {
+    const safe = async () => {
+      try {
+        await task();
+      } catch {
+        logger.error('auth.background_failed', { errorCode: 'background' });
+      }
+    };
+    if (deps.defer) deps.defer(safe);
+    else await safe();
+  }
+
+  /** Aviso ao titular sobre mudança de segurança da conta (só o tipo do evento, sem dados). */
+  async function notifySecurity(
+    userId: string,
+    event: 'mfa_enabled' | 'mfa_disabled' | 'password_changed',
+  ) {
+    await background(async () => {
+      const user = await withUser(userId, (tx) =>
+        tx.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } }),
+      );
+      await mail.send({
+        to: user.email,
+        template: 'security-alert',
+        params: { event, url: new URL('/configuracoes/seguranca', deps.appUrl).toString() },
+      });
+    });
+  }
 
   async function issueToken(
     userId: string,
@@ -204,21 +239,23 @@ export function createAuthService(deps: AuthDeps) {
       const rows = await db.$queryRaw<Array<{ user_id: string; created: boolean }>>`
         SELECT * FROM app.auth_create_user(${email}, ${passwordHash}, ${AGE_GATE_VERSION})`;
       const row = rows[0];
-      if (row?.created) {
-        const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
-        await mail.send({
-          to: email,
-          template: 'email-verification',
-          params: { url: link('/verificar-email', token) },
-        });
-        logger.info('auth.registered', { userId: row.user_id });
-      } else if (row) {
-        await mail.send({
-          to: email,
-          template: 'account-exists',
-          params: { url: new URL('/recuperar-senha', deps.appUrl).toString() },
-        });
-      }
+      await background(async () => {
+        if (row?.created) {
+          const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
+          await mail.send({
+            to: email,
+            template: 'email-verification',
+            params: { url: link('/verificar-email', token) },
+          });
+          logger.info('auth.registered', { userId: row.user_id });
+        } else if (row) {
+          await mail.send({
+            to: email,
+            template: 'account-exists',
+            params: { url: new URL('/recuperar-senha', deps.appUrl).toString() },
+          });
+        }
+      });
       return { ok: true };
     },
 
@@ -236,15 +273,17 @@ export function createAuthService(deps: AuthDeps) {
     async resendVerification(rawEmail: string, meta: RequestMeta): Promise<void> {
       if (!(await limit('resendIp', meta.ip))) return;
       const email = normalizeEmail(rawEmail);
-      const rows = await db.$queryRaw<Array<{ user_id: string; email_verified: boolean }>>`
-        SELECT * FROM app.auth_find_user_id(${email})`;
-      const row = rows[0];
-      if (!row || row.email_verified) return;
-      const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
-      await mail.send({
-        to: email,
-        template: 'email-verification',
-        params: { url: link('/verificar-email', token) },
+      await background(async () => {
+        const rows = await db.$queryRaw<Array<{ user_id: string; email_verified: boolean }>>`
+          SELECT * FROM app.auth_find_user_id(${email})`;
+        const row = rows[0];
+        if (!row || row.email_verified) return;
+        const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
+        await mail.send({
+          to: email,
+          template: 'email-verification',
+          params: { url: link('/verificar-email', token) },
+        });
       });
     },
 
@@ -260,6 +299,12 @@ export function createAuthService(deps: AuthDeps) {
       const fail = { ok: false, error: 'invalid_credentials' } as const;
       const accountOk = await limit('loginAccount', email);
       const ipOk = await limit('loginIp', meta.ip);
+      // Bloqueado: responde sem calcular Argon2 (evita esgotar CPU/memória). O bloqueio não revela se a
+      // conta existe: e-mails inexistentes também são contados.
+      if (!accountOk || !ipOk) {
+        logger.warn('auth.login_rate_limited', { errorCode: 'rate_limited' });
+        return fail;
+      }
       const rows = await db.$queryRaw<
         Array<{ user_id: string; password_hash: string; mfa_enabled: boolean }>
       >`SELECT user_id, password_hash, mfa_enabled FROM app.auth_find_login(${email})`;
@@ -269,10 +314,6 @@ export function createAuthService(deps: AuthDeps) {
         ? await verifyPassword(input.password, row.password_hash)
         : await verifyAgainstDummy(input.password);
 
-      if (!accountOk || !ipOk) {
-        logger.warn('auth.login_rate_limited', { errorCode: 'rate_limited' });
-        return fail;
-      }
       if (!row || !passwordOk) {
         logger.info('auth.login_failed', { errorCode: 'invalid_credentials' });
         return fail;
@@ -397,18 +438,20 @@ export function createAuthService(deps: AuthDeps) {
     async requestPasswordReset(rawEmail: string, meta: RequestMeta): Promise<void> {
       const email = normalizeEmail(rawEmail);
       if (!(await limit('resetIp', meta.ip))) return;
-      if (!(await limit('resetAccount', email))) return;
-      const rows = await db.$queryRaw<Array<{ user_id: string }>>`
-        SELECT user_id FROM app.auth_find_user_id(${email})`;
-      const row = rows[0];
-      if (!row) return;
-      const token = await issueToken(row.user_id, 'reset_password', RESET_PASSWORD_TTL_S);
-      await mail.send({
-        to: email,
-        template: 'password-reset',
-        params: { url: link('/redefinir-senha', token) },
+      await background(async () => {
+        if (!(await limit('resetAccount', email))) return;
+        const rows = await db.$queryRaw<Array<{ user_id: string }>>`
+          SELECT user_id FROM app.auth_find_user_id(${email})`;
+        const row = rows[0];
+        if (!row) return;
+        const token = await issueToken(row.user_id, 'reset_password', RESET_PASSWORD_TTL_S);
+        await mail.send({
+          to: email,
+          template: 'password-reset',
+          params: { url: link('/redefinir-senha', token) },
+        });
+        logger.info('auth.password_reset_requested', { userId: row.user_id });
       });
-      logger.info('auth.password_reset_requested', { userId: row.user_id });
     },
 
     /** Redefinição: token de uso único; troca o hash e revoga TODAS as sessões. */
@@ -447,6 +490,7 @@ export function createAuthService(deps: AuthDeps) {
       );
       await revokeAllSessions(userId, currentSessionId);
       logger.info('auth.password_changed', { userId });
+      await notifySecurity(userId, 'password_changed');
       return { ok: true };
     },
 
@@ -463,10 +507,15 @@ export function createAuthService(deps: AuthDeps) {
       });
     },
 
-    /** Gera (ou regenera) o segredo pendente, cifrado em `users.totp_secret`. Só sem MFA ativo. */
+    /**
+     * Gera (ou regenera) o segredo pendente, cifrado em `users.totp_secret`. Só sem MFA ativo e com a
+     * senha atual: um cookie roubado sozinho não basta para prender a conta num autenticador alheio.
+     */
     async startTotpSetup(
       userId: string,
-    ): Promise<{ ok: true; manualKey: string; uri: string; qrSvg: string } | { ok: false }> {
+      password: string,
+    ): Promise<{ ok: true; manualKey: string; qrSvg: string } | { ok: false }> {
+      if (!(await checkCurrentPassword(userId, password))) return { ok: false };
       const secret = generateTotpSecret();
       try {
         const encrypted = await encryptField(kms, totpCtx(userId), secret);
@@ -478,7 +527,8 @@ export function createAuthService(deps: AuthDeps) {
         );
         if (count === 0) return { ok: false };
         const uri = otpauthUri(secret, 'Conta', TOTP_ISSUER);
-        return { ok: true, manualKey: formatManualKey(secret), uri, qrSvg: totpQrSvg(uri) };
+        // O URI (com o segredo) só vira QR no servidor; não vai ao cliente.
+        return { ok: true, manualKey: formatManualKey(secret), qrSvg: totpQrSvg(uri) };
       } finally {
         secret.fill(0);
       }
@@ -496,13 +546,21 @@ export function createAuthService(deps: AuthDeps) {
       if (enabled.mfaEnabledAt) return { ok: false };
       if (!(await acceptTotp(userId, code))) return { ok: false };
       const codes = generateRecoveryCodes();
-      await withUser(userId, async (tx) => {
-        await tx.user.update({ where: { id: userId }, data: { mfaEnabledAt: now() } });
+      // Ativação condicional na mesma transação: duas confirmações simultâneas não geram dois conjuntos.
+      const activated = await withUser(userId, async (tx) => {
+        const { count } = await tx.user.updateMany({
+          where: { id: userId, mfaEnabledAt: null },
+          data: { mfaEnabledAt: now() },
+        });
+        if (count === 0) return false;
         await replaceRecoveryCodes(tx, userId, codes);
+        return true;
       });
+      if (!activated) return { ok: false };
       // Outras sessões abertas sem o 2º fator são encerradas; a atual continua.
       await revokeAllSessions(userId, currentSessionId);
       logger.info('auth.mfa_enabled', { userId });
+      await notifySecurity(userId, 'mfa_enabled');
       return { ok: true, recoveryCodes: codes };
     },
 
@@ -528,6 +586,7 @@ export function createAuthService(deps: AuthDeps) {
 
     /** Desativar o MFA exige senha e um código (TOTP ou recuperação). */
     async disableMfa(userId: string, password: string, code: string): Promise<boolean> {
+      if (!(await limit('mfaAccount', userId))) return false;
       if (!(await checkCurrentPassword(userId, password))) return false;
       const accepted = looksLikeRecoveryCode(code)
         ? await consumeRecoveryCode(userId, code)
@@ -541,11 +600,29 @@ export function createAuthService(deps: AuthDeps) {
         await tx.recoveryCode.deleteMany({});
       });
       logger.info('auth.mfa_disabled', { userId });
+      await notifySecurity(userId, 'mfa_disabled');
       return true;
+    },
+
+    /**
+     * Expurgo de dados de autenticação vencidos (ROPA T1/T5): sessões revogadas ou expiradas, tokens
+     * usados ou vencidos e janelas de limite encerradas. Agendamento pela JobQueue: Fase 1b.
+     */
+    async purgeExpired(): Promise<{ sessions: number; tokens: number; buckets: number }> {
+      const rows = await db.$queryRaw<Array<{ sessions: number; tokens: number; buckets: number }>>`
+        SELECT * FROM app.auth_purge_expired()`;
+      const r = rows[0] ?? { sessions: 0, tokens: 0, buckets: 0 };
+      logger.info('auth.purge_expired', { count: r.sessions + r.tokens + r.buckets });
+      return r;
     },
   };
 
+  /** Reautenticação nas ações da conta, com limite por usuário (sessão roubada não testa senhas à vontade). */
   async function checkCurrentPassword(userId: string, password: string): Promise<boolean> {
+    if (!(await limit('reauthUser', userId))) {
+      logger.warn('auth.reauth_rate_limited', { userId, errorCode: 'rate_limited' });
+      return false;
+    }
     const user = await withUser(userId, (tx) =>
       tx.user.findUniqueOrThrow({ where: { id: userId }, select: { passwordHash: true } }),
     );

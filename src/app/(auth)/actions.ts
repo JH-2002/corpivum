@@ -19,6 +19,7 @@ import {
   clearAgeOkCookie,
   clearSessionCookie,
   getAuthService,
+  hasAgeBlockCookie,
   readAgeOkCookie,
   readSessionToken,
   requestMeta,
@@ -39,6 +40,8 @@ async function passwordMessage(problem: PasswordProblem): Promise<string> {
 
 /** Passo 1 do cadastro. Menor: só um cookie sem identificador; nada vai para banco ou log (LEG-F01). */
 export async function checkAgeAction(_prev: FormState, form: FormData): Promise<FormState> {
+  // O bloqueio vale também para POST direto à action, não só para a página.
+  if (await hasAgeBlockCookie()) redirect('/cadastro/indisponivel');
   const t = await getTranslations('auth.errors');
   const parsed = birthDateSchema.safeParse(formToObject(form));
   if (!parsed.success) {
@@ -57,6 +60,7 @@ export async function checkAgeAction(_prev: FormState, form: FormData): Promise<
 }
 
 export async function signupAction(_prev: FormState, form: FormData): Promise<FormState> {
+  if (await hasAgeBlockCookie()) redirect('/cadastro/indisponivel');
   const t = await getTranslations('auth.errors');
   const parsed = signupSchema.safeParse(formToObject(form));
   if (!parsed.success) {

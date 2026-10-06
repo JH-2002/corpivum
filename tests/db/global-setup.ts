@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import 'dotenv/config';
 import pg from 'pg';
+import { assertDisposableDatabase } from './safety';
 
 /**
  * Antes da suíte com banco: aplica as migrações como app_migrator e confirma que o banco responde.
@@ -11,6 +12,7 @@ export default async function setup() {
   if (!url || !process.env.DATABASE_URL) {
     throw new Error('test:db precisa de MIGRATION_DATABASE_URL e DATABASE_URL (rode pnpm db:up).');
   }
+  assertDisposableDatabase(url);
   const client = new pg.Client({ connectionString: url });
   await client.connect();
   await client.end();

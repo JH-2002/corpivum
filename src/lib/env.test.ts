@@ -123,6 +123,17 @@ describe('parseEnv', () => {
     );
   });
 
+  it('exige CLIENT_IP_HEADER em produção (LEG-S05)', () => {
+    expect(hasIssue({ ...base, APP_ENV: 'production' }, 'CLIENT_IP_HEADER')).toBe(true);
+    expect(
+      hasIssue(
+        { ...base, APP_ENV: 'production', CLIENT_IP_HEADER: 'x-real-ip' },
+        'CLIENT_IP_HEADER',
+      ),
+    ).toBe(false);
+    expect(hasIssue({ ...base, CLIENT_IP_HEADER: 'X Bad' }, 'CLIENT_IP_HEADER')).toBe(true);
+  });
+
   it('exige APP_URL com https em produção (LEG-S01)', () => {
     expect(hasIssue({ ...base, APP_ENV: 'production' }, 'APP_URL')).toBe(true);
     expect(

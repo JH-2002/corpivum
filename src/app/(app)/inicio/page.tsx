@@ -6,6 +6,7 @@ import {
   resolvePreviewState,
   type PageSearchParams,
 } from '@/components/shell/ModulePage';
+import { requireVerifiedSession } from '@/modules/auth/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -13,6 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
+  // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
+  await requireVerifiedSession();
   const t = await getTranslations();
   return (
     <ModulePage

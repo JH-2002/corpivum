@@ -69,8 +69,16 @@ export function EnableMfa() {
 
   if (setup.status !== 'success') {
     return (
-      <form action={start} className="flex flex-col gap-3">
+      <form action={start} className="flex flex-col gap-3" noValidate>
         <FormMessage state={setup} />
+        <TextField
+          name="password"
+          type="password"
+          label={t('fields.currentPassword')}
+          error={setup.fieldErrors?.password}
+          autoComplete="current-password"
+          required
+        />
         <SubmitButton>{t('security.mfaStart')}</SubmitButton>
       </form>
     );

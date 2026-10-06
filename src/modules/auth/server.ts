@@ -1,11 +1,13 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { cache } from 'react';
 import { getAdapters } from '@/adapters';
 import { getDb } from '@/lib/db/client';
 import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { clientIp } from './client-ip';
 import { SESSION_COOKIE } from './constants';
 import { AGE_BLOCK_COOKIE, AGE_OK_COOKIE, AGE_OK_TTL_SECONDS } from './age';
 import {
@@ -34,23 +36,17 @@ export function getAuthService(): AuthService {
       sessionSecret: Buffer.from(env.SESSION_SECRET, 'base64'),
       rateLimitSecret: Buffer.from(env.RATE_LIMIT_SECRET, 'base64'),
       appUrl: env.APP_URL,
+      // Token + e-mail depois da resposta: tempo igual com ou sem conta (anti-enumeração).
+      defer: (task) => after(task),
     });
   }
   return service;
 }
 
-/**
- * IP (só para a chave HMAC do limite de tentativas) e user-agent (só para o rótulo grosso do dispositivo).
- * O primeiro valor de X-Forwarded-For vem do proxy da hospedagem. LEGAL-REVIEW/Fase 7: confirmar qual
- * cabeçalho a hospedagem escolhida garante.
- */
+/** IP (só para a chave HMAC do limite, ver `clientIp`) e user-agent (só para o rótulo do aparelho). */
 export async function requestMeta(): Promise<RequestMeta> {
   const h = await headers();
-  const forwarded = h.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return {
-    ip: forwarded || h.get('x-real-ip') || 'unknown',
-    userAgent: h.get('user-agent'),
-  };
+  return { ip: clientIp(h, getEnv().CLIENT_IP_HEADER), userAgent: h.get('user-agent') };
 }
 
 export async function setSessionCookie(token: string, mfaPending: boolean): Promise<void> {
@@ -63,8 +59,18 @@ export async function setSessionCookie(token: string, mfaPending: boolean): Prom
   });
 }
 
+/**
+ * Apaga o cookie de sessão. `cookies().delete()` emite Set-Cookie sem `Secure`, que o navegador rejeita para
+ * cookies `__Host-`; por isso sobrescrevemos com os mesmos atributos e maxAge 0.
+ */
 export async function clearSessionCookie(): Promise<void> {
-  (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).set(SESSION_COOKIE, '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
 }
 
 export async function readSessionToken(): Promise<string | undefined> {
@@ -120,5 +126,11 @@ export async function readAgeOkCookie(): Promise<string | undefined> {
 }
 
 export async function clearAgeOkCookie(): Promise<void> {
-  (await cookies()).delete({ name: AGE_OK_COOKIE, path: '/cadastro' });
+  (await cookies()).set(AGE_OK_COOKIE, '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'strict',
+    path: '/cadastro',
+    maxAge: 0,
+  });
 }

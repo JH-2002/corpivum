@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { NavLink } from '@/components/shell/NavLink';
 import { MORE_ITEMS } from '@/components/shell/nav-config';
+import { requireVerifiedSession } from '@/modules/auth/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('pages.more');
@@ -10,6 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** Destino do item "Mais" da navegação inferior: as seções que não cabem na barra (§7). */
 export default async function MorePage() {
+  // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
+  await requireVerifiedSession();
   const t = await getTranslations('nav');
   return (
     <nav aria-label={t('moreTitle')}>

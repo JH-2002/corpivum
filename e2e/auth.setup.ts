@@ -7,12 +7,14 @@ import {
   STORAGE_STATE,
   withAdmin,
 } from './fixtures';
+import { assertDisposableDatabase } from '../tests/db/safety';
 
 /**
  * Prepara o banco para o e2e e autentica uma pessoa sintética pela interface. Os demais testes do app
  * reutilizam a sessão (storageState). Limites de tentativa são zerados para execuções repetidas.
  */
 setup('pessoa sintética autenticada', async ({ page }) => {
+  assertDisposableDatabase(process.env.MIGRATION_DATABASE_URL);
   await withAdmin(async (db) => {
     await db.query('TRUNCATE rate_limit_buckets');
     await db.query('DELETE FROM users WHERE email LIKE $1', [`%@${E2E_DOMAIN}`]);

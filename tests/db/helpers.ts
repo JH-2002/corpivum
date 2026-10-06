@@ -8,6 +8,7 @@ import { ConsoleMailProvider } from '@/adapters/mail/console';
 import { createDbClient, type Db } from '@/lib/db/client';
 import { createLogger, type LogRecord } from '@/lib/logger';
 import { createAuthService, type AuthService } from '@/modules/auth/service';
+import { assertDisposableDatabase } from './safety';
 
 /** Tabelas do schema public (exceto controle de migrações), para limpeza e contagem. */
 export async function publicTables(admin: pg.Client): Promise<string[]> {
@@ -27,6 +28,7 @@ export async function connectAdmin(): Promise<pg.Client> {
 }
 
 export async function truncateAll(admin: pg.Client): Promise<void> {
+  assertDisposableDatabase(process.env.MIGRATION_DATABASE_URL);
   const tables = await publicTables(admin);
   await admin.query(`TRUNCATE ${tables.map((t) => `public."${t}"`).join(', ')} CASCADE`);
 }

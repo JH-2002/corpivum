@@ -19,6 +19,8 @@
 | OI-11 | Subprocessadores | Escolher hospedagem, banco, storage, filas, e-mail e monitoramento com região no Brasil; assinar DPAs; preencher `docs/privacy/SUBPROCESSORS.md`. | LEG-S10, LEG-D06 | Fase 7 | Aberta |
 | OI-12 | Encarregado | Nomear o encarregado e publicar o canal de contato (`{{ENCARREGADO}}`). | LEG-G03 | Fase 1b | Aberta |
 | OI-13 | Revisão de avisos | CODEOWNERS preenchido com @JH-2002. Falta: (a) incluir revisor jurídico/clínico quando houver; (b) exigir aprovação de Code Owners na branch `main` (em repositório privado, requer plano GitHub Pro/Team). Até lá, a revisão de `disclaimer.*` depende do teste de texto aprovado e do checklist de PR. | LEG-M03 | Fase 0 | Parcial |
+| OI-14 | Retenção técnica | Agendar o expurgo de dados de autenticação (`app.auth_purge_expired`) na JobQueue e confirmar a folga de 1 dia para investigação de abuso. | LEG-R*, ROPA T1/T5, ADR-0017 | Fase 1b | Aberta |
+| OI-15 | Disponibilidade da conta | O bloqueio de login por conta (5 por 15 min) permite que terceiros travem o acesso de alguém sabendo só o e-mail. Avaliar atraso progressivo ou exceção para aparelho conhecido, sem reabrir a enumeração. | LEG-S04, ADR-0017 | Fase 7 | Aberta |
 
 ## Resolvidas
 _(nenhuma)_

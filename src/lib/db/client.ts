@@ -11,7 +11,8 @@ import { getEnv } from '@/lib/env';
 export type Db = PrismaClient;
 
 export function createDbClient(connectionString: string): Db {
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  // `minimal`: mensagens de erro sem eco dos argumentos (hashes, e-mail). LEG-R04.
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString }), errorFormat: 'minimal' });
 }
 
 const globalForDb = globalThis as unknown as { __hmDb?: Db };
