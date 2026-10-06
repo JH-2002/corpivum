@@ -1,0 +1,39 @@
+# dependências
+node_modules/
+.pnpm-store/
+
+# build
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+src/generated/
+
+# testes
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# ambiente e segredos: nunca commitar (CLAUDE.md regra 6)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# storage local do adaptador (pode conter arquivos de usuário em dev)
+.storage/
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Claude Code: configurações locais
+.claude/settings.local.json
