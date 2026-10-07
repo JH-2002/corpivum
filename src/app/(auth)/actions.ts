@@ -25,6 +25,7 @@ import {
   requestMeta,
   setAgeBlockCookie,
   setAgeOkCookie,
+  setKnownDeviceCookie,
   setSessionCookie,
 } from '@/modules/auth/server';
 
@@ -98,7 +99,9 @@ export async function loginAction(_prev: FormState, form: FormData): Promise<For
   const result = await getAuthService().login(parsed.data, await requestMeta());
   if (!result.ok) return { status: 'error', message: t('invalidCredentials') };
   await setSessionCookie(result.token, result.mfaRequired);
-  redirect(result.mfaRequired ? '/entrar/verificacao' : '/inicio');
+  if (result.mfaRequired) redirect('/entrar/verificacao');
+  await setKnownDeviceCookie(result.knownDevice);
+  redirect('/inicio');
 }
 
 export async function verifyMfaAction(_prev: FormState, form: FormData): Promise<FormState> {
@@ -121,6 +124,7 @@ export async function verifyMfaAction(_prev: FormState, form: FormData): Promise
     };
   }
   await setSessionCookie(result.token, false);
+  await setKnownDeviceCookie(result.knownDevice);
   redirect('/inicio');
 }
 
