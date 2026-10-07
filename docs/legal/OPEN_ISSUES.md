@@ -95,6 +95,19 @@ corrigidos na própria fase (com teste); os demais ficam registrados aqui.
 | PR1b-N1 | Nota | A checagem de consentimento no banco (`has_active_consent` nas políticas RLS) só existirá com as tabelas de saúde. **Correção (Fase 2):** teste que falha se tabela de saúde nova não usar `app.has_active_consent('health_data')` nas políticas. | LEG-C04 | Aberto (Fase 2) |
 | PR1b-N2 | Nota | O aviso de revogação oferece exportar antes, mas a exportação só existe na Fase 6 (`exportAvailable=false`). Sem impacto na 1b: ainda não há dado de saúde. | LEG-D03 | Aberto (Fase 6) |
 
+### Revisão focada das correções da Fase 1b (commits 5c7554e, 6d21c7d)
+
+Nenhum achado crítico ou alto. As oito correções da ADR-0020 foram confirmadas sem regressão, exceto o item
+abaixo (M-1), que tinha um caminho sem tratamento.
+
+| ID | Sev. | Achado | Referência | Status |
+|---|---|---|---|---|
+| PR1b-R2-M1 | Média | O teto global de 50 encerramentos por hora (ADR-0020) subia como erro sem tratamento (página de erro genérica). Além disso, quem cria ~50 contas por hora consegue impedir o encerramento de menores reais. | LEG-F04, ADR-0020 | **Parcial:** o erro agora é tratado, nada é apagado e a pessoa recebe uma mensagem com o caminho do encarregado (teste de banco). **Aberto:** decidir entre manter o teto global, trocá-lo por limite por IP ou aparelho com alerta, ou registrar um `privacy_request` pendente processado depois por job. |
+| PR1b-R2-B1 | Baixa | Prova de reautenticação emitida e não consumida (ex.: teto atingido) fica em `reauth_proofs` até a próxima emissão ou o fim da conta, ligando a conta a `purpose='minor_closure'`. **Correção:** apagar provas vencidas no job de retenção ou usar um `purpose` neutro (`account_closure`). | LEG-R*, PR1b-B5 | Aberto |
+| PR1b-R2-B2 | Baixa | Diferença de tempo de microssegundos no login: com cookie de formato válido e conta inexistente, o HMAC do aparelho não é calculado. Não é explorável na prática. **Correção opcional:** calcular o HMAC contra um hash fixo e descartar. | ADR-0014 | Aberto |
+| PR1b-R2-B3 | Baixa | O pedido de redefinição de senha agora lê `password_hash` (`auth_find_login`) para validar o cookie de aparelho, afrouxando o retorno mínimo da ADR-0015. **Correção:** assinar o cookie sobre um derivado (ex.: `sha256(password_hash)` ou `password_changed_at`) devolvido por uma função própria. | ADR-0015, OI-15 | Aberto |
+| PR1b-R2-B4 | Baixa | A migração `20261007002007_fase_1b_consentimento` foi editada antes do merge (checksum muda). Um banco que aplicou a versão anterior precisa de reset. Nenhum ambiente compartilhado a aplicou (só o banco local de dev). | ADR-0020 | Aceito: banco local recriado; CI aplica do zero |
+
 ## Resolvidas
 
 | ID | Decisão | Data | Quem decidiu |

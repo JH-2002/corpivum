@@ -373,3 +373,7 @@ OPEN_ISSUES.
   publicada fora desta branch.
 
 **Aceito por ora:** B2, B3, B8 e B9, registrados em docs/legal/OPEN_ISSUES.md.
+
+**Revisão focada das correções.** Nada crítico ou alto. O teto global de encerramentos passou a ser
+tratado (mensagem com o caminho do encarregado, nada apagado). O desenho do teto e quatro baixos ficam em
+OPEN_ISSUES (PR1b-R2-*).
