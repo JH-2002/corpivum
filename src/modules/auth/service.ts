@@ -2,12 +2,15 @@ import type { AgeSignalProvider } from '@/adapters/age-signal/types';
 import type { KmsProvider } from '@/adapters/kms/types';
 import type { MailProvider } from '@/adapters/mail/types';
 import { decryptField, encryptField } from '@/lib/crypto/field';
+import { auditAppend } from '@/lib/db/audit';
 import type { Db } from '@/lib/db/client';
 import { withUserOn, type Tx } from '@/lib/db/rls';
 import type { Logger } from '@/lib/logger';
 import { AGE_GATE_VERSION, isAdult, parseBirthDate, signAgeOk, verifyAgeOk } from './age';
 import { randomToken, sha256 } from './crypto';
 import { deviceLabel } from './device';
+import { canonicalMailbox, normalizeEmail } from './email';
+import { signKnownDevice, verifyKnownDevice } from './known-device';
 import {
   checkPasswordPolicy,
   hashPassword,
@@ -79,14 +82,17 @@ export interface SessionSummary {
 }
 
 export interface RequestMeta {
-  /** IP de origem, usado só como chave HMAC de limite de tentativas. */
+  /**
+   * IP de origem: chave HMAC de limite de tentativas e registro de acesso (Marco Civil art. 15, LEG-R02),
+   * gravado só em `access_logs` (tabela que o runtime não lê, expurgada por ACCESS_LOG_RETENTION_DAYS).
+   */
   ip: string;
   userAgent?: string | null;
+  /** Valor do cookie de aparelho conhecido (OI-15), se houver. */
+  knownDevice?: string;
 }
 
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
+export { normalizeEmail };
 
 export type AgeCheckResult =
   { outcome: 'adult'; cookie: string } | { outcome: 'minor' } | { outcome: 'invalid' };
@@ -96,11 +102,14 @@ export type RegisterResult =
   | { ok: false; error: 'age_required' | 'rate_limited' }
   | { ok: false; error: 'weak_password'; problem: PasswordProblem };
 
+/** `knownDevice`: novo cookie de aparelho conhecido, emitido só ao fim do login completo (OI-15). */
 export type LoginResult =
-  { ok: true; token: string; mfaRequired: boolean } | { ok: false; error: 'invalid_credentials' };
+  | { ok: true; token: string; mfaRequired: true }
+  | { ok: true; token: string; mfaRequired: false; knownDevice: string }
+  | { ok: false; error: 'invalid_credentials' };
 
 export type MfaResult =
-  | { ok: true; token: string }
+  | { ok: true; token: string; knownDevice: string }
   | { ok: false; error: 'invalid_code' | 'locked' | 'no_pending_session' };
 
 export type ResetResult =
@@ -193,8 +202,8 @@ export function createAuthService(deps: AuthDeps) {
   ): Promise<string> {
     const token = randomToken();
     const t = now().getTime();
-    await withUser(userId, (tx) =>
-      tx.session.create({
+    await withUser(userId, async (tx) => {
+      await tx.session.create({
         data: {
           userId,
           tokenHash: sha256(token),
@@ -204,8 +213,10 @@ export function createAuthService(deps: AuthDeps) {
           idleExpiresAt: new Date(t + SESSION_IDLE_MS),
           expiresAt: new Date(t + (mfaPending ? 10 * 60 * 1000 : SESSION_ABSOLUTE_MS)),
         },
-      }),
-    );
+      });
+      // Registro de acesso (LEG-R02) só para sessão completa.
+      if (!mfaPending) await appendAccessLog(tx, meta);
+    });
     return token;
   }
 
@@ -224,12 +235,18 @@ export function createAuthService(deps: AuthDeps) {
   }
 
   async function revokeAllSessions(userId: string, exceptSessionId?: string) {
-    await withUser(userId, (tx) =>
-      tx.session.updateMany({
+    await withUser(userId, async (tx) => {
+      const { count } = await tx.session.updateMany({
         where: { revokedAt: null, ...(exceptSessionId ? { id: { not: exceptSessionId } } : {}) },
         data: { revokedAt: now() },
-      }),
-    );
+      });
+      if (count > 0) await auditAppend(tx, 'session_revoked', 'session');
+    });
+  }
+
+  /** IP + data/hora no contexto do usuário (LEG-R02). IP inválido vira NULL no banco. */
+  async function appendAccessLog(tx: Tx, meta: RequestMeta) {
+    await tx.$executeRaw`SELECT app.access_log_append(${meta.ip})`;
   }
 
   return {
@@ -265,7 +282,7 @@ export function createAuthService(deps: AuthDeps) {
       const row = rows[0];
       await background(async () => {
         // Limite por destinatário dentro do trabalho adiado: não muda resposta nem tempo (anti-enumeração).
-        if (!(await limit('registerAccount', email))) return;
+        if (!(await limit('registerAccount', canonicalMailbox(email)))) return;
         if (row?.created) {
           const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
           await mail.send({
@@ -304,7 +321,7 @@ export function createAuthService(deps: AuthDeps) {
           SELECT * FROM app.auth_find_user_id(${email})`;
         const row = rows[0];
         if (!row || row.email_verified) return;
-        if (!(await limit('resendAccount', email))) return;
+        if (!(await limit('resendAccount', canonicalMailbox(email)))) return;
         const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
         await mail.send({
           to: email,
@@ -324,7 +341,22 @@ export function createAuthService(deps: AuthDeps) {
     ): Promise<LoginResult> {
       const email = normalizeEmail(input.email);
       const fail = { ok: false, error: 'invalid_credentials' } as const;
-      const accountOk = await limit('loginAccount', email);
+      // A busca roda sempre (com ou sem conta, antes dos limites): o caminho não depende de a conta existir.
+      const rows = await db.$queryRaw<
+        Array<{ user_id: string; password_hash: string; mfa_enabled: boolean }>
+      >`SELECT user_id, password_hash, mfa_enabled FROM app.auth_find_login(${email})`;
+      const row = rows[0];
+      // OI-15: aparelho conhecido usa o próprio limite; o bloqueio por conta só alcança aparelhos
+      // desconhecidos. Esgotado o limite do aparelho, ele volta a contar no limite da conta. O cookie vale
+      // só para a senha atual (B4).
+      const device = verifyKnownDevice(
+        deps.sessionSecret,
+        meta.knownDevice,
+        email,
+        row?.password_hash ?? null,
+      );
+      const deviceOk = device !== null && (await limit('loginDevice', device));
+      const accountOk = deviceOk || (await limit('loginAccount', email));
       const ipOk = await limit('loginIp', meta.ip);
       // Bloqueado: responde sem calcular Argon2 (evita esgotar CPU/memória). O bloqueio não revela se a
       // conta existe: e-mails inexistentes também são contados.
@@ -332,10 +364,6 @@ export function createAuthService(deps: AuthDeps) {
         logger.warn('auth.login_rate_limited', { errorCode: 'rate_limited' });
         return fail;
       }
-      const rows = await db.$queryRaw<
-        Array<{ user_id: string; password_hash: string; mfa_enabled: boolean }>
-      >`SELECT user_id, password_hash, mfa_enabled FROM app.auth_find_login(${email})`;
-      const row = rows[0];
 
       const passwordOk = row
         ? await verifyPassword(input.password, row.password_hash)
@@ -349,7 +377,13 @@ export function createAuthService(deps: AuthDeps) {
       logger.info(row.mfa_enabled ? 'auth.login_mfa_pending' : 'auth.login_succeeded', {
         userId: row.user_id,
       });
-      return { ok: true, token, mfaRequired: row.mfa_enabled };
+      if (row.mfa_enabled) return { ok: true, token, mfaRequired: true };
+      return {
+        ok: true,
+        token,
+        mfaRequired: false,
+        knownDevice: signKnownDevice(deps.sessionSecret, email, row.password_hash),
+      };
     },
 
     /**
@@ -394,22 +428,37 @@ export function createAuthService(deps: AuthDeps) {
         tx.session.update({ where: { id: s.session_id }, data: { revokedAt: now() } }),
       );
       const token = await createSession(userId, meta, false);
+      const { email, passwordHash } = await withUser(userId, (tx) =>
+        tx.user.findUniqueOrThrow({
+          where: { id: userId },
+          select: { email: true, passwordHash: true },
+        }),
+      );
       logger.info('auth.login_succeeded', { userId, operation: 'mfa' });
-      return { ok: true, token };
+      return {
+        ok: true,
+        token,
+        knownDevice: signKnownDevice(deps.sessionSecret, email, passwordHash),
+      };
     },
 
     /** Valida o cookie de sessão no banco a cada requisição (LEG-S04). */
-    async resolveSession(token: string | undefined): Promise<ResolvedSession | null> {
+    async resolveSession(
+      token: string | undefined,
+      meta?: RequestMeta,
+    ): Promise<ResolvedSession | null> {
       const s = await resolveRaw(token);
       if (!s) return null;
       const t = now().getTime();
+      // A cada 5 min de uso: renova a ociosidade e registra o acesso (LEG-R02), sem uma linha por requisição.
       if (t - s.last_seen_at.getTime() > SESSION_TOUCH_MS) {
-        await withUser(s.user_id, (tx) =>
-          tx.session.updateMany({
+        await withUser(s.user_id, async (tx) => {
+          const { count } = await tx.session.updateMany({
             where: { id: s.session_id, revokedAt: null },
             data: { lastSeenAt: new Date(t), idleExpiresAt: new Date(t + SESSION_IDLE_MS) },
-          }),
-        );
+          });
+          if (count > 0 && meta && !s.mfa_pending) await appendAccessLog(tx, meta);
+        });
       }
       return {
         sessionId: s.session_id,
@@ -446,12 +495,14 @@ export function createAuthService(deps: AuthDeps) {
 
     /** Revoga uma sessão. O RLS garante que só sessões do próprio usuário são alcançadas. */
     async revokeSession(userId: string, sessionId: string): Promise<boolean> {
-      const { count } = await withUser(userId, (tx) =>
-        tx.session.updateMany({
+      const { count } = await withUser(userId, async (tx) => {
+        const r = await tx.session.updateMany({
           where: { id: sessionId, revokedAt: null },
           data: { revokedAt: now() },
-        }),
-      );
+        });
+        if (r.count > 0) await auditAppend(tx, 'session_revoked', 'session', sessionId);
+        return r;
+      });
       if (count > 0) logger.info('auth.session_revoked', { userId });
       return count > 0;
     },
@@ -461,15 +512,26 @@ export function createAuthService(deps: AuthDeps) {
       logger.info('auth.sessions_revoked', { userId, operation: 'others' });
     },
 
-    /** Pedido de redefinição: resposta sempre igual; e-mail só se a conta existir. */
+    /**
+     * Pedido de redefinição: resposta sempre igual; e-mail só se a conta existir. Limite por caixa de
+     * destino (PR1a-R3-M1); aparelho conhecido usa limite próprio, então terceiros não bloqueiam a
+     * recuperação do titular (OI-15).
+     */
     async requestPasswordReset(rawEmail: string, meta: RequestMeta): Promise<void> {
       const email = normalizeEmail(rawEmail);
       if (!(await limit('resetIp', meta.ip))) return;
       await background(async () => {
-        if (!(await limit('resetAccount', email))) return;
-        const rows = await db.$queryRaw<Array<{ user_id: string }>>`
-          SELECT user_id FROM app.auth_find_user_id(${email})`;
+        const rows = await db.$queryRaw<Array<{ user_id: string; password_hash: string }>>`
+          SELECT user_id, password_hash FROM app.auth_find_login(${email})`;
         const row = rows[0];
+        const device = verifyKnownDevice(
+          deps.sessionSecret,
+          meta.knownDevice,
+          email,
+          row?.password_hash ?? null,
+        );
+        const deviceOk = device !== null && (await limit('resetDevice', device));
+        if (!deviceOk && !(await limit('resetAccount', canonicalMailbox(email)))) return;
         if (!row) return;
         const token = await issueToken(row.user_id, 'reset_password', RESET_PASSWORD_TTL_S);
         await mail.send({
@@ -641,9 +703,30 @@ export function createAuthService(deps: AuthDeps) {
     },
 
     /**
+     * Reautenticação para ações destrutivas fora do módulo (ex.: encerramento de conta, LEG-F04). Confere a
+     * senha atual (com limite) e registra no banco o hash de um nonce de uso único, válido por 2 min, que a
+     * ação consome (`app.reauth_issue`; revisão M1). Devolve o nonce, ou null se a senha não conferir.
+     */
+    async issueReauthProof(
+      userId: string,
+      password: string,
+      purpose: 'minor_closure',
+    ): Promise<string | null> {
+      if (!(await checkCurrentPassword(userId, password))) return null;
+      const nonce = randomToken();
+      await withUser(
+        userId,
+        (tx) => tx.$executeRaw`SELECT app.reauth_issue(${purpose}, ${sha256(nonce)})`,
+      );
+      return nonce;
+    },
+
+    /**
      * Expurgo de dados de autenticação vencidos (ROPA T1/T5, job `auth.purge_expired`): sessões e tokens
      * vencidos há mais de 1 dia, janelas de limite encerradas, contas com e-mail nunca verificado após
      * 7 dias e segredos TOTP de ativações abandonadas após 1 dia.
+     * Apagar contas pressupõe que só tabelas de auth e de dados do usuário têm FK para `users`: as
+     * provas (consentimentos, pedidos, AuditLog) e o AccessLog não têm FK e ficam (PR1a-R3-B8).
      */
     async purgeExpired(): Promise<PurgeResult> {
       const rows = await db.$queryRaw<Array<PurgeResult>>`SELECT * FROM app.auth_purge_expired()`;

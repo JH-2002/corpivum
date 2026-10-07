@@ -326,5 +326,293 @@
       "passwordSubmit": "Trocar senha",
       "passwordChanged": "Senha trocada. As outras sessões foram encerradas."
     }
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Boas-vindas ao HealthMind 360",
+      "intro": "Um espaço para você registrar sono, humor, hábitos, corpo, alimentação e atividade, e enxergar padrões da sua rotina.",
+      "doesTitle": "O que o app faz",
+      "does1": "Organiza o que você registra e mostra tendências ao longo do tempo.",
+      "does2": "Sugere hábitos gerais de bem-estar, sempre como sugestão.",
+      "does3": "Deixa você decidir, finalidade por finalidade, o que pode ser feito com seus dados.",
+      "doesNotTitle": "O que o app não faz",
+      "doesNot1": "Não é um serviço médico.",
+      "doesNot2": "Não vende seus dados nem usa seus dados para publicidade."
+    },
+    "step": "Etapa {current} de {total}",
+    "security": {
+      "title": "Proteja sua conta",
+      "body": "A verificação em duas etapas pede, além da senha, um código do seu aplicativo autenticador. É opcional e pode ser ativada depois em Configurações > Segurança.",
+      "continue": "Continuar"
+    },
+    "consents": {
+      "title": "Suas escolhas de privacidade",
+      "intro": "Cada autorização abaixo é separada e começa desmarcada. Você pode mudar qualquer escolha depois, em 1 ou 2 cliques, na Central de Privacidade.",
+      "documentsLegend": "Termos e Política de Privacidade (obrigatórios para usar o app)",
+      "termsLabel": "Li e aceito os Termos de Uso.",
+      "privacyLabel": "Li a Política de Privacidade.",
+      "readTerms": "Ler os Termos de Uso (abre em nova aba)",
+      "readPrivacy": "Ler a Política de Privacidade (abre em nova aba)",
+      "termsRequired": "Para usar o app, é preciso aceitar os Termos de Uso.",
+      "privacyRequired": "Para usar o app, é preciso confirmar que leu a Política de Privacidade.",
+      "purposesLegend": "Autorizações por finalidade (opcionais)",
+      "optionalNote": "Recusar uma autorização não impede o uso das outras partes do app.",
+      "submit": "Salvar escolhas e continuar"
+    },
+    "update": {
+      "title": "Atualizamos nossos documentos",
+      "intro": "Houve uma mudança importante nos textos abaixo. Revise e escolha de novo para continuar. Até você decidir, o que depende dessas autorizações fica pausado.",
+      "documentAccept": "Li e aceito a nova versão.",
+      "documentRequired": "Para continuar usando o app, é preciso aceitar a nova versão.",
+      "keep": "Manter autorização",
+      "decline": "Não autorizar",
+      "choiceRequired": "Escolha uma das opções.",
+      "submit": "Salvar e continuar",
+      "privacyCenter": "Ir para a Central de Privacidade"
+    }
+  },
+  "consent": {
+    "fields": {
+      "collected": "O que é coletado",
+      "purpose": "Para quê",
+      "processors": "Quem processa e onde",
+      "refusal": "Se você não autorizar",
+      "revoke": "Como revogar"
+    },
+    "purposes": {
+      "health_data": {
+        "title": "Dados de bem-estar",
+        "collected": "O que você registrar sobre sono, humor, hábitos, diário, peso e medidas, alimentação, atividade e medicamentos que você informar.",
+        "purpose": "Guardar seus registros, mostrar seus dados e tendências e calcular indicadores de bem-estar só para você.",
+        "processors": "A equipe do HealthMind 360 ('{{CONTROLADOR}}') e os provedores de infraestrutura listados em Subprocessadores, com dados armazenados no Brasil. Nunca vendemos nem compartilhamos esses dados para publicidade.",
+        "refusal": "Você continua com acesso à conta e à Central de Privacidade, mas não consegue registrar nem ver dados de bem-estar.",
+        "revoke": "Na Central de Privacidade. O uso para na hora e os dados já registrados são eliminados depois de 30 dias, a menos que você autorize de novo antes."
+      },
+      "marketing": {
+        "title": "Comunicações sobre novidades",
+        "collected": "Seu e-mail.",
+        "purpose": "Enviar, de vez em quando, novidades sobre o HealthMind 360. Seus dados de bem-estar nunca são usados para isso.",
+        "processors": "O provedor de e-mail listado em Subprocessadores. Ele ainda não foi escolhido; se tratar dados fora do Brasil, isso será informado antes de qualquer envio.",
+        "refusal": "Você recebe só os e-mails necessários à conta, como confirmações e avisos de segurança.",
+        "revoke": "Na Central de Privacidade, a qualquer momento. O envio para na hora."
+      },
+      "product_metrics": {
+        "title": "Métricas de uso ligadas à sua conta",
+        "collected": "Quais telas e funções você usa e quando, ligadas à sua conta. Nunca o conteúdo dos seus registros.",
+        "purpose": "Entender como o app é usado para melhorá-lo.",
+        "processors": "Somente a equipe do HealthMind 360, em infraestrutura no Brasil. Sem ferramentas de análise de terceiros.",
+        "refusal": "Nada muda no app, e nenhuma métrica de uso fica ligada à sua conta.",
+        "revoke": "Na Central de Privacidade, a qualquer momento. A coleta ligada à sua conta para na hora."
+      }
+    },
+    "status": {
+      "active": "Autorizado",
+      "inactive": "Não autorizado",
+      "revokedPending": "Revogado: eliminação em {date}"
+    },
+    "version": "Versão {version} do texto",
+    "since": "Autorizado em {date}",
+    "grant": "Autorizar",
+    "revoke": "Revogar",
+    "grantLabel": "Autorizar: {purpose}",
+    "revokeLabel": "Revogar: {purpose}",
+    "details": "Ver detalhes: {purpose}",
+    "granted": "Autorização registrada.",
+    "revoked": "Autorização revogada.",
+    "error": "Não foi possível salvar. Tente novamente.",
+    "healthRevoke": {
+      "title": "Revogar o uso dos dados de bem-estar?",
+      "stopNow": "A partir de agora, nada é exibido nem processado: os registros ficam bloqueados.",
+      "elimination": "Os dados de bem-estar já registrados serão eliminados em {date} ({days} dias).",
+      "cancel": "Se você autorizar de novo antes dessa data, nada é eliminado.",
+      "exportFirst": "Exportar meus dados antes",
+      "exportSoon": "A exportação dos dados estará disponível em breve na Central de Privacidade.",
+      "confirm": "Revogar agora",
+      "keep": "Manter autorização"
+    },
+    "healthMissing": {
+      "title": "Registro de bem-estar desativado",
+      "body": "Para registrar e ver dados de sono, humor, hábitos e os demais, é preciso autorizar o uso de dados de bem-estar.",
+      "action": "Abrir a Central de Privacidade"
+    },
+    "healthRevoked": {
+      "title": "Autorização revogada",
+      "body": "Nada é exibido nem processado. Os dados já registrados serão eliminados em {date}. Autorize de novo antes dessa data para mantê-los.",
+      "action": "Autorizar de novo na Central de Privacidade"
+    }
+  },
+  "privacyCenter": {
+    "intro": "Aqui você decide o que pode ser feito com seus dados, vê quem os processa e acompanha seus pedidos.",
+    "consentsTitle": "Autorizações",
+    "consentsDescription": "Cada finalidade tem sua própria autorização. Revogar uma não afeta as outras.",
+    "documentsTitle": "Documentos",
+    "documentsAccepted": "Versão {version} aceita em {date}",
+    "terms": "Termos de Uso",
+    "privacyPolicy": "Política de Privacidade",
+    "sessionsTitle": "Sessões ativas",
+    "sessionsDescription": "Aparelhos conectados à sua conta. Encerrar uma sessão vale na próxima ação desse aparelho.",
+    "manageSecurity": "Mais opções de segurança",
+    "subprocessorsTitle": "Quem processa seus dados",
+    "subprocessorsDescription": "Serviços que tratam dados em nome do HealthMind 360, com finalidade e região.",
+    "subprocessorsPublic": "Ver a lista pública de subprocessadores",
+    "requestsTitle": "Pedidos abertos",
+    "requestsEmpty": "Você não tem pedidos abertos.",
+    "requestsError": "Não foi possível carregar seus pedidos.",
+    "requestOpened": "Aberto em {date}",
+    "requestDue": "Resposta até {date}",
+    "requestKind": {
+      "confirmation_access": "Confirmação e acesso aos dados",
+      "correction": "Correção de dados",
+      "portability": "Portabilidade",
+      "deletion": "Eliminação",
+      "anonymization": "Anonimização",
+      "sharing_info": "Informação sobre compartilhamento",
+      "automated_review": "Revisão de decisão automatizada",
+      "minor_closure": "Encerramento de conta de menor de 18 anos"
+    },
+    "requestStatus": {
+      "open": "Aberto",
+      "in_progress": "Em andamento",
+      "completed": "Concluído",
+      "rejected": "Recusado"
+    },
+    "minorTitle": "Tenho menos de 18 anos",
+    "minorDescription": "O HealthMind 360 é só para pessoas com 18 anos ou mais. Se você tem menos de 18, encerre a conta: a conta, as sessões e o que foi registrado são apagados na hora.",
+    "minorStart": "Encerrar minha conta",
+    "minorConfirmTitle": "Encerrar e apagar a conta agora?",
+    "minorConfirmBody": "A conta, as sessões e tudo o que foi registrado são apagados agora, sem prazo de espera. Ficam guardados, sem seu e-mail e sem o conteúdo dos registros: a prova do encerramento e das suas escolhas de privacidade, por até {proofDays} dias, e os registros de acesso (IP, data e hora), por até {accessDays} dias. Cópias de segurança são substituídas em até {backupDays} dias.",
+    "minorPassword": "Digite sua senha para confirmar",
+    "minorConfirm": "Encerrar e apagar agora",
+    "minorCancel": "Cancelar",
+    "minorError": "Não foi possível confirmar. Verifique a senha ou tente de novo em alguns minutos.",
+    "closedTitle": "Conta encerrada",
+    "closedBody": "Sua conta e o que foi registrado nela foram apagados. Ficam só os registros mínimos informados antes da confirmação (prova do encerramento e registros de acesso, sem seu e-mail), pelos prazos indicados.",
+    "closedSupport": "Se quiser conversar com alguém, o CVV atende 24 horas pelo telefone 188, de graça.",
+    "minorUnavailable": "Não foi possível encerrar a conta agora. Tente de novo em alguns minutos ou fale com o encarregado pelo contato em Documentos › Encarregado e contato."
+  },
+  "subprocessors": {
+    "columns": {
+      "service": "Serviço",
+      "provider": "Fornecedor",
+      "purpose": "Finalidade",
+      "data": "Dados envolvidos",
+      "region": "Região",
+      "status": "Situação"
+    },
+    "toDefine": "A definir",
+    "items": {
+      "hosting": {
+        "service": "Hospedagem / execução das funções",
+        "purpose": "Servir o app e executar o servidor",
+        "data": "Todos os dados em trânsito; registros técnicos (IP, requisição)",
+        "region": "Brasil"
+      },
+      "database": {
+        "service": "Banco de dados gerenciado",
+        "purpose": "Armazenamento primário",
+        "data": "Conta, dados de bem-estar (cifrados em campo onde aplicável), consentimentos",
+        "region": "Brasil"
+      },
+      "backups": {
+        "service": "Backups",
+        "purpose": "Recuperação",
+        "data": "Cópia cifrada do banco, com retenção limitada ao prazo de eliminação",
+        "region": "Brasil"
+      },
+      "storage": {
+        "service": "Storage de objetos",
+        "purpose": "Exportações e relatórios (privados, link expira em 24 h)",
+        "data": "Arquivos de exportação",
+        "region": "Brasil"
+      },
+      "jobs": {
+        "service": "Fila / jobs",
+        "purpose": "Lembretes, relatórios, exportações, purga",
+        "data": "IDs de usuário e de registros (sem conteúdo)",
+        "region": "Brasil (no próprio banco de dados)"
+      },
+      "kms": {
+        "service": "KMS",
+        "purpose": "Chaves de criptografia de campo",
+        "data": "Chaves; nenhum dado de usuário",
+        "region": "Brasil"
+      },
+      "email": {
+        "service": "E-mail transacional",
+        "purpose": "Verificação, recuperação de senha, avisos e lembretes",
+        "data": "E-mail e links; sem conteúdo de bem-estar",
+        "region": "A definir"
+      },
+      "errors": {
+        "service": "Monitoramento de erros",
+        "purpose": "Identificar e corrigir falhas técnicas",
+        "data": "Metadados técnicos, com remoção de dados pessoais",
+        "region": "A definir"
+      },
+      "llm": {
+        "service": "Provedor de LLM",
+        "purpose": "HealthMind AI, somente com autorização própria",
+        "data": "Resumos e trechos escolhidos por você",
+        "region": "A definir"
+      }
+    },
+    "notUsed": "Não usamos SDKs de publicidade, ferramentas de análise de terceiros nem fontes remotas."
+  },
+  "legal": {
+    "nav": {
+      "label": "Documentos",
+      "privacyPolicy": "Política de Privacidade",
+      "terms": "Termos de Uso",
+      "subprocessors": "Subprocessadores",
+      "dpo": "Encarregado e contato"
+    },
+    "version": "Versão {version} · publicada em {date}",
+    "backToApp": "Voltar",
+    "privacyPolicy": {
+      "title": "Política de Privacidade",
+      "s1Title": "Quem somos",
+      "s1Body": "O HealthMind 360 é oferecido por '{{CONTROLADOR}}', controlador dos dados pessoais tratados no app. O encarregado pelo tratamento de dados é '{{ENCARREGADO}}', com contato em '{{CONTATO_ENCARREGADO}}'.",
+      "s2Title": "Quais dados tratamos",
+      "s2Body": "Dados da conta (e-mail, senha protegida por hash, declaração de maioridade, configurações de segurança); dados de bem-estar que você registrar, somente com sua autorização; registros de acesso (IP, data e hora); e registros mínimos que provam suas escolhas de privacidade e seus pedidos.",
+      "s3Title": "Para que usamos e com qual base legal",
+      "s3Body": "Conta e autenticação: execução do contrato. Dados de bem-estar: consentimento específico e destacado. Comunicações sobre novidades e métricas ligadas à conta: consentimentos separados e opcionais. Segurança da conta: legítimo interesse, sem dados de bem-estar. Registros de acesso: obrigação legal, se aplicável. Prova de consentimento e de pedidos: exercício regular de direitos.",
+      "s4Title": "Com quem compartilhamos",
+      "s4Body": "Somente com os provedores listados em Subprocessadores, para operar o serviço. Não vendemos dados, não usamos dados para publicidade e não compartilhamos dados de bem-estar com outros controladores para obter vantagem econômica.",
+      "s5Title": "Onde os dados ficam",
+      "s5Body": "Banco de dados, armazenamento, filas e execução do servidor ficam no Brasil. Qualquer serviço que trate dados fora do Brasil aparece em Subprocessadores antes de ser ativado.",
+      "s6Title": "Por quanto tempo",
+      "s6Body": "Dados de bem-estar: enquanto a conta existir e você mantiver a autorização. Se você revogar a autorização, os dados são eliminados após o prazo informado na revogação, a menos que você autorize de novo antes. Conta com e-mail nunca confirmado: apagada 7 dias após o cadastro. Registros de acesso: até '{{RETENCAO_ACESSO}}'. Provas de consentimento e de pedidos: '{{RETENCAO_PROVA}}', com dados mínimos.",
+      "s7Title": "Seus direitos",
+      "s7Body": "Você pode confirmar e acessar seus dados, corrigi-los, pedir portabilidade, anonimização ou eliminação, saber com quem compartilhamos e revogar autorizações a qualquer momento, pela Central de Privacidade ou pelo contato do encarregado.",
+      "s8Title": "Idade mínima",
+      "s8Body": "O HealthMind 360 é exclusivo para pessoas com 18 anos ou mais. Se você tem menos de 18 anos, use a opção de encerramento na Central de Privacidade: a conta e os dados registrados são apagados na hora. Ficam só, sem e-mail e sem conteúdo, a prova do encerramento e das escolhas de privacidade e os registros de acesso, pelos prazos de 'Por quanto tempo'; cópias de segurança são substituídas em até '{{PRAZO_BACKUP}}'.",
+      "s9Title": "Mudanças nesta política",
+      "s9Body": "Quando houver mudança importante, avisaremos e pediremos sua confirmação antes de continuar."
+    },
+    "terms": {
+      "title": "Termos de Uso",
+      "s1Title": "O serviço",
+      "s1Body": "O HealthMind 360 é uma ferramenta de bem-estar e autoacompanhamento oferecida por '{{CONTROLADOR}}'. Não é um serviço médico.",
+      "s2Title": "Quem pode usar",
+      "s2Body": "Pessoas com 18 anos ou mais. Ao criar a conta, você declara ter 18 anos ou mais.",
+      "s3Title": "Sua conta",
+      "s3Body": "Você é responsável por manter sua senha em segredo. Recomendamos ativar a verificação em duas etapas.",
+      "s4Title": "Uso adequado",
+      "s4Body": "Não use o app para atividades ilegais nem tente acessar dados de outras pessoas.",
+      "s5Title": "Sugestões do app",
+      "s5Body": "As sugestões são gerais, de bem-estar, e não levam em conta sua história de saúde. Em caso de dúvida sobre sua saúde, procure um profissional habilitado.",
+      "s6Title": "Encerramento",
+      "s6Body": "Você pode encerrar a conta quando quiser. Podemos suspender contas que violem estes termos, com aviso, salvo quando a lei exigir o contrário.",
+      "s7Title": "Contato e foro",
+      "s7Body": "Contato: '{{CONTATO_ENCARREGADO}}'. Foro: '{{FORO}}'."
+    },
+    "dpo": {
+      "title": "Encarregado e contato",
+      "body": "Encarregado pelo tratamento de dados pessoais: '{{ENCARREGADO}}'. Contato: '{{CONTATO_ENCARREGADO}}'. Use este canal para exercer seus direitos ou tirar dúvidas sobre privacidade."
+    },
+    "subprocessorsPage": {
+      "title": "Subprocessadores",
+      "intro": "Serviços que tratam dados em nome do HealthMind 360. Banco de dados, armazenamento, filas e execução do servidor ficam no Brasil."
+    }
   }
 }

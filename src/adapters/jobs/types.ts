@@ -9,6 +9,11 @@ export interface EnqueueOptions {
   /** Execução agendada; padrão: imediata. */
   runAt?: Date;
   maxAttempts?: number;
+  /**
+   * No máximo um job ainda não iniciado por chave: enfileirar de novo devolve o job existente
+   * (jobs recorrentes não duplicam entre instâncias; PR1a-R2-B6). Formato: `[A-Za-z0-9_.:-]{1,128}`.
+   */
+  singletonKey?: string;
 }
 
 export type JobHandler = (
@@ -21,3 +26,5 @@ export interface JobQueue {
   enqueue(name: string, payload: JobPayload, options?: EnqueueOptions): Promise<string>;
   register(name: string, handler: JobHandler): void;
 }
+// Sem cancelamento genérico: cancelar é uma operação de domínio, na transação e só da própria pessoa
+// (ex.: app.health_elimination_cancel; revisão M4 da ADR-0019).

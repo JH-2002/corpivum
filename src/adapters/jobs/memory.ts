@@ -12,6 +12,9 @@ interface MemoryJob {
   attempts: number;
   maxAttempts: number;
   status: JobStatus;
+  singletonKey: string | undefined;
+  /** Em execução: o job pode reagendar a própria chave sem colidir consigo mesmo. */
+  running: boolean;
 }
 
 /**
@@ -23,12 +26,19 @@ export class MemoryJobQueue implements JobQueue {
   readonly #jobs: MemoryJob[] = [];
   readonly #handlers = new Map<string, JobHandler>();
   readonly #logger: Logger;
+  #draining = false;
 
   constructor(logger: Logger = defaultLogger) {
     this.#logger = logger;
   }
 
   async enqueue(name: string, payload: JobPayload, options: EnqueueOptions = {}): Promise<string> {
+    if (options.singletonKey) {
+      const existing = this.#jobs.find(
+        (j) => j.singletonKey === options.singletonKey && j.status === 'pending' && !j.running,
+      );
+      if (existing) return existing.id;
+    }
     const id = randomUUID();
     this.#jobs.push({
       id,
@@ -38,6 +48,8 @@ export class MemoryJobQueue implements JobQueue {
       attempts: 0,
       maxAttempts: options.maxAttempts ?? 3,
       status: 'pending',
+      singletonKey: options.singletonKey,
+      running: false,
     });
     return id;
   }
@@ -46,8 +58,21 @@ export class MemoryJobQueue implements JobQueue {
     this.#handlers.set(name, handler);
   }
 
-  /** Executa os jobs pendentes com `runAt <= now`. Retorna quantos foram concluídos. */
+  /**
+   * Executa os jobs pendentes com `runAt <= now`. Retorna quantos foram concluídos. Uma chamada
+   * enquanto outra ainda roda não faz nada: o mesmo job nunca executa duas vezes (PR1a-R2-B6).
+   */
   async drain(now: Date = new Date()): Promise<number> {
+    if (this.#draining) return 0;
+    this.#draining = true;
+    try {
+      return await this.#drain(now);
+    } finally {
+      this.#draining = false;
+    }
+  }
+
+  async #drain(now: Date): Promise<number> {
     let completed = 0;
     for (const job of this.#jobs) {
       if (job.status !== 'pending' || job.runAt > now) continue;
@@ -55,6 +80,7 @@ export class MemoryJobQueue implements JobQueue {
       if (!handler) continue;
 
       job.attempts += 1;
+      job.running = true;
       try {
         await handler(job.payload, { jobId: job.id, attempt: job.attempts });
         job.status = 'done';
@@ -68,6 +94,8 @@ export class MemoryJobQueue implements JobQueue {
           attempt: job.attempts,
           errorCode: error instanceof Error ? error.name : 'unknown',
         });
+      } finally {
+        job.running = false;
       }
     }
     return completed;

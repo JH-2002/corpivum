@@ -9,7 +9,8 @@ import {
   RegenerateCodes,
 } from '@/components/auth/SecurityForms';
 import { buttonClasses } from '@/components/ui/Button';
-import { getAuthService, requireVerifiedSession } from '@/modules/auth/server';
+import { getAuthService } from '@/modules/auth/server';
+import { requireAppSession } from '@/modules/consent/server';
 import { revokeOtherSessionsAction, revokeSessionAction } from './actions';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -39,7 +40,7 @@ function Card({
 
 /** Segurança da conta (§46, LEG-S04): sessões ativas, verificação em duas etapas e senha. */
 export default async function SecurityPage() {
-  const session = await requireVerifiedSession();
+  const session = await requireAppSession();
   const service = getAuthService();
   const [sessions, overview] = await Promise.all([
     service.listSessions(session.userId, session.sessionId),

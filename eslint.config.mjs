@@ -33,10 +33,17 @@ const config = [
     },
   },
   {
-    // LEG-S03: só src/lib/db e o módulo auth (funções SECURITY DEFINER) usam o client cru.
-    // O resto acessa dados por `withUser`/`forUser` de '@/lib/db', que fixam app.user_id.
+    // LEG-S03: só src/lib/db, a fila Postgres e os serviços de auth/consent/privacy (funções SECURITY
+    // DEFINER e injeção do client nos testes) usam o client cru. O resto acessa dados por
+    // `withUser`/`forUser` de '@/lib/db', que fixam app.user_id (ADR-0015, ADR-0019).
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/lib/db/**', 'src/modules/auth/**'],
+    ignores: [
+      'src/lib/db/**',
+      'src/modules/auth/**',
+      'src/modules/consent/**',
+      'src/modules/privacy/**',
+      'src/adapters/jobs/**',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',

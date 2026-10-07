@@ -8,11 +8,18 @@ import { hmac } from './crypto';
 export const RATE_LIMITS = {
   loginAccount: { windowSeconds: 15 * 60, max: 5 },
   loginIp: { windowSeconds: 15 * 60, max: 20 },
+  /** Por aparelho conhecido (cookie assinado, OI-15): o titular não é bloqueado pelo limite da conta. */
+  loginDevice: { windowSeconds: 15 * 60, max: 5 },
   registerIp: { windowSeconds: 60 * 60, max: 5 },
   resetIp: { windowSeconds: 60 * 60, max: 5 },
+  /** Por caixa de destino canônica (PR1a-R3-M1). */
   resetAccount: { windowSeconds: 60 * 60, max: 3 },
+  resetDevice: { windowSeconds: 60 * 60, max: 3 },
   resendIp: { windowSeconds: 60 * 60, max: 5 },
-  /** E-mails de cadastro ("já existe uma conta") e de verificação por destinatário: evita assédio. */
+  /**
+   * E-mails de cadastro ("já existe uma conta") e de verificação por destinatário: evita assédio. A chave
+   * é a caixa canônica (`canonicalMailbox`, PR1a-R3-M1): `x+1@` e `x.y@gmail.com` contam juntos.
+   */
   registerAccount: { windowSeconds: 60 * 60, max: 3 },
   resendAccount: { windowSeconds: 60 * 60, max: 3 },
   /** Tentativas de 2º fator por CONTA (somadas entre sessões pendentes): barra força bruta do TOTP. */

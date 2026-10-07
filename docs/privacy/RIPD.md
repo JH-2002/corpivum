@@ -1,6 +1,6 @@
 # Relatório de Impacto à Proteção de Dados (RIPD) — LGPD art. 38
 
-> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.1 (Fase 0) · LEG-G02
+> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.2 (Fase 1b) · LEG-G02
 > Controlador: `{{CONTROLADOR}}` · Encarregado: `{{ENCARREGADO}}` · Data: `{{DATA}}`
 
 Revisar este relatório antes do lançamento e sempre que houver nova finalidade, integração (LEG-X04) ou
@@ -28,6 +28,8 @@ subprocessador.
 | R6 | Interpretação de conteúdo como orientação clínica | `{{}}` | Alto | `{{}}` |
 | R7 | Retenção além do prazo (inclusive backups) | `{{}}` | Médio | `{{}}` |
 | R8 | Dependência comprometida (cadeia de suprimentos) | `{{}}` | Alto | `{{}}` |
+| R9 | Tratamento sem consentimento válido (pré-marcação, versão desatualizada, revogação ignorada) | `{{}}` | Alto | `{{}}` |
+| R10 | Perda das provas de consentimento e de pedidos ao excluir contas | `{{}}` | Médio | `{{}}` |
 
 ## 4. Medidas de mitigação
 | Risco | Medidas | Requisitos |
@@ -40,6 +42,8 @@ subprocessador.
 | R6 | Declaração de finalidade, avisos `disclaimer.*`, teste de alegações proibidas, camada de saída da IA | LEG-M01–M05, LEG-I04 |
 | R7 | `PURGE_DAYS`, backup ≤ prazo de purga (validado), expurgo de AccessLog | LEG-D04, S07, R02 |
 | R8 | Auditoria de dependências, SAST, actions por SHA, builds nativos negados | LEG-S09 |
+| R9 | Consentimento por finalidade nunca pré-marcado (teste), texto versionado com hash, `app.has_active_consent` no guard e no RLS, revogação vale na próxima operação (teste), reconsentimento em versão substancial | LEG-C01–C06, ADR-0019 |
+| R10 | Provas sem FK para `users`, gatilhos contra alteração, teste da lista de FKs e do expurgo com provas presentes | LEG-R03, PR1a-R3-B8 |
 
 ## 5. Parecer do encarregado
 `{{PARECER_ENCARREGADO}}`

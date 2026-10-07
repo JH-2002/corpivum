@@ -16,7 +16,7 @@ vendidos nem compartilhados para vantagem econômica (LGPD art. 11, §4º).
 | Banco de dados gerenciado | `{{BANCO}}` | Armazenamento primário | Conta, dados de saúde (sensíveis, cifrados em campo onde aplicável), consentimentos | `{{REGIAO}}` (ex.: `sa-east-1`) | Não (exigido) | `{{DPA}}` | A definir |
 | Backups | `{{BANCO}}` | Recuperação | Cópia cifrada do banco, retenção ≤ `PURGE_DAYS` | `{{REGIAO}}` | Não (exigido) | `{{DPA}}` | A definir |
 | Storage de objetos | `{{STORAGE}}` | Exportações e relatórios (privados, link expira em 24h) | Arquivos de exportação | `{{REGIAO}}` | Não (exigido) | `{{DPA}}` | A definir |
-| Fila / jobs | `{{FILA}}` | Lembretes, relatórios, exportações, purga | IDs de usuário e de registros (sem conteúdo) | `{{REGIAO}}` | Não (exigido) | `{{DPA}}` | A definir |
+| Fila / jobs | Mesmo banco de dados (`{{BANCO}}`), tabela `job_queue` (ADR-0019) | Lembretes, relatórios, exportações, purga | IDs de usuário e de registros (sem conteúdo) | `{{REGIAO}}` | Não (exigido) | `{{DPA}}` do banco | A definir |
 | KMS | `{{KMS}}` | Chaves de criptografia de campo | Chaves; nenhum dado de usuário | `{{REGIAO}}` | Não (exigido) | `{{DPA}}` | A definir |
 | E-mail transacional | `{{EMAIL}}` | Verificação, recuperação de senha, lembretes | E-mail, nome, links; **sem conteúdo de saúde** | `{{REGIAO}}` | Provável | `{{DPA}}` | A definir |
 | Monitoramento de erros | `{{ERROS}}` | Diagnóstico técnico | Metadados técnicos, com remoção de PII (LEG-R04) | `{{REGIAO}}` | Provável | `{{DPA}}` | A definir |

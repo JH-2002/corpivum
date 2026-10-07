@@ -265,3 +265,115 @@ testados. Não apontou nada crítico nem alto. Apontou 3 médios novos e 8 baixo
   com chave HMAC) são checados dentro do trabalho adiado, então a resposta e o tempo não mudam.
 **Baixos:** registrados em docs/legal/OPEN_ISSUES.md (PR1a-R2-B1 a B8), por decisão do responsável.
 
+
+## ADR-0019 — Consentimento, provas, AccessLog, fila Postgres e aparelho conhecido (Fase 1b)
+**Contexto.** A Fase 1b cria a base legal do tratamento (LEG-C01–C06), a Central de Privacidade, o
+AuditLog/AccessLog e o encerramento de conta de menor (LEG-F04). Junto entram quatro pendências: provas
+fora da cascata do expurgo (PR1a-R3-B8), fila real (OI-14), bloqueio de conta por terceiros (OI-15) e
+limite por caixa canônica (PR1a-R3-M1).
+
+**Decisão — consentimento e documentos.**
+- `ConsentRecord` por finalidade (enum com as 5 do LEG-C02), apontando para a `PolicyVersion` do texto
+  exibido e com o `text_hash` dela. Conceder cria um registro novo; revogar só preenche `revoked_at`.
+  Gatilhos no banco exigem a versão vigente e o hash certo e tornam a revogação definitiva.
+- `PolicyVersion`: catálogo público (sem dado pessoal), só leitura para o runtime. O texto vive no i18n
+  (`consent.purposes.*`, `legal.*`). `textHash` = SHA-256 do JSON do namespace. Nova versão = migração com
+  INSERT e catálogo atualizado em `src/modules/consent/catalog.ts`. Um teste falha se o texto mudar sem
+  nova versão; o serviço recusa gravar se a versão publicada divergir do catálogo.
+- Aceite dos Termos e ciência da Política ficam em `policy_acceptances`, separados do consentimento
+  (base legal diferente).
+- `app.has_active_consent(purpose)` (SECURITY INVOKER): ativo = não revogado e na versão ≥ última versão
+  com `requires_reconsent`. É a mesma regra do guard da aplicação (`withConsentOn`/`assertConsent`, na
+  mesma transação) e das políticas RLS das tabelas de saúde a partir da Fase 2.
+- Versão substancial nova (LEG-C06): o consentimento antigo deixa de valer até a pessoa escolher de novo.
+  `requireAppSession` leva a `/boas-vindas/atualizacao`; a Central de Privacidade fica acessível durante a
+  atualização (revogar nunca depende de aceitar algo).
+- IA e transferência internacional existem no enum e no guard, mas só são oferecidas na Fase 5, quando
+  houver provedor e região para o texto (LEG-C03).
+- O passo "dados de demonstração × começar do zero" (§52.5) fica para a Fase 2, junto com o seed.
+
+**Decisão — revogação dos dados de saúde (`LEGAL-REVIEW`, OI-16).**
+- Bloqueio imediato: nada é exibido nem processado (guard + RLS).
+- Antes do 2º clique, aviso com o que para, a data da eliminação e como cancelar, e oferta de exportar
+  antes. A exportação é da Fase 6: até lá o aviso diz que ela estará disponível em breve
+  (`exportAvailable=false` em `HealthRevokeDialog`).
+- Eliminação agendada para `HEALTH_DATA_GRACE_DAYS` (padrão 30): `users.health_data_purge_at` + job
+  `privacy.health_data_eliminate` com `singletonKey`. Reconsentir dentro do prazo zera a data e cancela o
+  job. O job rechecha data e consentimento antes de apagar; a varredura diária
+  (`privacy.health_data_sweep`) reencontra agendamentos perdidos.
+- Cada módulo com dados de saúde registra seu eliminador (`registerHealthDataEraser`) e usa o padrão de
+  política: SELECT/INSERT/UPDATE exigem `(SELECT app.has_active_consent('health_data'))`; DELETE só por dono.
+
+**Decisão — provas e logs (PR1a-R3-B8, LEG-R02, LEG-R03, LEG-S06).**
+- `consent_records`, `policy_acceptances`, `privacy_requests`, `audit_logs` e `access_logs` guardam
+  `user_id` **sem FK para `users`**: apagar uma conta não leva as provas em cascata nem é bloqueado por
+  elas. Um teste lista as FKs para `users` (lista fechada).
+- `audit_logs`: só enums e UUIDs (sem texto livre nem JSON), escrito só por `app.audit_append` na mesma
+  transação da mudança; o runtime não lê.
+- `access_logs`: IP (`inet`) e data/hora, gravados no login completo e a cada renovação da sessão (5 min);
+  escritos só por `app.access_log_append`; o runtime não lê. Expurgo diário por
+  `ACCESS_LOG_RETENTION_DAYS`. Provas: `PROOF_RETENTION_DAYS` (padrão 1825, piso 365; `LEGAL-REVIEW`).
+- Encerramento de conta de menor (LEG-F04): senha atual, `app.account_close_minor()` (só a própria conta)
+  grava o pedido concluído e o AuditLog, revoga os consentimentos e apaga a conta na hora.
+
+**Decisão — fila (OI-14, PR1a-R2-B6).** Fila própria no Postgres (`job_queue` + `app.jobs_*`), sem
+dependência nova nem subprocessador novo: `FOR UPDATE SKIP LOCKED`, reserva com prazo, retomada de job
+travado, nova tentativa com atraso exponencial e `singletonKey` (no máximo um job na fila por chave). A fila
+em memória ganhou `singletonKey` e não executa dois `drain` ao mesmo tempo. `JOB_QUEUE=postgres` e
+`JOB_WORKER=inline|off`. Falta só o processo de worker dedicado na hospedagem (Fase 7).
+
+**Decisão — auth (OI-15, PR1a-B2, PR1a-R3-M1).**
+- Cookie `__Host-hm_device` (180 dias): `v1.<nonce>.<HMAC(SESSION_SECRET, e-mail normalizado + nonce)>`,
+  emitido no fim do login completo. Com cookie válido para o e-mail digitado, a tentativa conta em
+  `loginDevice`/`resetDevice` (por nonce), não em `loginAccount`/`resetAccount`. Esgotado o limite do
+  aparelho, volta a contar no da conta. A checagem é só HMAC (sem banco), então não reabre a enumeração.
+- `canonicalMailbox` (sem `+tag`; no Gmail, sem pontos) só na chave dos limites por destinatário.
+  O e-mail gravado e a busca da conta não mudam.
+
+**Exceção de ESLint.** `src/modules/consent`, `src/modules/privacy` e `src/adapters/jobs` podem importar o
+client cru, como o módulo auth, para injetar o banco nos testes e chamar funções SECURITY DEFINER. Todo
+acesso a dado de usuário continua em `withUserOn`.
+
+**Consequências / notas para as próximas fases.**
+- **Fase 2:** toda tabela de saúde com o padrão de política acima, eliminador registrado e testado, e o
+  passo §52.5 no onboarding.
+- **Fase 5:** publicar os textos de IA e de transferência (nova `PolicyVersion`) e ligar `available`.
+- **Fase 6:** ligar `exportAvailable` no aviso de revogação; criar os demais tipos de `PrivacyRequest`.
+- **Fase 7:** processo de worker dedicado (`JOB_WORKER=off` nas instâncias web).
+
+## ADR-0020 — Revisão de privacidade da Fase 1b
+**Contexto.** O `privacy-reviewer` não apontou nada crítico nem alto na Fase 1b. Apontou 4 médios e 9 baixos.
+Por decisão do responsável pelo projeto, os médios e cinco baixos foram corrigidos; os demais estão no
+OPEN_ISSUES.
+
+**Decisão (corrigido, com teste).**
+- **M1, encerramento de conta:** `app.account_close_minor(p_proof_hash)` exige uma prova de reautenticação
+  de uso único (2 min). A prova é registrada por `app.reauth_issue` só depois de a aplicação conferir a senha
+  (`issueReauthProof`) e fica na tabela `reauth_proofs`, sem acesso direto do runtime. Há também um teto
+  global de 50 encerramentos por hora. Um erro de contexto (`app.user_id` de outra pessoa) não basta mais
+  para apagar uma conta. Limite residual: quem executa SQL arbitrário como `app_user` consegue chamar as
+  duas funções. Isso fica registrado (papel de worker separado, Fase 7).
+- **M2, transparência:** os textos do encerramento e da Política dizem o que fica (prova e registros de
+  acesso, sem e-mail) e por quanto tempo, com os prazos da configuração (`LEGAL-REVIEW`).
+- **M3, prazo no texto versionado:** o texto do consentimento de saúde traz "30 dias" escrito (coberto
+  pelo hash), sem parâmetro. `HEALTH_DATA_GRACE_DAYS` precisa ser igual a `HEALTH_DATA_GRACE_DAYS_IN_TEXT`,
+  e o serviço recusa iniciar se não for.
+- **M4, cancelamento de jobs:** não há mais cancelamento genérico (`app.jobs_cancel` e `JobQueue.cancel`
+  foram removidos). `app.health_elimination_cancel()` cancela só a eliminação da própria pessoa, na mesma
+  transação do novo consentimento.
+- **B1:** os gatilhos usam o relógio do banco em `granted_at`, `accepted_at` e `revoked_at`. Na revogação, só
+  `revoked_at` muda.
+- **B4:** o cookie de aparelho conhecido cobre também o hash da senha atual. Trocar ou redefinir a senha, ou
+  apagar a conta, invalida todos os cookies. O navegador atual apaga o cookie na troca e na redefinição de
+  senha e no encerramento.
+- **B5:** os logs não ligam mais o `userId` a "é menor" nem a uma finalidade de consentimento.
+- **B6/B7:** os textos de métricas (sem promessa de anonimização), de marketing (provedor ainda não escolhido
+  e transferência informada antes do envio) e de monitoramento de erros ("com remoção de dados pessoais")
+  ficaram de acordo com o que o sistema faz. Os hashes da v1 foram recalculados: a v1 ainda não tinha sido
+  publicada fora desta branch.
+
+**Aceito por ora:** B2, B3, B8 e B9, registrados em docs/legal/OPEN_ISSUES.md.
+
+**Revisão focada das correções.** Nada crítico ou alto. O teto global de encerramentos passou a ser
+tratado (mensagem com o caminho do encarregado, nada apagado). O desenho do teto e quatro baixos ficam em
+OPEN_ISSUES (PR1b-R2-*).

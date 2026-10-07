@@ -8,7 +8,8 @@ export type AppErrorCode =
   | 'NOT_FOUND'
   | 'VALIDATION'
   | 'ADAPTER_FAILURE'
-  | 'FORBIDDEN_IN_PRODUCTION';
+  | 'FORBIDDEN_IN_PRODUCTION'
+  | 'CONSENT_REQUIRED';
 
 export class AppError extends Error {
   readonly code: AppErrorCode;
@@ -46,5 +47,18 @@ export class NotFoundError extends AppError {
 export class AdapterError extends AppError {
   constructor(adapter: string, operation: string, options?: { cause?: unknown }) {
     super('ADAPTER_FAILURE', `Falha no adaptador ${adapter} (${operation})`, options);
+  }
+}
+
+/**
+ * Tratamento bloqueado por falta de consentimento ativo para a finalidade (CLAUDE.md regra 1, LEG-C04).
+ * Carrega só o identificador da finalidade.
+ */
+export class ConsentRequiredError extends AppError {
+  readonly purpose: string;
+
+  constructor(purpose: string) {
+    super('CONSENT_REQUIRED', `Consentimento ativo necessário: ${purpose}`);
+    this.purpose = purpose;
   }
 }

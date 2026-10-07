@@ -10,6 +10,7 @@ import { logger } from '@/lib/logger';
 import { clientIp } from './client-ip';
 import { SESSION_COOKIE } from './constants';
 import { AGE_BLOCK_COOKIE, AGE_OK_COOKIE, AGE_OK_TTL_SECONDS } from './age';
+import { KNOWN_DEVICE_COOKIE, KNOWN_DEVICE_MAX_AGE_S } from './known-device';
 import {
   createAuthService,
   SESSION_ABSOLUTE_MS,
@@ -43,10 +44,40 @@ export function getAuthService(): AuthService {
   return service;
 }
 
-/** IP (só para a chave HMAC do limite, ver `clientIp`) e user-agent (só para o rótulo do aparelho). */
+/**
+ * IP (chave HMAC dos limites e registro de acesso, LEG-R02), user-agent (só para o rótulo do aparelho) e
+ * cookie de aparelho conhecido (OI-15).
+ */
 export async function requestMeta(): Promise<RequestMeta> {
   const h = await headers();
-  return { ip: clientIp(h, getEnv().CLIENT_IP_HEADER), userAgent: h.get('user-agent') };
+  const knownDevice = (await cookies()).get(KNOWN_DEVICE_COOKIE)?.value;
+  return {
+    ip: clientIp(h, getEnv().CLIENT_IP_HEADER),
+    userAgent: h.get('user-agent'),
+    ...(knownDevice ? { knownDevice } : {}),
+  };
+}
+
+/** Apaga o cookie de aparelho conhecido (mesmos atributos do `__Host-`; ver `clearSessionCookie`). */
+export async function clearKnownDeviceCookie(): Promise<void> {
+  (await cookies()).set(KNOWN_DEVICE_COOKIE, '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+}
+
+/** Cookie de aparelho conhecido (OI-15): assinado, sem identificador da conta. */
+export async function setKnownDeviceCookie(value: string): Promise<void> {
+  (await cookies()).set(KNOWN_DEVICE_COOKIE, value, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: KNOWN_DEVICE_MAX_AGE_S,
+  });
 }
 
 export async function setSessionCookie(token: string, mfaPending: boolean): Promise<void> {
@@ -79,7 +110,7 @@ export async function readSessionToken(): Promise<string | undefined> {
 
 /** Sessão da requisição, validada no banco (uma vez por requisição). */
 export const getCurrentSession = cache(async (): Promise<ResolvedSession | null> => {
-  return getAuthService().resolveSession(await readSessionToken());
+  return getAuthService().resolveSession(await readSessionToken(), await requestMeta());
 });
 
 /** Exige sessão completa (com 2º fator, se houver). */
