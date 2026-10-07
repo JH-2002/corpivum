@@ -11,7 +11,12 @@ import { requireVerifiedSession } from '@/modules/auth/server';
 import type { ConsentPurpose } from './catalog';
 import { withConsentOn } from './guard';
 import type { HealthConsentState } from './health';
-import { createConsentService, type ConsentService, type ConsentState } from './service';
+import {
+  createConsentService,
+  type ConsentService,
+  type ConsentState,
+  type DataMode,
+} from './service';
 
 /** Integração do consentimento com o Next: serviço, guarda de página e guard de tratamento. */
 let service: ConsentService | undefined;
@@ -35,13 +40,16 @@ export const getConsentState = cache((userId: string): Promise<ConsentState> =>
 
 export interface AppSession extends ResolvedSession {
   health: HealthConsentState;
+  /** `null` só na Central de Privacidade antes da escolha do passo 5 (`allowPendingUpdate`). */
+  dataMode: DataMode | null;
 }
 
 /**
  * Guarda de toda página da área logada (substitui `requireVerifiedSession` em `(app)`):
  * sessão válida e e-mail verificado (LEG-S04), onboarding concluído (§52) e nenhuma versão substancial
- * pendente (LEG-C06). `allowPendingUpdate`: a Central de Privacidade continua acessível durante o
- * reconsentimento (revogar e encerrar conta nunca podem ficar presos atrás de um aceite).
+ * pendente (LEG-C06) e escolha do passo 5 feita (§52.5). `allowPendingUpdate`: a Central de Privacidade
+ * continua acessível durante o reconsentimento e antes do passo 5 (revogar e encerrar conta nunca podem
+ * ficar presos atrás de um aceite ou de uma escolha).
  */
 export async function requireAppSession(
   options: { allowPendingUpdate?: boolean } = {},
@@ -50,7 +58,21 @@ export async function requireAppSession(
   const state = await getConsentState(session.userId);
   if (!state.onboardingCompleted) redirect('/boas-vindas/seguranca');
   if (state.updatePending && !options.allowPendingUpdate) redirect('/boas-vindas/atualizacao');
-  return { ...session, health: state.health };
+  if (state.dataMode === null && !options.allowPendingUpdate) redirect('/boas-vindas/dados');
+  return { ...session, health: state.health, dataMode: state.dataMode };
+}
+
+/**
+ * Guarda do passo 5 do onboarding (§52.5): onboarding concluído, sem atualização pendente e ainda sem
+ * escolha entre dados de demonstração e começar do zero. Quem já escolheu vai para o início.
+ */
+export async function requireDataChoiceSession(): Promise<ResolvedSession> {
+  const session = await requireVerifiedSession();
+  const state = await getConsentState(session.userId);
+  if (!state.onboardingCompleted) redirect('/boas-vindas/seguranca');
+  if (state.updatePending) redirect('/boas-vindas/atualizacao');
+  if (state.dataMode !== null) redirect('/inicio');
+  return session;
 }
 
 /**

@@ -26,4 +26,4 @@ export {
   healthPurgeDate,
   type HealthConsentState,
 } from './health';
-export type { ConsentState, DocumentState, PurposeState } from './service';
+export type { ConsentState, DataMode, DocumentState, PurposeState } from './service';

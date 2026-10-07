@@ -369,6 +369,16 @@
       "choiceRequired": "Escolha uma das opções.",
       "submit": "Salvar e continuar",
       "privacyCenter": "Ir para a Central de Privacidade"
+    },
+    "dataChoice": {
+      "title": "Como você quer começar?",
+      "intro": "Você pode explorar o app com dados fictícios antes de registrar os seus, ou começar direto com os seus registros. Dá para trocar depois.",
+      "ownTitle": "Começar do zero",
+      "ownBody": "O app começa vazio e mostra seus próprios registros conforme você os fizer.",
+      "ownCta": "Começar com meus dados",
+      "demoTitle": "Explorar com dados de demonstração",
+      "demoBody": "Você vê o app preenchido com 90 dias de dados fictícios, marcados como DEMO. Nada disso é gravado na sua conta nem misturado aos seus registros.",
+      "demoCta": "Ver a demonstração"
     }
   },
   "consent": {

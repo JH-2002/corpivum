@@ -18,7 +18,7 @@ export default async function OnboardingSecurityPage() {
   const t = await getTranslations('onboarding');
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-fg-muted">{t('step', { current: 1, total: 2 })}</p>
+      <p className="text-sm text-fg-muted">{t('step', { current: 1, total: 3 })}</p>
       <h1 className="text-2xl font-bold">{t('security.title')}</h1>
       <p>{t('security.body')}</p>
       {mfaEnabled ? null : <EnableMfa />}
