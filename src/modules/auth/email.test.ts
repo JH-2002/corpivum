@@ -25,23 +25,28 @@ describe('canonicalMailbox (PR1a-R3-M1)', () => {
 
 describe('cookie de aparelho conhecido (OI-15)', () => {
   const secret = randomBytes(32);
+  const H = '$argon2id$v=19$m=19456,t=2,p=1$sal$hash-sintetico';
 
-  it('vale só para o e-mail assinado (normalizado) e devolve o nonce', () => {
-    const v = signKnownDevice(secret, 'Pessoa@Exemplo.test');
-    expect(verifyKnownDevice(secret, v, ' pessoa@exemplo.test ')).toMatch(/^[A-Za-z0-9_-]{22}$/);
-    expect(verifyKnownDevice(secret, v, 'outra@exemplo.test')).toBeNull();
-    expect(verifyKnownDevice(randomBytes(32), v, 'pessoa@exemplo.test')).toBeNull();
+  it('vale só para o e-mail assinado (normalizado) e a senha atual, e devolve o nonce', () => {
+    const v = signKnownDevice(secret, 'Pessoa@Exemplo.test', H);
+    expect(verifyKnownDevice(secret, v, ' pessoa@exemplo.test ', H)).toMatch(/^[A-Za-z0-9_-]{22}$/);
+    expect(verifyKnownDevice(secret, v, 'outra@exemplo.test', H)).toBeNull();
+    expect(verifyKnownDevice(randomBytes(32), v, 'pessoa@exemplo.test', H)).toBeNull();
+    // Senha trocada ou conta inexistente: inválido (revisão B4).
+    expect(verifyKnownDevice(secret, v, 'pessoa@exemplo.test', `${H}-nova`)).toBeNull();
+    expect(verifyKnownDevice(secret, v, 'pessoa@exemplo.test', null)).toBeNull();
   });
 
-  it('não contém o e-mail e recusa formato inválido', () => {
-    const v = signKnownDevice(secret, 'pessoa@exemplo.test');
+  it('não contém o e-mail nem o hash e recusa formato inválido', () => {
+    const v = signKnownDevice(secret, 'pessoa@exemplo.test', H);
     expect(v).not.toContain('pessoa');
+    expect(v).not.toContain('argon2');
     for (const bad of [undefined, '', 'v1.x.y', `${v}x`, v.replace('v1', 'v2')]) {
-      expect(verifyKnownDevice(secret, bad, 'pessoa@exemplo.test')).toBeNull();
+      expect(verifyKnownDevice(secret, bad, 'pessoa@exemplo.test', H)).toBeNull();
     }
   });
 
   it('cada emissão tem nonce próprio', () => {
-    expect(signKnownDevice(secret, 'a@b.test')).not.toBe(signKnownDevice(secret, 'a@b.test'));
+    expect(signKnownDevice(secret, 'a@b.test', H)).not.toBe(signKnownDevice(secret, 'a@b.test', H));
   });
 });

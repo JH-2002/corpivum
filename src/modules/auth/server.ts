@@ -58,6 +58,17 @@ export async function requestMeta(): Promise<RequestMeta> {
   };
 }
 
+/** Apaga o cookie de aparelho conhecido (mesmos atributos do `__Host-`; ver `clearSessionCookie`). */
+export async function clearKnownDeviceCookie(): Promise<void> {
+  (await cookies()).set(KNOWN_DEVICE_COOKIE, '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+}
+
 /** Cookie de aparelho conhecido (OI-15): assinado, sem identificador da conta. */
 export async function setKnownDeviceCookie(value: string): Promise<void> {
   (await cookies()).set(KNOWN_DEVICE_COOKIE, value, {

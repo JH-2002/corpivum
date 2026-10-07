@@ -25,6 +25,6 @@ export interface JobQueue {
   readonly id: string;
   enqueue(name: string, payload: JobPayload, options?: EnqueueOptions): Promise<string>;
   register(name: string, handler: JobHandler): void;
-  /** Cancela o job ainda não iniciado da chave. Devolve quantos foram cancelados. */
-  cancel(singletonKey: string): Promise<number>;
 }
+// Sem cancelamento genérico: cancelar é uma operação de domínio, na transação e só da própria pessoa
+// (ex.: app.health_elimination_cancel; revisão M4 da ADR-0019).

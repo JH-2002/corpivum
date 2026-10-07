@@ -45,6 +45,7 @@ model User {
   sessions      Session[]
   recoveryCodes RecoveryCode[]
   authTokens    AuthToken[]
+  reauthProofs  ReauthProof[]
 
   @@map("users")
 }
@@ -300,6 +301,24 @@ model AccessLog {
   @@index([occurredAt])
   @@index([userId, occurredAt])
   @@map("access_logs")
+}
+
+/// Prova de reautenticação (senha conferida há pouco), de uso único e 2 min de validade, exigida por
+/// ações destrutivas como o encerramento de conta (ADR-0019). Só o hash do nonce. Sem DML do runtime.
+model ReauthProof {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  purpose   String
+  tokenHash Bytes     @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("reauth_proofs")
 }
 
 enum JobStatus {

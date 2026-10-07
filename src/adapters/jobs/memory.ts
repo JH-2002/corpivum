@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { logger as defaultLogger, type Logger } from '@/lib/logger';
 import type { EnqueueOptions, JobHandler, JobPayload, JobQueue } from './types';
 
-type JobStatus = 'pending' | 'done' | 'failed' | 'cancelled';
+type JobStatus = 'pending' | 'done' | 'failed';
 
 interface MemoryJob {
   id: string;
@@ -56,17 +56,6 @@ export class MemoryJobQueue implements JobQueue {
 
   register(name: string, handler: JobHandler): void {
     this.#handlers.set(name, handler);
-  }
-
-  async cancel(singletonKey: string): Promise<number> {
-    let count = 0;
-    for (const job of this.#jobs) {
-      if (job.singletonKey === singletonKey && job.status === 'pending' && !job.running) {
-        job.status = 'cancelled';
-        count += 1;
-      }
-    }
-    return count;
   }
 
   /**

@@ -15,8 +15,8 @@ export function getPrivacyService(): PrivacyService {
     service = createPrivacyService({
       db: getDb(),
       logger,
-      verifyPassword: (userId, password) =>
-        getAuthService().verifyCurrentPassword(userId, password),
+      reauthenticate: (userId, password) =>
+        getAuthService().issueReauthProof(userId, password, 'minor_closure'),
       accessLogRetentionDays: env.ACCESS_LOG_RETENTION_DAYS,
       proofRetentionDays: env.PROOF_RETENTION_DAYS,
     });

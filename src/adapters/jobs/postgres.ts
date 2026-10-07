@@ -65,12 +65,6 @@ export class PgJobQueue implements JobQueue {
     this.#handlers.set(name, handler);
   }
 
-  async cancel(singletonKey: string): Promise<number> {
-    const rows = await this.#db.$queryRaw<Array<{ n: number }>>`
-      SELECT app.jobs_cancel(${singletonKey}) AS n`;
-    return rows[0]?.n ?? 0;
-  }
-
   /** Reserva e executa um lote de jobs vencidos. Devolve quantos terminaram com sucesso. */
   async runOnce(): Promise<number> {
     const names = [...this.#handlers.keys()];

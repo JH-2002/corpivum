@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
 import type pg from 'pg';
 import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import type { Db } from '@/lib/db/client';
+import { withUserOn } from '@/lib/db/rls';
 import { createLogger } from '@/lib/logger';
 import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
@@ -31,7 +33,8 @@ function privacy() {
   return createPrivacyService({
     db,
     logger: silent,
-    verifyPassword: (userId, password) => t.service.verifyCurrentPassword(userId, password),
+    reauthenticate: (userId, password) =>
+      t.service.issueReauthProof(userId, password, 'minor_closure'),
     accessLogRetentionDays: 180,
     proofRetentionDays: 1825,
   });
@@ -42,6 +45,7 @@ const USER_FKS: Record<string, string> = {
   sessions: 'CASCADE',
   recovery_codes: 'CASCADE',
   auth_tokens: 'CASCADE',
+  reauth_proofs: 'CASCADE',
 };
 const PROOF_TABLES = ['consent_records', 'policy_acceptances', 'privacy_requests', 'audit_logs'];
 
@@ -173,7 +177,49 @@ describe('LEG-F04: encerramento de conta de quem se descobre menor', () => {
       b.userId,
     ]);
     expect(rows[0].n).toBe(1);
-    await expect(db.$queryRaw`SELECT app.account_close_minor()`).rejects.toThrow();
+  });
+
+  it('sem prova de reautenticação da própria pessoa, o banco recusa (revisão M1)', async () => {
+    const a = await createVerifiedUser(t);
+    const b = await createVerifiedUser(t);
+    const fake = new Uint8Array(32);
+    // Sem contexto, com contexto mas sem prova, e com a prova de A no contexto de B.
+    await expect(db.$queryRaw`SELECT app.account_close_minor(${fake})::text`).rejects.toThrow();
+    await expect(
+      withUserOn(db, b.userId, (tx) => tx.$queryRaw`SELECT app.account_close_minor(${fake})::text`),
+    ).rejects.toThrow(/reauthentication required/);
+    const proofA = await t.service.issueReauthProof(a.userId, PASSWORD, 'minor_closure');
+    const hashA = new Uint8Array(
+      createHash('sha256')
+        .update(proofA ?? '')
+        .digest(),
+    );
+    await expect(
+      withUserOn(
+        db,
+        b.userId,
+        (tx) => tx.$queryRaw`SELECT app.account_close_minor(${hashA})::text`,
+      ),
+    ).rejects.toThrow(/reauthentication required/);
+    // A prova vence em 2 minutos e é de uso único.
+    await admin.query(
+      `UPDATE reauth_proofs SET expires_at = now() - interval '1 second' WHERE user_id = $1`,
+      [a.userId],
+    );
+    await expect(
+      withUserOn(
+        db,
+        a.userId,
+        (tx) => tx.$queryRaw`SELECT app.account_close_minor(${hashA})::text`,
+      ),
+    ).rejects.toThrow(/reauthentication required/);
+    const { rows } = await admin.query(
+      'SELECT count(*)::int AS n FROM users WHERE id = ANY($1::uuid[])',
+      [[a.userId, b.userId]],
+    );
+    expect(rows[0].n).toBe(2);
+    // O runtime não lê nem grava provas de reautenticação direto.
+    await expect(db.$queryRaw`SELECT * FROM reauth_proofs`).rejects.toThrow(/permission denied/);
   });
 });
 

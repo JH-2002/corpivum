@@ -31,13 +31,7 @@ function DocumentLink({ document }: { document: RequiredDocument }) {
  * Escolhas do onboarding (§52 passo 4; LEG-C01–C05). Termos e Política são obrigatórios; cada finalidade
  * é opcional, com o texto completo visível e a caixa desmarcada.
  */
-export function OnboardingConsentForm({
-  purposes,
-  graceDays,
-}: {
-  purposes: readonly AvailablePurpose[];
-  graceDays: number;
-}) {
+export function OnboardingConsentForm({ purposes }: { purposes: readonly AvailablePurpose[] }) {
   const t = useTranslations('onboarding.consents');
   const tp = useTranslations('consent.purposes');
   const [state, action] = useActionState(completeOnboardingAction, INITIAL_FORM_STATE);
@@ -70,7 +64,7 @@ export function OnboardingConsentForm({
               name="purpose"
               value={purpose}
               label={tp(`${purpose}.title`)}
-              description={<PurposeDetails purpose={purpose} graceDays={graceDays} />}
+              description={<PurposeDetails purpose={purpose} />}
             />
           </div>
         ))}
@@ -80,14 +74,14 @@ export function OnboardingConsentForm({
   );
 }
 
-function PurposeDecision({ purpose, graceDays }: { purpose: AvailablePurpose; graceDays: number }) {
+function PurposeDecision({ purpose }: { purpose: AvailablePurpose }) {
   const t = useTranslations('onboarding.update');
   const tp = useTranslations('consent.purposes');
   const id = useId();
   return (
     <fieldset className="flex flex-col gap-3 rounded-lg border border-border p-4">
       <legend className="px-1 text-base font-semibold">{tp(`${purpose}.title`)}</legend>
-      <PurposeDetails purpose={purpose} graceDays={graceDays} />
+      <PurposeDetails purpose={purpose} />
       <div className="flex flex-wrap gap-4">
         {(['keep', 'decline'] as const).map((choice) => (
           <div key={choice} className="flex items-center gap-2">
@@ -114,11 +108,9 @@ function PurposeDecision({ purpose, graceDays }: { purpose: AvailablePurpose; gr
 export function UpdateConsentForm({
   documents,
   purposes,
-  graceDays,
 }: {
   documents: readonly RequiredDocument[];
   purposes: readonly AvailablePurpose[];
-  graceDays: number;
 }) {
   const t = useTranslations('onboarding.update');
   const tl = useTranslations('legal.nav');
@@ -140,7 +132,7 @@ export function UpdateConsentForm({
         </div>
       ))}
       {purposes.map((purpose) => (
-        <PurposeDecision key={purpose} purpose={purpose} graceDays={graceDays} />
+        <PurposeDecision key={purpose} purpose={purpose} />
       ))}
       <SubmitButton>{t('submit')}</SubmitButton>
     </form>

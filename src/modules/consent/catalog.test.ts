@@ -5,6 +5,7 @@ import {
   AVAILABLE_PURPOSES,
   CURRENT_VERSIONS,
   DOCUMENT_MESSAGES,
+  HEALTH_DATA_GRACE_DAYS_IN_TEXT,
   purposeDocument,
 } from './catalog';
 
@@ -38,6 +39,13 @@ describe('catálogo de documentos versionados', () => {
         expect(text[field], `${purpose}.${field}`).toEqual(expect.any(String));
       }
     }
+  });
+
+  it('o prazo de eliminação está escrito no texto versionado (revisão M3)', () => {
+    expect(messages.consent.purposes.health_data.revoke).toContain(
+      `${HEALTH_DATA_GRACE_DAYS_IN_TEXT} dias`,
+    );
+    expect(JSON.stringify(messages.consent.purposes)).not.toMatch(/\{days\}/);
   });
 
   it('IA e transferência internacional não são oferecidas até a Fase 5', () => {

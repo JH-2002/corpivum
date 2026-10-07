@@ -9,8 +9,11 @@ import { normalizeEmail } from './email';
  * ligado ao e-mail. Tentativas vindas de um aparelho conhecido contam num limite próprio daquele aparelho;
  * o limite por conta só alcança aparelhos desconhecidos. Quem tenta travar a conta trava só os outros.
  *
- * Anti-enumeração: a verificação é só HMAC (sem banco) e o cookie vale para o e-mail digitado, exista a
- * conta ou não. Formato: `v1.<nonce>.<assinatura>`, sem userId e sem e-mail em claro.
+ * O HMAC também cobre o hash de senha atual da conta: trocar ou redefinir a senha (ou apagar a conta)
+ * invalida todos os cookies de aparelho, inclusive de aparelhos perdidos (revisão B4).
+ *
+ * Anti-enumeração: só um login completo emite o cookie, e a resposta de login é a mesma com ou sem conta.
+ * Formato: `v1.<nonce>.<assinatura>`, sem userId, sem e-mail e sem hash em claro.
  * Girar SESSION_SECRET invalida os cookies (docs/runbooks/KEY_ROTATION.md).
  */
 export const KNOWN_DEVICE_COOKIE = '__Host-hm_device';
@@ -18,25 +21,33 @@ export const KNOWN_DEVICE_MAX_AGE_S = 180 * 24 * 60 * 60;
 const VERSION = 'v1';
 const DOMAIN = 'known-device';
 
-function signature(secret: Uint8Array, email: string, nonce: string): string {
-  return hmac(secret, DOMAIN, `${VERSION}:${normalizeEmail(email)}:${nonce}`).toString('base64url');
+function signature(secret: Uint8Array, email: string, passwordHash: string, nonce: string): string {
+  return hmac(
+    secret,
+    DOMAIN,
+    `${VERSION}:${normalizeEmail(email)}:${passwordHash}:${nonce}`,
+  ).toString('base64url');
 }
 
-/** Emite um cookie novo (nonce novo) para o e-mail da conta que acabou de entrar. */
-export function signKnownDevice(secret: Uint8Array, email: string): string {
+/** Emite um cookie novo (nonce novo) para a conta que acabou de entrar. */
+export function signKnownDevice(secret: Uint8Array, email: string, passwordHash: string): string {
   const nonce = randomToken(16);
-  return `${VERSION}.${nonce}.${signature(secret, email, nonce)}`;
+  return `${VERSION}.${nonce}.${signature(secret, email, passwordHash, nonce)}`;
 }
 
-/** Devolve o nonce do aparelho se o cookie for válido para este e-mail; senão, null. */
+/**
+ * Devolve o nonce do aparelho se o cookie for válido para este e-mail e esta senha; senão, null.
+ * `passwordHash` null (conta inexistente) nunca valida.
+ */
 export function verifyKnownDevice(
   secret: Uint8Array,
   value: string | undefined,
   email: string,
+  passwordHash: string | null,
 ): string | null {
-  if (!value) return null;
+  if (!value || typeof passwordHash !== 'string') return null;
   const m = /^v1\.([A-Za-z0-9_-]{22})\.([A-Za-z0-9_-]{43})$/.exec(value);
   if (!m) return null;
   const [, nonce = '', sig = ''] = m;
-  return constantTimeEqual(sig, signature(secret, email, nonce)) ? nonce : null;
+  return constantTimeEqual(sig, signature(secret, email, passwordHash, nonce)) ? nonce : null;
 }

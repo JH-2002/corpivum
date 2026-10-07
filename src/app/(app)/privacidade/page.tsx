@@ -151,7 +151,7 @@ export default async function PrivacyCenterPage() {
                   {tc('details', { purpose: tc(`purposes.${p.purpose}.title`) })}
                 </summary>
                 <div className="pt-2">
-                  <PurposeDetails purpose={p.purpose} graceDays={env.HEALTH_DATA_GRACE_DAYS} />
+                  <PurposeDetails purpose={p.purpose} />
                 </div>
               </details>
             </li>
@@ -235,7 +235,13 @@ export default async function PrivacyCenterPage() {
 
       <Section id="menor-de-18" title={t('minorTitle')} description={t('minorDescription')}>
         <div>
-          <MinorClosureDialog />
+          <MinorClosureDialog
+            retention={{
+              proofDays: env.PROOF_RETENTION_DAYS,
+              accessDays: env.ACCESS_LOG_RETENTION_DAYS,
+              backupDays: env.BACKUP_RETENTION_DAYS,
+            }}
+          />
         </div>
       </Section>
     </div>

@@ -45,7 +45,8 @@ export function createHealthDataEliminator(deps: { db: Db; logger: Logger; now?:
         for (const eraser of erasers.values()) rows += await eraser(tx);
         await tx.user.update({ where: { id: userId }, data: { healthDataPurgeAt: null } });
         await auditAppend(tx, 'health_data_eliminated', 'health_data', null, { system: true });
-        deps.logger.info('privacy.health_data_eliminated', { userId, count: rows });
+        // Sem userId: o log não liga uma conta à revogação de dados de saúde (B5).
+        deps.logger.info('privacy.health_data_eliminated', { count: rows });
         return 'eliminated';
       });
       return outcome;

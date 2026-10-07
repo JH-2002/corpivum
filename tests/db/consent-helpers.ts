@@ -1,5 +1,6 @@
 import type pg from 'pg';
 import { MemoryJobQueue } from '@/adapters/jobs/memory';
+import { PgJobQueue } from '@/adapters/jobs/postgres';
 import type { Db } from '@/lib/db/client';
 import { createLogger, type LogRecord } from '@/lib/logger';
 import {
@@ -14,10 +15,11 @@ export function createTestConsent(
   db: Db,
   clock: { now: Date },
   catalog: Partial<Record<PolicyDocument, DocumentVersion>> = CURRENT_VERSIONS,
+  queue: 'memory' | 'postgres' = 'memory',
 ) {
   const logs: LogRecord[] = [];
   const logger = createLogger({ minLevel: 'debug', sink: (r) => logs.push(r) });
-  const jobs = new MemoryJobQueue(logger);
+  const jobs = queue === 'postgres' ? new PgJobQueue(db, { logger }) : new MemoryJobQueue(logger);
   const service = createConsentService({
     db,
     jobs,
@@ -60,7 +62,10 @@ export async function dropHealthFixture(admin: pg.Client): Promise<void> {
   await admin.query(`DROP TABLE IF EXISTS ${FIXTURE}`);
 }
 
-/** Publica uma versão nova de um documento (como faria uma migração) e devolve o id. */
+/**
+ * Publica uma versão nova de um documento (como faria uma migração) e devolve o id. Publicada 2 h antes:
+ * o relógio de teste fica entre os minutos 1 e 40 da hora atual (stableTestClock).
+ */
 export async function publishVersion(
   admin: pg.Client,
   document: PolicyDocument,
@@ -70,7 +75,7 @@ export async function publishVersion(
 ): Promise<string> {
   const { rows } = await admin.query<{ id: string }>(
     `INSERT INTO policy_versions (id, document, version, text_hash, requires_reconsent, published_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, now() - interval '1 second', now()) RETURNING id`,
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, now() - interval '2 hours', now()) RETURNING id`,
     [document, version, textHash, requiresReconsent],
   );
   return rows[0]?.id ?? '';

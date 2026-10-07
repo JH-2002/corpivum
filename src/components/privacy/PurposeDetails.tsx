@@ -7,14 +7,7 @@ const FIELDS = ['collected', 'purpose', 'processors', 'refusal', 'revoke'] as co
  * Texto completo de uma finalidade (LEG-C03): o que é coletado, para quê, quem processa e onde, a
  * consequência de recusar e como revogar. É o texto versionado (hash em PolicyVersion).
  */
-export function PurposeDetails({
-  purpose,
-  graceDays,
-}: {
-  purpose: AvailablePurpose;
-  /** HEALTH_DATA_GRACE_DAYS, citado no texto de revogação dos dados de bem-estar. */
-  graceDays: number;
-}) {
+export function PurposeDetails({ purpose }: { purpose: AvailablePurpose }) {
   const t = useTranslations(`consent.purposes.${purpose}`);
   const tf = useTranslations('consent.fields');
   return (
@@ -22,7 +15,7 @@ export function PurposeDetails({
       {FIELDS.map((field) => (
         <div key={field}>
           <dt className="font-semibold">{tf(field)}</dt>
-          <dd className="text-fg-muted">{t(field, { days: graceDays })}</dd>
+          <dd className="text-fg-muted">{t(field)}</dd>
         </div>
       ))}
     </dl>

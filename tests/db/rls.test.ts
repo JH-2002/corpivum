@@ -56,6 +56,7 @@ describe('consulta sem app.user_id retorna vazio (LEG-S03)', () => {
       'audit_logs',
       'access_logs',
       'job_queue',
+      'reauth_proofs',
     ]);
     // Catálogo público de versões de documentos: sem dado pessoal, legível por todos (ADR-0019).
     const publicCatalog = new Set(['policy_versions']);

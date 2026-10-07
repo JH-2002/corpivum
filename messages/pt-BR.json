@@ -386,13 +386,13 @@
         "purpose": "Guardar seus registros, mostrar seus dados e tendências e calcular indicadores de bem-estar só para você.",
         "processors": "A equipe do HealthMind 360 ('{{CONTROLADOR}}') e os provedores de infraestrutura listados em Subprocessadores, com dados armazenados no Brasil. Nunca vendemos nem compartilhamos esses dados para publicidade.",
         "refusal": "Você continua com acesso à conta e à Central de Privacidade, mas não consegue registrar nem ver dados de bem-estar.",
-        "revoke": "Na Central de Privacidade. O uso para na hora e os dados já registrados são eliminados depois de {days} dias, a menos que você autorize de novo antes."
+        "revoke": "Na Central de Privacidade. O uso para na hora e os dados já registrados são eliminados depois de 30 dias, a menos que você autorize de novo antes."
       },
       "marketing": {
         "title": "Comunicações sobre novidades",
         "collected": "Seu e-mail.",
         "purpose": "Enviar, de vez em quando, novidades sobre o HealthMind 360. Seus dados de bem-estar nunca são usados para isso.",
-        "processors": "O provedor de e-mail listado em Subprocessadores.",
+        "processors": "O provedor de e-mail listado em Subprocessadores. Ele ainda não foi escolhido; se tratar dados fora do Brasil, isso será informado antes de qualquer envio.",
         "refusal": "Você recebe só os e-mails necessários à conta, como confirmações e avisos de segurança.",
         "revoke": "Na Central de Privacidade, a qualquer momento. O envio para na hora."
       },
@@ -401,7 +401,7 @@
         "collected": "Quais telas e funções você usa e quando, ligadas à sua conta. Nunca o conteúdo dos seus registros.",
         "purpose": "Entender como o app é usado para melhorá-lo.",
         "processors": "Somente a equipe do HealthMind 360, em infraestrutura no Brasil. Sem ferramentas de análise de terceiros.",
-        "refusal": "Nada muda no app. Sem autorização, usamos apenas contagens agregadas e anônimas.",
+        "refusal": "Nada muda no app, e nenhuma métrica de uso fica ligada à sua conta.",
         "revoke": "Na Central de Privacidade, a qualquer momento. A coleta ligada à sua conta para na hora."
       }
     },
@@ -477,16 +477,16 @@
       "rejected": "Recusado"
     },
     "minorTitle": "Tenho menos de 18 anos",
-    "minorDescription": "O HealthMind 360 é só para pessoas com 18 anos ou mais. Se você tem menos de 18, encerre a conta: ela e os dados dela são apagados na hora.",
+    "minorDescription": "O HealthMind 360 é só para pessoas com 18 anos ou mais. Se você tem menos de 18, encerre a conta: a conta, as sessões e o que foi registrado são apagados na hora.",
     "minorStart": "Encerrar minha conta",
     "minorConfirmTitle": "Encerrar e apagar a conta agora?",
-    "minorConfirmBody": "A conta, as sessões e tudo o que foi registrado são apagados agora, sem prazo de espera. Guardamos só um registro mínimo, sem seu e-mail, de que a conta foi encerrada.",
+    "minorConfirmBody": "A conta, as sessões e tudo o que foi registrado são apagados agora, sem prazo de espera. Ficam guardados, sem seu e-mail e sem o conteúdo dos registros: a prova do encerramento e das suas escolhas de privacidade, por até {proofDays} dias, e os registros de acesso (IP, data e hora), por até {accessDays} dias. Cópias de segurança são substituídas em até {backupDays} dias.",
     "minorPassword": "Digite sua senha para confirmar",
     "minorConfirm": "Encerrar e apagar agora",
     "minorCancel": "Cancelar",
     "minorError": "Não foi possível confirmar. Verifique a senha ou tente de novo em alguns minutos.",
     "closedTitle": "Conta encerrada",
-    "closedBody": "Sua conta e os dados dela foram apagados. Obrigado por nos avisar.",
+    "closedBody": "Sua conta e o que foi registrado nela foram apagados. Ficam só os registros mínimos informados antes da confirmação (prova do encerramento e registros de acesso, sem seu e-mail), pelos prazos indicados.",
     "closedSupport": "Se quiser conversar com alguém, o CVV atende 24 horas pelo telefone 188, de graça."
   },
   "subprocessors": {
@@ -545,7 +545,7 @@
       "errors": {
         "service": "Monitoramento de erros",
         "purpose": "Identificar e corrigir falhas técnicas",
-        "data": "Metadados técnicos, sem dados pessoais",
+        "data": "Metadados técnicos, com remoção de dados pessoais",
         "region": "A definir"
       },
       "llm": {
@@ -584,7 +584,7 @@
       "s7Title": "Seus direitos",
       "s7Body": "Você pode confirmar e acessar seus dados, corrigi-los, pedir portabilidade, anonimização ou eliminação, saber com quem compartilhamos e revogar autorizações a qualquer momento, pela Central de Privacidade ou pelo contato do encarregado.",
       "s8Title": "Idade mínima",
-      "s8Body": "O HealthMind 360 é exclusivo para pessoas com 18 anos ou mais. Se você tem menos de 18 anos, use a opção de encerramento na Central de Privacidade: a conta e os dados são apagados na hora.",
+      "s8Body": "O HealthMind 360 é exclusivo para pessoas com 18 anos ou mais. Se você tem menos de 18 anos, use a opção de encerramento na Central de Privacidade: a conta e os dados registrados são apagados na hora. Ficam só, sem e-mail e sem conteúdo, a prova do encerramento e das escolhas de privacidade e os registros de acesso, pelos prazos de 'Por quanto tempo'; cópias de segurança são substituídas em até '{{PRAZO_BACKUP}}'.",
       "s9Title": "Mudanças nesta política",
       "s9Body": "Quando houver mudança importante, avisaremos e pediremos sua confirmação antes de continuar."
     },

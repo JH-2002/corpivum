@@ -160,6 +160,29 @@ describe('PR1a-R3-M1: limite por caixa canônica', () => {
   });
 });
 
+describe('revisão B4: cookie de aparelho vale só para a senha atual', () => {
+  it('trocar a senha invalida o cookie emitido antes', async () => {
+    const t = createTestAuth(db);
+    const u = await createVerifiedUser(t);
+    const first = await t.service.login({ email: u.email, password: PASSWORD }, freshMeta());
+    if (!first.ok || first.mfaRequired) throw new Error('login');
+    const s = await t.service.resolveSession(first.token);
+    const NEW = 'outra senha sintética bem longa';
+    expect(await t.service.changePassword(u.userId, s?.sessionId ?? '', PASSWORD, NEW)).toEqual({
+      ok: true,
+    });
+    // Esgota o limite da conta; o cookie antigo não serve mais para escapar dele.
+    for (let i = 0; i < 8; i++) {
+      await t.service.login({ email: u.email, password: 'chute sintético' }, freshMeta());
+    }
+    const old = await t.service.login(
+      { email: u.email, password: NEW },
+      { ...freshMeta(), knownDevice: first.knownDevice },
+    );
+    expect(old).toEqual({ ok: false, error: 'invalid_credentials' });
+  });
+});
+
 describe('LEG-R02: registro de acesso', () => {
   it('login completo grava IP e data/hora em access_logs, que o runtime não lê', async () => {
     const t = createTestAuth(db);

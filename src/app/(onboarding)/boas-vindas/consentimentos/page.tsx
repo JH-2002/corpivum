@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { OnboardingConsentForm } from '@/components/privacy/OnboardingForms';
-import { getEnv } from '@/lib/env';
 import { AVAILABLE_PURPOSES } from '@/modules/consent';
 import { requireOnboardingSession } from '@/modules/consent/server';
 
@@ -19,10 +18,7 @@ export default async function OnboardingConsentsPage() {
       <p className="text-sm text-fg-muted">{t('step', { current: 2, total: 2 })}</p>
       <h1 className="text-2xl font-bold">{t('consents.title')}</h1>
       <p>{t('consents.intro')}</p>
-      <OnboardingConsentForm
-        purposes={AVAILABLE_PURPOSES}
-        graceDays={getEnv().HEALTH_DATA_GRACE_DAYS}
-      />
+      <OnboardingConsentForm purposes={AVAILABLE_PURPOSES} />
     </div>
   );
 }

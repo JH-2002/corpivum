@@ -7,6 +7,7 @@ import type { Logger } from '@/lib/logger';
 import {
   AVAILABLE_PURPOSES,
   CURRENT_VERSIONS,
+  HEALTH_DATA_GRACE_DAYS_IN_TEXT,
   isAvailablePurpose,
   purposeDocument,
   REQUIRED_DOCUMENTS,
@@ -82,7 +83,8 @@ export type UpdateInput = {
   decisions: Partial<Record<AvailablePurpose, 'keep' | 'decline'>>;
 };
 
-type Effect = { kind: 'schedule'; runAt: Date } | { kind: 'cancel' };
+/** Agendamento da eliminação, feito depois do commit (o cancelamento roda dentro da transação). */
+type Effect = { kind: 'schedule'; runAt: Date };
 
 interface VersionRow {
   id: string;
@@ -94,6 +96,14 @@ interface VersionRow {
 
 export function createConsentService(deps: ConsentDeps) {
   const { db, jobs, logger } = deps;
+  // O prazo está escrito no texto que a pessoa autoriza (hash): configuração diferente mudaria o que ela
+  // leu sem nova versão (revisão M3).
+  if (deps.healthDataGraceDays !== HEALTH_DATA_GRACE_DAYS_IN_TEXT) {
+    throw new AppError(
+      'VALIDATION',
+      'HEALTH_DATA_GRACE_DAYS diverge do prazo escrito no texto do consentimento',
+    );
+  }
   const now = deps.now ?? (() => new Date());
   const catalog: Partial<Record<PolicyDocument, DocumentVersion>> =
     deps.catalog ?? CURRENT_VERSIONS;
@@ -167,8 +177,10 @@ export function createConsentService(deps: ConsentDeps) {
       });
       if (user.healthDataPurgeAt) {
         await tx.user.update({ where: { id: userId }, data: { healthDataPurgeAt: null } });
+        // Cancela o job da PRÓPRIA pessoa, na mesma transação (revisão M4). Com a fila em memória (dev),
+        // o job antigo continua lá, mas a execução rechecha e não faz nada.
+        await tx.$executeRaw`SELECT app.health_elimination_cancel()`;
         await auditAppend(tx, 'health_data_elimination_cancelled', 'health_data');
-        effects.push({ kind: 'cancel' });
       }
     }
     return effects;
@@ -202,22 +214,20 @@ export function createConsentService(deps: ConsentDeps) {
   }
 
   /**
-   * Efeitos na fila depois do commit. Se falharem, o estado no banco continua certo: a eliminação vencida é
-   * reencontrada pela varredura diária e o job sempre rechecaria o consentimento antes de apagar.
+   * Agenda a eliminação depois do commit. Se falhar, o estado no banco continua certo: a eliminação vencida
+   * é reencontrada pela varredura diária e o job sempre rechecaria o consentimento antes de apagar.
    */
   async function applyEffects(userId: string, effects: Effect[]) {
-    const key = healthEliminationKey(userId);
     for (const effect of effects) {
       try {
-        if (effect.kind === 'cancel') await jobs.cancel(key);
-        else
-          await jobs.enqueue(
-            HEALTH_ELIMINATION_JOB,
-            { userId },
-            { runAt: effect.runAt, singletonKey: key },
-          );
+        await jobs.enqueue(
+          HEALTH_ELIMINATION_JOB,
+          { userId },
+          { runAt: effect.runAt, singletonKey: healthEliminationKey(userId) },
+        );
       } catch {
-        logger.warn('consent.job_effect_failed', { userId, operation: effect.kind });
+        // Sem userId nem finalidade (B5).
+        logger.warn('consent.job_effect_failed');
       }
     }
   }
@@ -335,7 +345,8 @@ export function createConsentService(deps: ConsentDeps) {
       if (!isAvailablePurpose(purpose)) return { ok: false, error: 'unavailable' };
       const effects = await withUser(userId, (tx) => grantIn(tx, userId, purpose));
       await applyEffects(userId, effects);
-      logger.info('consent.granted', { userId, operation: purpose });
+      // Sem a finalidade: o log não liga a conta a "autorizou/revogou dados de saúde" (B5).
+      logger.info('consent.granted', { userId });
       return { ok: true };
     },
 
@@ -347,7 +358,7 @@ export function createConsentService(deps: ConsentDeps) {
       if (!isAvailablePurpose(purpose)) return { ok: false, error: 'unavailable' };
       const effects = await withUser(userId, (tx) => revokeIn(tx, userId, purpose));
       await applyEffects(userId, effects);
-      logger.info('consent.revoked', { userId, operation: purpose });
+      logger.info('consent.revoked', { userId });
       const scheduled = effects.find((e) => e.kind === 'schedule');
       return { ok: true, purgeAt: scheduled?.kind === 'schedule' ? scheduled.runAt : null };
     },

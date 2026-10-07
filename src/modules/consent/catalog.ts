@@ -53,7 +53,7 @@ export interface DocumentVersion {
 export const CURRENT_VERSIONS = {
   privacy_policy: {
     version: 1,
-    textHash: 'f198b78b0a2b2a51680e27959b1b4532efa8aca526b94baed48ccdeb40edbf2d',
+    textHash: 'd97b589c8574c2a3cf3f339adb51e4ef491744504e88f77fff906273580afa6a',
     requiresReconsent: true,
   },
   terms: {
@@ -63,17 +63,17 @@ export const CURRENT_VERSIONS = {
   },
   consent_health_data: {
     version: 1,
-    textHash: 'fe50c48f529e3a89039643e6da334c979499805fdc101a22a2029cd54d12f39e',
+    textHash: '676f9d3b37e7bbda4f0badfc4cf6e6008ad3062a75d12cd8e43d90c44c3e0433',
     requiresReconsent: true,
   },
   consent_marketing: {
     version: 1,
-    textHash: 'cfd5bfb2754bc8e9cb7d61dad354b7e7e0c84dca3add64efe6821a5f337e5f6f',
+    textHash: '0d782b27a4743565d7cfeb3d5e94fb6e39b863413cf1973f8c9d55c78b795fde',
     requiresReconsent: true,
   },
   consent_product_metrics: {
     version: 1,
-    textHash: '6421c1d9f76c0656b69e7121ea80a49f1b992ed9ddc8dc509ef71df2dc4d95eb',
+    textHash: '084a0ea0dc34d3ae61c26f4b9f71c66c88276424c60f3c265e2c8c40a57b1fed',
     requiresReconsent: true,
   },
 } as const satisfies Partial<Record<PolicyDocument, DocumentVersion>>;
@@ -88,6 +88,13 @@ export const DOCUMENT_MESSAGES = {
   consent_marketing: 'consent.purposes.marketing',
   consent_product_metrics: 'consent.purposes.product_metrics',
 } as const satisfies Record<PublishedDocument, string>;
+
+/**
+ * Prazo de eliminação após revogar o consentimento de saúde, ESCRITO no texto versionado
+ * (`consent.purposes.health_data.revoke`, coberto pelo hash). HEALTH_DATA_GRACE_DAYS precisa ser igual:
+ * o serviço recusa iniciar se divergir. Mudar o prazo = novo texto, nova versão e nova migração.
+ */
+export const HEALTH_DATA_GRACE_DAYS_IN_TEXT = 30;
 
 /** Data de publicação da versão vigente (exibida nas páginas públicas). */
 export const PUBLISHED_AT = '2026-10-07';

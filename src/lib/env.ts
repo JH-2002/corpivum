@@ -43,7 +43,8 @@ const envSchema = z
     BACKUP_RETENTION_DAYS: days.default(30),
     /**
      * Prazo entre revogar o consentimento de dados de saúde e eliminá-los (ADR-0019). Reconsentir antes
-     * cancela a eliminação. `LEGAL-REVIEW` (OPEN_ISSUES OI-04). O valor aparece no texto do consentimento:
+     * cancela a eliminação. `LEGAL-REVIEW` (OPEN_ISSUES OI-16). O valor está escrito no texto do
+     * consentimento: precisa ser igual a HEALTH_DATA_GRACE_DAYS_IN_TEXT (o serviço recusa iniciar se não for);
      * mudá-lo exige nova versão do texto (PolicyVersion).
      */
     HEALTH_DATA_GRACE_DAYS: days.max(90).default(30),

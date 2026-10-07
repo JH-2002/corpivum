@@ -13,7 +13,12 @@ import {
   passwordOnlySchema,
   sessionIdSchema,
 } from '@/modules/auth/schemas';
-import { clearSessionCookie, getAuthService, requireVerifiedSession } from '@/modules/auth/server';
+import {
+  clearKnownDeviceCookie,
+  clearSessionCookie,
+  getAuthService,
+  requireVerifiedSession,
+} from '@/modules/auth/server';
 
 /**
  * Segurança da conta (LEG-S04). Toda action revalida a sessão no banco antes de agir. Usa
@@ -127,6 +132,8 @@ export async function changePasswordAction(_prev: FormState, form: FormData): Pr
           },
         };
   }
+  // A senha nova invalida os cookies de aparelho conhecido (B4); este navegador ganha um no próximo login.
+  await clearKnownDeviceCookie();
   revalidatePath(PATH);
   return { status: 'success', message: t('security.passwordChanged') };
 }

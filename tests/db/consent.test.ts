@@ -4,7 +4,9 @@ import { withUserOn } from '@/lib/db/rls';
 import { ConsentRequiredError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { CURRENT_VERSIONS } from '@/modules/consent/catalog';
+import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import { withConsentOn } from '@/modules/consent/guard';
+import { createConsentService } from '@/modules/consent/service';
 import { healthEliminationKey } from '@/modules/consent/health';
 import {
   createHealthDataEliminator,
@@ -210,25 +212,26 @@ describe('guard de tratamento e revogação imediata (LEG-C04)', () => {
 });
 
 describe('revogação dos dados de saúde: eliminação agendada (ADR-0019)', () => {
-  it('agenda a eliminação em 30 dias; reconsentir antes cancela', async () => {
-    const u = await onboarded(['health_data']);
-    const r = await u.service.revoke(u.userId, 'health_data');
+  it('agenda a eliminação em 30 dias; reconsentir antes cancela (fila Postgres)', async () => {
+    const u = await createVerifiedUser(t);
+    const { service } = createTestConsent(db, t.clock, undefined, 'postgres');
+    await service.completeOnboarding(u.userId, { ...ALL, purposes: ['health_data'] });
+    const r = await service.revoke(u.userId, 'health_data');
     if (!r.ok) throw new Error('revoke');
     expect(r.purgeAt?.getTime()).toBe(t.clock.now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    const state = await u.service.getState(u.userId);
+    const state = await service.getState(u.userId);
     expect(state.health).toEqual({ status: 'revoked', purgeAt: r.purgeAt });
-    const jobId = await u.jobs.enqueue(
-      'privacy.health_data_eliminate',
-      { userId: u.userId },
-      {
-        singletonKey: healthEliminationKey(u.userId),
-      },
-    );
-    expect(u.jobs.statusOf(jobId)).toBe('pending');
+    const queued = () =>
+      admin
+        .query('SELECT count(*)::int AS n FROM job_queue WHERE singleton_key = $1', [
+          healthEliminationKey(u.userId),
+        ])
+        .then((x) => x.rows[0].n);
+    expect(await queued()).toBe(1);
 
-    expect(await u.service.grant(u.userId, 'health_data')).toEqual({ ok: true });
-    expect(u.jobs.statusOf(jobId)).toBe('cancelled');
-    expect((await u.service.getState(u.userId)).health).toEqual({ status: 'active' });
+    expect(await service.grant(u.userId, 'health_data')).toEqual({ ok: true });
+    expect(await queued()).toBe(0);
+    expect((await service.getState(u.userId)).health).toEqual({ status: 'active' });
     const { rows } = await admin.query(
       `SELECT action FROM audit_logs WHERE subject_user_id = $1 AND action::text LIKE 'health_data%'
         ORDER BY created_at`,
@@ -389,6 +392,43 @@ describe('reconsentimento após versão substancial nova (LEG-C06)', () => {
 });
 
 describe('integridade das provas (LEG-R03, LEG-S06)', () => {
+  it('as datas das provas vêm do relógio do banco, não do cliente (revisão B1)', async () => {
+    const u = await onboarded([]);
+    const { rows: v } = await admin.query(
+      `SELECT id, text_hash FROM policy_versions WHERE document = 'consent_marketing' AND version = 1`,
+    );
+    const past = new Date('2000-01-01T00:00:00Z');
+    await withUserOn(db, u.userId, async (tx) => {
+      const r = await tx.consentRecord.create({
+        data: {
+          userId: u.userId,
+          purpose: 'marketing',
+          policyVersionId: v[0].id,
+          textHash: v[0].text_hash,
+          grantedAt: past,
+        },
+      });
+      await tx.consentRecord.update({ where: { id: r.id }, data: { revokedAt: past } });
+    });
+    const { rows } = await admin.query(
+      `SELECT granted_at > now() - interval '1 minute' AS granted, revoked_at > now() - interval '1 minute' AS revoked
+         FROM consent_records WHERE user_id = $1`,
+      [u.userId],
+    );
+    expect(rows).toEqual([{ granted: true, revoked: true }]);
+  });
+
+  it('M3: o serviço recusa prazo diferente do escrito no texto do consentimento', () => {
+    expect(() =>
+      createConsentService({
+        db,
+        jobs: new MemoryJobQueue(),
+        logger: createLogger({ sink: () => {} }),
+        healthDataGraceDays: 45,
+      }),
+    ).toThrow(/HEALTH_DATA_GRACE_DAYS/);
+  });
+
   it('o runtime não apaga consentimento, não desfaz revogação e não grava hash falso', async () => {
     const u = await onboarded(['marketing']);
     await withUserOn(db, u.userId, async (tx) => {
@@ -441,10 +481,11 @@ describe('integridade das provas (LEG-R03, LEG-S06)', () => {
     await expect(db.$queryRaw`SELECT * FROM audit_logs`).rejects.toThrow(/permission denied/);
   });
 
-  it('logs do serviço só com metadados', async () => {
+  it('logs do serviço só com metadados, sem ligar a conta à finalidade (revisão B5)', async () => {
     const u = await onboarded(['health_data']);
     await u.service.revoke(u.userId, 'health_data');
     expect(JSON.stringify(u.logs)).not.toContain(u.email);
+    expect(JSON.stringify(u.logs)).not.toContain('health_data');
     for (const r of u.logs) {
       expect(Object.keys(r).sort()).toEqual(expect.arrayContaining(['event', 'level', 'ts']));
     }

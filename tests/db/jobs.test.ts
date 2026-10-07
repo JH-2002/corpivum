@@ -1,6 +1,7 @@
 import type pg from 'pg';
 import { PgJobQueue } from '@/adapters/jobs/postgres';
 import type { Db } from '@/lib/db/client';
+import { withUserOn } from '@/lib/db/rls';
 import { createLogger, type LogRecord } from '@/lib/logger';
 import { connectAdmin, runtimeDb, truncateAll } from './helpers';
 
@@ -135,11 +136,31 @@ describe('PgJobQueue', () => {
     expect(ran).toBe(1);
   });
 
-  it('cancel remove o job ainda não iniciado da chave', async () => {
+  it('não há cancelamento genérico: só a eliminação da própria pessoa, no contexto dela (revisão M4)', async () => {
     const q = new PgJobQueue(db, silent());
-    await q.enqueue('test.cancel', {}, { singletonKey: 'k:1', runAt: new Date(Date.now() + 1e6) });
-    expect(await q.cancel('k:1')).toBe(1);
-    expect(await q.cancel('k:1')).toBe(0);
+    const later = new Date(Date.now() + 1e6);
+    const a = '00000000-0000-7000-8000-00000000000a';
+    const b = '00000000-0000-7000-8000-00000000000b';
+    await q.enqueue('test.recurring', {}, { singletonKey: 'test.recurring', runAt: later });
+    for (const id of [a, b]) {
+      await q.enqueue(
+        'privacy.health_data_eliminate',
+        { userId: id },
+        {
+          singletonKey: `health-eliminate:${id}`,
+          runAt: later,
+        },
+      );
+    }
+    await expect(db.$queryRaw`SELECT app.health_elimination_cancel()`).rejects.toThrow();
+    const n = await withUserOn(
+      db,
+      a,
+      (tx) => tx.$executeRaw`SELECT app.health_elimination_cancel()`,
+    );
+    expect(n).toBe(1);
+    const { rows } = await admin.query('SELECT singleton_key FROM job_queue ORDER BY 1');
+    expect(rows.map((r) => r.singleton_key)).toEqual([`health-eliminate:${b}`, 'test.recurring']);
   });
 
   it('o runtime não lê a tabela e o enqueue valida nome e payload', async () => {

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { UpdateConsentForm } from '@/components/privacy/OnboardingForms';
-import { getEnv } from '@/lib/env';
 import { requireUpdateSession } from '@/modules/consent/server';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,7 +20,6 @@ export default async function ConsentUpdatePage() {
       <UpdateConsentForm
         documents={state.documents.filter((d) => d.needsAcceptance).map((d) => d.document)}
         purposes={state.purposes.filter((p) => p.needsReconsent).map((p) => p.purpose)}
-        graceDays={getEnv().HEALTH_DATA_GRACE_DAYS}
       />
       <p className="text-sm">
         <Link

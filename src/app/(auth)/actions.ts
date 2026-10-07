@@ -17,6 +17,7 @@ import {
 } from '@/modules/auth/schemas';
 import {
   clearAgeOkCookie,
+  clearKnownDeviceCookie,
   clearSessionCookie,
   getAuthService,
   hasAgeBlockCookie,
@@ -173,6 +174,8 @@ export async function resetPasswordAction(_prev: FormState, form: FormData): Pro
     return { status: 'error', fieldErrors: { password: await passwordMessage(result.problem) } };
   }
   await clearSessionCookie();
+  // A senha nova já invalida os cookies de aparelho antigos (B4); este navegador também recomeça.
+  await clearKnownDeviceCookie();
   redirect('/entrar?redefinida=1');
 }
 

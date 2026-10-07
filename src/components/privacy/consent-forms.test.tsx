@@ -23,7 +23,7 @@ function wrap(children: ReactNode) {
 /** LEG-C02: nenhuma caixa de consentimento vem marcada; cada finalidade tem o texto completo (LEG-C03). */
 describe('formulários de consentimento', () => {
   it('onboarding: nenhuma caixa marcada e uma por finalidade oferecida', () => {
-    wrap(<OnboardingConsentForm purposes={AVAILABLE_PURPOSES} graceDays={30} />);
+    wrap(<OnboardingConsentForm purposes={AVAILABLE_PURPOSES} />);
     const boxes = screen.getAllByRole('checkbox');
     expect(boxes).toHaveLength(2 + AVAILABLE_PURPOSES.length);
     for (const box of boxes) expect(box).not.toBeChecked();
@@ -37,7 +37,7 @@ describe('formulários de consentimento', () => {
   });
 
   it('atualização: nenhuma opção pré-selecionada', () => {
-    wrap(<UpdateConsentForm documents={['terms']} purposes={['health_data']} graceDays={30} />);
+    wrap(<UpdateConsentForm documents={['terms']} purposes={['health_data']} />);
     for (const radio of screen.getAllByRole('radio')) expect(radio).not.toBeChecked();
     expect(screen.getByRole('checkbox')).not.toBeChecked();
   });

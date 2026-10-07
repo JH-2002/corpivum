@@ -5,7 +5,11 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import type { FormState } from '@/components/forms/form-state';
-import { clearSessionCookie, setAgeBlockCookie } from '@/modules/auth/server';
+import {
+  clearKnownDeviceCookie,
+  clearSessionCookie,
+  setAgeBlockCookie,
+} from '@/modules/auth/server';
 import { AVAILABLE_PURPOSES } from '@/modules/consent';
 import { getConsentService, requireAppSession } from '@/modules/consent/server';
 import { getPrivacyService } from '@/modules/privacy/server';
@@ -49,6 +53,7 @@ export async function closeMinorAccountAction(
     (await getPrivacyService().closeMinorAccount(session.userId, parsed.data.password));
   if (!closed) return { status: 'error', fieldErrors: { password: t('minorError') } };
   await clearSessionCookie();
+  await clearKnownDeviceCookie();
   // Desencoraja novo cadastro imediato, sem identificar ninguém (LEG-F01).
   await setAgeBlockCookie();
   redirect('/conta-encerrada');

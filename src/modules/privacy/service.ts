@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { Db } from '@/lib/db/client';
 import { withUserOn } from '@/lib/db/rls';
 import type { Logger } from '@/lib/logger';
@@ -9,8 +10,11 @@ import type { Logger } from '@/lib/logger';
 export interface PrivacyDeps {
   db: Db;
   logger: Logger;
-  /** Reautenticação (senha atual), com limite por usuário (módulo auth). */
-  verifyPassword: (userId: string, password: string) => Promise<boolean>;
+  /**
+   * Reautenticação (senha atual, com limite por usuário; módulo auth). Devolve o nonce de uso único que a
+   * ação destrutiva consome no banco, ou null.
+   */
+  reauthenticate: (userId: string, password: string) => Promise<string | null>;
   accessLogRetentionDays: number;
   proofRetentionDays: number;
 }
@@ -55,9 +59,16 @@ export function createPrivacyService(deps: PrivacyDeps) {
      * dados saem na hora; fica só a prova mínima (pedido e AuditLog, sem e-mail; LEG-R03).
      */
     async closeMinorAccount(userId: string, password: string): Promise<boolean> {
-      if (!(await deps.verifyPassword(userId, password))) return false;
-      await withUserOn(db, userId, (tx) => tx.$queryRaw`SELECT app.account_close_minor()::text`);
-      logger.info('privacy.minor_account_closed', { userId });
+      const proof = await deps.reauthenticate(userId, password);
+      if (!proof) return false;
+      const proofHash = new Uint8Array(createHash('sha256').update(proof).digest());
+      await withUserOn(
+        db,
+        userId,
+        (tx) => tx.$queryRaw`SELECT app.account_close_minor(${proofHash})::text`,
+      );
+      // Sem userId: o log não liga uma conta a "é menor" (B5). A prova é o AuditLog.
+      logger.info('privacy.minor_account_closed');
       return true;
     },
 

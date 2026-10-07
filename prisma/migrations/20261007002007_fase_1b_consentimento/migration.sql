@@ -105,6 +105,20 @@ CREATE TABLE "access_logs" (
 );
 
 -- CreateTable
+CREATE TABLE "reauth_proofs" (
+    "id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
+    "purpose" TEXT NOT NULL,
+    "token_hash" BYTEA NOT NULL,
+    "expires_at" TIMESTAMPTZ(3) NOT NULL,
+    "used_at" TIMESTAMPTZ(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+
+    CONSTRAINT "reauth_proofs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "job_queue" (
     "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
@@ -148,10 +162,19 @@ CREATE INDEX "access_logs_occurred_at_idx" ON "access_logs"("occurred_at");
 CREATE INDEX "access_logs_user_id_occurred_at_idx" ON "access_logs"("user_id", "occurred_at");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "reauth_proofs_token_hash_key" ON "reauth_proofs"("token_hash");
+
+-- CreateIndex
+CREATE INDEX "reauth_proofs_user_id_idx" ON "reauth_proofs"("user_id");
+
+-- CreateIndex
 CREATE INDEX "job_queue_status_run_at_idx" ON "job_queue"("status", "run_at");
 
 -- AddForeignKey
 ALTER TABLE "consent_records" ADD CONSTRAINT "consent_records_policy_version_id_fkey" FOREIGN KEY ("policy_version_id") REFERENCES "policy_versions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reauth_proofs" ADD CONSTRAINT "reauth_proofs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "policy_acceptances" ADD CONSTRAINT "policy_acceptances_policy_version_id_fkey" FOREIGN KEY ("policy_version_id") REFERENCES "policy_versions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -182,6 +205,7 @@ ALTER TABLE public.privacy_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.access_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.job_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reauth_proofs ENABLE ROW LEVEL SECURITY;
 
 -- Catálogo público de versões (sem dado pessoal). Só leitura.
 CREATE POLICY policy_versions_read ON public.policy_versions FOR SELECT USING (true);
@@ -212,11 +236,13 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.privacy_requests FROM app_user
 REVOKE ALL ON public.audit_logs FROM app_user;
 REVOKE ALL ON public.access_logs FROM app_user;
 REVOKE ALL ON public.job_queue FROM app_user;
+REVOKE ALL ON public.reauth_proofs FROM app_user;
 
 -- ---------- Integridade das provas (gatilhos) ----------
 
 -- Consentimento: só a versão vigente do texto da própria finalidade, com o hash dela. A revogação é
--- definitiva: um novo consentimento cria outro registro.
+-- definitiva: um novo consentimento cria outro registro. As datas vêm do relógio do banco: uma data
+-- forjada não antecipa o expurgo da prova.
 CREATE FUNCTION app.consent_records_guard() RETURNS trigger
   LANGUAGE plpgsql
   SET search_path = pg_catalog, pg_temp
@@ -239,11 +265,19 @@ BEGIN
        OR NEW.revoked_at IS NOT NULL THEN
       RAISE EXCEPTION 'invalid consent record' USING ERRCODE = '23514';
     END IF;
+    NEW.granted_at := now();
+    NEW.created_at := now();
     RETURN NEW;
   END IF;
-  IF OLD.revoked_at IS NOT NULL OR NEW.revoked_at IS NULL THEN
+  IF OLD.revoked_at IS NOT NULL OR NEW.revoked_at IS NULL
+     OR NEW.user_id IS DISTINCT FROM OLD.user_id
+     OR NEW.purpose IS DISTINCT FROM OLD.purpose
+     OR NEW.policy_version_id IS DISTINCT FROM OLD.policy_version_id
+     OR NEW.text_hash IS DISTINCT FROM OLD.text_hash
+     OR NEW.granted_at IS DISTINCT FROM OLD.granted_at THEN
     RAISE EXCEPTION 'consent revocation is final' USING ERRCODE = '23514';
   END IF;
+  NEW.revoked_at := now();
   RETURN NEW;
 END;
 $$;
@@ -268,6 +302,8 @@ BEGIN
   IF v_doc IS NULL OR v_doc NOT IN ('terms', 'privacy_policy') OR v_version IS DISTINCT FROM v_latest THEN
     RAISE EXCEPTION 'invalid policy acceptance' USING ERRCODE = '23514';
   END IF;
+  NEW.accepted_at := now();
+  NEW.created_at := now();
   RETURN NEW;
 END;
 $$;
@@ -339,10 +375,36 @@ BEGIN
 END;
 $$;
 
+-- ---------- Reautenticação para ações destrutivas (ADR-0019, revisão M1) ----------
+-- Depois de conferir a senha atual, a aplicação registra aqui o hash de um nonce de uso único (2 min), na
+-- transação da própria pessoa. A ação destrutiva consome a prova. Um erro de contexto (app.user_id de
+-- outra pessoa) não basta para agir: falta a prova daquela pessoa. Limite residual: quem executa SQL
+-- arbitrário como app_user também chama esta função (registrado em OPEN_ISSUES, papel de worker na Fase 7).
+CREATE FUNCTION app.reauth_issue(p_purpose text, p_token_hash bytea) RETURNS void
+  LANGUAGE plpgsql SECURITY DEFINER
+  SET search_path = pg_catalog, pg_temp
+AS $$
+DECLARE
+  v_user uuid := app.current_user_id();
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'reauth requires user context' USING ERRCODE = '42501';
+  END IF;
+  IF p_purpose NOT IN ('minor_closure') OR length(p_token_hash) <> 32 THEN
+    RAISE EXCEPTION 'invalid reauth arguments' USING ERRCODE = '22023';
+  END IF;
+  DELETE FROM public.reauth_proofs r
+   WHERE r.user_id = v_user AND (r.expires_at < now() OR r.used_at IS NOT NULL);
+  INSERT INTO public.reauth_proofs (id, user_id, purpose, token_hash, expires_at, created_at, updated_at)
+  VALUES (gen_random_uuid(), v_user, p_purpose, p_token_hash, now() + interval '2 minutes', now(), now());
+END;
+$$;
+
 -- ---------- Encerramento de conta de quem se descobre menor (LEG-F04) ----------
--- Só a própria conta (contexto da transação). Guarda a prova mínima e apaga a conta na hora: sessões,
--- tokens e dados do usuário saem em cascata; as provas ficam (sem FK).
-CREATE FUNCTION app.account_close_minor() RETURNS uuid
+-- Só a própria conta (contexto da transação), com prova de reautenticação de uso único e teto global de
+-- 50 encerramentos por hora (limita o estrago de um abuso em massa). Guarda a prova mínima e apaga a conta
+-- na hora: sessões, tokens e dados do usuário saem em cascata; as provas ficam (sem FK).
+CREATE FUNCTION app.account_close_minor(p_proof_hash bytea) RETURNS uuid
   LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = pg_catalog, pg_temp
 AS $$
@@ -352,6 +414,16 @@ DECLARE
 BEGIN
   IF v_user IS NULL THEN
     RAISE EXCEPTION 'account closure requires user context' USING ERRCODE = '42501';
+  END IF;
+  UPDATE public.reauth_proofs r SET used_at = now(), updated_at = now()
+   WHERE r.user_id = v_user AND r.purpose = 'minor_closure' AND r.token_hash = p_proof_hash
+     AND r.used_at IS NULL AND r.expires_at > now();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'reauthentication required' USING ERRCODE = '42501';
+  END IF;
+  IF (SELECT count(*) FROM public.audit_logs a
+       WHERE a.action = 'account_closed_minor' AND a.created_at > now() - interval '1 hour') >= 50 THEN
+    RAISE EXCEPTION 'closure rate exceeded' USING ERRCODE = '54000';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public.users u WHERE u.id = v_user) THEN
     RAISE EXCEPTION 'account not found' USING ERRCODE = 'P0002';
@@ -555,15 +627,21 @@ BEGIN
 END;
 $$;
 
--- Cancela o job ainda não iniciado de uma chave (ex.: reconsentimento cancela a eliminação agendada).
-CREATE FUNCTION app.jobs_cancel(p_singleton_key text) RETURNS integer
+-- Reconsentimento cancela a eliminação agendada DA PRÓPRIA pessoa (contexto da transação), na mesma
+-- transação do novo consentimento. Não há cancelamento genérico de jobs (revisão M4).
+CREATE FUNCTION app.health_elimination_cancel() RETURNS integer
   LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
+  v_user uuid := app.current_user_id();
   v_count integer;
 BEGIN
-  DELETE FROM public.job_queue j WHERE j.singleton_key = p_singleton_key AND j.status = 'queued';
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'cancel requires user context' USING ERRCODE = '42501';
+  END IF;
+  DELETE FROM public.job_queue j
+   WHERE j.singleton_key = 'health-eliminate:' || v_user::text AND j.status = 'queued';
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
 END;
@@ -576,7 +654,8 @@ GRANT EXECUTE ON FUNCTION
   app.has_active_consent(public.consent_purpose),
   app.audit_append(public.audit_action, public.audit_resource_type, uuid, boolean),
   app.access_log_append(text),
-  app.account_close_minor(),
+  app.reauth_issue(text, bytea),
+  app.account_close_minor(bytea),
   app.privacy_purge_access_logs(integer),
   app.privacy_purge_proofs(integer),
   app.privacy_due_health_eliminations(integer),
@@ -584,7 +663,7 @@ GRANT EXECUTE ON FUNCTION
   app.jobs_claim(text, text[], integer, integer),
   app.jobs_complete(uuid, text),
   app.jobs_fail(uuid, text, text, integer),
-  app.jobs_cancel(text)
+  app.health_elimination_cancel()
 TO app_user;
 
 -- ---------- Versões publicadas (v1) ----------
@@ -592,8 +671,8 @@ TO app_user;
 -- Nova versão = nova migração com INSERT, nunca UPDATE (as provas apontam para a versão antiga).
 INSERT INTO public.policy_versions (id, document, version, text_hash, requires_reconsent, published_at, updated_at)
 VALUES
-  (gen_random_uuid(), 'privacy_policy', 1, 'f198b78b0a2b2a51680e27959b1b4532efa8aca526b94baed48ccdeb40edbf2d', true, '2026-10-07T00:00:00Z', now()),
+  (gen_random_uuid(), 'privacy_policy', 1, 'd97b589c8574c2a3cf3f339adb51e4ef491744504e88f77fff906273580afa6a', true, '2026-10-07T00:00:00Z', now()),
   (gen_random_uuid(), 'terms', 1, '705838b552199e7dfe1a5f0b8d996b8b0e03369ddbe82db54de9d6b88cc4121f', true, '2026-10-07T00:00:00Z', now()),
-  (gen_random_uuid(), 'consent_health_data', 1, 'fe50c48f529e3a89039643e6da334c979499805fdc101a22a2029cd54d12f39e', true, '2026-10-07T00:00:00Z', now()),
-  (gen_random_uuid(), 'consent_marketing', 1, 'cfd5bfb2754bc8e9cb7d61dad354b7e7e0c84dca3add64efe6821a5f337e5f6f', true, '2026-10-07T00:00:00Z', now()),
-  (gen_random_uuid(), 'consent_product_metrics', 1, '6421c1d9f76c0656b69e7121ea80a49f1b992ed9ddc8dc509ef71df2dc4d95eb', true, '2026-10-07T00:00:00Z', now());
+  (gen_random_uuid(), 'consent_health_data', 1, '676f9d3b37e7bbda4f0badfc4cf6e6008ad3062a75d12cd8e43d90c44c3e0433', true, '2026-10-07T00:00:00Z', now()),
+  (gen_random_uuid(), 'consent_marketing', 1, '0d782b27a4743565d7cfeb3d5e94fb6e39b863413cf1973f8c9d55c78b795fde', true, '2026-10-07T00:00:00Z', now()),
+  (gen_random_uuid(), 'consent_product_metrics', 1, '084a0ea0dc34d3ae61c26f4b9f71c66c88276424c60f3c265e2c8c40a57b1fed', true, '2026-10-07T00:00:00Z', now());

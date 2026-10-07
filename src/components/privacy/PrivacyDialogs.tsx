@@ -56,13 +56,26 @@ export function HealthRevokeDialog({
   );
 }
 
+/** Prazos do que fica guardado após o encerramento (texto exato, revisão M2). */
+export interface RetentionDays {
+  proofDays: number;
+  accessDays: number;
+  backupDays: number;
+}
+
 /** Encerramento para quem se descobre menor (LEG-F04): confirmação reforçada com a senha. */
-export function MinorClosureDialog() {
+export function MinorClosureDialog({ retention }: { retention: RetentionDays }) {
   const t = useTranslations('privacyCenter');
   const ta = useTranslations('auth.fields');
   return (
     <ConfirmDialog triggerLabel={t('minorStart')} title={t('minorConfirmTitle')}>
-      {(close) => <MinorClosureForm onCancel={close} passwordLabel={ta('currentPassword')} />}
+      {(close) => (
+        <MinorClosureForm
+          onCancel={close}
+          passwordLabel={ta('currentPassword')}
+          retention={retention}
+        />
+      )}
     </ConfirmDialog>
   );
 }
@@ -70,15 +83,17 @@ export function MinorClosureDialog() {
 function MinorClosureForm({
   onCancel,
   passwordLabel,
+  retention,
 }: {
   onCancel: () => void;
   passwordLabel: string;
+  retention: RetentionDays;
 }) {
   const t = useTranslations('privacyCenter');
   const [state, action] = useActionState(closeMinorAccountAction, INITIAL_FORM_STATE);
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
-      <p className="text-sm">{t('minorConfirmBody')}</p>
+      <p className="text-sm">{t('minorConfirmBody', { ...retention })}</p>
       <FormMessage state={state} />
       <TextField
         name="password"
