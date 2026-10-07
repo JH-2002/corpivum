@@ -73,6 +73,28 @@ responsável pelo projeto, os achados médios e baixos ficam registrados aqui, s
 | PR1a-R3-B8 | Baixa | A docstring do job está desatualizada. O `DELETE FROM users` do expurgo pressupõe que só tabelas de auth referenciam `users` em CASCADE. Uma FK futura com RESTRICT (AuditLog) quebraria o expurgo inteiro; com CASCADE, apagaria provas (LEG-R03). **Correção:** documentar a premissa e criar teste que lista as FKs para `users`. **Atenção na Fase 1b.** | LEG-R03, LEG-S06 | Resolvido na Fase 1b: provas e AccessLog sem FK para `users`; premissa documentada no job e na função; teste com a lista fechada de FKs e teste do expurgo com provas presentes (ADR-0019) |
 | PR1a-R3-B9 | Baixa | O bloqueio do limite por destinatário não é registrado em log, o que deixa uma campanha de assédio invisível. **Correção:** `logger.warn('auth.mail_rate_limited', { operation })`, sem e-mail. | LEG-S05, LEG-R04 | Aberto |
 
+### Revisão da Fase 1b (ADR-0020)
+
+Nenhum achado crítico ou alto. Por decisão do responsável pelo projeto, os médios e cinco baixos foram
+corrigidos na própria fase (com teste); os demais ficam registrados aqui.
+
+| ID | Sev. | Achado | Referência | Status |
+|---|---|---|---|---|
+| PR1b-M1 | Média | `app.account_close_minor()` deixava o `app_user` apagar qualquer conta com um erro de contexto. | LEG-S03, LEG-F04 | Resolvido: prova de reautenticação de uso único (`reauth_proofs`) e teto global de 50/h. **Residual:** SQL arbitrário como `app_user` ainda chama as duas funções; avaliar papel `app_worker` separado (Fase 7). |
+| PR1b-M2 | Média | Textos do encerramento prometiam apagar "tudo", mas ficam provas, AccessLog e backups. | LEG-F04, LEG-D06 | Resolvido: textos dizem o que fica e por quanto tempo (`LEGAL-REVIEW`, OI-08). **Pendente jurídico:** o AccessLog de quem se declarou menor deve ficar pelo prazo do Marco Civil ou ser apagado no encerramento? (ver OI-17) |
+| PR1b-M3 | Média | O prazo de eliminação aparecia no texto do consentimento como parâmetro fora do hash. | LEG-C01, LEG-C03 | Resolvido: prazo escrito no texto versionado; o serviço recusa configuração divergente |
+| PR1b-M4 | Média | `app.jobs_cancel` cancelava a chave de qualquer pessoa, inclusive jobs recorrentes. | LEG-S03 | Resolvido: sem cancelamento genérico; `app.health_elimination_cancel()` só da própria pessoa, na transação |
+| PR1b-B1 | Baixa | Datas das provas vinham do cliente (podiam antecipar o expurgo). | LEG-C01, LEG-R03 | Resolvido: relógio do banco nos gatilhos |
+| PR1b-B2 | Baixa | `app.audit_append(..., p_system)` deixa o chamador marcar a ação como "do sistema" (ator NULL). **Correção:** função separada `app.audit_append_system`, aceita só para ações de job (ex.: `health_data_eliminated`). | LEG-S06 | Aberto |
+| PR1b-B3 | Baixa | Funções de retenção e de varredura abertas ao `app_user`: `privacy_purge_access_logs(1)` apaga o AccessLog com mais de 1 dia; `privacy_due_health_eliminations` lista, sem contexto, quem revogou o consentimento de saúde. **Correção:** papel `app_worker` para jobs (Fase 7) ou piso `p_days >= 180` no banco, salvo decisão jurídica (OI-06/OI-17). | LEG-R02, LEG-S03 | Aberto |
+| PR1b-B4 | Baixa | Cookie de aparelho não perdia validade com troca de senha nem com o encerramento. | OI-15 | Resolvido: HMAC cobre o hash da senha atual; cookie apagado na troca/redefinição de senha e no encerramento. Validade de 180 dias mantida (risco aceito: aparelho que já entrou mantém balde próprio até a próxima troca de senha) |
+| PR1b-B5 | Baixa | Logs ligavam `userId` a "é menor" e a "revogou dados de saúde". | LEG-R04 | Resolvido: logs sem `userId` no encerramento e na eliminação, e sem finalidade no consentimento |
+| PR1b-B6/B7 | Baixa | Textos de métricas, marketing e monitoramento de erros afirmavam mais do que o sistema faz. | LEG-C03, LEG-S10, LEG-R04 | Resolvido: textos ajustados (v1 recalculada antes de publicar) |
+| PR1b-B8 | Baixa | Fila: (a) handler acima de `lockSeconds` (300 s) pode rodar em dobro; (b) o ramo `unique_violation` de `jobs_fail` apaga sem conferir `locked_by`; (c) a varredura (`LIMIT 500` por data) pode deixar contas sem atendimento se as primeiras falharem sempre. **Correção:** exigir handlers idempotentes (documentar), conferir `locked_by` no DELETE e excluir da varredura contas com job `failed`. | OI-14 | Aberto |
+| PR1b-B9 | Baixa | O encerramento de conta confia só na cascata de FK; dados fora do banco (StorageProvider: exportações, anexos) não seriam apagados. **Correção (Fase 2 em diante):** toda tabela de saúde com FK `ON DELETE CASCADE` para `users`; dado fora do banco com eliminador chamado também no encerramento e na exclusão (Fase 6). | LEG-F04, LEG-D04 | Aberto |
+| PR1b-N1 | Nota | A checagem de consentimento no banco (`has_active_consent` nas políticas RLS) só existirá com as tabelas de saúde. **Correção (Fase 2):** teste que falha se tabela de saúde nova não usar `app.has_active_consent('health_data')` nas políticas. | LEG-C04 | Aberto (Fase 2) |
+| PR1b-N2 | Nota | O aviso de revogação oferece exportar antes, mas a exportação só existe na Fase 6 (`exportAvailable=false`). Sem impacto na 1b: ainda não há dado de saúde. | LEG-D03 | Aberto (Fase 6) |
+
 ## Resolvidas
 
 | ID | Decisão | Data | Quem decidiu |

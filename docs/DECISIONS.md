@@ -340,3 +340,36 @@ acesso a dado de usuário continua em `withUserOn`.
 - **Fase 5:** publicar os textos de IA e de transferência (nova `PolicyVersion`) e ligar `available`.
 - **Fase 6:** ligar `exportAvailable` no aviso de revogação; criar os demais tipos de `PrivacyRequest`.
 - **Fase 7:** processo de worker dedicado (`JOB_WORKER=off` nas instâncias web).
+
+## ADR-0020 — Revisão de privacidade da Fase 1b
+**Contexto.** O `privacy-reviewer` não apontou nada crítico nem alto na Fase 1b. Apontou 4 médios e 9 baixos.
+Por decisão do responsável pelo projeto, os médios e cinco baixos foram corrigidos; os demais estão no
+OPEN_ISSUES.
+
+**Decisão (corrigido, com teste).**
+- **M1, encerramento de conta:** `app.account_close_minor(p_proof_hash)` exige uma prova de reautenticação
+  de uso único (2 min). A prova é registrada por `app.reauth_issue` só depois de a aplicação conferir a senha
+  (`issueReauthProof`) e fica na tabela `reauth_proofs`, sem acesso direto do runtime. Há também um teto
+  global de 50 encerramentos por hora. Um erro de contexto (`app.user_id` de outra pessoa) não basta mais
+  para apagar uma conta. Limite residual: quem executa SQL arbitrário como `app_user` consegue chamar as
+  duas funções. Isso fica registrado (papel de worker separado, Fase 7).
+- **M2, transparência:** os textos do encerramento e da Política dizem o que fica (prova e registros de
+  acesso, sem e-mail) e por quanto tempo, com os prazos da configuração (`LEGAL-REVIEW`).
+- **M3, prazo no texto versionado:** o texto do consentimento de saúde traz "30 dias" escrito (coberto
+  pelo hash), sem parâmetro. `HEALTH_DATA_GRACE_DAYS` precisa ser igual a `HEALTH_DATA_GRACE_DAYS_IN_TEXT`,
+  e o serviço recusa iniciar se não for.
+- **M4, cancelamento de jobs:** não há mais cancelamento genérico (`app.jobs_cancel` e `JobQueue.cancel`
+  foram removidos). `app.health_elimination_cancel()` cancela só a eliminação da própria pessoa, na mesma
+  transação do novo consentimento.
+- **B1:** os gatilhos usam o relógio do banco em `granted_at`, `accepted_at` e `revoked_at`. Na revogação, só
+  `revoked_at` muda.
+- **B4:** o cookie de aparelho conhecido cobre também o hash da senha atual. Trocar ou redefinir a senha, ou
+  apagar a conta, invalida todos os cookies. O navegador atual apaga o cookie na troca e na redefinição de
+  senha e no encerramento.
+- **B5:** os logs não ligam mais o `userId` a "é menor" nem a uma finalidade de consentimento.
+- **B6/B7:** os textos de métricas (sem promessa de anonimização), de marketing (provedor ainda não escolhido
+  e transferência informada antes do envio) e de monitoramento de erros ("com remoção de dados pessoais")
+  ficaram de acordo com o que o sistema faz. Os hashes da v1 foram recalculados: a v1 ainda não tinha sido
+  publicada fora desta branch.
+
+**Aceito por ora:** B2, B3, B8 e B9, registrados em docs/legal/OPEN_ISSUES.md.
