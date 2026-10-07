@@ -5,6 +5,8 @@ import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { registerAuthJobs, scheduleAuthPurge } from '@/modules/auth/jobs';
 import { getAuthService } from '@/modules/auth/server';
+import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
+import { getHealthDataEliminator, getPrivacyService } from '@/modules/privacy/server';
 
 const MEMORY_DRAIN_MS = 60 * 1000;
 
@@ -17,7 +19,12 @@ const MEMORY_DRAIN_MS = 60 * 1000;
 export async function startJobs(): Promise<void> {
   const { jobs } = getAdapters();
   registerAuthJobs(jobs, getAuthService());
+  registerPrivacyJobs(jobs, {
+    service: getPrivacyService(),
+    eliminator: getHealthDataEliminator(),
+  });
   await scheduleAuthPurge(jobs);
+  await schedulePrivacyJobs(jobs);
   if (jobs instanceof MemoryJobQueue) {
     void jobs.drain().catch(() => logger.warn('job.drain_failed', { adapter: jobs.id }));
     const timer = setInterval(() => {
