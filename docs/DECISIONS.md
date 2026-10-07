@@ -377,3 +377,71 @@ OPEN_ISSUES.
 **Revisão focada das correções.** Nada crítico ou alto. O teto global de encerramentos passou a ser
 tratado (mensagem com o caminho do encarregado, nada apagado). O desenho do teto e quatro baixos ficam em
 OPEN_ISSUES (PR1b-R2-*).
+
+## ADR-0021 — Dados de saúde, dashboard, Índice de Bem-Estar e demo (Fase 2)
+**Contexto.** A Fase 2 cria os primeiros dados de saúde (sono, humor/energia, hábitos, diário, peso e
+medidas), o Dashboard "Seu estado atual", o Índice de Bem-Estar explicável (LEG-D08) e o demo público
+(LEG-X02). Junto entram três pendências da 1b: passo 5 do onboarding (§52.5), consentimento checado no
+banco nas tabelas de saúde (PR1b-N1) e eliminação agendada cobrindo todas elas (PR1b-B9).
+
+**Decisão — banco (migração `fase_2_saude`).**
+- Seis tabelas (`sleep_entries`, `mood_entries`, `habits`, `habit_checks`, `journal_entries`,
+  `body_measurements`), todas com `user_id` em FK `ON DELETE CASCADE` e RLS no modelo da ADR-0019:
+  SELECT/INSERT/UPDATE exigem dono **e** `app.has_active_consent('health_data')`; DELETE só por dono. Sem
+  TRUNCATE para o runtime. `habit_checks` usa FK composta `(habit_id, user_id)`: o check nunca aponta para
+  hábito de outra pessoa. Faixas validadas também por CHECK.
+- Texto livre cifrado em nível de campo (ADR-0016), contexto `{ userId, tabela, coluna }`: nota do sono e
+  do humor, conteúdo do diário e **nome do hábito** (pode revelar saúde). Sem busca textual (LEG-S02).
+  Etiquetas do diário e emoções do humor são listas fechadas (enum), filtráveis.
+- **Eliminadores com `DELETE` sem `WHERE`.** No Postgres, um DELETE cujo WHERE/RETURNING lê colunas também
+  aplica a política de SELECT, que exige consentimento: depois da revogação nada seria apagado. A política
+  de DELETE já restringe ao dono. Registro único em `src/modules/health/erasers.ts`, ligado ao iniciar os
+  jobs. `tests/db/health.test.ts` descobre pelo catálogo toda tabela com `user_id` e falha se uma tabela
+  de saúde não seguir o modelo de políticas ou não for zerada pelo eliminador (resolve PR1b-N1 e a parte
+  de banco de PR1b-B9).
+- `users.data_mode` (`demo`/`own`, NULL = passo 5 pendente) e `users.streaks_enabled` (LEG-F05), com
+  `GRANT UPDATE` só nessas colunas.
+- Pedido de revisão do Índice: `app.privacy_request_score_review()` (SECURITY DEFINER) abre um
+  `privacy_requests` `automated_review` com a versão do Índice e o período (colunas novas, só nesse tipo),
+  **nunca valores de saúde**, prazo de 15 dias e AuditLog. Idempotente com pedido aberto.
+
+**Decisão — aplicação.**
+- Todo acesso a dado de saúde por `withConsent('health_data')` (guard) + RLS (banco): dupla barreira.
+  Uma tela lê tudo numa só transação com consentimento (`HealthDataSource.session`).
+- **Fonte de dados única** (`src/modules/health/source.ts`): as telas não sabem se os dados são da pessoa
+  ou da demonstração. Mesmos componentes para dados próprios, demo dentro da conta e demo público.
+- **Índice de Bem-Estar v1** (`src/modules/wellbeing/score.ts`, `docs/WELLBEING_SCORE.md`): regularidade
+  do sono, humor/energia, hábitos, atividade (fora na v1: módulo da Fase 4) e constância de registro.
+  Componentes sem amostra mínima saem e os pesos são renormalizados. Calculado na leitura, sem tabela
+  `WellbeingScore` (menos dado sensível guardado). Selo ESTIMADO. Mudança de fórmula = nova versão.
+- **Resumo do dashboard** por regras (sem IA), descritivo, sem causa.
+- **Período global em cookie** de sessão `__Host-hm_period` (HttpOnly, sem identificador), validado no
+  servidor; substitui o `sessionStorage` da ADR-0006 para os dados serem agregados no servidor (§41).
+  Intervalo personalizado limitado a 366 dias.
+- **Gráficos com Recharts 3.10.1** (versão fixa): tooltip com data, valor, unidade e selo; legenda
+  alternável; padrão de traço além da cor; tabela alternativa; sem animação com `prefers-reduced-motion`.
+  O desenho é `aria-hidden` (a tabela traz os valores). Sem nenhum valor, mostra "sem dados" — nunca um
+  gráfico vazio.
+
+**Decisão — demonstração (LEG-X02, §40, §52.5).**
+- Gerador determinístico de 90 dias 100% fictícios (`src/modules/demo/generator.ts`), em memória.
+- **Demo público** em `/demo` (rota pública no proxy): sem sessão, sem banco, sem formulários, selo DEMO em
+  todo dado; o único cookie é o do período. `robots: noindex`.
+- **Demo dentro da conta** (escolha do passo 5): grava só `data_mode='demo'`; nada fictício entra nas
+  tabelas de saúde, então exportação, Índice, eliminação e IA nunca misturam fictício com real. Faixa
+  "Começar com meus dados" com confirmação. Não depende do consentimento de saúde (não há dado da pessoa).
+- `pnpm db:seed` (só `APP_ENV=development` e banco local) grava o mesmo conjunto numa pessoa fictícia,
+  pelo caminho do app (consentimento + RLS + cifra), para testar a área logada com dados. O setup do e2e
+  usa a mesma função. Carregador próprio (`scripts/ts-loader.mjs`) em vez de dependência nova (ADR-0009).
+
+**Aceito por ora / fora desta fase.**
+- Edição sem histórico de versões (LEG-D02 "com histórico"): Fase 6, junto com a exportação.
+- Sinais de risco no texto do diário (§48, LEG-I07): o diário é cifrado e não há leitura automática; a
+  orientação CVV 188 / SAMU 192 fica sempre visível no humor e no diário, e aparece em destaque ao
+  registrar humor no ponto mais baixo. Detecção no texto: Fase 5 (modo de risco), com revisão clínica.
+- "Próximos lembretes" no dashboard: Fase 4 (módulo de lembretes). A seção não aparece até lá.
+- Avisos `disclaimer.wellbeingScore` e `disclaimer.demoData` aprovados no teste; `LEGAL-REVIEW` (OI-09).
+
+**Consequências.** Tabela de saúde nova exige: política no modelo, FK CASCADE, eliminador em
+`erasers.ts` e classificação no teste de catálogo (senão a CI falha). Atendimento do pedido de revisão do
+Índice é manual até a Fase 6 (`LEGAL-REVIEW`, OPEN_ISSUES).
