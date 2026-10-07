@@ -1,5 +1,11 @@
 // Fase 1a: conta, sessões em banco, MFA, tokens e limites de tentativa (LEG-S03, LEG-S04).
+// Fase 1b: consentimento, versões de política, provas, AuditLog/AccessLog e fila de jobs (ADR-0019).
 // As políticas RLS e as funções SECURITY DEFINER ficam no SQL das migrações (ADR-0015).
+//
+// REGRA (PR1a-R3-B8, LEG-R03): tabelas de PROVA (consent_records, policy_acceptances, privacy_requests,
+// audit_logs) e access_logs guardam `user_id` SEM FK para users. O expurgo de contas não as apaga em
+// cascata nem é bloqueado por elas. Só tabelas de auth e de dados do próprio usuário usam FK com CASCADE
+// (teste em tests/db/retention.test.ts).
 // A URL de conexão fica em prisma.config.ts.
 
 generator client {
@@ -13,24 +19,28 @@ datasource db {
 
 /// Conta. Dados não sensíveis (base: execução de contrato). Para 18+ guarda só a declaração (LEG-F01).
 model User {
-  id                 String    @id @default(uuid(7)) @db.Uuid
+  id                    String    @id @default(uuid(7)) @db.Uuid
   /// Normalizado (trim + minúsculas) pela aplicação.
-  email              String    @unique
-  emailVerifiedAt    DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  email                 String    @unique
+  emailVerifiedAt       DateTime? @map("email_verified_at") @db.Timestamptz(3)
   /// Argon2id em formato PHC.
-  passwordHash       String    @map("password_hash")
-  adultAttestedAt    DateTime  @map("adult_attested_at") @db.Timestamptz(3)
-  ageGateVersion     String    @map("age_gate_version")
-  mfaEnabledAt       DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
+  passwordHash          String    @map("password_hash")
+  adultAttestedAt       DateTime  @map("adult_attested_at") @db.Timestamptz(3)
+  ageGateVersion        String    @map("age_gate_version")
+  mfaEnabledAt          DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
   /// Segredo TOTP cifrado (envelope ADR-0016, contexto users.totp_secret).
-  totpSecret         Bytes?    @map("totp_secret")
+  totpSecret            Bytes?    @map("totp_secret")
   /// Último passo TOTP aceito: códigos de passo <= este são recusados (anti-reuso).
-  totpLastUsedStep   BigInt?   @map("totp_last_used_step")
+  totpLastUsedStep      BigInt?   @map("totp_last_used_step")
   /// Início da ativação do TOTP (segredo pendente). Pendente vence em 15 min e é apagado em 1 dia.
-  totpSetupStartedAt DateTime? @map("totp_setup_started_at") @db.Timestamptz(3)
-  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(3)
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  totpSetupStartedAt    DateTime? @map("totp_setup_started_at") @db.Timestamptz(3)
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz(3)
+  /// Fim do onboarding (§52): termos aceitos e escolhas de consentimento feitas.
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz(3)
+  /// Eliminação agendada dos dados de saúde após revogar o consentimento (ADR-0019). NULL = nada agendado.
+  healthDataPurgeAt     DateTime? @map("health_data_purge_at") @db.Timestamptz(3)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   sessions      Session[]
   recoveryCodes RecoveryCode[]
@@ -113,4 +123,211 @@ model RateLimitBucket {
   @@id([keyHash, windowStart])
   @@index([expiresAt])
   @@map("rate_limit_buckets")
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Fase 1b: consentimento e provas (LEG-C01–C06, LEG-R03, LEG-S06, LEG-R02). Ver ADR-0019.
+// ---------------------------------------------------------------------------------------------------
+
+/// Finalidades de consentimento (LEG-C02). Cada uma com texto e versão próprios.
+enum ConsentPurpose {
+  health_data
+  ai_sharing
+  international_transfer
+  marketing
+  product_metrics
+
+  @@map("consent_purpose")
+}
+
+/// Documentos versionados (LEG-G04, LEG-C06).
+enum PolicyDocument {
+  privacy_policy
+  terms
+  consent_health_data
+  consent_ai_sharing
+  consent_international_transfer
+  consent_marketing
+  consent_product_metrics
+
+  @@map("policy_document")
+}
+
+/// Versão publicada de um documento. `text_hash` = SHA-256 do texto exato exibido. Sem DML do runtime.
+model PolicyVersion {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  document          PolicyDocument
+  version           Int
+  textHash          String         @map("text_hash")
+  /// Mudança substancial: exige reconsentimento ou novo aceite antes de continuar (LEG-C06).
+  requiresReconsent Boolean        @map("requires_reconsent")
+  publishedAt       DateTime       @map("published_at") @db.Timestamptz(3)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  consentRecords    ConsentRecord[]
+  policyAcceptances PolicyAcceptance[]
+
+  @@unique([document, version])
+  @@map("policy_versions")
+}
+
+/// Consentimento por finalidade (LEG-C01). Conceder de novo cria outro registro; revogar só preenche
+/// `revoked_at`. Prova (LEG-R03): sem FK para users.
+model ConsentRecord {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  purpose         ConsentPurpose
+  policyVersionId String         @map("policy_version_id") @db.Uuid
+  textHash        String         @map("text_hash")
+  grantedAt       DateTime       @map("granted_at") @db.Timestamptz(3)
+  revokedAt       DateTime?      @map("revoked_at") @db.Timestamptz(3)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  policyVersion PolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Restrict)
+
+  @@index([userId, purpose])
+  @@map("consent_records")
+}
+
+/// Aceite dos Termos e ciência da Política (base: contrato, não consentimento). Prova sem FK para users.
+model PolicyAcceptance {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  policyVersionId String   @map("policy_version_id") @db.Uuid
+  acceptedAt      DateTime @map("accepted_at") @db.Timestamptz(3)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  policyVersion PolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@map("policy_acceptances")
+}
+
+enum PrivacyRequestKind {
+  confirmation_access
+  correction
+  portability
+  deletion
+  anonymization
+  sharing_info
+  automated_review
+  minor_closure
+
+  @@map("privacy_request_kind")
+}
+
+enum PrivacyRequestStatus {
+  open
+  in_progress
+  completed
+  rejected
+
+  @@map("privacy_request_status")
+}
+
+/// Pedido do titular (LEG-D07). Prova com dados mínimos, sem FK para users (LEG-R03).
+model PrivacyRequest {
+  id        String               @id @default(uuid(7)) @db.Uuid
+  userId    String               @map("user_id") @db.Uuid
+  kind      PrivacyRequestKind
+  status    PrivacyRequestStatus
+  /// Declaração completa em até 15 dias (art. 19, II).
+  dueAt     DateTime             @map("due_at") @db.Timestamptz(3)
+  closedAt  DateTime?            @map("closed_at") @db.Timestamptz(3)
+  createdAt DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("privacy_requests")
+}
+
+enum AuditAction {
+  onboarding_completed
+  policy_accepted
+  consent_granted
+  consent_revoked
+  health_data_elimination_scheduled
+  health_data_elimination_cancelled
+  health_data_eliminated
+  session_revoked
+  privacy_request_created
+  account_closed_minor
+
+  @@map("audit_action")
+}
+
+enum AuditResourceType {
+  user
+  consent_record
+  policy_version
+  privacy_request
+  session
+  health_data
+
+  @@map("audit_resource_type")
+}
+
+/// Trilha de auditoria (LEG-S06): quem, quando, o quê. SEM conteúdo (sem texto livre nem JSON).
+/// Escrita só por `app.audit_append`; o runtime não lê, não altera e não apaga.
+model AuditLog {
+  id            String            @id @default(uuid(7)) @db.Uuid
+  actorUserId   String?           @map("actor_user_id") @db.Uuid
+  subjectUserId String?           @map("subject_user_id") @db.Uuid
+  action        AuditAction
+  resourceType  AuditResourceType @map("resource_type")
+  resourceId    String?           @map("resource_id") @db.Uuid
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([subjectUserId, createdAt])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Registro de acesso à aplicação (Marco Civil art. 15, LEG-R02): IP e data/hora. Tabela separada,
+/// expurgada após ACCESS_LOG_RETENTION_DAYS. Escrita só por `app.access_log_append`; o runtime não lê.
+model AccessLog {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  ip         String?  @db.Inet
+  occurredAt DateTime @map("occurred_at") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([occurredAt])
+  @@index([userId, occurredAt])
+  @@map("access_logs")
+}
+
+enum JobStatus {
+  queued
+  running
+  failed
+
+  @@map("job_status")
+}
+
+/// Fila de jobs no Postgres (OI-14, ADR-0019). Payload só com primitivos (IDs), nunca conteúdo.
+/// Acesso só pelas funções `app.jobs_*`. Jobs concluídos são apagados.
+model Job {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  name          String
+  payload       Json
+  runAt         DateTime  @map("run_at") @db.Timestamptz(3)
+  status        JobStatus @default(queued)
+  attempts      Int       @default(0)
+  maxAttempts   Int       @map("max_attempts")
+  /// Com valor, no máximo um job `queued` por chave (resolve PR1a-R2-B6).
+  singletonKey  String?   @map("singleton_key")
+  lockedUntil   DateTime? @map("locked_until") @db.Timestamptz(3)
+  lockedBy      String?   @map("locked_by")
+  lastErrorCode String?   @map("last_error_code")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, runAt])
+  @@map("job_queue")
 }

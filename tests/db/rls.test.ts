@@ -50,12 +50,22 @@ describe('consulta sem app.user_id retorna vazio (LEG-S03)', () => {
     expect(adminCounts[0]?.n).toBeGreaterThanOrEqual(2);
 
     // Sem privilégio algum para o runtime: falham fechado (permission denied).
-    const denied = new Set(['auth_tokens', 'rate_limit_buckets']);
+    const denied = new Set([
+      'auth_tokens',
+      'rate_limit_buckets',
+      'audit_logs',
+      'access_logs',
+      'job_queue',
+    ]);
+    // Catálogo público de versões de documentos: sem dado pessoal, legível por todos (ADR-0019).
+    const publicCatalog = new Set(['policy_versions']);
     for (const table of tables) {
       const query = db.$queryRawUnsafe<Array<{ n: number }>>(
         `SELECT count(*)::int AS n FROM public."${table}"`,
       );
-      if (denied.has(table)) {
+      if (publicCatalog.has(table)) {
+        expect((await query)[0]?.n, table).toBeGreaterThan(0);
+      } else if (denied.has(table)) {
         await expect(query, table).rejects.toThrow(/permission denied/);
       } else {
         expect((await query)[0]?.n, table).toBe(0);

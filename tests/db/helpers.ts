@@ -28,9 +28,12 @@ export async function connectAdmin(): Promise<pg.Client> {
   return admin;
 }
 
+/** Dados de referência semeados pelas migrações (sem dado pessoal): não são apagados entre testes. */
+export const REFERENCE_TABLES = new Set(['policy_versions']);
+
 export async function truncateAll(admin: pg.Client): Promise<void> {
   assertDisposableDatabase(process.env.MIGRATION_DATABASE_URL);
-  const tables = await publicTables(admin);
+  const tables = (await publicTables(admin)).filter((t) => !REFERENCE_TABLES.has(t));
   await admin.query(`TRUNCATE ${tables.map((t) => `public."${t}"`).join(', ')} CASCADE`);
 }
 
