@@ -48,10 +48,11 @@ export async function closeMinorAccountAction(
   const session = await requireAppSession({ allowPendingUpdate: true });
   const t = await getTranslations('privacyCenter');
   const parsed = passwordSchema.safeParse({ password: form.get('password') });
-  const closed =
-    parsed.success &&
-    (await getPrivacyService().closeMinorAccount(session.userId, parsed.data.password));
-  if (!closed) return { status: 'error', fieldErrors: { password: t('minorError') } };
+  const result = parsed.success
+    ? await getPrivacyService().closeMinorAccount(session.userId, parsed.data.password)
+    : 'invalid_password';
+  if (result === 'unavailable') return { status: 'error', message: t('minorUnavailable') };
+  if (result !== 'closed') return { status: 'error', fieldErrors: { password: t('minorError') } };
   await clearSessionCookie();
   await clearKnownDeviceCookie();
   // Desencoraja novo cadastro imediato, sem identificar ninguém (LEG-F01).

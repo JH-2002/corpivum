@@ -57,19 +57,32 @@ export function createPrivacyService(deps: PrivacyDeps) {
     /**
      * Encerramento para quem se descobre menor (LEG-F04). Confirmação reforçada: senha atual. A conta e os
      * dados saem na hora; fica só a prova mínima (pedido e AuditLog, sem e-mail; LEG-R03).
+     * `unavailable`: teto global de encerramentos por hora atingido no banco (ADR-0020). A pessoa recebe uma
+     * mensagem com o caminho alternativo (encarregado), nunca uma página de erro.
      */
-    async closeMinorAccount(userId: string, password: string): Promise<boolean> {
+    async closeMinorAccount(
+      userId: string,
+      password: string,
+    ): Promise<'closed' | 'invalid_password' | 'unavailable'> {
       const proof = await deps.reauthenticate(userId, password);
-      if (!proof) return false;
+      if (!proof) return 'invalid_password';
       const proofHash = new Uint8Array(createHash('sha256').update(proof).digest());
-      await withUserOn(
-        db,
-        userId,
-        (tx) => tx.$queryRaw`SELECT app.account_close_minor(${proofHash})::text`,
-      );
+      try {
+        await withUserOn(
+          db,
+          userId,
+          (tx) => tx.$queryRaw`SELECT app.account_close_minor(${proofHash})::text`,
+        );
+      } catch (error) {
+        if (error instanceof Error && /closure rate exceeded/.test(error.message)) {
+          logger.warn('privacy.minor_closure_rate_exceeded');
+          return 'unavailable';
+        }
+        throw error;
+      }
       // Sem userId: o log não liga uma conta a "é menor" (B5). A prova é o AuditLog.
       logger.info('privacy.minor_account_closed');
-      return true;
+      return 'closed';
     },
 
     /** Registros de acesso além de ACCESS_LOG_RETENTION_DAYS (LEG-R02). */

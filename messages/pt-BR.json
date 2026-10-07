@@ -487,7 +487,8 @@
     "minorError": "Não foi possível confirmar. Verifique a senha ou tente de novo em alguns minutos.",
     "closedTitle": "Conta encerrada",
     "closedBody": "Sua conta e o que foi registrado nela foram apagados. Ficam só os registros mínimos informados antes da confirmação (prova do encerramento e registros de acesso, sem seu e-mail), pelos prazos indicados.",
-    "closedSupport": "Se quiser conversar com alguém, o CVV atende 24 horas pelo telefone 188, de graça."
+    "closedSupport": "Se quiser conversar com alguém, o CVV atende 24 horas pelo telefone 188, de graça.",
+    "minorUnavailable": "Não foi possível encerrar a conta agora. Tente de novo em alguns minutos ou fale com o encarregado pelo contato em Documentos › Encarregado e contato."
   },
   "subprocessors": {
     "columns": {

@@ -116,7 +116,9 @@ describe('PR1a-R3-B8: provas fora da cascata do expurgo de contas', () => {
 describe('LEG-F04: encerramento de conta de quem se descobre menor', () => {
   it('senha errada não encerra nada', async () => {
     const u = await createVerifiedUser(t);
-    expect(await privacy().closeMinorAccount(u.userId, 'senha errada sintética')).toBe(false);
+    expect(await privacy().closeMinorAccount(u.userId, 'senha errada sintética')).toBe(
+      'invalid_password',
+    );
     const { rows } = await admin.query('SELECT count(*)::int AS n FROM users WHERE id = $1', [
       u.userId,
     ]);
@@ -131,7 +133,7 @@ describe('LEG-F04: encerramento de conta de quem se descobre menor', () => {
       acceptPrivacy: true,
       purposes: ['health_data', 'marketing'],
     });
-    expect(await privacy().closeMinorAccount(u.userId, PASSWORD)).toBe(true);
+    expect(await privacy().closeMinorAccount(u.userId, PASSWORD)).toBe('closed');
 
     expect(await t.service.resolveSession(u.token)).toBeNull();
     const { rows } = await admin.query(
@@ -177,6 +179,27 @@ describe('LEG-F04: encerramento de conta de quem se descobre menor', () => {
       b.userId,
     ]);
     expect(rows[0].n).toBe(1);
+  });
+
+  it('teto global atingido: nada é apagado e o serviço responde "indisponível" (ADR-0020)', async () => {
+    const u = await createVerifiedUser(t);
+    await admin.query(
+      `INSERT INTO audit_logs (id, action, resource_type, created_at, updated_at)
+       SELECT gen_random_uuid(), 'account_closed_minor', 'user', now(), now() FROM generate_series(1, 50)`,
+    );
+    try {
+      expect(await privacy().closeMinorAccount(u.userId, PASSWORD)).toBe('unavailable');
+      const { rows } = await admin.query(
+        `SELECT (SELECT count(*) FROM users WHERE id = $1)::int AS users,
+                (SELECT count(*) FROM privacy_requests WHERE user_id = $1)::int AS requests`,
+        [u.userId],
+      );
+      expect(rows[0]).toEqual({ users: 1, requests: 0 });
+    } finally {
+      await admin.query(
+        `DELETE FROM audit_logs WHERE action = 'account_closed_minor' AND subject_user_id IS NULL`,
+      );
+    }
   });
 
   it('sem prova de reautenticação da própria pessoa, o banco recusa (revisão M1)', async () => {
