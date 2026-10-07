@@ -1,11 +1,12 @@
 // Fase 1a: conta, sessões em banco, MFA, tokens e limites de tentativa (LEG-S03, LEG-S04).
 // Fase 1b: consentimento, versões de política, provas, AuditLog/AccessLog e fila de jobs (ADR-0019).
+// Fase 2: dados de saúde (sono, humor, hábitos, diário, corpo) com RLS por dono E consentimento (ADR-0021).
 // As políticas RLS e as funções SECURITY DEFINER ficam no SQL das migrações (ADR-0015).
 //
 // REGRA (PR1a-R3-B8, LEG-R03): tabelas de PROVA (consent_records, policy_acceptances, privacy_requests,
 // audit_logs) e access_logs guardam `user_id` SEM FK para users. O expurgo de contas não as apaga em
 // cascata nem é bloqueado por elas. Só tabelas de auth e de dados do próprio usuário usam FK com CASCADE
-// (teste em tests/db/retention.test.ts).
+// (testes em tests/db/privacy.test.ts e tests/db/health-coverage.test.ts).
 // A URL de conexão fica em prisma.config.ts.
 
 generator client {
@@ -39,6 +40,11 @@ model User {
   onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz(3)
   /// Eliminação agendada dos dados de saúde após revogar o consentimento (ADR-0019). NULL = nada agendado.
   healthDataPurgeAt     DateTime? @map("health_data_purge_at") @db.Timestamptz(3)
+  /// Escolha do passo 5 do onboarding (§52.5). NULL = ainda não escolheu. `demo` = dados fictícios gerados
+  /// em memória, nada gravado nas tabelas de saúde (ADR-0021).
+  dataMode              DataMode? @map("data_mode")
+  /// Sequências (streaks) de hábitos visíveis. Desativável (LEG-F05).
+  streaksEnabled        Boolean   @default(true) @map("streaks_enabled")
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -46,6 +52,13 @@ model User {
   recoveryCodes RecoveryCode[]
   authTokens    AuthToken[]
   reauthProofs  ReauthProof[]
+
+  sleepEntries     SleepEntry[]
+  moodEntries      MoodEntry[]
+  habits           Habit[]
+  habitChecks      HabitCheck[]
+  journalEntries   JournalEntry[]
+  bodyMeasurements BodyMeasurement[]
 
   @@map("users")
 }
@@ -231,15 +244,19 @@ enum PrivacyRequestStatus {
 
 /// Pedido do titular (LEG-D07). Prova com dados mínimos, sem FK para users (LEG-R03).
 model PrivacyRequest {
-  id        String               @id @default(uuid(7)) @db.Uuid
-  userId    String               @map("user_id") @db.Uuid
-  kind      PrivacyRequestKind
-  status    PrivacyRequestStatus
+  id           String               @id @default(uuid(7)) @db.Uuid
+  userId       String               @map("user_id") @db.Uuid
+  kind         PrivacyRequestKind
+  status       PrivacyRequestStatus
   /// Declaração completa em até 15 dias (art. 19, II).
-  dueAt     DateTime             @map("due_at") @db.Timestamptz(3)
-  closedAt  DateTime?            @map("closed_at") @db.Timestamptz(3)
-  createdAt DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  dueAt        DateTime             @map("due_at") @db.Timestamptz(3)
+  closedAt     DateTime?            @map("closed_at") @db.Timestamptz(3)
+  /// Só em `automated_review` (LEG-D08): versão do Índice e período revisados. Nunca valores de saúde.
+  scoreVersion Int?                 @map("score_version") @db.SmallInt
+  periodStart  DateTime?            @map("period_start") @db.Date
+  periodEnd    DateTime?            @map("period_end") @db.Date
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([userId])
   @@map("privacy_requests")
@@ -349,4 +366,176 @@ model Job {
 
   @@index([status, runAt])
   @@map("job_queue")
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Fase 2: dados de saúde (ADR-0021). Base: consentimento `health_data` (LEG-C02).
+// REGRAS: user_id com FK CASCADE; RLS SELECT/INSERT/UPDATE exigem dono E app.has_active_consent('health_data');
+// DELETE só por dono (eliminação após revogação). Texto livre cifrado (`*_enc`, ADR-0016, LEG-S02), nunca
+// pesquisável. Eliminador registrado em src/server-health-erasers.ts (teste: tests/db/health-coverage.test.ts).
+// ---------------------------------------------------------------------------------------------------
+
+enum DataMode {
+  demo
+  own
+
+  @@map("data_mode")
+}
+
+/// Sono informado (§20). Duração e regularidade são calculadas na leitura.
+model SleepEntry {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  bedAt      DateTime @map("bed_at") @db.Timestamptz(3)
+  wakeAt     DateTime @map("wake_at") @db.Timestamptz(3)
+  /// 1–5, autorrelato.
+  quality    Int?     @db.SmallInt
+  awakenings Int?     @db.SmallInt
+  /// Nota livre cifrada (contexto sleep_entries.note_enc).
+  noteEnc    Bytes?   @map("note_enc")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, wakeAt])
+  @@map("sleep_entries")
+}
+
+/// Etiquetas fixas de emoção (§21). Lista fechada, sem texto livre.
+enum MoodEmotion {
+  calm
+  joy
+  gratitude
+  motivation
+  focus
+  tiredness
+  worry
+  irritation
+  sadness
+  boredom
+
+  @@map("mood_emotion")
+}
+
+/// Humor, energia e estresse autorrelatados, 1–5 (§21).
+model MoodEntry {
+  id        String        @id @default(uuid(7)) @db.Uuid
+  userId    String        @map("user_id") @db.Uuid
+  loggedAt  DateTime      @map("logged_at") @db.Timestamptz(3)
+  mood      Int           @db.SmallInt
+  energy    Int           @db.SmallInt
+  stress    Int           @db.SmallInt
+  emotions  MoodEmotion[]
+  /// Nota livre cifrada (contexto mood_entries.note_enc).
+  noteEnc   Bytes?        @map("note_enc")
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedAt])
+  @@map("mood_entries")
+}
+
+enum HabitFrequency {
+  daily
+  weekdays
+  times_per_week
+
+  @@map("habit_frequency")
+}
+
+/// Hábito (§22). O nome pode revelar dado de saúde: cifrado (contexto habits.name_enc).
+model Habit {
+  id           String         @id @default(uuid(7)) @db.Uuid
+  userId       String         @map("user_id") @db.Uuid
+  nameEnc      Bytes          @map("name_enc")
+  frequency    HabitFrequency
+  /// Dias da semana (0 = domingo) quando `weekdays`.
+  weekdays     Int[]          @db.SmallInt
+  /// Vezes por semana quando `times_per_week`.
+  timesPerWeek Int?           @map("times_per_week") @db.SmallInt
+  archivedAt   DateTime?      @map("archived_at") @db.Timestamptz(3)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checks HabitCheck[]
+
+  @@unique([id, userId])
+  @@index([userId])
+  @@map("habits")
+}
+
+/// Check diário de um hábito. FK composta (habit_id, user_id): o check é sempre do dono do hábito.
+model HabitCheck {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  habitId   String   @map("habit_id") @db.Uuid
+  day       DateTime @db.Date
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit Habit @relation(fields: [habitId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([habitId, day])
+  @@index([userId, day])
+  @@map("habit_checks")
+}
+
+/// Etiquetas fixas e não sensíveis do diário (filtro permitido, SPEC_ADDENDUM §19).
+enum JournalTag {
+  work
+  study
+  family
+  friends
+  rest
+  movement
+  leisure
+  nature
+  routine
+  other
+
+  @@map("journal_tag")
+}
+
+/// Diário (§19). Conteúdo cifrado (contexto journal_entries.content_enc), SEM busca textual (LEG-S02).
+model JournalEntry {
+  id         String       @id @default(uuid(7)) @db.Uuid
+  userId     String       @map("user_id") @db.Uuid
+  entryDate  DateTime     @map("entry_date") @db.Date
+  contentEnc Bytes        @map("content_enc")
+  mood       Int?         @db.SmallInt
+  tags       JournalTag[]
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, entryDate])
+  @@map("journal_entries")
+}
+
+/// Peso e medidas informados (§23). IMC é calculado na leitura (ESTIMADO).
+model BodyMeasurement {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  measuredAt DateTime @map("measured_at") @db.Timestamptz(3)
+  weightKg   Float?   @map("weight_kg")
+  heightCm   Float?   @map("height_cm")
+  waistCm    Float?   @map("waist_cm")
+  hipCm      Float?   @map("hip_cm")
+  armCm      Float?   @map("arm_cm")
+  thighCm    Float?   @map("thigh_cm")
+  chestCm    Float?   @map("chest_cm")
+  bodyFatPct Float?   @map("body_fat_pct")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, measuredAt])
+  @@map("body_measurements")
 }

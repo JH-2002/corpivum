@@ -46,6 +46,13 @@ const USER_FKS: Record<string, string> = {
   recovery_codes: 'CASCADE',
   auth_tokens: 'CASCADE',
   reauth_proofs: 'CASCADE',
+  // Dados de saúde (Fase 2, ADR-0021): saem com a conta; também cobertos pelo eliminador.
+  sleep_entries: 'CASCADE',
+  mood_entries: 'CASCADE',
+  habits: 'CASCADE',
+  habit_checks: 'CASCADE',
+  journal_entries: 'CASCADE',
+  body_measurements: 'CASCADE',
 };
 const PROOF_TABLES = ['consent_records', 'policy_acceptances', 'privacy_requests', 'audit_logs'];
 
