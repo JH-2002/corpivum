@@ -48,11 +48,16 @@ test('cookie de sessão inventado não dá acesso', async ({ page }) => {
   await expect(page).toHaveURL(/\/entrar$/);
 });
 
-test('cadastro adulto: idade → conta → confira o e-mail → login após verificação', async ({
+test('cadastro adulto: boas-vindas → idade → conta → e-mail → onboarding (§52)', async ({
   page,
 }) => {
   const email = e2eEmail('cadastro');
   await page.goto('/cadastro');
+  // §52 passo 1: o que o app faz e o que não faz.
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Boas-vindas ao HealthMind 360' }),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'O que o app não faz' })).toBeVisible();
   await page.getByLabel('Data de nascimento').fill('1990-05-20');
   await page.getByRole('button', { name: 'Continuar' }).click();
   await expect(page).toHaveURL(/\/cadastro\/conta$/);
@@ -73,8 +78,45 @@ test('cadastro adulto: idade → conta → confira o e-mail → login após veri
   await withAdmin((db) =>
     db.query('UPDATE users SET email_verified_at = now() WHERE email = $1', [email]),
   );
+  // Área logada sem onboarding: vai para a oferta de MFA (opcional) e depois para as escolhas.
   await page.goto('/inicio');
+  await expect(page).toHaveURL(/\/boas-vindas\/seguranca$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Proteja sua conta' })).toBeVisible();
+  await page.getByRole('link', { name: 'Continuar' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Suas escolhas de privacidade' }),
+  ).toBeVisible();
+
+  // LEG-C02: nenhuma caixa vem marcada.
+  const boxes = page.getByRole('checkbox');
+  await expect(boxes).toHaveCount(5);
+  for (const box of await boxes.all()) await expect(box).not.toBeChecked();
+
+  // Sem aceitar os Termos não avança.
+  await page.getByRole('button', { name: 'Salvar escolhas e continuar' }).click();
+  await expect(
+    page.getByText('Para usar o app, é preciso aceitar os Termos de Uso.').first(),
+  ).toBeVisible();
+
+  // LEG-C05: recusar todas as finalidades opcionais não bloqueia o app.
+  await page.getByLabel('Li e aceito os Termos de Uso.').check();
+  await page.getByLabel('Li a Política de Privacidade.').check();
+  await page.getByRole('button', { name: 'Salvar escolhas e continuar' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Registro de bem-estar desativado' }),
+  ).toBeVisible();
+
+  const { rows } = await withAdmin((db) =>
+    db.query(
+      `SELECT (SELECT count(*) FROM consent_records c JOIN users u ON u.id = c.user_id
+                WHERE u.email = $1)::int AS consents,
+              (SELECT count(*) FROM policy_acceptances a JOIN users u ON u.id = a.user_id
+                WHERE u.email = $1)::int AS accepted`,
+      [email],
+    ),
+  );
+  expect(rows[0]).toEqual({ consents: 0, accepted: 2 });
 });
 
 test('menor de 18: mensagem neutra e nenhuma linha nova no banco (LEG-F01)', async ({ page }) => {

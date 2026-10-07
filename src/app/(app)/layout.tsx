@@ -6,14 +6,16 @@ import { QuickLogDialog } from '@/components/shell/QuickLogDialog';
 import { ShellProvider } from '@/components/shell/ShellProvider';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/ui/SkipLink';
-import { requireVerifiedSession } from '@/modules/auth/server';
+import { requireAppSession } from '@/modules/consent/server';
 
 /**
  * App shell (§7): sidebar (tablet/desktop), header, conteúdo e navegação inferior (mobile).
- * Guarda da área logada: sessão validada no banco a cada requisição e e-mail verificado (LEG-S04).
+ * Guarda da área logada: sessão validada no banco a cada requisição e e-mail verificado (LEG-S04), e
+ * onboarding concluído (§52). O reconsentimento pendente (LEG-C06) é cobrado em cada página; aqui não, para
+ * a Central de Privacidade continuar acessível durante a atualização.
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  await requireVerifiedSession();
+  await requireAppSession({ allowPendingUpdate: true });
   const t = await getTranslations('disclaimer');
 
   return (

@@ -14,6 +14,9 @@ export const PUBLIC_PATH_PREFIXES = [
   '/verificar-email',
   '/recuperar-senha',
   '/redefinir-senha',
+  // Fase 1b: documentos públicos (§53, LEG-D06) e confirmação de conta encerrada (LEG-F04).
+  '/legal',
+  '/conta-encerrada',
 ] as const;
 
 export function isPublicPath(pathname: string): boolean {

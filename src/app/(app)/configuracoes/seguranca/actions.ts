@@ -15,7 +15,11 @@ import {
 } from '@/modules/auth/schemas';
 import { clearSessionCookie, getAuthService, requireVerifiedSession } from '@/modules/auth/server';
 
-/** Segurança da conta (LEG-S04). Toda action revalida a sessão no banco antes de agir. */
+/**
+ * Segurança da conta (LEG-S04). Toda action revalida a sessão no banco antes de agir. Usa
+ * `requireVerifiedSession` (e não `requireAppSession`): proteger a conta (sessões, MFA, senha) nunca fica
+ * preso ao onboarding ou ao reconsentimento.
+ */
 const PATH = '/configuracoes/seguranca';
 
 export async function revokeSessionAction(form: FormData): Promise<void> {
@@ -28,6 +32,7 @@ export async function revokeSessionAction(form: FormData): Promise<void> {
     redirect('/entrar?saiu=1');
   }
   revalidatePath(PATH);
+  revalidatePath('/privacidade');
 }
 
 export async function revokeOtherSessionsAction(): Promise<void> {
