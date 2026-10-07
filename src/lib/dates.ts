@@ -139,9 +139,15 @@ export function rangeBounds(
   return { gte: dayStart(range.from, timeZone), lt: dayStart(addDays(range.to, 1), timeZone) };
 }
 
+/** Dia da semana: 0 = domingo … 6 = sábado. */
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/** Segunda a domingo, ordem de exibição em pt-BR. */
+export const WEEK_ORDER: readonly Weekday[] = [1, 2, 3, 4, 5, 6, 0];
+
 /** Dia da semana (0 = domingo) de uma data `YYYY-MM-DD`. */
-export function weekday(iso: string): number {
-  return new Date(`${iso}T12:00:00Z`).getUTCDay();
+export function weekday(iso: string): Weekday {
+  return new Date(`${iso}T12:00:00Z`).getUTCDay() as Weekday;
 }
 
 /** Converte `YYYY-MM-DD` em Date à meia-noite UTC (colunas `date` do Prisma). */

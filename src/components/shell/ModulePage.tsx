@@ -7,7 +7,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { StateView, VIEW_STATES, type ViewState } from '@/components/ui/StateView';
 import type { HealthConsentState } from '@/modules/consent';
 
-type PageKey =
+export type PageKey =
   | 'home'
   | 'sleep'
   | 'mood'
@@ -37,6 +37,17 @@ export async function resolvePreviewState(searchParams: PageSearchParams): Promi
   if (appEnv !== 'development' && appEnv !== 'test') return 'empty';
   const { state } = await searchParams;
   return VIEW_STATES.find((s) => s === state) ?? 'empty';
+}
+
+/**
+ * Igual a `resolvePreviewState`, mas `null` quando nenhum estado foi pedido: as telas com dados reais
+ * mostram o conteúdo e só trocam pelo estado forçado em revisão/e2e (APP_ENV=development|test).
+ */
+export async function readPreviewState(searchParams: PageSearchParams): Promise<ViewState | null> {
+  const appEnv = process.env.APP_ENV;
+  if (appEnv !== 'development' && appEnv !== 'test') return null;
+  const { state } = await searchParams;
+  return VIEW_STATES.find((s) => s === state) ?? null;
 }
 
 interface ModulePageProps {

@@ -41,6 +41,8 @@ export interface NavItem {
   key: NavKey;
   href: Route;
   icon: LucideIcon;
+  /** Ativo só na rota exata (ex.: início do demo, que é prefixo das outras rotas do demo). */
+  exact?: boolean;
 }
 
 /** Itens da sidebar, na ordem da §9. */
@@ -75,10 +77,32 @@ export const MORE_ITEMS: readonly NavItem[] = ALL_NAV_ITEMS.filter(
   (item) => !['home', 'twin', 'timeline'].includes(item.key),
 );
 
-export function isActivePath(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
+/**
+ * Demo público sem login (LEG-X02, ADR-0021): só os módulos com dados de demonstração. Rotas próprias em
+ * `/demo`, fora da área logada.
+ */
+export const DEMO_ITEMS: readonly NavItem[] = [
+  { key: 'home', href: '/demo', icon: House, exact: true },
+  { key: 'sleep', href: '/demo/sono', icon: Moon },
+  { key: 'mood', href: '/demo/humor', icon: Smile },
+  { key: 'habits', href: '/demo/habitos', icon: ListChecks },
+  { key: 'journal', href: '/demo/diario', icon: NotebookPen },
+  { key: 'body', href: '/demo/corpo', icon: PersonStanding },
+];
+
+export function isActivePath(pathname: string, href: string, exact = false): boolean {
+  return pathname === href || (!exact && pathname.startsWith(`${href}/`));
 }
 
-export function navItemForPath(pathname: string): NavItem | undefined {
-  return ALL_NAV_ITEMS.find((item) => isActivePath(pathname, item.href));
+export function isItemActive(pathname: string, item: NavItem): boolean {
+  return isActivePath(pathname, item.href, item.exact);
 }
+
+export function navItemForPath(
+  pathname: string,
+  items: readonly NavItem[] = ALL_NAV_ITEMS,
+): NavItem | undefined {
+  return items.find((item) => isItemActive(pathname, item));
+}
+
+export type ShellVariant = 'app' | 'demo';

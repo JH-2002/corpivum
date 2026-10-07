@@ -6,6 +6,7 @@ import { QuickLogDialog } from '@/components/shell/QuickLogDialog';
 import { ShellProvider } from '@/components/shell/ShellProvider';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/ui/SkipLink';
+import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
 
 /**
@@ -15,17 +16,18 @@ import { requireAppSession } from '@/modules/consent/server';
  * a Central de Privacidade continuar acessível durante a atualização.
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  await requireAppSession({ allowPendingUpdate: true });
+  const session = await requireAppSession({ allowPendingUpdate: true });
   const t = await getTranslations('disclaimer');
+  const { period, today } = await readPeriod();
 
   return (
-    <ShellProvider>
+    <ShellProvider initialPeriod={period} today={today}>
       <SkipLink />
       <div className="flex min-h-dvh">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Modo demo entra na Fase 2; o indicador já está pronto no Header. */}
-          <Header isDemo={false} />
+          {/* Modo demo (§52.5, ADR-0021): dados fictícios em memória, sempre com o indicador DEMO. */}
+          <Header isDemo={session.dataMode === 'demo'} />
           <main
             id={MAIN_CONTENT_ID}
             tabIndex={-1}

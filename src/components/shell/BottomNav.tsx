@@ -7,7 +7,13 @@ import { useTranslations } from 'next-intl';
 import type { Route } from 'next';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { isActivePath, MORE_ITEMS } from './nav-config';
+import {
+  DEMO_ITEMS,
+  isActivePath,
+  isItemActive,
+  MORE_ITEMS,
+  type ShellVariant,
+} from './nav-config';
 import { useShell } from './ShellProvider';
 
 const itemClass =
@@ -38,8 +44,37 @@ function BottomLink({
   );
 }
 
+/** Navegação inferior do demo público: só os módulos com dados de demonstração (LEG-X02). */
+function DemoBottomNav() {
+  const t = useTranslations('nav');
+  const pathname = usePathname();
+  return (
+    <nav
+      aria-label={t('mobileLabel')}
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
+    >
+      <ul className="flex items-stretch gap-0.5 px-1 py-1">
+        {DEMO_ITEMS.map((item) => (
+          <BottomLink
+            key={item.key}
+            href={item.href}
+            label={t(item.key === 'mood' ? 'moodShort' : item.key)}
+            icon={item.icon}
+            active={isItemActive(pathname, item)}
+          />
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 /** Navegação inferior em telas < 768px (§7): Início, Registrar, Twin, Timeline, Mais. */
-export function BottomNav() {
+export function BottomNav({ variant = 'app' }: { variant?: ShellVariant }) {
+  if (variant === 'demo') return <DemoBottomNav />;
+  return <AppBottomNav />;
+}
+
+function AppBottomNav() {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const { openQuickLog } = useShell();

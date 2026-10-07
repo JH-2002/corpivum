@@ -62,7 +62,7 @@ export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
         id={hintId}
         role="tooltip"
         className={cn(
-          'invisible absolute top-full left-0 z-20 w-56 pt-1',
+          'invisible absolute top-full right-0 z-20 w-56 max-w-[calc(100vw-2rem)] pt-1',
           'group-focus-within:visible group-hover:visible group-data-dismissed:invisible',
         )}
       >

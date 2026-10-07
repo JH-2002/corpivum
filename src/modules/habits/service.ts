@@ -2,12 +2,9 @@ import { daysBetween, dbDateToIso, isoToDbDate, localDay } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import type { HealthDeps } from '@/modules/health/core';
 import type { HabitInput } from './schemas';
-import type { HabitCheckRecord, HabitRecord } from './types';
+import { CHECK_BACKFILL_DAYS, type HabitCheckRecord, type HabitRecord } from './types';
 
 const NAME = { table: 'habits', column: 'name_enc' } as const;
-
-/** Até quantos dias para trás um check pode ser marcado (corrigir esquecimentos recentes). */
-export const CHECK_BACKFILL_DAYS = 7;
 
 export type CheckResult = 'ok' | 'not_found' | 'out_of_window';
 

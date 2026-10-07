@@ -1,0 +1,89 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+import { useActionState } from 'react';
+import { saveSleepAction } from '@/app/(app)/sono/actions';
+import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
+import { INITIAL_FORM_STATE } from '@/components/forms/form-state';
+import { SelectField, TextAreaField } from '@/components/forms/HealthFields';
+
+export interface SleepFormValues {
+  id?: string;
+  bedAt: string;
+  wakeAt: string;
+  quality: number | null;
+  awakenings: number | null;
+  note: string | null;
+}
+
+/** Registro de sono (§20). A nota é cifrada antes de ir ao banco (LEG-S02). */
+export function SleepForm({
+  values,
+  maxDateTime,
+}: {
+  values: SleepFormValues;
+  maxDateTime: string;
+}) {
+  const t = useTranslations('sleep.form');
+  const [state, action] = useActionState(saveSleepAction, INITIAL_FORM_STATE);
+  const err = state.fieldErrors ?? {};
+  return (
+    <form action={action} className="flex flex-col gap-4" noValidate>
+      {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          name="bedAt"
+          type="datetime-local"
+          label={t('bedAt')}
+          defaultValue={values.bedAt}
+          max={maxDateTime}
+          required
+          error={err.bedAt}
+        />
+        <TextField
+          name="wakeAt"
+          type="datetime-local"
+          label={t('wakeAt')}
+          defaultValue={values.wakeAt}
+          max={maxDateTime}
+          required
+          error={err.wakeAt}
+        />
+        <SelectField
+          name="quality"
+          label={t('quality')}
+          hint={t('qualityHint')}
+          defaultValue={values.quality?.toString() ?? ''}
+          error={err.quality}
+          options={[
+            { value: '', label: t('notInformed') },
+            ...([1, 2, 3, 4, 5] as const).map((v) => ({
+              value: String(v),
+              label: t(`qualityLevels.${v}`),
+            })),
+          ]}
+        />
+        <TextField
+          name="awakenings"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={50}
+          label={t('awakenings')}
+          defaultValue={values.awakenings ?? ''}
+          error={err.awakenings}
+        />
+      </div>
+      <TextAreaField
+        name="note"
+        label={t('note')}
+        hint={t('noteHint')}
+        maxLength={1000}
+        defaultValue={values.note ?? ''}
+        error={err.note}
+      />
+      <FormMessage state={state} />
+      <SubmitButton className="self-start">{values.id ? t('update') : t('save')}</SubmitButton>
+    </form>
+  );
+}

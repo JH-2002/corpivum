@@ -5,7 +5,9 @@
 export * from './metrics';
 export { habitCheckSchema, habitInputSchema, streaksSchema, type HabitInput } from './schemas';
 export {
+  CHECK_BACKFILL_DAYS,
   HABIT_FREQUENCIES,
+  STREAK_LOOKBACK_DAYS,
   type HabitCheckRecord,
   type HabitFrequency,
   type HabitRecord,

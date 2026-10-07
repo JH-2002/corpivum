@@ -1,4 +1,4 @@
-import { previousRange } from '@/lib/dates';
+import { addDays, previousRange } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { delta, round } from '@/lib/stats';
 import { bmi, change, latest, series, type BodyRecord } from '@/modules/body';
@@ -7,6 +7,7 @@ import {
   currentStreak,
   dailyChecks,
   isScheduled,
+  STREAK_LOOKBACK_DAYS,
   type HabitCheckRecord,
   type HabitRecord,
 } from '@/modules/habits';
@@ -238,7 +239,7 @@ export async function buildDashboard(
   // Hábitos de hoje só fazem sentido se o período inclui hoje.
   const todayChecks = await source.checks({ from: today, to: today });
   const streakChecks = streaksEnabled
-    ? await source.checks({ from: prev.from < range.from ? prev.from : range.from, to: today })
+    ? await source.checks({ from: addDays(today, -STREAK_LOOKBACK_DAYS), to: today })
     : [];
   const todayHabits: TodayHabit[] = habits
     .filter((h) => !h.archived)

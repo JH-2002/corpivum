@@ -40,13 +40,7 @@ let services: HealthServices | undefined;
 export function getHealthServices(): HealthServices {
   if (!services) {
     const d = healthDeps();
-    services = {
-      sleep: createSleepService(d),
-      mood: createMoodService(d),
-      habits: createHabitsService(d),
-      journal: createJournalService(d),
-      body: createBodyService(d),
-    };
+    services = servicesWith(d);
   }
   return services;
 }
@@ -57,23 +51,27 @@ export function todayIso(now: Date = new Date()): string {
 }
 
 /** Preferência de sequências de hábitos (LEG-F05). Não é dado de saúde: só `app.user_id`. */
-export async function getStreaksEnabled(userId: string): Promise<boolean> {
-  const user = await withUser(userId, (tx) =>
-    tx.user.findUnique({ where: { id: userId }, select: { streaksEnabled: true } }),
-  );
-  return user?.streaksEnabled ?? true;
-}
-
 export async function setStreaksEnabled(userId: string, enabled: boolean): Promise<void> {
   await withUser(userId, (tx) =>
     tx.user.update({ where: { id: userId }, data: { streaksEnabled: enabled } }),
   );
 }
 
+function servicesWith(d: HealthDeps): HealthServices {
+  return {
+    sleep: createSleepService(d),
+    mood: createMoodService(d),
+    habits: createHabitsService(d),
+    journal: createJournalService(d),
+    body: createBodyService(d),
+  };
+}
+
 /** Dados da própria pessoa (consentimento + RLS em toda leitura). */
-export function createOwnSource(userId: string): HealthDataSource {
-  const s = getHealthServices();
-  const { run } = healthDeps();
+export function createOwnSource(userId: string, bound?: HealthDeps): HealthDataSource {
+  const d = bound ?? healthDeps();
+  const s = bound ? servicesWith(bound) : getHealthServices();
+  const { run } = d;
   return {
     kind: 'own',
     sleep: (range, opts) => s.sleep.list(userId, range, opts),
@@ -83,7 +81,14 @@ export function createOwnSource(userId: string): HealthDataSource {
     journal: (range, opts) => s.journal.list(userId, range, opts),
     body: (range) => s.body.list(userId, range),
     latestHeightCm: () => s.body.latestHeightCm(userId),
-    streaksEnabled: () => getStreaksEnabled(userId),
+    streaksEnabled: () =>
+      run(userId, async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { streaksEnabled: true },
+        });
+        return user?.streaksEnabled ?? true;
+      }),
     hasAnyRecord: () =>
       run(userId, async (tx) => {
         const found = await Promise.all([
@@ -95,6 +100,11 @@ export function createOwnSource(userId: string): HealthDataSource {
         ]);
         return found.some((row) => row !== null);
       }),
+    // Uma transação com consentimento; os serviços dentro dela reutilizam o mesmo `tx`.
+    session: (fn) =>
+      withConsent(userId, 'health_data', (tx) =>
+        fn(createOwnSource(userId, { ...healthDeps(), run: (_user, inner) => inner(tx) })),
+      ),
   };
 }
 
