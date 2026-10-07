@@ -9,6 +9,11 @@ export interface EnqueueOptions {
   /** Execução agendada; padrão: imediata. */
   runAt?: Date;
   maxAttempts?: number;
+  /**
+   * No máximo um job ainda não iniciado por chave: enfileirar de novo devolve o job existente
+   * (jobs recorrentes não duplicam entre instâncias; PR1a-R2-B6). Formato: `[A-Za-z0-9_.:-]{1,128}`.
+   */
+  singletonKey?: string;
 }
 
 export type JobHandler = (
@@ -20,4 +25,6 @@ export interface JobQueue {
   readonly id: string;
   enqueue(name: string, payload: JobPayload, options?: EnqueueOptions): Promise<string>;
   register(name: string, handler: JobHandler): void;
+  /** Cancela o job ainda não iniciado da chave. Devolve quantos foram cancelados. */
+  cancel(singletonKey: string): Promise<number>;
 }

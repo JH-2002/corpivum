@@ -32,6 +32,18 @@ describe('parseEnv', () => {
     expect(env.PURGE_DAYS).toBe(30);
     expect(env.ACCESS_LOG_RETENTION_DAYS).toBe(180);
     expect(env.BACKUP_RETENTION_DAYS).toBe(30);
+    expect(env.HEALTH_DATA_GRACE_DAYS).toBe(30);
+    expect(env.PROOF_RETENTION_DAYS).toBe(1825);
+  });
+
+  it('prova de consentimento fica pelo menos 1 ano (LEG-R03)', () => {
+    expect(hasIssue({ ...base, PROOF_RETENTION_DAYS: '30' }, 'PROOF_RETENTION_DAYS')).toBe(true);
+  });
+
+  it('aceita a fila postgres e recusa a fila em memória em produção (OI-14)', () => {
+    expect(parseEnv({ ...base, JOB_QUEUE: 'postgres' }).JOB_QUEUE).toBe('postgres');
+    expect(parseEnv(base).JOB_WORKER).toBe('inline');
+    expect(hasIssue({ ...base, JOB_QUEUE: 'redis' }, 'JOB_QUEUE')).toBe(true);
   });
 
   it('exige APP_ENV explícito (sem cair em development por omissão)', () => {

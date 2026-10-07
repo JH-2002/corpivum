@@ -41,6 +41,14 @@ const envSchema = z
     // LEG-R02: teto de 6 meses; só sobe por decisão registrada (OPEN_ISSUES OI-06).
     ACCESS_LOG_RETENTION_DAYS: days.max(180).default(180),
     BACKUP_RETENTION_DAYS: days.default(30),
+    /**
+     * Prazo entre revogar o consentimento de dados de saúde e eliminá-los (ADR-0019). Reconsentir antes
+     * cancela a eliminação. `LEGAL-REVIEW` (OPEN_ISSUES OI-04). O valor aparece no texto do consentimento:
+     * mudá-lo exige nova versão do texto (PolicyVersion).
+     */
+    HEALTH_DATA_GRACE_DAYS: days.max(90).default(30),
+    /** Retenção das provas de consentimento e de pedidos (LEG-R03). `LEGAL-REVIEW` (OI-04). Mínimo 1 ano. */
+    PROOF_RETENTION_DAYS: days.min(365).default(1825),
 
     LLM_PROVIDER: z.enum(['fake']).default('fake'),
     KMS_PROVIDER: z.enum(['local']).default('local'),
@@ -48,7 +56,10 @@ const envSchema = z
     STORAGE_PROVIDER: z.enum(['local']).default('local'),
     STORAGE_LOCAL_DIR: z.string().min(1).default('.storage'),
     MAIL_PROVIDER: z.enum(['console']).default('console'),
-    JOB_QUEUE: z.enum(['memory']).default('memory'),
+    /** Fila de jobs: `postgres` (ADR-0019, OI-14) ou `memory` (só dev/test). */
+    JOB_QUEUE: z.enum(['memory', 'postgres']).default('memory'),
+    /** `inline`: esta instância também consome a fila. `off`: só enfileira (worker em processo separado). */
+    JOB_WORKER: z.enum(['inline', 'off']).default('inline'),
     AGE_SIGNAL_PROVIDER: z.enum(['none']).default('none'),
     WEARABLE_PROVIDER: z.enum(['disabled']).default('disabled'),
   })
