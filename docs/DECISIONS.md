@@ -521,7 +521,7 @@ destaques automáticos e um tour opcional, sem IA, comparando a pessoa só com e
   para esta camada.
 - Tour: componente próprio (sem biblioteca, ADR-0009), `<dialog>` modal encaixado embaixo da tela,
   passos ancorados em `data-tour` (passo sem alvo é pulado), Esc/"Pular" fecham, foco devolvido,
-  contorno no alvo e sem animação com `prefers-reduced-motion`. Conta: `users.tour_seen_at` (GRANT só da
+  contorno no alvo e sem animação com `prefers-reduced-motion`. Conta: `users.tour_seen`, booleano sem data (minimização; GRANT só da
   coluna); demo público: `localStorage` com try/catch, nada vai ao servidor. Reaberto pelo menu de ajuda
   (`?tour=1`), que também explica os selos.
 **Consequências.** Mudar limiar ou redação muda o texto exibido: os testes de `src/modules/insights` e

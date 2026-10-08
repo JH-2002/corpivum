@@ -73,10 +73,9 @@ export async function createVerifiedUser(
   return withAdmin(async (db) => {
     const { rows } = await db.query<{ id: string }>(
       `INSERT INTO users (id, email, password_hash, adult_attested_at, age_gate_version,
-                          email_verified_at, onboarding_completed_at, data_mode, tour_seen_at,
-                          updated_at)
+                          email_verified_at, onboarding_completed_at, data_mode, tour_seen, updated_at)
        VALUES (gen_random_uuid(), $1, $2, now(), 'v1', now(), CASE WHEN $3 THEN now() END,
-               CASE WHEN $3 THEN $4::data_mode END, CASE WHEN $5 THEN now() END, now())
+               CASE WHEN $3 THEN $4::data_mode END, $5, now())
        RETURNING id`,
       [email, hash, onboarded, dataMode, tourSeen],
     );

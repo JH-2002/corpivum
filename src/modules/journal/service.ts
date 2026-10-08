@@ -31,6 +31,14 @@ export function createJournalService(deps: HealthDeps) {
             ...(opts.filter?.tag ? { tags: { has: opts.filter.tag } } : {}),
           },
           orderBy: [{ entryDate: 'desc' }, { createdAt: 'desc' }],
+          // Sem o texto pedido, o conteúdo cifrado nem sai do banco (minimização, LEG-S02).
+          select: {
+            id: true,
+            entryDate: true,
+            mood: true,
+            tags: true,
+            contentEnc: opts.withText === true,
+          },
         });
         return Promise.all(
           rows.map(async (r) => ({

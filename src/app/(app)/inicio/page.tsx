@@ -24,12 +24,12 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const preview = await readPreviewState(searchParams);
   const { range, today } = await readPeriod();
   const view = healthView(session, today);
-  const [data, tourSeen] = await Promise.all([
+  const data =
     view.kind === 'data' && !preview
-      ? view.source.session((s) => buildDashboard(s, range, today))
-      : null,
-    hasSeenTour(session.userId),
-  ]);
+      ? await view.source.session((s) => buildDashboard(s, range, today))
+      : null;
+  // Só com o painel na tela; se a leitura falhar, o tour não abre sozinho (e o painel não cai).
+  const tourSeen = data ? await hasSeenTour(session.userId).catch(() => true) : true;
   return (
     <HealthFrame page="home" href="/inicio" session={session} view={view} preview={preview}>
       {data && view.kind === 'data' ? (

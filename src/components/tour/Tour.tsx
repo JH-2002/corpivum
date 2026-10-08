@@ -115,7 +115,8 @@ export function Tour({
     setSteps(null);
     if (persist === 'server') {
       startTransition(() => {
-        void markTourSeenAction();
+        // Falha ao gravar só faz o tour reabrir na próxima visita; o erro não carrega dado de saúde.
+        markTourSeenAction().catch(() => {});
       });
     } else {
       writeLocalSeen();
