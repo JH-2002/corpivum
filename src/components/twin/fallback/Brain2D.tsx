@@ -40,14 +40,14 @@ export function Brain2D({
     'data-region': region,
   });
   return (
-    <svg viewBox="-10 -10 220 175" className="h-full w-full" aria-hidden data-testid="brain-2d">
+    <svg viewBox="-10 -10 220 182" className="h-full w-full" aria-hidden data-testid="brain-2d">
       <defs>
         <clipPath id={clip}>
           <ellipse cx="100" cy="62" rx="92" ry="60" />
         </clipPath>
       </defs>
-      <path d="M118 104 L132 104 L128 155 L112 155 Z" {...props('brainstem')} />
-      <ellipse cx="150" cy="112" rx="32" ry="17" {...props('cerebellum')} />
+      <path d="M112 110 L128 110 L124 162 L108 162 Z" {...props('brainstem')} />
+      <ellipse cx="146" cy="128" rx="32" ry="17" {...props('cerebellum')} />
       <g clipPath={`url(#${clip})`}>
         {(Object.keys(LOBE_POLYGONS) as Array<keyof typeof LOBE_POLYGONS>).map((lobe) => (
           <polygon key={lobe} points={LOBE_POLYGONS[lobe]} {...props(lobe)} />
@@ -61,6 +61,7 @@ export function Brain2D({
         fill="none"
         stroke="var(--hm-border-strong)"
         strokeWidth={1.5}
+        pointerEvents="none"
       />
     </svg>
   );

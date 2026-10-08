@@ -295,12 +295,12 @@ function MeasureLine({
   const fmt = useTwinFormat(hideValues);
   return (
     <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3">
-      <div className="flex items-start justify-between gap-1">
-        <dt className="text-fg-muted">{label}</dt>
+      <dt className="text-fg-muted">{label}</dt>
+      <dd className="flex flex-wrap items-center justify-between gap-1">
+        <span className="tabular font-semibold">
+          {value === null ? t('notInformedShort') : fmt.value(value, unit)}
+        </span>
         <ConfidenceBadge level={badge} />
-      </div>
-      <dd className="tabular font-semibold">
-        {value === null ? t('notInformedShort') : fmt.value(value, unit)}
       </dd>
       {hint ? <dd className="text-fg-muted">{hint}</dd> : null}
     </div>
