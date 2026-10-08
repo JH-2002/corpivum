@@ -20,6 +20,7 @@
     "format:check": "prettier --check .",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
+    "db:test:init": "docker compose exec -T db sh /docker-entrypoint-initdb.d/02-test-db.sh",
     "mail:up": "docker compose up -d mailpit",
     "db:verify-roles": "node scripts/verify-db-roles.mjs",
     "db:migrate": "prisma migrate dev",

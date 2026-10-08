@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?defina POSTGRES_SUPERUSER_PASSWORD no .env}
       POSTGRES_DB: postgres
       APP_DB_NAME: ${APP_DB_NAME:-healthmind}
+      # Banco só para testes (ADR-0024), criado por docker/postgres/init/02-test-db.sh.
+      APP_TEST_DB_NAME: ${APP_TEST_DB_NAME:-healthmind_test}
       APP_MIGRATOR_PASSWORD: ${APP_MIGRATOR_PASSWORD:?defina APP_MIGRATOR_PASSWORD no .env}
       APP_USER_PASSWORD: ${APP_USER_PASSWORD:?defina APP_USER_PASSWORD no .env}
       TZ: UTC

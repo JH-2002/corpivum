@@ -478,3 +478,18 @@ registra metadados, de propósito, para nenhum token ir ao log (LEG-R04).
   Mailpit fora do ar não lança erro: registra `mail.dev_smtp_unavailable`, sem detalhes.
 **Consequências.** Mailpit é ferramenta local de desenvolvimento, não subprocessador (não trata dado de
 titular real). O provedor de e-mail de produção continua pendente (OI-11, Fase 7).
+
+## ADR-0024 — Banco separado para os testes
+**Contexto.** `pnpm test:db` e o e2e apagavam as tabelas do banco do `.env`, o mesmo do desenvolvimento.
+Rodar os testes apagava as contas de quem estava usando o app localmente.
+**Decisão.**
+- Segundo banco `healthmind_test` no mesmo container, com os mesmos papéis e privilégios
+  (`docker/postgres/init/02-test-db.sh`, idempotente; `pnpm db:test:init` para volumes existentes).
+- Os testes leem `TEST_DATABASE_URL` e `TEST_MIGRATION_DATABASE_URL`. `pointToTestDatabase()`
+  (`tests/db/safety.ts`) copia essas URLs para `DATABASE_URL`/`MIGRATION_DATABASE_URL` no setup do
+  `test:db`, em cada worker do Vitest e na configuração do Playwright (workers e servidor do e2e), antes de
+  qualquer conexão. Migrações são aplicadas no banco de testes nos dois casos.
+- Trava: só banco local (ou CI), nome terminado em `_test` e diferente de `APP_DB_NAME`; senão os testes
+  recusam rodar. O seed de desenvolvimento usa uma trava própria (só banco local).
+**Consequências.** A CI cria o banco de testes no volume novo e gera as URLs a partir do `.env.example`.
+Uma rodada completa de `test:db` + e2e não altera nenhuma tabela do banco de desenvolvimento (conferido).
