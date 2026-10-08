@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db/client';
 import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { getAuthService } from '@/modules/auth/server';
+import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
 import { createHealthDataEliminator } from './health-data';
 import { createPrivacyService, type PrivacyService } from './service';
 
@@ -25,5 +26,5 @@ export function getPrivacyService(): PrivacyService {
 }
 
 export function getHealthDataEliminator() {
-  return createHealthDataEliminator({ db: getDb(), logger });
+  return createHealthDataEliminator({ db: getDb(), logger, erasers: HEALTH_DATA_ERASERS });
 }

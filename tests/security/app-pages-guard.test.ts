@@ -14,7 +14,7 @@ const APP_DIR = fileURLToPath(new URL('../../src/app/(app)', import.meta.url));
 const ONBOARDING_DIR = fileURLToPath(new URL('../../src/app/(onboarding)', import.meta.url));
 
 const APP_GUARD = /await requireAppSession\((\{ allowPendingUpdate: true \})?\)/;
-const ONBOARDING_GUARD = /await require(Onboarding|Update)Session\(\)/;
+const ONBOARDING_GUARD = /await require(Onboarding|Update|DataChoice)Session\(\)/;
 const ACTION_GUARD =
   /await require(AppSession\((\{ allowPendingUpdate: true \})?\)|VerifiedSession\(\))/;
 

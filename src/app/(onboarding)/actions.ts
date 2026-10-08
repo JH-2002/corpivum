@@ -46,6 +46,20 @@ export async function completeOnboardingAction(
     acceptPrivacy: true,
     purposes,
   });
+  redirect('/boas-vindas/dados');
+}
+
+const dataModeSchema = z.object({ mode: z.enum(['demo', 'own']) });
+
+/**
+ * §52 passo 5: dados de demonstração (gerados em memória, nada gravado nas tabelas de saúde) ou começar do
+ * zero (ADR-0021). A escolha pode ser trocada depois pela faixa "Começar com meus dados".
+ */
+export async function chooseDataModeAction(form: FormData): Promise<void> {
+  const session = await requireVerifiedSession();
+  const parsed = dataModeSchema.safeParse({ mode: form.get('mode') });
+  if (!parsed.success) return;
+  await getConsentService().chooseDataMode(session.userId, parsed.data.mode);
   redirect('/inicio');
 }
 

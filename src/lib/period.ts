@@ -46,9 +46,12 @@ export function resolveRange(period: Period, today: string): DateRange {
   return { from: toIsoDate(start), to: today };
 }
 
-export type CustomRangeError = 'invalid' | 'inverted' | 'future';
+export type CustomRangeError = 'invalid' | 'inverted' | 'future' | 'too_long';
 
-/** Valida um intervalo personalizado: datas válidas, início <= fim, nenhuma no futuro. */
+/** Maior intervalo personalizado aceito (dias). Mantém a agregação leve (§41). */
+export const MAX_CUSTOM_DAYS = 366;
+
+/** Valida um intervalo personalizado: datas válidas, início <= fim, nenhuma no futuro, até 366 dias. */
 export function validateCustomRange(
   from: string,
   to: string,
@@ -57,7 +60,23 @@ export function validateCustomRange(
   if (!isoDate.safeParse(from).success || !isoDate.safeParse(to).success) return 'invalid';
   if (from > to) return 'inverted';
   if (to > today) return 'future';
+  const days = Math.round(
+    (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000,
+  );
+  if (days + 1 > MAX_CUSTOM_DAYS) return 'too_long';
   return null;
+}
+
+/**
+ * Período vindo do navegador (cookie), revalidado contra `today`: qualquer valor inválido, invertido,
+ * futuro ou longo demais vira o padrão.
+ */
+export function sanitizePeriod(raw: string | null | undefined, today: string): Period {
+  const period = parseStoredPeriod(raw ?? null);
+  if (period.preset === 'custom' && validateCustomRange(period.from, period.to, today)) {
+    return DEFAULT_PERIOD;
+  }
+  return period;
 }
 
 /** Lê um período salvo (ex.: sessionStorage), descartando qualquer valor inválido. */

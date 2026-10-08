@@ -1,6 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { createVerifiedUser, E2E_PASSWORD, e2eEmail, rowCounts, withAdmin } from './fixtures';
+import {
+  createVerifiedUser,
+  E2E_PASSWORD,
+  e2eEmail,
+  foreignRowsSince,
+  withAdmin,
+} from './fixtures';
 
 /** Fluxos de conta sem sessão prévia (LEG-S04, LEG-F01). */
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -102,6 +108,9 @@ test('cadastro adulto: boas-vindas → idade → conta → e-mail → onboarding
   await page.getByLabel('Li e aceito os Termos de Uso.').check();
   await page.getByLabel('Li a Política de Privacidade.').check();
   await page.getByRole('button', { name: 'Salvar escolhas e continuar' }).click();
+  // §52.5 (Fase 2): demonstração ou começar do zero.
+  await expect(page).toHaveURL(/\/boas-vindas\/dados$/);
+  await page.getByRole('button', { name: 'Começar com meus dados' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Registro de bem-estar desativado' }),
@@ -120,12 +129,14 @@ test('cadastro adulto: boas-vindas → idade → conta → e-mail → onboarding
 });
 
 test('menor de 18: mensagem neutra e nenhuma linha nova no banco (LEG-F01)', async ({ page }) => {
-  const before = await rowCounts();
+  const start = new Date(Date.now() - 1000);
   await page.goto('/cadastro');
   await page.getByLabel('Data de nascimento').fill('2012-01-01');
   await page.getByRole('button', { name: 'Continuar' }).click();
   await expect(page.getByRole('heading', { name: 'Não é possível criar uma conta' })).toBeVisible();
-  expect(await rowCounts()).toEqual(before);
+  // Nenhuma linha nova fora das contas do e2e (outros testes escrevem em paralelo nas próprias contas).
+  const written = await foreignRowsSince(start);
+  expect(Object.entries(written).filter(([, n]) => n !== 0)).toEqual([]);
 
   // Nova tentativa imediata volta para a mesma mensagem (cookie sem identificador).
   await page.goto('/cadastro');

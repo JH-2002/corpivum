@@ -20,6 +20,17 @@ export const ROUTES = [
   { path: '/mais', title: 'Mais' },
 ] as const;
 
+/** Demo público sem login (LEG-X02), com o título esperado no <h1>. */
+export const DEMO_ROUTES = [
+  { path: '/demo', title: 'Início' },
+  { path: '/demo/sono', title: 'Sono' },
+  { path: '/demo/humor', title: 'Humor e energia' },
+  { path: '/demo/habitos', title: 'Hábitos' },
+  { path: '/demo/diario', title: 'Diário' },
+  { path: '/demo/diario?vista=calendario', title: 'Diário' },
+  { path: '/demo/corpo', title: 'Corpo' },
+] as const;
+
 export const VIEWPORTS = [
   { width: 320, height: 640 },
   { width: 375, height: 812 },

@@ -1,6 +1,15 @@
 import 'dotenv/config';
+import type { Page } from '@playwright/test';
 import pg from 'pg';
+import { LocalKmsProvider } from '../src/adapters/kms/local';
+import { APP_TIME_ZONE, localDay } from '../src/lib/dates';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../src/generated/prisma/client';
 import { hashPassword } from '../src/modules/auth/password';
+import { withConsentOn } from '../src/modules/consent/guard';
+import { generateDemoData } from '../src/modules/demo/generator';
+import { seedSyntheticData } from '../src/modules/demo/seed';
+import { createFieldCipher } from '../src/modules/health/core';
 
 /**
  * Apoio aos testes e2e: usuários 100% sintéticos no domínio reservado `e2e.exemplo.test`
@@ -28,23 +37,25 @@ type Purpose = 'health_data' | 'marketing' | 'product_metrics';
 
 /**
  * Cria conta adulta com e-mail verificado diretamente no banco. Por padrão já com o onboarding concluído
- * (Termos e Política aceitos na versão vigente) e só o consentimento de dados de bem-estar (§52, LEG-C01).
+ * (Termos e Política aceitos na versão vigente), só o consentimento de dados de bem-estar (§52, LEG-C01) e
+ * o passo 5 escolhido como "começar do zero" (`dataMode: 'own'`). `dataMode: null` para no passo 5;
  * `onboarded: false` deixa a conta no início do onboarding.
  */
 export async function createVerifiedUser(
   email: string,
   password = E2E_PASSWORD,
-  options: { onboarded?: boolean; purposes?: Purpose[] } = {},
+  options: { onboarded?: boolean; purposes?: Purpose[]; dataMode?: 'own' | 'demo' | null } = {},
 ): Promise<string> {
-  const { onboarded = true, purposes = ['health_data'] } = options;
+  const { onboarded = true, purposes = ['health_data'], dataMode = 'own' } = options;
   const hash = await hashPassword(password);
   return withAdmin(async (db) => {
     const { rows } = await db.query<{ id: string }>(
       `INSERT INTO users (id, email, password_hash, adult_attested_at, age_gate_version,
-                          email_verified_at, onboarding_completed_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, now(), 'v1', now(), CASE WHEN $3 THEN now() END, now())
+                          email_verified_at, onboarding_completed_at, data_mode, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, now(), 'v1', now(), CASE WHEN $3 THEN now() END,
+               CASE WHEN $3 THEN $4::data_mode END, now())
        RETURNING id`,
-      [email, hash, onboarded],
+      [email, hash, onboarded, dataMode],
     );
     const userId = rows[0]?.id ?? '';
     if (!onboarded) return userId;
@@ -86,4 +97,79 @@ export async function rowCounts(): Promise<Record<string, number>> {
     }
     return out;
   });
+}
+
+/**
+ * Grava 90 dias de dados SINTÉTICOS (gerador da demo) na conta, pelo caminho do app: consentimento + RLS
+ * como `app_user` e texto livre cifrado com a chave local de desenvolvimento (CLAUDE.md regra 6).
+ */
+export async function seedSyntheticHealthData(userId: string): Promise<number> {
+  // Mesmo client do runtime (app_user, RLS), criado aqui porque `src/lib/db/client` é só do Next.
+  const db = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' }),
+    errorFormat: 'minimal',
+  });
+  try {
+    const kms = new LocalKmsProvider(process.env.KMS_LOCAL_MASTER_KEY ?? '');
+    return await seedSyntheticData({
+      run: (id, fn) => withConsentOn(db, id, 'health_data', fn),
+      cipher: createFieldCipher(kms),
+      userId,
+      data: generateDemoData(localDay(new Date(), APP_TIME_ZONE), APP_TIME_ZONE),
+    });
+  } finally {
+    await db.$disconnect();
+  }
+}
+
+/**
+ * Linhas criadas desde `since` que NÃO pertencem a contas do e2e (por `user_id`, `subject_user_id` ou o
+ * próprio `users.id`). Outros testes em paralelo só escrevem em contas do e2e; o demo público e o fluxo de
+ * menor não podem escrever nada. Ficam de fora tabelas técnicas escritas por qualquer login (limites,
+ * fila, registros de acesso).
+ */
+export async function foreignRowsSince(since: Date): Promise<Record<string, number>> {
+  return withAdmin(async (db) => {
+    const { rows } = await db.query<{ table: string; owner: string | null }>(
+      `SELECT c.relname AS table,
+              (SELECT a.attname FROM pg_attribute a
+                WHERE a.attrelid = c.oid AND a.attname IN ('user_id', 'subject_user_id')
+                  AND NOT a.attisdropped LIMIT 1) AS owner
+         FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'public' AND c.relkind = 'r'
+          AND c.relname NOT IN ('_prisma_migrations', 'access_logs', 'job_queue',
+                                'rate_limit_buckets', 'policy_versions')`,
+    );
+    const out: Record<string, number> = {};
+    for (const { table, owner } of rows) {
+      const ownerColumn = table === 'users' ? 'id' : owner;
+      const notE2e = ownerColumn
+        ? `AND (t."${ownerColumn}" IS NULL OR t."${ownerColumn}" NOT IN
+             (SELECT id FROM users WHERE email LIKE '%@${E2E_DOMAIN}'))`
+        : '';
+      const r = await db.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM public."${table}" t WHERE t.created_at >= $1 ${notE2e}`,
+        [since],
+      );
+      out[table] = r.rows[0]?.n ?? -1;
+    }
+    return out;
+  });
+}
+
+let ipCounter = 0;
+
+/**
+ * Login pela interface com um IP de documentação próprio (RFC 5737), para os testes não esgotarem o
+ * limite de logins por IP (LEG-S05) uns dos outros. Em dev/test vale o último salto do X-Forwarded-For.
+ */
+export async function loginWithOwnIp(page: Page, email: string, password = E2E_PASSWORD) {
+  ipCounter += 1;
+  const ip = `203.0.113.${((process.pid * 7 + ipCounter) % 250) + 1}`;
+  await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': ip });
+  await page.goto('/entrar');
+  await page.getByLabel('E-mail').fill(email);
+  await page.getByLabel('Senha', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await page.waitForURL(/\/(inicio|boas-vindas\/[a-z]+)$/);
 }

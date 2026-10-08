@@ -8,11 +8,13 @@ e acessa infraestrutura apenas pelos adaptadores em `src/adapters`.
 | `auth` | Conta, autenticação, MFA, sessões em banco e age gate 18+ | §52 | LEG-S04, LEG-F01, LEG-F03 | 1a |
 | `consent` | ConsentRecord por finalidade, versões de política e reconsentimento | §52 | LEG-C01–C06, LEG-G04 | 1b |
 | `privacy` | Central de Privacidade: direitos do titular, exportação, exclusão, AuditLog e AccessLog | §46 | LEG-D01–D08, LEG-S06, LEG-R01–R04 | 1b / 6 |
-| `sleep` | Registro e métricas de sono | §20 | LEG-C02 | 2 / 4 |
-| `mood` | Humor, energia e estresse | §21 | LEG-C02, LEG-S02 (nota livre) | 2 / 4 |
-| `habits` | Hábitos, checks e streaks desativáveis | §22 | LEG-F05 | 2 / 4 |
-| `journal` | Diário com conteúdo criptografado; sem busca textual no MVP | §19 | LEG-S02, LEG-I02 | 4 |
-| `body` | Peso, altura e medidas; IMC como ESTIMADO | §23 | LEG-M04 | 4 |
+| `health` | Núcleo dos módulos de saúde: transação com consentimento, cifra, fonte única, dashboard, eliminadores | §11–§12 | LEG-C04, LEG-S02, LEG-S03, LEG-D04 | 2 |
+| `demo` | Gerador de dados fictícios (demo público e modo demo) e seed de desenvolvimento | §40 | LEG-X02 | 2 |
+| `sleep` | Registro e métricas de sono | §20 | LEG-C02 | 2 |
+| `mood` | Humor, energia e estresse | §21 | LEG-C02, LEG-S02 (nota livre) | 2 |
+| `habits` | Hábitos, checks e streaks desativáveis | §22 | LEG-F05 | 2 |
+| `journal` | Diário com conteúdo criptografado; sem busca textual no MVP | §19 | LEG-S02, LEG-I02 | 2 |
+| `body` | Peso, altura e medidas; IMC como ESTIMADO | §23 | LEG-M04 | 2 |
 | `nutrition` | Refeições e água, sem metas restritivas | §25 | LEG-M04 | 4 |
 | `activity` | Atividades, treinos de força e progressão | §26 | LEG-C02 | 4 |
 | `medications` | Medicamentos informados pela pessoa e lembretes; sem doses ou interações | §24 | LEG-M02, LEG-S02 | 4 |

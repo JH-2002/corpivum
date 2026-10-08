@@ -2,6 +2,7 @@ import { expect, test as setup } from '@playwright/test';
 import {
   createVerifiedUser,
   E2E_DOMAIN,
+  seedSyntheticHealthData,
   E2E_PASSWORD,
   e2eEmail,
   STORAGE_STATE,
@@ -11,7 +12,8 @@ import { assertDisposableDatabase } from '../tests/db/safety';
 
 /**
  * Prepara o banco para o e2e e autentica uma pessoa sintética pela interface. Os demais testes do app
- * reutilizam a sessão (storageState). Limites de tentativa são zerados para execuções repetidas.
+ * reutilizam a sessão (storageState), com dados de saúde 100% sintéticos gravados pelo caminho do app.
+ * Limites de tentativa são zerados para execuções repetidas.
  */
 setup('pessoa sintética autenticada', async ({ page }) => {
   assertDisposableDatabase(process.env.MIGRATION_DATABASE_URL);
@@ -20,7 +22,9 @@ setup('pessoa sintética autenticada', async ({ page }) => {
     await db.query('DELETE FROM users WHERE email LIKE $1', [`%@${E2E_DOMAIN}`]);
   });
   const email = e2eEmail('pessoa');
-  await createVerifiedUser(email);
+  const userId = await createVerifiedUser(email);
+  // Fase 2: 90 dias de dados sintéticos, para os testes (inclusive o axe) verem as telas com dados.
+  await seedSyntheticHealthData(userId);
 
   await page.goto('/entrar');
   await page.getByLabel('E-mail').fill(email);

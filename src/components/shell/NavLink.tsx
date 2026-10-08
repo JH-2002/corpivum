@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
-import { isActivePath, NAV_ITEMS_BY_KEY, type NavKey } from './nav-config';
+import {
+  DEMO_ITEMS,
+  isItemActive,
+  NAV_ITEMS_BY_KEY,
+  type NavKey,
+  type ShellVariant,
+} from './nav-config';
 
 interface NavLinkProps {
   /** Chave do item (serializável, pode vir de um Server Component). */
@@ -12,14 +18,18 @@ interface NavLinkProps {
   /** Esconde o rótulo visualmente (sidebar recolhida); continua sendo o nome acessível. */
   labelClassName?: string;
   className?: string;
+  /** `demo`: usa as rotas do demo público. */
+  variant?: ShellVariant;
 }
 
 /** Link de navegação. Ativo = aria-current + barra lateral + peso da fonte (não só cor, §9). */
-export function NavLink({ navKey, labelClassName, className }: NavLinkProps) {
+export function NavLink({ navKey, labelClassName, className, variant = 'app' }: NavLinkProps) {
   const t = useTranslations('nav');
   const pathname = usePathname();
-  const item = NAV_ITEMS_BY_KEY[navKey];
-  const active = isActivePath(pathname, item.href);
+  const item =
+    (variant === 'demo' ? DEMO_ITEMS.find((i) => i.key === navKey) : undefined) ??
+    NAV_ITEMS_BY_KEY[navKey];
+  const active = isItemActive(pathname, item);
   const Icon = item.icon;
 
   return (

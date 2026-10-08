@@ -1,6 +1,6 @@
 import type pg from 'pg';
 import type { Db } from '@/lib/db/client';
-import { withUserOn } from '@/lib/db/rls';
+import { withUserOn, type Tx } from '@/lib/db/rls';
 import { ConsentRequiredError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { CURRENT_VERSIONS } from '@/modules/consent/catalog';
@@ -8,10 +8,7 @@ import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import { withConsentOn } from '@/modules/consent/guard';
 import { createConsentService } from '@/modules/consent/service';
 import { healthEliminationKey } from '@/modules/consent/health';
-import {
-  createHealthDataEliminator,
-  registerHealthDataEraser,
-} from '@/modules/privacy/health-data';
+import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import {
   createHealthFixture,
   createTestConsent,
@@ -244,64 +241,54 @@ describe('revogação dos dados de saúde: eliminação agendada (ADR-0019)', ()
   });
 
   it('vencido o prazo sem reconsentimento, o eliminador apaga os dados de saúde', async () => {
-    const off = registerHealthDataEraser('fixture', (tx) =>
-      tx.$executeRawUnsafe(`DELETE FROM ${FIXTURE}`),
+    const erasers = { fixture: (tx: Tx) => tx.$executeRawUnsafe(`DELETE FROM ${FIXTURE}`) };
+    const u = await onboarded(['health_data']);
+    await writeFixture(u.userId, 1);
+    await writeFixture(u.userId, 2);
+    await u.service.revoke(u.userId, 'health_data');
+    const eliminator = createHealthDataEliminator({
+      db,
+      erasers,
+      logger: createLogger({ sink: () => {} }),
+      now: () => t.clock.now,
+    });
+    // Antes do prazo: nada acontece.
+    expect(await eliminator.eliminate(u.userId)).toBe('skipped');
+    await admin.query(
+      `UPDATE users SET health_data_purge_at = $2::timestamptz - interval '1 minute' WHERE id = $1`,
+      [u.userId, t.clock.now],
     );
-    try {
-      const u = await onboarded(['health_data']);
-      await writeFixture(u.userId, 1);
-      await writeFixture(u.userId, 2);
-      await u.service.revoke(u.userId, 'health_data');
-      const eliminator = createHealthDataEliminator({
-        db,
-        logger: createLogger({ sink: () => {} }),
-        now: () => t.clock.now,
-      });
-      // Antes do prazo: nada acontece.
-      expect(await eliminator.eliminate(u.userId)).toBe('skipped');
-      await admin.query(
-        `UPDATE users SET health_data_purge_at = $2::timestamptz - interval '1 minute' WHERE id = $1`,
-        [u.userId, t.clock.now],
-      );
-      expect(await eliminator.eliminate(u.userId)).toBe('eliminated');
-      const { rows } = await admin.query(
-        `SELECT (SELECT count(*) FROM ${FIXTURE} WHERE user_id = $1)::int AS n,
-                (SELECT health_data_purge_at FROM users WHERE id = $1) AS purge`,
-        [u.userId],
-      );
-      expect(rows[0]).toEqual({ n: 0, purge: null });
-      const audit = await admin.query(
-        `SELECT actor_user_id FROM audit_logs WHERE subject_user_id = $1 AND action = 'health_data_eliminated'`,
-        [u.userId],
-      );
-      // Feito pelo sistema em nome do titular: sem ator humano.
-      expect(audit.rows).toEqual([{ actor_user_id: null }]);
-      // Rodar de novo não faz nada.
-      expect(await eliminator.eliminate(u.userId)).toBe('skipped');
-    } finally {
-      off();
-    }
+    expect(await eliminator.eliminate(u.userId)).toBe('eliminated');
+    const { rows } = await admin.query(
+      `SELECT (SELECT count(*) FROM ${FIXTURE} WHERE user_id = $1)::int AS n,
+              (SELECT health_data_purge_at FROM users WHERE id = $1) AS purge`,
+      [u.userId],
+    );
+    expect(rows[0]).toEqual({ n: 0, purge: null });
+    const audit = await admin.query(
+      `SELECT actor_user_id FROM audit_logs WHERE subject_user_id = $1 AND action = 'health_data_eliminated'`,
+      [u.userId],
+    );
+    // Feito pelo sistema em nome do titular: sem ator humano.
+    expect(audit.rows).toEqual([{ actor_user_id: null }]);
+    // Rodar de novo não faz nada.
+    expect(await eliminator.eliminate(u.userId)).toBe('skipped');
   });
 
   it('o eliminador não apaga quem reconsentiu (job atrasado ou duplicado vira no-op)', async () => {
-    const off = registerHealthDataEraser('fixture', (tx) =>
-      tx.$executeRawUnsafe(`DELETE FROM ${FIXTURE}`),
-    );
-    try {
-      const u = await onboarded(['health_data']);
-      await writeFixture(u.userId);
-      await u.service.revoke(u.userId, 'health_data');
-      await u.service.grant(u.userId, 'health_data');
-      const eliminator = createHealthDataEliminator({
-        db,
-        logger: createLogger({ sink: () => {} }),
-        now: () => new Date(t.clock.now.getTime() + 60 * 24 * 60 * 60 * 1000),
-      });
-      expect(await eliminator.eliminate(u.userId)).toBe('skipped');
-      expect(await readFixtureRls(u.userId)).toBe(1);
-    } finally {
-      off();
-    }
+    const erasers = { fixture: (tx: Tx) => tx.$executeRawUnsafe(`DELETE FROM ${FIXTURE}`) };
+    const u = await onboarded(['health_data']);
+    await writeFixture(u.userId);
+    await u.service.revoke(u.userId, 'health_data');
+    await u.service.grant(u.userId, 'health_data');
+    const eliminator = createHealthDataEliminator({
+      db,
+      erasers,
+      logger: createLogger({ sink: () => {} }),
+      now: () => new Date(t.clock.now.getTime() + 60 * 24 * 60 * 60 * 1000),
+    });
+    expect(await eliminator.eliminate(u.userId)).toBe('skipped');
+    expect(await readFixtureRls(u.userId)).toBe(1);
   });
 });
 

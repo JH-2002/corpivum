@@ -7,6 +7,8 @@ for (const viewport of VIEWPORTS) {
     test.use({ viewport });
 
     test('sem rolagem horizontal em nenhuma rota', async ({ page }) => {
+      // 18 rotas, várias com dados e gráficos: mais tempo que o padrão por teste.
+      test.setTimeout(120_000);
       for (const route of ROUTES) {
         await page.goto(route.path);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

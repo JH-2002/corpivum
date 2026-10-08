@@ -1,6 +1,6 @@
 # Relatório de Impacto à Proteção de Dados (RIPD) — LGPD art. 38
 
-> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.2 (Fase 1b) · LEG-G02
+> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.3 (Fase 2) · LEG-G02
 > Controlador: `{{CONTROLADOR}}` · Encarregado: `{{ENCARREGADO}}` · Data: `{{DATA}}`
 
 Revisar este relatório antes do lançamento e sempre que houver nova finalidade, integração (LEG-X04) ou
@@ -30,6 +30,9 @@ subprocessador.
 | R8 | Dependência comprometida (cadeia de suprimentos) | `{{}}` | Alto | `{{}}` |
 | R9 | Tratamento sem consentimento válido (pré-marcação, versão desatualizada, revogação ignorada) | `{{}}` | Alto | `{{}}` |
 | R10 | Perda das provas de consentimento e de pedidos ao excluir contas | `{{}}` | Médio | `{{}}` |
+| R11 | Dado fictício confundido com real (ou misturado aos dados da pessoa) | `{{}}` | Médio | `{{}}` |
+| R12 | Índice de Bem-Estar lido como avaliação de saúde | `{{}}` | Alto | `{{}}` |
+| R13 | Dado de saúde mantido após revogação além do prazo (eliminação incompleta) | `{{}}` | Alto | `{{}}` |
 
 ## 4. Medidas de mitigação
 | Risco | Medidas | Requisitos |
@@ -44,6 +47,9 @@ subprocessador.
 | R8 | Auditoria de dependências, SAST, actions por SHA, builds nativos negados | LEG-S09 |
 | R9 | Consentimento por finalidade nunca pré-marcado (teste), texto versionado com hash, `app.has_active_consent` no guard e no RLS, revogação vale na próxima operação (teste), reconsentimento em versão substancial | LEG-C01–C06, ADR-0019 |
 | R10 | Provas sem FK para `users`, gatilhos contra alteração, teste da lista de FKs e do expurgo com provas presentes | LEG-R03, PR1a-R3-B8 |
+| R11 | Demo gerado em memória, nunca gravado nas tabelas de saúde; selo DEMO em todo dado; indicador no cabeçalho e faixa no modo demo; demo público sem sessão nem escrita (teste e2e) | LEG-X02, ADR-0021 |
+| R12 | Texto fixo "não é avaliação de saúde" (`disclaimer.wellbeingScore`), explicação dos critérios, sem classificação nem referência populacional, pedido de revisão | LEG-D08, LEG-M03, ADR-0021 |
+| R13 | Toda tabela de saúde com eliminador registrado; teste pelo catálogo do banco que falha se alguma tabela não for zerada; DELETE só por dono, sem depender do consentimento | LEG-D04, PR1b-B9, ADR-0021 |
 
 ## 5. Parecer do encarregado
 `{{PARECER_ENCARREGADO}}`

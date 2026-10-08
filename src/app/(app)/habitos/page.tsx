@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { OpenQuickLogButton } from '@/components/shell/OpenQuickLogButton';
-import {
-  ModulePage,
-  resolvePreviewState,
-  type PageSearchParams,
-} from '@/components/shell/ModulePage';
+import { HealthFrame, healthView } from '@/components/health/HealthPage';
+import { HabitsView } from '@/components/modules/habits/HabitsView';
+import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
+import { addDays } from '@/lib/dates';
+import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
+import { STREAK_LOOKBACK_DAYS } from '@/modules/habits';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -15,15 +15,36 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
-  const { health } = await requireAppSession();
-  const t = await getTranslations();
+  const session = await requireAppSession();
+  const preview = await readPreviewState(searchParams);
+  const { range, today } = await readPeriod();
+  const view = healthView(session, today);
+  if (view.kind !== 'data' || preview) {
+    return (
+      <HealthFrame page="habits" href="/habitos" session={session} view={view} preview={preview}>
+        {null}
+      </HealthFrame>
+    );
+  }
+  const [habits, checks, streakChecks, streaksEnabled] = await view.source.session((s) =>
+    Promise.all([
+      s.habits({ includeArchived: true }),
+      s.checks(range),
+      s.checks({ from: addDays(today, -STREAK_LOOKBACK_DAYS), to: today }),
+      s.streaksEnabled(),
+    ]),
+  );
   return (
-    <ModulePage
-      page="habits"
-      healthConsent={health}
-      href="/habitos"
-      state={await resolvePreviewState(searchParams)}
-      emptyAction={<OpenQuickLogButton>{t('quickLog.open')}</OpenQuickLogButton>}
-    />
+    <HealthFrame page="habits" href="/habitos" session={session} view={view} preview={preview}>
+      <HabitsView
+        habits={habits}
+        checks={checks}
+        streakChecks={streakChecks}
+        range={range}
+        today={today}
+        mode={view.mode}
+        streaksEnabled={streaksEnabled}
+      />
+    </HealthFrame>
   );
 }

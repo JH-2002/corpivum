@@ -33,7 +33,8 @@
     "privacy": "Central de Privacidade",
     "more": "Mais",
     "moreTitle": "Mais seções",
-    "log": "Registrar"
+    "log": "Registrar",
+    "moodShort": "Humor"
   },
   "header": {
     "notifications": "Notificações",
@@ -42,7 +43,8 @@
     "profile": "Perfil",
     "settings": "Configurações",
     "privacy": "Central de Privacidade",
-    "signOut": "Sair"
+    "signOut": "Sair",
+    "privacyPolicy": "Política de Privacidade"
   },
   "quickLog": {
     "open": "Registrar",
@@ -70,7 +72,8 @@
     "apply": "Aplicar",
     "range": "{from} a {to}",
     "currentRange": "Período selecionado: {from} a {to}",
-    "invalidRange": "A data inicial precisa ser anterior ou igual à data final, e nenhuma pode estar no futuro."
+    "invalidRange": "A data inicial precisa ser anterior ou igual à data final, e nenhuma pode estar no futuro.",
+    "tooLong": "Escolha um intervalo de até 366 dias, sem datas no futuro."
   },
   "theme": {
     "label": "Tema",
@@ -203,7 +206,9 @@
     "aiGenerated": "Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.",
     "reportFooter": "Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.",
     "riskSupport": "Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).",
-    "draftLegal": "RASCUNHO — revisão jurídica obrigatória."
+    "draftLegal": "RASCUNHO — revisão jurídica obrigatória.",
+    "wellbeingScore": "O Índice de Bem-Estar resume seus registros de sono, humor e energia, hábitos e a constância dos registros. Não é avaliação de saúde, não indica condição e não substitui profissional de saúde.",
+    "demoData": "Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma."
   },
   "auth": {
     "layoutTagline": "Seu espaço de bem-estar e autoacompanhamento.",
@@ -369,6 +374,16 @@
       "choiceRequired": "Escolha uma das opções.",
       "submit": "Salvar e continuar",
       "privacyCenter": "Ir para a Central de Privacidade"
+    },
+    "dataChoice": {
+      "title": "Como você quer começar?",
+      "intro": "Você pode explorar o app com dados fictícios antes de registrar os seus, ou começar direto com os seus registros. Dá para trocar depois.",
+      "ownTitle": "Começar do zero",
+      "ownBody": "O app começa vazio e mostra seus próprios registros conforme você os fizer.",
+      "ownCta": "Começar com meus dados",
+      "demoTitle": "Explorar com dados de demonstração",
+      "demoBody": "Você vê o app preenchido com 90 dias de dados fictícios, marcados como DEMO. Nada disso é gravado na sua conta nem misturado aos seus registros.",
+      "demoCta": "Ver a demonstração"
     }
   },
   "consent": {
@@ -613,6 +628,434 @@
     "subprocessorsPage": {
       "title": "Subprocessadores",
       "intro": "Serviços que tratam dados em nome do HealthMind 360. Banco de dados, armazenamento, filas e execução do servidor ficam no Brasil."
+    }
+  },
+  "charts": {
+    "legend": "Séries do gráfico (clique para mostrar ou ocultar)",
+    "seriesOn": "visível",
+    "seriesOff": "oculta",
+    "origin": "Origem: {badge}",
+    "showTable": "Ver os dados em tabela",
+    "date": "Data",
+    "empty": "—"
+  },
+  "dashboard": {
+    "greeting": "Seu resumo do período",
+    "cardsTitle": "Indicadores do período",
+    "cardNoData": "Sem registros neste período.",
+    "origin": "De onde vem este número",
+    "scaleOutOf5": "de 5",
+    "journalCount": "{count, plural, =0 {Nenhuma entrada} one {# entrada} other {# entradas}}",
+    "journalPrevious": "{count, plural, =0 {Nenhuma no período anterior} one {# no período anterior} other {# no período anterior}}",
+    "todayHabits": "Hábitos de hoje",
+    "noHabits": "Você ainda não tem hábitos ativos.",
+    "createHabit": "Criar um hábito",
+    "scheduledToday": "Previsto para hoje",
+    "notScheduledToday": "Não previsto para hoje",
+    "streak": "{count, plural, one {# dia seguido} other {# dias seguidos}}",
+    "summary": {
+      "sleepUp": "Seu sono médio registrado ficou {minutes} maior que no período anterior.",
+      "sleepDown": "Seu sono médio registrado ficou {minutes} menor que no período anterior.",
+      "moodUp": "Seu humor médio registrado subiu {points} ponto(s) em relação ao período anterior.",
+      "moodDown": "Seu humor médio registrado caiu {points} ponto(s) em relação ao período anterior.",
+      "habitsUp": "Você cumpriu {percent} pontos percentuais a mais dos seus hábitos que no período anterior.",
+      "habitsDown": "Você cumpriu {percent} pontos percentuais a menos dos seus hábitos que no período anterior.",
+      "logging": "Você fez registros em {days} de {total} dias deste período.",
+      "none": "Ainda não há registros neste período."
+    },
+    "score": {
+      "title": "Índice de Bem-Estar",
+      "outOf": "de 100",
+      "insufficient": "Ainda não há registros suficientes para calcular o índice neste período. Registre sono, humor ou hábitos em alguns dias e ele aparece aqui.",
+      "partial": "Dados parciais: alguns componentes ficaram fora do cálculo. Veja o motivo em \"Como é calculado\".",
+      "reviewDemo": "Com dados de demonstração não há pedido de revisão: o índice não se refere a você.",
+      "trend": {
+        "up": "{points} ponto(s) acima do período anterior",
+        "down": "{points} ponto(s) abaixo do período anterior",
+        "flat": "igual ao período anterior"
+      }
+    },
+    "cards": {
+      "sleep": "Sono",
+      "mood": "Humor e energia",
+      "habits": "Hábitos",
+      "body": "Peso",
+      "journal": "Diário"
+    },
+    "variation": {
+      "duration": {
+        "up": "{value} a mais que no período anterior",
+        "down": "{value} a menos que no período anterior",
+        "flat": "igual ao período anterior"
+      },
+      "points": {
+        "up": "{value} ponto(s) acima do período anterior",
+        "down": "{value} ponto(s) abaixo do período anterior",
+        "flat": "igual ao período anterior"
+      },
+      "percent": {
+        "up": "{value} pontos percentuais acima do período anterior",
+        "down": "{value} pontos percentuais abaixo do período anterior",
+        "flat": "igual ao período anterior"
+      },
+      "kg": {
+        "up": "{value} kg a mais desde o primeiro registro do período",
+        "down": "{value} kg a menos desde o primeiro registro do período",
+        "flat": "sem variação no período"
+      }
+    },
+    "origins": {
+      "sleep": "Média da duração das {count, plural, one {# noite registrada} other {# noites registradas}} por você no período (do horário de deitar ao de acordar).",
+      "mood": "Média do humor que você informou em {count, plural, one {# registro} other {# registros}} (escala de 1 a 5). Energia média: {energy}.",
+      "habits": "Checks feitos ÷ dias previstos dos seus {count, plural, one {# hábito ativo} other {# hábitos ativos}} no período.",
+      "body": "Último peso que você informou no período.",
+      "bodyWithBmi": "Último peso que você informou no período. IMC estimado a partir do peso e da altura informados: {bmi} (cálculo direto, sem classificação).",
+      "journal": "Quantidade de entradas do diário no período. O conteúdo não é lido para este número."
+    },
+    "combined": {
+      "title": "Sono, humor e energia no período",
+      "description": "Horas dormidas por dia e médias diárias de humor e energia que você registrou.",
+      "sleep": "Sono",
+      "mood": "Humor",
+      "energy": "Energia",
+      "scale": "de 5"
+    },
+    "twin": {
+      "title": "Health Twin",
+      "body": "Veja seus registros em uma visualização 3D."
+    }
+  },
+  "wellbeing": {
+    "howTitle": "Como é calculado",
+    "howIntro": "O índice vai de 0 a 100 e combina os componentes abaixo, com os pesos de cada um. Componentes sem registros suficientes ficam fora e os pesos dos demais são ajustados para somar 100%.",
+    "tableCaption": "Componentes do Índice de Bem-Estar, versão {version}",
+    "howFooter": "Versão do cálculo: {version}. Mudanças no cálculo geram uma versão nova, documentada.",
+    "weightValue": "{nominal} (efetivo: {effective})",
+    "included": "{count, plural, one {Incluído (# registro)} other {Incluído (# registros)}}",
+    "col": {
+      "component": "Componente",
+      "value": "Valor",
+      "weight": "Peso",
+      "status": "Situação"
+    },
+    "excluded": {
+      "insufficient_data": "Fora: poucos registros no período",
+      "no_habits": "Fora: nenhum hábito ativo",
+      "not_available": "Fora: ainda não registrado no app"
+    },
+    "components": {
+      "sleepRegularity": {
+        "name": "Regularidade do sono",
+        "rule": "Quanto os seus horários de deitar e de acordar variaram (precisa de 3 noites ou mais)."
+      },
+      "moodEnergy": {
+        "name": "Humor e energia",
+        "rule": "Média do humor e da energia que você informou (precisa de 3 registros ou mais)."
+      },
+      "habits": {
+        "name": "Hábitos",
+        "rule": "Checks feitos em relação aos dias previstos dos seus hábitos."
+      },
+      "activity": {
+        "name": "Atividade física",
+        "rule": "Minutos ativos em relação à sua própria meta. Entra quando o registro de atividade estiver disponível."
+      },
+      "logging": {
+        "name": "Constância de registro",
+        "rule": "Dias com algum registro desde o seu primeiro registro no período."
+      }
+    },
+    "review": {
+      "cta": "Pedir revisão",
+      "explain": "Se você discorda do índice ou quer entender melhor o cálculo, peça uma revisão. Registramos o pedido com a versão do cálculo e o período, sem os seus valores.",
+      "done": "Pedido de revisão registrado. Você recebe a resposta até {date}. Acompanhe na Central de Privacidade.",
+      "error": "Não foi possível registrar o pedido. Tente novamente.",
+      "demo": "O pedido de revisão só existe para os seus próprios dados."
+    }
+  },
+  "habits": {
+    "markDone": "Marcar como feito",
+    "done": "Feito",
+    "notDone": "Não feito",
+    "checkLabel": "Marcar \"{name}\" como feito hoje",
+    "uncheckLabel": "Desmarcar \"{name}\" de hoje",
+    "newTitle": "Criar hábito",
+    "listTitle": "Seus hábitos",
+    "archivedTitle": "Arquivados",
+    "emptyTitle": "Nenhum hábito ativo",
+    "emptyDescription": "Crie um hábito para acompanhar no dia a dia. Você escolhe a frequência.",
+    "chartTitle": "Checks por dia",
+    "chartDone": "Feitos",
+    "chartScheduled": "Previstos",
+    "completion": "{value}% dos dias previstos no período",
+    "completionNone": "Ainda sem dias previstos no período",
+    "streakDays": "{count, plural, one {# dia seguido} other {# dias seguidos}}",
+    "streakWeeks": "{count, plural, one {# semana na meta} other {# semanas na meta}}",
+    "lastDays": "Últimos 7 dias",
+    "archive": "Arquivar",
+    "archiveLabel": "Arquivar \"{name}\"",
+    "unarchive": "Reativar",
+    "unarchiveLabel": "Reativar \"{name}\"",
+    "streaksOn": "As sequências (dias seguidos) estão visíveis. Você pode escondê-las quando quiser.",
+    "streaksOff": "As sequências (dias seguidos) estão ocultas.",
+    "streaksDisable": "Ocultar sequências",
+    "streaksEnable": "Mostrar sequências",
+    "frequencyWeekdays": "Nos dias: {days}",
+    "frequencyTimes": "{count, plural, one {# vez por semana} other {# vezes por semana}}",
+    "frequency": {
+      "daily": "Todos os dias",
+      "weekdays": "Dias específicos da semana",
+      "times_per_week": "Algumas vezes por semana"
+    },
+    "weekdayShort": {
+      "0": "Dom",
+      "1": "Seg",
+      "2": "Ter",
+      "3": "Qua",
+      "4": "Qui",
+      "5": "Sex",
+      "6": "Sáb"
+    },
+    "form": {
+      "name": "Nome do hábito",
+      "nameHint": "Ex.: caminhar 20 minutos. Guardado cifrado no servidor.",
+      "frequency": "Frequência",
+      "weekdays": "Em quais dias",
+      "timesPerWeek": "Quantas vezes por semana",
+      "save": "Criar hábito",
+      "update": "Salvar alterações"
+    }
+  },
+  "demo": {
+    "createAccount": "Criar conta",
+    "bannerTitle": "Você está vendo dados de demonstração",
+    "bannerBody": "Tudo aqui é fictício e marcado como DEMO. Nada disso foi gravado na sua conta.",
+    "switchCta": "Começar com meus dados",
+    "switchTitle": "Começar com os seus dados?",
+    "switchBody": "Os dados fictícios deixam de aparecer e o app passa a mostrar só o que você registrar. Para ver a demonstração de novo, use a página pública de demonstração.",
+    "switchConfirm": "Começar com meus dados",
+    "switchKeep": "Continuar na demonstração",
+    "readOnly": "Na demonstração os dados são fictícios e não podem ser alterados. Para registrar os seus, use \"Começar com meus dados\".",
+    "readOnlyPublic": "Esta é uma demonstração pública com dados fictícios. Para registrar os seus, crie uma conta.",
+    "title": "Demonstração",
+    "introTitle": "Demonstração com dados fictícios",
+    "introBody": "Explore o HealthMind 360 com 90 dias de registros inventados. Nada aqui pertence a uma pessoa real e nada é gravado.",
+    "startOwn": "Começar com meus próprios dados"
+  },
+  "forms": {
+    "invalid": "Confira os campos destacados.",
+    "notFound": "Registro não encontrado. Ele pode ter sido excluído.",
+    "consent": "Para registrar, autorize o uso dos dados de bem-estar na Central de Privacidade.",
+    "demoReadOnly": "Na demonstração não é possível registrar. Use \"Começar com meus dados\".",
+    "saved": "Registro salvo.",
+    "updated": "Registro atualizado.",
+    "deleted": "Registro excluído.",
+    "errors": {
+      "field": "Confira este campo.",
+      "wake_before_bed": "O horário de acordar precisa ser depois do horário de deitar.",
+      "weekdays_required": "Escolha pelo menos um dia da semana.",
+      "times_required": "Informe quantas vezes por semana (de 1 a 7).",
+      "at_least_one": "Preencha pelo menos uma medida.",
+      "too_long": "O intervalo entre deitar e acordar precisa ser de até 24 horas.",
+      "future": "A data não pode estar no futuro."
+    }
+  },
+  "entries": {
+    "edit": "Editar",
+    "editLabel": "Editar registro: {item}",
+    "delete": "Excluir",
+    "deleteLabel": "Excluir registro: {item}",
+    "deleteTitle": "Excluir este registro?",
+    "deleteBody": "O registro de {item} será excluído agora. Não dá para desfazer.",
+    "deleteConfirm": "Excluir registro",
+    "deleteKeep": "Manter"
+  },
+  "sleep": {
+    "newTitle": "Registrar sono",
+    "listTitle": "Noites registradas",
+    "durationChart": "Horas dormidas por dia",
+    "scheduleChart": "Horário de sono",
+    "hours": "Sono",
+    "bedTime": "Deitou",
+    "wakeTime": "Acordou",
+    "scheduleTooltip": "Deitou às {bed} e acordou às {wake}",
+    "entrySummary": "Deitou às {bed}, acordou às {wake} ({duration})",
+    "entryQuality": "Qualidade {value} de 5",
+    "entryAwakenings": "{count, plural, =0 {nenhum despertar} one {# despertar} other {# despertares}}",
+    "stats": {
+      "average": "Sono médio",
+      "spread": "Variação de horário",
+      "spreadHint": "Média de quanto seus horários de deitar e acordar variaram.",
+      "spreadNeedsMore": "Precisa de pelo menos 2 noites registradas.",
+      "quality": "Qualidade média",
+      "count": "Noites registradas"
+    },
+    "form": {
+      "bedAt": "Deitei em",
+      "wakeAt": "Acordei em",
+      "quality": "Qualidade do sono (opcional)",
+      "qualityHint": "Como você sentiu a noite.",
+      "notInformed": "Não informar",
+      "qualityLevels": {
+        "1": "1 — muito ruim",
+        "2": "2 — ruim",
+        "3": "3 — regular",
+        "4": "4 — boa",
+        "5": "5 — muito boa"
+      },
+      "awakenings": "Despertares (opcional)",
+      "note": "Nota (opcional)",
+      "noteHint": "Guardada cifrada no servidor; não aparece para outras pessoas no app.",
+      "save": "Salvar registro",
+      "update": "Salvar alterações"
+    }
+  },
+  "mood": {
+    "newTitle": "Registrar humor e energia",
+    "listTitle": "Registros",
+    "trendChart": "Humor, energia e estresse no período",
+    "trendDescription": "Médias diárias do que você registrou (escala de 1 a 5).",
+    "scale": "de 5",
+    "weekdayTitle": "Humor por dia da semana",
+    "weekdayDescription": "Média do humor que você registrou em cada dia da semana, no período.",
+    "weekdayValue": "{value} ({count, plural, one {# registro} other {# registros}})",
+    "weekdayNone": "sem registros",
+    "entrySummary": "Humor {mood} · Energia {energy} · Estresse {stress} (de 5)",
+    "weekdays": {
+      "0": "Domingo",
+      "1": "Segunda",
+      "2": "Terça",
+      "3": "Quarta",
+      "4": "Quinta",
+      "5": "Sexta",
+      "6": "Sábado"
+    },
+    "stats": {
+      "mood": "Humor médio",
+      "energy": "Energia média",
+      "stress": "Estresse médio",
+      "count": "Registros"
+    },
+    "emotions": {
+      "calm": "Calma",
+      "joy": "Alegria",
+      "gratitude": "Gratidão",
+      "motivation": "Motivação",
+      "focus": "Foco",
+      "tiredness": "Cansaço",
+      "worry": "Preocupação",
+      "irritation": "Irritação",
+      "sadness": "Tristeza",
+      "boredom": "Tédio"
+    },
+    "form": {
+      "loggedAt": "Quando",
+      "mood": "Humor",
+      "moodLow": "muito para baixo",
+      "moodHigh": "muito bem",
+      "energy": "Energia",
+      "energyLow": "sem energia",
+      "energyHigh": "muita energia",
+      "stress": "Estresse",
+      "stressLow": "tranquilo",
+      "stressHigh": "muito estressado",
+      "emotions": "Emoções (opcional)",
+      "emotionsHint": "Marque as que combinam com o momento.",
+      "note": "Nota curta (opcional)",
+      "noteHint": "Guardada cifrada no servidor; não aparece para outras pessoas no app.",
+      "save": "Salvar registro",
+      "update": "Salvar alterações"
+    }
+  },
+  "journal": {
+    "newTitle": "Nova entrada",
+    "filtersTitle": "Filtrar",
+    "filtersHint": "Por período (no topo da página), humor e etiqueta. Não há busca no texto: o conteúdo fica cifrado.",
+    "filterAll": "Todos",
+    "filterApply": "Aplicar filtros",
+    "layoutLabel": "Forma de visualização",
+    "layout": {
+      "lista": "Lista",
+      "calendario": "Calendário"
+    },
+    "listTitle": "{count, plural, one {# entrada} other {# entradas}}",
+    "entryMood": "Humor do dia: {value} de 5",
+    "entryNoMood": "Sem humor informado",
+    "calendarDayEntries": "{date}: {count, plural, one {# entrada} other {# entradas}}",
+    "weekdayShort": {
+      "0": "D",
+      "1": "S",
+      "2": "T",
+      "3": "Q",
+      "4": "Q",
+      "5": "S",
+      "6": "S"
+    },
+    "weekdayLong": {
+      "0": "domingo",
+      "1": "segunda-feira",
+      "2": "terça-feira",
+      "3": "quarta-feira",
+      "4": "quinta-feira",
+      "5": "sexta-feira",
+      "6": "sábado"
+    },
+    "tags": {
+      "work": "Trabalho",
+      "study": "Estudos",
+      "family": "Família",
+      "friends": "Amizades",
+      "rest": "Descanso",
+      "movement": "Movimento",
+      "leisure": "Lazer",
+      "nature": "Natureza",
+      "routine": "Rotina",
+      "other": "Outros"
+    },
+    "form": {
+      "day": "Data",
+      "mood": "Humor do dia (opcional)",
+      "moodHint": "De 1 (muito para baixo) a 5 (muito bem).",
+      "noMood": "Não informar",
+      "content": "O que você quer registrar?",
+      "contentHint": "Guardado cifrado no servidor; não aparece para outras pessoas no app. Não é usado pela IA sem a sua autorização.",
+      "tags": "Etiquetas (opcional)",
+      "tagsHint": "Ajudam a filtrar depois.",
+      "save": "Salvar entrada",
+      "update": "Salvar alterações"
+    }
+  },
+  "body": {
+    "newTitle": "Registrar peso e medidas",
+    "listTitle": "Medições",
+    "weightChart": "Peso no período",
+    "girthChart": "Medidas no período",
+    "fields": {
+      "weightKg": "Peso",
+      "heightCm": "Altura",
+      "waistCm": "Cintura",
+      "hipCm": "Quadril",
+      "armCm": "Braço",
+      "thighCm": "Coxa",
+      "chestCm": "Peito",
+      "bodyFatPct": "Gordura corporal"
+    },
+    "stats": {
+      "weight": "Peso mais recente",
+      "on": "em {date}",
+      "change": "Variação no período",
+      "changeHint": "Diferença entre o primeiro e o último peso do período.",
+      "height": "Altura",
+      "bmi": "IMC",
+      "bmiHint": "Cálculo direto: peso ÷ altura². É só um número de referência, sem classificação.",
+      "bmiNeeds": "Informe peso e altura para ver o cálculo."
+    },
+    "form": {
+      "measuredAt": "Data da medição",
+      "hint": "Preencha só o que você mediu. Use vírgula para decimais.",
+      "range": "De {min} a {max}",
+      "save": "Salvar medição",
+      "update": "Salvar alterações"
     }
   }
 }

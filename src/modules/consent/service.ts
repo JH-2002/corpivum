@@ -63,8 +63,13 @@ export interface DocumentState {
   needsAcceptance: boolean;
 }
 
+/** Escolha do passo 5 do onboarding (§52.5, ADR-0021). `null` = ainda não escolheu. */
+export type DataMode = 'demo' | 'own';
+
 export interface ConsentState {
   onboardingCompleted: boolean;
+  /** `demo`: telas com dados fictícios gerados em memória; nada gravado nas tabelas de saúde. */
+  dataMode: DataMode | null;
   /** Há documento a aceitar ou finalidade a reconfirmar (LEG-C06). */
   updatePending: boolean;
   purposes: PurposeState[];
@@ -237,7 +242,7 @@ export function createConsentService(deps: ConsentDeps) {
       const [user, rows, records, acceptances] = await Promise.all([
         tx.user.findUniqueOrThrow({
           where: { id: userId },
-          select: { onboardingCompletedAt: true, healthDataPurgeAt: true },
+          select: { onboardingCompletedAt: true, healthDataPurgeAt: true, dataMode: true },
         }),
         publishedVersions(tx),
         tx.consentRecord.findMany({
@@ -294,6 +299,7 @@ export function createConsentService(deps: ConsentDeps) {
       const onboardingCompleted = user.onboardingCompletedAt !== null;
       return {
         onboardingCompleted,
+        dataMode: user.dataMode,
         updatePending:
           onboardingCompleted &&
           (documents.some((d) => d.needsAcceptance) || purposes.some((p) => p.needsReconsent)),
@@ -335,6 +341,20 @@ export function createConsentService(deps: ConsentDeps) {
       await applyEffects(userId, effects);
       logger.info('consent.onboarding_completed', { userId, count: purposes.length });
       return { ok: true };
+    },
+
+    /**
+     * Passo 5 do onboarding (§52.5) e troca posterior "Começar com meus dados". Só depois do onboarding.
+     * Não é dado de saúde nem consentimento: só a preferência de exibição.
+     */
+    async chooseDataMode(userId: string, mode: DataMode): Promise<boolean> {
+      const { count } = await withUser(userId, (tx) =>
+        tx.user.updateMany({
+          where: { id: userId, onboardingCompletedAt: { not: null } },
+          data: { dataMode: mode },
+        }),
+      );
+      return count === 1;
     },
 
     /** Conceder (Central de Privacidade). Reconceder saúde dentro do prazo cancela a eliminação. */

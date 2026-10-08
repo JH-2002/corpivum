@@ -1,3 +1,4 @@
+import { createVerifiedUser, e2eEmail, loginWithOwnIp } from './fixtures';
 import { expect, test, type Page } from '@playwright/test';
 
 /** Foco visível = contorno ativo no elemento focado (WCAG 2.4.7). */
@@ -79,13 +80,21 @@ test.describe('teclado e foco (LEG-X01)', () => {
     ).toBeVisible();
   });
 
-  test('selo de confiabilidade e ações do estado vazio são alcançáveis', async ({ page }) => {
+  test('selo de confiabilidade e ações do estado vazio são alcançáveis', async ({ browser }) => {
+    // Pessoa sem registros (a do setup tem dados sintéticos desde a Fase 2).
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const page = await context.newPage();
+    const email = e2eEmail('teclado-vazio');
+    await createVerifiedUser(email);
+    await loginWithOwnIp(page, email);
+    // Navegação nova: o foco programático volta a ser :focus-visible (o login foi por clique).
     await page.goto('/inicio');
     const cta = page.getByRole('button', { name: 'Fazer o primeiro registro' });
     await cta.focus();
     await expectVisibleFocus(page);
     await page.keyboard.press('Enter');
     await expect(page.getByRole('dialog')).toBeVisible();
+    await context.close();
   });
 });
 

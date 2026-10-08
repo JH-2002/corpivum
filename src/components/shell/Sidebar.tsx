@@ -6,15 +6,17 @@ import { useState } from 'react';
 import { IconButton } from '@/components/ui/IconButton';
 import { cn } from '@/lib/cn';
 import { NavLink } from './NavLink';
-import { PRIVACY_ITEM, SIDEBAR_ITEMS } from './nav-config';
+import { DEMO_ITEMS, PRIVACY_ITEM, SIDEBAR_ITEMS, type ShellVariant } from './nav-config';
 
 const NAV_ID = 'sidebar-navegacao';
 
 /**
  * Sidebar (§7, §9). Desktop (>= 1024px): fixa e expandida. Tablet (768–1023px): recolhível,
  * começa recolhida (só ícones, rótulos continuam acessíveis). Mobile: oculta (usa BottomNav).
+ * `demo`: só os módulos do demo público (LEG-X02).
  */
-export function Sidebar() {
+export function Sidebar({ variant = 'app' }: { variant?: ShellVariant }) {
+  const items = variant === 'demo' ? DEMO_ITEMS : SIDEBAR_ITEMS;
   const t = useTranslations();
   const [expanded, setExpanded] = useState(false);
   const labelClassName = expanded ? undefined : 'md:max-lg:sr-only';
@@ -53,14 +55,18 @@ export function Sidebar() {
 
       <nav id={NAV_ID} aria-label={t('nav.mainLabel')} className="flex-1 overflow-y-auto px-3 py-2">
         <ul className="flex flex-col gap-1">
-          {SIDEBAR_ITEMS.map((item) => (
+          {items.map((item) => (
             <li key={item.key}>
-              <NavLink navKey={item.key} labelClassName={labelClassName} />
+              <NavLink navKey={item.key} labelClassName={labelClassName} variant={variant} />
             </li>
           ))}
         </ul>
-        <hr className="my-3 border-border" />
-        <NavLink navKey={PRIVACY_ITEM.key} labelClassName={labelClassName} />
+        {variant === 'app' ? (
+          <>
+            <hr className="my-3 border-border" />
+            <NavLink navKey={PRIVACY_ITEM.key} labelClassName={labelClassName} />
+          </>
+        ) : null}
       </nav>
     </aside>
   );

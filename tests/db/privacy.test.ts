@@ -4,6 +4,7 @@ import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import type { Db } from '@/lib/db/client';
 import { withUserOn } from '@/lib/db/rls';
 import { createLogger } from '@/lib/logger';
+import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
 import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
 import { createPrivacyService } from '@/modules/privacy/service';
@@ -46,6 +47,13 @@ const USER_FKS: Record<string, string> = {
   recovery_codes: 'CASCADE',
   auth_tokens: 'CASCADE',
   reauth_proofs: 'CASCADE',
+  // Dados de saúde (Fase 2, ADR-0021): saem com a conta; também cobertos pelo eliminador.
+  sleep_entries: 'CASCADE',
+  mood_entries: 'CASCADE',
+  habits: 'CASCADE',
+  habit_checks: 'CASCADE',
+  journal_entries: 'CASCADE',
+  body_measurements: 'CASCADE',
 };
 const PROOF_TABLES = ['consent_records', 'policy_acceptances', 'privacy_requests', 'audit_logs'];
 
@@ -342,7 +350,7 @@ describe('jobs de privacidade', () => {
     const queue = new MemoryJobQueue(silent);
     registerPrivacyJobs(queue, {
       service: privacy(),
-      eliminator: createHealthDataEliminator({ db, logger: silent }),
+      eliminator: createHealthDataEliminator({ db, logger: silent, erasers: HEALTH_DATA_ERASERS }),
     });
     await schedulePrivacyJobs(queue);
     await schedulePrivacyJobs(queue); // segunda instância: não duplica

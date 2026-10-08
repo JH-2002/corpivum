@@ -4,12 +4,12 @@ import { CalendarRange } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
-import { useToday } from '@/lib/browser-store';
 import {
   formatIsoDate,
   PERIOD_PRESETS,
   resolveRange,
   validateCustomRange,
+  type CustomRangeError,
   type Period,
   type PeriodPreset,
 } from '@/lib/period';
@@ -20,22 +20,21 @@ const OPTIONS: readonly Option[] = [...PERIOD_PRESETS, 'custom'];
 
 /**
  * Seletor de período global (§10): 7/30/90 dias, 12 meses ou personalizado.
- * Sempre mostra o intervalo de datas em texto. A escolha persiste durante a sessão.
+ * Sempre mostra o intervalo de datas em texto. A escolha persiste durante a sessão (cookie, ADR-0021).
  */
 export function PeriodSelector() {
   const t = useTranslations('period');
-  const { period, setPeriod } = useShell();
-  const today = useToday();
+  const { period, setPeriod, today } = useShell();
   const ids = { select: useId(), from: useId(), to: useId(), error: useId() };
 
   // Seleção "personalizado" ainda não aplicada (o período global só muda ao clicar em Aplicar).
   const [draftCustom, setDraftCustom] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<CustomRangeError | null>(null);
   const showCustom = draftCustom || period.preset === 'custom';
   const range = today ? resolveRange(period, today) : null;
 
   function onSelect(value: Option) {
-    setError(false);
+    setError(null);
     if (value === 'custom') {
       setDraftCustom(true);
       return;
@@ -50,11 +49,12 @@ export function PeriodSelector() {
     const data = new FormData(event.currentTarget);
     const from = String(data.get('from') ?? '');
     const to = String(data.get('to') ?? '');
-    if (validateCustomRange(from, to, today)) {
-      setError(true);
+    const invalid = validateCustomRange(from, to, today);
+    if (invalid) {
+      setError(invalid);
       return;
     }
-    setError(false);
+    setError(null);
     setDraftCustom(false);
     const next: Period = { preset: 'custom', from, to };
     setPeriod(next);
@@ -109,7 +109,7 @@ export function PeriodSelector() {
               required
               max={today ?? undefined}
               defaultValue={period.preset === 'custom' ? period.from : range?.from}
-              aria-invalid={error || undefined}
+              aria-invalid={error ? true : undefined}
               aria-describedby={error ? ids.error : undefined}
               className="min-h-11 rounded-md border border-border-strong bg-surface px-2 text-sm"
             />
@@ -125,7 +125,7 @@ export function PeriodSelector() {
               required
               max={today ?? undefined}
               defaultValue={period.preset === 'custom' ? period.to : range?.to}
-              aria-invalid={error || undefined}
+              aria-invalid={error ? true : undefined}
               aria-describedby={error ? ids.error : undefined}
               className="min-h-11 rounded-md border border-border-strong bg-surface px-2 text-sm"
             />
@@ -135,7 +135,7 @@ export function PeriodSelector() {
           </Button>
           {error ? (
             <p id={ids.error} role="alert" className="basis-full text-sm text-danger">
-              {t('invalidRange')}
+              {error === 'too_long' ? t('tooLong') : t('invalidRange')}
             </p>
           ) : null}
         </form>
