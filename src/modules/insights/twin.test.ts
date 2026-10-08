@@ -1,5 +1,15 @@
 import { generateDemoData } from '@/modules/demo/generator';
-import { bodyEntry, checksOn, day, habit, moodWeek, sleepWeek, TODAY, WEEK } from './fixtures';
+import {
+  bodyEntry,
+  checksOn,
+  day,
+  habit,
+  moodWeek,
+  PREV_WEEK,
+  sleepWeek,
+  TODAY,
+  WEEK,
+} from './fixtures';
 import { INSIGHT_RULES } from './rules';
 import { brainInsights, brainThemes, twinBodyInsights } from './twin';
 import type { ModuleInsights } from './types';
@@ -47,6 +57,7 @@ describe('temas do cérebro 3D (§17, LEG-M05)', () => {
   const input = {
     sleep: sleepWeek(WEEK, [420, 400, 450, 430]),
     mood: moodWeek(WEEK, [4, 3, 4, undefined, 4]),
+    previousMood: [],
     habits: [habit({ name: 'Nome que não pode sair do servidor' })],
     checks: checksOn('h1', [day(0), day(1)]),
     range: WEEK,
@@ -64,6 +75,16 @@ describe('temas do cérebro 3D (§17, LEG-M05)', () => {
     expect(t.supportSignal).toBe(false);
   });
 
+  it('queda relevante de humor em relação ao período anterior mostra a orientação de apoio', () => {
+    const t = brainThemes({
+      ...input,
+      mood: moodWeek(WEEK, [3, 3, 3, 3]),
+      previousMood: moodWeek(PREV_WEEK, [4, 4, 4, 4]),
+    });
+    expect(t.supportSignal).toBe(true);
+    expect(brainThemes({ ...input, mood: moodWeek(WEEK, [3, 3, 3, 3]) }).supportSignal).toBe(false);
+  });
+
   it('humor no ponto mais baixo mostra a orientação de apoio', () => {
     const t = brainThemes({ ...input, mood: moodWeek(WEEK, [1, 3]) });
     expect(t.supportSignal).toBe(true);
@@ -71,7 +92,14 @@ describe('temas do cérebro 3D (§17, LEG-M05)', () => {
   });
 
   it('resumo: vazio, parcial e completo; sempre educativo', () => {
-    const empty = brainThemes({ sleep: [], mood: [], habits: [], checks: [], range: WEEK });
+    const empty = brainThemes({
+      sleep: [],
+      mood: [],
+      previousMood: [],
+      habits: [],
+      checks: [],
+      range: WEEK,
+    });
     expect(brainInsights(empty, WEEK, TODAY)).toMatchObject({ module: 'brain', state: 'empty' });
     expect(keys(brainInsights(empty, WEEK, TODAY))).toEqual(['empty', 'educational']);
 
@@ -89,7 +117,7 @@ describe('temas do cérebro 3D (§17, LEG-M05)', () => {
 
   it('dados de demonstração: amostra suficiente nos três temas', () => {
     const demo = generateDemoData(TODAY, 'America/Sao_Paulo');
-    const t = brainThemes({ ...demo, range: WEEK });
+    const t = brainThemes({ ...demo, previousMood: [], range: WEEK });
     expect(brainInsights(t, WEEK, TODAY).state).toBe('ok');
   });
 });

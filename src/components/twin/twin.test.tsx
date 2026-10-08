@@ -153,6 +153,7 @@ describe('cérebro 3D educativo (§17, §18, LEG-M05)', () => {
   const themes = brainThemes({
     sleep: sleepWeek(WEEK, [420, 400, 450, 430, 410, 400, 420]),
     mood: moodWeek(WEEK, [4, 3, 4, 4, 3, 4, 4]),
+    previousMood: [],
     habits: [habit()],
     checks: checksOn('h1', [day(0), day(1)]),
     range: WEEK,
@@ -197,11 +198,18 @@ describe('cérebro 3D educativo (§17, §18, LEG-M05)', () => {
   it('todas as regiões, com e sem dados e no demo: texto limpo (glossário LEG-M03)', async () => {
     const user = userEvent.setup();
     const demo = generateDemoData(TODAY, 'America/Sao_Paulo');
-    const empty = brainThemes({ sleep: [], mood: [], habits: [], checks: [], range: WEEK });
+    const empty = brainThemes({
+      sleep: [],
+      mood: [],
+      previousMood: [],
+      habits: [],
+      checks: [],
+      range: WEEK,
+    });
     for (const [data, mode] of [
       [themes, 'own'],
       [empty, 'own'],
-      [brainThemes({ ...demo, range: WEEK }), 'publicDemo'],
+      [brainThemes({ ...demo, previousMood: [], range: WEEK }), 'publicDemo'],
     ] as const) {
       const { container, unmount } = renderWithIntl(
         <TwinBrainView themes={data} range={WEEK} today={TODAY} mode={mode} />,

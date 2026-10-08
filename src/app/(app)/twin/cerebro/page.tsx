@@ -6,6 +6,7 @@ import { TwinBrainView, TwinSections } from '@/components/twin/TwinViews';
 import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
 import { brainThemes } from '@/modules/insights';
+import { previousRange } from '@/lib/dates';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('twin.sections');
@@ -25,13 +26,14 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const themes =
     view.kind === 'data' && !preview
       ? await view.source.session(async (s) => {
-          const [sleep, mood, habits, checks] = await Promise.all([
+          const [sleep, mood, previousMood, habits, checks] = await Promise.all([
             s.sleep(range),
             s.mood(range),
+            s.mood(previousRange(range)),
             s.habits(),
             s.checks(range),
           ]);
-          return brainThemes({ sleep, mood, habits, checks, range });
+          return brainThemes({ sleep, mood, previousMood, habits, checks, range });
         })
       : null;
   return (

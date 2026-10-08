@@ -134,6 +134,19 @@ teste); as demais notas ficam registradas aqui.
 | PR2-N5 | Nota | `datetime-local` só validado por formato (31/02 virava outra data). | — | Resolvido: validação de data e hora reais (teste) |
 | PR2-N6 | Nota | A Central de Privacidade ainda não lista as categorias novas (sono, humor, hábitos, diário, corpo). | LEG-D01 | Aberto (Fase 6, com a exportação) |
 
+### Revisão da Fase 3 (ADR-0026)
+
+Nenhum achado crítico ou alto. Os médios e dois baixos foram corrigidos na própria fase (com teste); o
+terceiro baixo fica registrado aqui.
+
+| ID | Sev. | Achado | Referência | Status |
+|---|---|---|---|---|
+| PR3-M1 | Média | `disclaimer.brainModel` dizia que o modelo "é uma estimativa a partir do que você relatou", mas o cérebro 3D é igual para todas as pessoas e não usa dado. Junto do painel com os registros, sugeria que o app estimou algo sobre o cérebro da pessoa. | LEG-M05 | Resolvido: aviso reescrito (modelo igual para todos, não usa os dados; só os números do painel vêm do relato, não é medição cerebral), aprovado em `approved-disclaimers.ts` (`LEGAL-REVIEW`, OI-09/OI-22) |
+| PR3-M2 | Média | No painel, números pessoais ao lado do nome do lobo, com a ressalva só no fim e esmaecida, e "Nível de confiança" sem dizer de quê, pareciam indicador da região. | LEG-M05 | Resolvido: ressalva antes dos números e em destaque; títulos "Seus registros nos temas ligados (não são sobre a região)" e "Nível de confiança dos seus registros". Separar os números do painel da região fica para a revisão de OI-22 |
+| PR3-B1 | Baixa | O resumo vazio do corpo dizia que o modelo aparece na forma neutra, mas a tela mostra "sem dados" e nenhum modelo. | Art. 6º VI | Resolvido: texto ajustado |
+| PR3-B2 | Baixa | O sinal de apoio do cérebro ignorava a queda de humor em relação ao período anterior (a tela de humor considera). | §48, LEG-I07 | Resolvido: lê o humor do período anterior (teste) |
+| PR3-B3 | Baixa | "Ocultar valores" oculta os números de medidas e indicadores, mas não as datas de medição nem a quantidade de dias com registro. | §44/§45 | Aceito: são metadados; o modo privacidade global (Fase 6) define o alcance final |
+
 ## Resolvidas
 
 | ID | Decisão | Data | Quem decidiu |

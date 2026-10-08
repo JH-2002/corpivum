@@ -577,6 +577,9 @@ externo sem licença em `docs/ASSETS.md`; o dashboard não pode regredir (§41).
   restaurar, lista de regiões com `aria-pressed`, controle de datas com `aria-valuetext`); painel com
   `aria-live="polite"`; tooltip de ponteiro fecha com Esc. Modo privacidade local (estado só em memória)
   oculta os números do twin; o global fica para a Fase 6.
+- **Revisão de privacidade:** nenhum achado crítico ou alto. Corrigidos na fase: `disclaimer.brainModel`
+  reescrito (PR3-M1), ressalva do painel do cérebro antes dos números e títulos explícitos (PR3-M2), texto
+  do corpo vazio (PR3-B1) e queda de humor no sinal de apoio (PR3-B2). Aceito: PR3-B3 (OPEN_ISSUES).
 **Consequências.** Asset externo exige linha em `docs/ASSETS.md` e revisão. Mudar limiares de confiança ou
 redação muda o texto exibido (testes de `src/modules/twin`, `src/modules/insights` e
 `src/components/twin`). Textos educativos do cérebro e do twin são RASCUNHO (`LEGAL-REVIEW`, OI-22).

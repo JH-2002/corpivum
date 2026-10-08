@@ -191,6 +191,8 @@ function BrainPanel({
           <p>{t('noThemes')}</p>
         ) : (
           <>
+            {/* A ressalva vem antes dos números (revisão de privacidade M2, LEG-M05). */}
+            <p className="font-semibold">{t('notAboutRegion')}</p>
             {related.map((theme) => {
               const data = themes.themes[theme];
               return (
@@ -219,7 +221,6 @@ function BrainPanel({
                 </div>
               );
             })}
-            <p className="text-fg-muted">{t('notAboutRegion')}</p>
           </>
         )}
       </div>

@@ -96,13 +96,15 @@ export interface BrainThemeData {
 export interface BrainThemes {
   periodDays: number;
   themes: Record<BrainTheme, BrainThemeData>;
-  /** Humor baixo ou no ponto mais baixo da escala: o painel mostra a orientação de apoio (§48). */
+  /** Mesmo critério da tela de humor (média baixa, queda ou ponto mais baixo): orientação de apoio (§48). */
   supportSignal: boolean;
 }
 
 export interface BrainThemesInput {
   sleep: SleepRecord[];
   mood: MoodRecord[];
+  /** Humor do período anterior de mesmo tamanho: a queda relevante também mostra o apoio (§48). */
+  previousMood: MoodRecord[];
   habits: HabitRecord[];
   checks: HabitCheckRecord[];
   range: DateRange;
@@ -111,20 +113,27 @@ export interface BrainThemesInput {
 const uniqueDays = (rows: ReadonlyArray<{ day: string }>, range: DateRange) =>
   new Set(rows.map((r) => r.day).filter((d) => d >= range.from && d <= range.to)).size;
 
-export function brainThemes({ sleep, mood, habits, checks, range }: BrainThemesInput): BrainThemes {
+export function brainThemes({
+  sleep,
+  mood,
+  previousMood,
+  habits,
+  checks,
+  range,
+}: BrainThemesInput): BrainThemes {
   const sleepAvg = averageDurationMinutes(sleep);
   const spread = sleep.length >= 2 ? scheduleSpreadMinutes(sleep) : null;
   const moodAvg = averageOf(mood, 'mood');
   const energyAvg = averageOf(mood, 'energy');
   const completion = completionRate(habits, checks, range);
-  const signal = moodSupportSignal(mood, []);
+  const signal = moodSupportSignal(mood, previousMood);
 
   const indicator = (key: string, value: InsightArg | null): ThemeIndicator[] =>
     value === null ? [] : [{ key, value, level: 'ESTIMADO' }];
 
   return {
     periodDays: rangeLength(range),
-    supportSignal: signal.low || signal.lowest,
+    supportSignal: signal.low || signal.drop || signal.lowest,
     themes: {
       sleep: {
         days: uniqueDays(sleep, range),
