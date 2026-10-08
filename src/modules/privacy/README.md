@@ -12,7 +12,7 @@ eliminação agendada dos dados de saúde após a revogação.
 - `server.ts`: serviço e eliminador (somente servidor).
 - `jobs.ts`: `privacy.health_data_eliminate`, `privacy.purge_access_logs`, `privacy.purge_proofs`,
   `privacy.health_data_sweep`.
-- `health-data.ts`: `registerHealthDataEraser` — os eliminadores de todas as tabelas de saúde ficam em
-  `@/modules/health/erasers` (Fase 2, ADR-0021).
+- `health-data.ts`: eliminador que recebe a lista de eliminadores (produção: `@/modules/health/erasers`,
+  Fase 2, ADR-0021). Lista vazia é erro.
 
 Exponha a API pública do módulo apenas por `index.ts`. Outros módulos não importam arquivos internos.

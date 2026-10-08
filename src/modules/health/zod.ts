@@ -32,7 +32,18 @@ export function optionalText(max: number) {
   );
 }
 
-export const localDateTimeSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+/**
+ * `YYYY-MM-DDTHH:MM` de um `<input type="datetime-local">`, com data e hora reais (31/02 ou 25:70 são
+ * recusados em vez de virar outra data em silêncio).
+ */
+export const localDateTimeSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)
+  .refine((v) => {
+    const [date, time] = v.split('T') as [string, string];
+    const [h, m] = time.split(':').map(Number) as [number, number];
+    return h < 24 && m < 60 && new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date;
+  });
 export const isoDateSchema = z.iso.date();
 export const idSchema = z.uuid();
 

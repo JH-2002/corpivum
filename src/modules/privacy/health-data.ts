@@ -2,32 +2,31 @@ import { auditAppend } from '@/lib/db/audit';
 import type { Db } from '@/lib/db/client';
 import { withUserOn, type Tx } from '@/lib/db/rls';
 import type { Logger } from '@/lib/logger';
+import { AppError } from '@/lib/errors';
 import { hasActiveConsent } from '@/modules/consent/guard';
 
 /**
  * Eliminação dos dados de saúde após a revogação do consentimento (ADR-0019, LEGAL-REVIEW).
  *
- * Cada módulo com dados de saúde (Fase 2 em diante) registra um eliminador que apaga as PRÓPRIAS linhas do
- * usuário da transação (RLS por dono no DELETE, sem exigir consentimento). Na Fase 1b ainda não há tabela de
- * saúde: o registro começa vazio. Regra para módulos novos: registrar o eliminador e testá-lo.
+ * Cada eliminador apaga as PRÓPRIAS linhas do usuário da transação (RLS por dono no DELETE, sem exigir
+ * consentimento). Os eliminadores são INJETADOS (lista de produção: `@/modules/health/erasers`), não
+ * registrados num estado global: um processo que esquecesse o registro "eliminaria" zero tabelas e daria a
+ * eliminação como feita (revisão da Fase 2, M1). Lista vazia = erro, nada é limpo.
  */
 export type HealthDataEraser = (tx: Tx) => Promise<number>;
-
-const erasers = new Map<string, HealthDataEraser>();
-
-export function registerHealthDataEraser(module: string, eraser: HealthDataEraser): () => void {
-  erasers.set(module, eraser);
-  return () => erasers.delete(module);
-}
-
-export function registeredHealthDataErasers(): readonly string[] {
-  return [...erasers.keys()];
-}
+export type HealthDataErasers = Readonly<Record<string, HealthDataEraser>>;
 
 export type EliminationOutcome = 'eliminated' | 'skipped';
 
-export function createHealthDataEliminator(deps: { db: Db; logger: Logger; now?: () => Date }) {
+export function createHealthDataEliminator(deps: {
+  db: Db;
+  logger: Logger;
+  erasers: HealthDataErasers;
+  now?: () => Date;
+}) {
   const now = deps.now ?? (() => new Date());
+  const erasers = Object.values(deps.erasers);
+  if (erasers.length === 0) throw new AppError('VALIDATION', 'nenhum eliminador de dados de saúde');
   return {
     /**
      * Elimina se, NA HORA da execução, a eliminação ainda estiver agendada e vencida e não houver
@@ -42,7 +41,7 @@ export function createHealthDataEliminator(deps: { db: Db; logger: Logger; now?:
         if (!user?.healthDataPurgeAt || user.healthDataPurgeAt > now()) return 'skipped';
         if (await hasActiveConsent(tx, 'health_data')) return 'skipped';
         let rows = 0;
-        for (const eraser of erasers.values()) rows += await eraser(tx);
+        for (const eraser of erasers) rows += await eraser(tx);
         await tx.user.update({ where: { id: userId }, data: { healthDataPurgeAt: null } });
         await auditAppend(tx, 'health_data_eliminated', 'health_data', null, { system: true });
         // Sem userId: o log não liga uma conta à revogação de dados de saúde (B5).

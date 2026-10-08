@@ -5,8 +5,8 @@
 > textos antes do lançamento (OPEN_ISSUES OI-09).
 
 ## O que é e o que não é
-Número de 0 a 100 que resume a **regularidade dos registros e hábitos da própria pessoa** no período
-selecionado. **Não é avaliação de saúde**: não usa referência populacional, não classifica, não indica
+Número de 0 a 100 que resume os **registros da própria pessoa** no período selecionado: regularidade do
+sono, humor e energia informados, cumprimento de hábitos e constância de registro. **Não é avaliação de saúde**: não usa referência populacional, não classifica, não indica
 risco nem condição. Selo na interface: ESTIMADO (cálculo direto a partir de dados informados).
 
 ## Versão 1 (`score_version = 1`)

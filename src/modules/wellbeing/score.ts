@@ -7,8 +7,8 @@ import type { MoodRecord } from '@/modules/mood';
 import { scheduleSpreadMinutes, type SleepRecord } from '@/modules/sleep';
 
 /**
- * Índice de Bem-Estar (§14, LEG-D08). Indicador de 0 a 100 que resume a REGULARIDADE dos registros e
- * hábitos da própria pessoa. Não é avaliação de saúde, não usa referência populacional e não classifica.
+ * Índice de Bem-Estar (§14, LEG-D08). Indicador de 0 a 100 que resume os registros da própria pessoa
+ * (regularidade do sono, humor/energia informados, hábitos e constância de registro). Não é avaliação de saúde, não usa referência populacional e não classifica.
  *
  * Versionado: mudar pesos, limiares ou fórmulas = nova versão (novo objeto `SCORE_Vn` e `SCORE_VERSION`),
  * documentada em docs/WELLBEING_SCORE.md. Componentes sem dados suficientes ficam fora do cálculo e os

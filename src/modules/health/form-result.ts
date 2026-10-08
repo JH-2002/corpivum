@@ -40,17 +40,21 @@ export async function healthWrite(
   }
 }
 
-/** Exclusão: só com dados próprios; silenciosa se o registro não existir (já excluído). */
-export async function healthDelete(
+/**
+ * Alteração sem formulário (excluir, arquivar, marcar check): só com dados próprios. Sem consentimento,
+ * não faz nada e não lança: o erro não chega à página de erro nem aos logs da plataforma, que ligariam a
+ * requisição à revogação (revisão da Fase 2, M2). A tela recarregada mostra o aviso de consentimento.
+ */
+export async function healthMutate(
   session: AppSession,
-  remove: () => Promise<boolean>,
+  mutate: () => Promise<unknown>,
 ): Promise<void> {
   if (session.dataMode !== 'own') return;
   try {
-    await remove();
+    await mutate();
   } catch (error) {
-    if (error instanceof ConsentRequiredError) return;
-    throw error;
+    if (!(error instanceof ConsentRequiredError)) throw error;
   }
+  // Também sem consentimento: a tela recarregada mostra o aviso de autorização.
   revalidatePath('/', 'layout');
 }

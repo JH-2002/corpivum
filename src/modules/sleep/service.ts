@@ -56,9 +56,10 @@ export function createSleepService(deps: HealthDeps) {
     async create(userId: string, input: SleepInput): Promise<SleepWriteResult> {
       const instants = toInstants(input);
       if (typeof instants === 'string') return { ok: false, error: instants };
-      const noteEnc = input.note ? await deps.cipher.seal(userId, NOTE, input.note) : null;
-      const row = await deps.run(userId, (tx) =>
-        tx.sleepEntry.create({
+      // Cifra só dentro da transação, depois da checagem de consentimento (regra 1).
+      const row = await deps.run(userId, async (tx) => {
+        const noteEnc = input.note ? await deps.cipher.seal(userId, NOTE, input.note) : null;
+        return tx.sleepEntry.create({
           data: {
             userId,
             ...instants,
@@ -67,8 +68,8 @@ export function createSleepService(deps: HealthDeps) {
             noteEnc,
           },
           select: { id: true },
-        }),
-      );
+        });
+      });
       return { ok: true, id: row.id };
     },
 
@@ -76,9 +77,10 @@ export function createSleepService(deps: HealthDeps) {
     async update(userId: string, id: string, input: SleepInput): Promise<SleepWriteResult | null> {
       const instants = toInstants(input);
       if (typeof instants === 'string') return { ok: false, error: instants };
-      const noteEnc = input.note ? await deps.cipher.seal(userId, NOTE, input.note) : null;
-      const { count } = await deps.run(userId, (tx) =>
-        tx.sleepEntry.updateMany({
+      // Cifra só dentro da transação, depois da checagem de consentimento (regra 1).
+      const { count } = await deps.run(userId, async (tx) => {
+        const noteEnc = input.note ? await deps.cipher.seal(userId, NOTE, input.note) : null;
+        return tx.sleepEntry.updateMany({
           where: { id },
           data: {
             ...instants,
@@ -86,8 +88,8 @@ export function createSleepService(deps: HealthDeps) {
             awakenings: input.awakenings ?? null,
             noteEnc,
           },
-        }),
-      );
+        });
+      });
       return count === 1 ? { ok: true, id } : null;
     },
 

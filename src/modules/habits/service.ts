@@ -51,9 +51,10 @@ export function createHabitsService(deps: HealthDeps) {
     },
 
     async create(userId: string, input: HabitInput): Promise<string> {
-      const nameEnc = await deps.cipher.seal(userId, NAME, input.name);
-      const row = await deps.run(userId, (tx) =>
-        tx.habit.create({
+      // Cifra só dentro da transação, depois da checagem de consentimento (regra 1).
+      const row = await deps.run(userId, async (tx) => {
+        const nameEnc = await deps.cipher.seal(userId, NAME, input.name);
+        return tx.habit.create({
           data: {
             userId,
             nameEnc,
@@ -62,15 +63,16 @@ export function createHabitsService(deps: HealthDeps) {
             timesPerWeek: input.timesPerWeek,
           },
           select: { id: true },
-        }),
-      );
+        });
+      });
       return row.id;
     },
 
     async update(userId: string, id: string, input: HabitInput): Promise<boolean> {
-      const nameEnc = await deps.cipher.seal(userId, NAME, input.name);
-      const { count } = await deps.run(userId, (tx) =>
-        tx.habit.updateMany({
+      // Cifra só dentro da transação, depois da checagem de consentimento (regra 1).
+      const { count } = await deps.run(userId, async (tx) => {
+        const nameEnc = await deps.cipher.seal(userId, NAME, input.name);
+        return tx.habit.updateMany({
           where: { id },
           data: {
             nameEnc,
@@ -78,8 +80,8 @@ export function createHabitsService(deps: HealthDeps) {
             weekdays: input.weekdays,
             timesPerWeek: input.timesPerWeek,
           },
-        }),
-      );
+        });
+      });
       return count === 1;
     },
 

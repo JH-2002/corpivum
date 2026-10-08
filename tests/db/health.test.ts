@@ -12,10 +12,7 @@ import { createFieldCipher, type HealthDeps } from '@/modules/health/core';
 import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
 import { createJournalService } from '@/modules/journal/service';
 import { createMoodService } from '@/modules/mood/service';
-import {
-  createHealthDataEliminator,
-  registerHealthDataEraser,
-} from '@/modules/privacy/health-data';
+import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import { createSleepService } from '@/modules/sleep/service';
 import { createTestConsent } from './consent-helpers';
 import {
@@ -212,35 +209,36 @@ describe('catálogo: toda tabela de saúde segue o modelo (PR1b-N1)', () => {
 
 describe('eliminação agendada cobre todas as tabelas de saúde (LEG-D04, PR1b-B9)', () => {
   it('após o prazo, zera A em todas as tabelas e não toca em B', async () => {
-    const offs = Object.entries(HEALTH_DATA_ERASERS).map(([m, e]) =>
-      registerHealthDataEraser(m, e),
+    const a = await onboarded(['health_data']);
+    const b = await onboarded(['health_data']);
+    await seedAll(a.userId);
+    await seedAll(b.userId);
+    const before = await countsFor(a.userId);
+    for (const table of HEALTH_TABLES) expect(before[table]).toBeGreaterThan(0);
+    const bBefore = await countsFor(b.userId);
+
+    await a.consent.revoke(a.userId, 'health_data');
+    await admin.query(
+      `UPDATE users SET health_data_purge_at = now() - interval '1 minute' WHERE id = $1`,
+      [a.userId],
     );
-    try {
-      const a = await onboarded(['health_data']);
-      const b = await onboarded(['health_data']);
-      await seedAll(a.userId);
-      await seedAll(b.userId);
-      const before = await countsFor(a.userId);
-      for (const table of HEALTH_TABLES) expect(before[table]).toBeGreaterThan(0);
-      const bBefore = await countsFor(b.userId);
+    // Lista de produção, a mesma injetada por @/modules/privacy/server.
+    const eliminator = createHealthDataEliminator({
+      db,
+      logger: createLogger({ sink: () => {} }),
+      erasers: HEALTH_DATA_ERASERS,
+    });
+    expect(await eliminator.eliminate(a.userId)).toBe('eliminated');
 
-      await a.consent.revoke(a.userId, 'health_data');
-      await admin.query(
-        `UPDATE users SET health_data_purge_at = now() - interval '1 minute' WHERE id = $1`,
-        [a.userId],
-      );
-      const eliminator = createHealthDataEliminator({
-        db,
-        logger: createLogger({ sink: () => {} }),
-      });
-      expect(await eliminator.eliminate(a.userId)).toBe('eliminated');
+    const after = await countsFor(a.userId);
+    for (const table of HEALTH_TABLES) expect(after[table]).toBe(0);
+    expect(await countsFor(b.userId)).toEqual(bBefore);
+  });
 
-      const after = await countsFor(a.userId);
-      for (const table of HEALTH_TABLES) expect(after[table]).toBe(0);
-      expect(await countsFor(b.userId)).toEqual(bBefore);
-    } finally {
-      for (const off of offs) off();
-    }
+  it('sem eliminadores, falha em vez de dar a eliminação como feita (revisão M1)', () => {
+    expect(() =>
+      createHealthDataEliminator({ db, logger: createLogger({ sink: () => {} }), erasers: {} }),
+    ).toThrow();
   });
 
   it('um eliminador com WHERE não apagaria nada após a revogação (motivo do DELETE sem WHERE)', async () => {
@@ -478,6 +476,17 @@ describe('pedido de revisão do Índice de Bem-Estar (LEG-D08, LEG-D07)', () => 
     expect(audit.rows).toEqual([{ action: 'privacy_request_created', actor_user_id: a.userId }]);
     // Idempotente com pedido aberto.
     expect(await review(a.userId)).toBe(id);
+  });
+
+  it('chamadas simultâneas criam um só pedido (revisão B1)', async () => {
+    const a = await onboarded(['health_data']);
+    const ids = await Promise.all([review(a.userId), review(a.userId), review(a.userId)]);
+    expect(new Set(ids).size).toBe(1);
+    const { rows } = await admin.query(
+      `SELECT count(*)::int AS n FROM privacy_requests WHERE user_id = $1`,
+      [a.userId],
+    );
+    expect(rows[0].n).toBe(1);
   });
 
   it('recusa sem contexto e com escopo inválido', async () => {

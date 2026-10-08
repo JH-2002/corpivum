@@ -6,7 +6,7 @@
 // REGRA (PR1a-R3-B8, LEG-R03): tabelas de PROVA (consent_records, policy_acceptances, privacy_requests,
 // audit_logs) e access_logs guardam `user_id` SEM FK para users. O expurgo de contas não as apaga em
 // cascata nem é bloqueado por elas. Só tabelas de auth e de dados do próprio usuário usam FK com CASCADE
-// (testes em tests/db/privacy.test.ts e tests/db/health-coverage.test.ts).
+// (testes em tests/db/privacy.test.ts e tests/db/health.test.ts).
 // A URL de conexão fica em prisma.config.ts.
 
 generator client {
@@ -372,7 +372,7 @@ model Job {
 // Fase 2: dados de saúde (ADR-0021). Base: consentimento `health_data` (LEG-C02).
 // REGRAS: user_id com FK CASCADE; RLS SELECT/INSERT/UPDATE exigem dono E app.has_active_consent('health_data');
 // DELETE só por dono (eliminação após revogação). Texto livre cifrado (`*_enc`, ADR-0016, LEG-S02), nunca
-// pesquisável. Eliminador registrado em src/server-health-erasers.ts (teste: tests/db/health-coverage.test.ts).
+// pesquisável. Eliminador registrado em src/modules/health/erasers.ts (teste: tests/db/health.test.ts).
 // ---------------------------------------------------------------------------------------------------
 
 enum DataMode {

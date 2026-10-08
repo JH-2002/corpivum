@@ -253,3 +253,26 @@ test('após revogar os dados de bem-estar, nenhuma tela de saúde mostra dados',
     await expect(page.locator('.recharts-wrapper')).toHaveCount(0);
   }
 });
+
+test('revogou em outra aba e marcou um hábito: sem página de erro, com o aviso de autorização', async ({
+  page,
+}) => {
+  await newPerson(page, 'revoga-aba');
+  await page.goto('/habitos');
+  await page.getByLabel('Nome do hábito').fill('Alongar');
+  await page.getByRole('button', { name: 'Criar hábito' }).click();
+  await expect(page.getByRole('heading', { name: 'Alongar' })).toBeVisible();
+  await page.goto('/inicio');
+  const check = page.getByRole('button', { name: 'Marcar "Alongar" como feito hoje' });
+  await expect(check).toBeVisible();
+
+  const other = await page.context().newPage();
+  await other.goto('/privacidade');
+  await other.getByRole('button', { name: 'Revogar: Dados de bem-estar' }).click();
+  await other.getByRole('dialog').getByRole('button', { name: 'Revogar agora' }).click();
+  await expect(other.getByText(/Revogado: eliminação em/)).toBeVisible();
+
+  await check.click();
+  await expect(page.getByRole('heading', { name: 'Autorização revogada' })).toBeVisible();
+  await expect(page.getByText('Não foi possível carregar')).toHaveCount(0);
+});

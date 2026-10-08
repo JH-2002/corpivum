@@ -5,7 +5,6 @@ import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { registerAuthJobs, scheduleAuthPurge } from '@/modules/auth/jobs';
 import { getAuthService } from '@/modules/auth/server';
-import { registerAllHealthDataErasers } from '@/modules/health/erasers';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
 import { getHealthDataEliminator, getPrivacyService } from '@/modules/privacy/server';
 
@@ -20,8 +19,6 @@ const MEMORY_DRAIN_MS = 60 * 1000;
 export async function startJobs(): Promise<void> {
   const { jobs } = getAdapters();
   registerAuthJobs(jobs, getAuthService());
-  // Antes dos jobs de privacidade: a eliminação agendada precisa conhecer todas as tabelas de saúde.
-  registerAllHealthDataErasers();
   registerPrivacyJobs(jobs, {
     service: getPrivacyService(),
     eliminator: getHealthDataEliminator(),

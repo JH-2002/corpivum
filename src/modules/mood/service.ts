@@ -48,9 +48,10 @@ export function createMoodService(deps: HealthDeps) {
     async create(userId: string, input: MoodInput): Promise<MoodWriteResult> {
       const loggedAt = instant(input);
       if (!loggedAt) return { ok: false, error: 'future' };
-      const noteEnc = input.note ? await deps.cipher.seal(userId, NOTE, input.note) : null;
-      const row = await deps.run(userId, (tx) =>
-        tx.moodEntry.create({
+      // Cifra só dentro da transação, depois da checagem de consentimento (regra 1).
+      const row = await deps.run(userId, async (tx) => {
+        const noteEnc = input.note ? await deps.cipher.seal(userId, NOTE, input.note) : null;
+        return tx.moodEntry.create({
           data: {
             userId,
             loggedAt,
@@ -61,17 +62,18 @@ export function createMoodService(deps: HealthDeps) {
             noteEnc,
           },
           select: { id: true },
-        }),
-      );
+        });
+      });
       return { ok: true, id: row.id };
     },
 
     async update(userId: string, id: string, input: MoodInput): Promise<MoodWriteResult | null> {
       const loggedAt = instant(input);
       if (!loggedAt) return { ok: false, error: 'future' };
-      const noteEnc = input.note ? await deps.cipher.seal(userId, NOTE, input.note) : null;
-      const { count } = await deps.run(userId, (tx) =>
-        tx.moodEntry.updateMany({
+      // Cifra só dentro da transação, depois da checagem de consentimento (regra 1).
+      const { count } = await deps.run(userId, async (tx) => {
+        const noteEnc = input.note ? await deps.cipher.seal(userId, NOTE, input.note) : null;
+        return tx.moodEntry.updateMany({
           where: { id },
           data: {
             loggedAt,
@@ -81,8 +83,8 @@ export function createMoodService(deps: HealthDeps) {
             emotions: input.emotions,
             noteEnc,
           },
-        }),
-      );
+        });
+      });
       return count === 1 ? { ok: true, id } : null;
     },
 

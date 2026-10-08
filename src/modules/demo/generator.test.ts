@@ -76,3 +76,18 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     expect(entries.every((e) => e.content === null)).toBe(true);
   });
 });
+
+describe('textos fictícios da demo (LEG-M03)', () => {
+  it('não contêm alegações clínicas proibidas (ficam fora do i18n)', async () => {
+    const { findForbiddenTerms } = await import('../../../tests/content/forbidden-terms');
+    const data = generateDemoData(TODAY, TZ);
+    const texts = [
+      ...data.sleep.map((r) => r.note),
+      ...data.mood.map((r) => r.note),
+      ...data.journal.map((r) => r.content),
+      ...data.habits.map((h) => h.name),
+    ].filter((t): t is string => Boolean(t));
+    expect(texts.length).toBeGreaterThan(0);
+    for (const text of new Set(texts)) expect(findForbiddenTerms(text)).toEqual([]);
+  });
+});

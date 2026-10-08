@@ -4,6 +4,7 @@ import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import type { Db } from '@/lib/db/client';
 import { withUserOn } from '@/lib/db/rls';
 import { createLogger } from '@/lib/logger';
+import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
 import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
 import { createPrivacyService } from '@/modules/privacy/service';
@@ -349,7 +350,7 @@ describe('jobs de privacidade', () => {
     const queue = new MemoryJobQueue(silent);
     registerPrivacyJobs(queue, {
       service: privacy(),
-      eliminator: createHealthDataEliminator({ db, logger: silent }),
+      eliminator: createHealthDataEliminator({ db, logger: silent, erasers: HEALTH_DATA_ERASERS }),
     });
     await schedulePrivacyJobs(queue);
     await schedulePrivacyJobs(queue); // segunda instância: não duplica

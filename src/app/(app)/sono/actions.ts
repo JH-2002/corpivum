@@ -3,7 +3,7 @@
 import { getTranslations } from 'next-intl/server';
 import type { FormState } from '@/components/forms/form-state';
 import { requireAppSession } from '@/modules/consent/server';
-import { fieldErrorsOf, healthDelete, healthWrite } from '@/modules/health/form-result';
+import { fieldErrorsOf, healthMutate, healthWrite } from '@/modules/health/form-result';
 import { getHealthServices } from '@/modules/health/server';
 import { idSchema } from '@/modules/health/zod';
 import { sleepInputSchema } from '@/modules/sleep';
@@ -40,5 +40,5 @@ export async function deleteSleepAction(form: FormData): Promise<void> {
   const session = await requireAppSession();
   const id = idSchema.safeParse(form.get('id'));
   if (!id.success) return;
-  await healthDelete(session, () => getHealthServices().sleep.remove(session.userId, id.data));
+  await healthMutate(session, () => getHealthServices().sleep.remove(session.userId, id.data));
 }

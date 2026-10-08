@@ -186,3 +186,12 @@ describe('período global no cookie (ADR-0021)', () => {
     expect(validateCustomRange('2025-10-06', '2026-10-07', today)).toBe('too_long');
   });
 });
+
+describe('data e hora local (formulários)', () => {
+  it('recusa datas e horas impossíveis', async () => {
+    const { localDateTimeSchema } = await import('./zod');
+    expect(localDateTimeSchema.safeParse('2026-10-01T23:59').success).toBe(true);
+    expect(localDateTimeSchema.safeParse('2026-02-31T10:00').success).toBe(false);
+    expect(localDateTimeSchema.safeParse('2026-10-01T25:70').success).toBe(false);
+  });
+});

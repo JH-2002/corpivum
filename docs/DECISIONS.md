@@ -445,3 +445,20 @@ banco nas tabelas de saúde (PR1b-N1) e eliminação agendada cobrindo todas ela
 **Consequências.** Tabela de saúde nova exige: política no modelo, FK CASCADE, eliminador em
 `erasers.ts` e classificação no teste de catálogo (senão a CI falha). Atendimento do pedido de revisão do
 Índice é manual até a Fase 6 (`LEGAL-REVIEW`, OPEN_ISSUES).
+
+## ADR-0022 — Revisão de privacidade da Fase 2
+**Contexto.** O `privacy-reviewer` não apontou nada crítico nem alto na Fase 2. Apontou 2 médios, 5 baixos e
+6 notas.
+
+**Decisão (corrigido, com teste).**
+- **M1:** o eliminador recebe a lista de eliminadores por injeção (`HEALTH_DATA_ERASERS`, em
+  `@/modules/privacy/server`), sem registro global; lista vazia é erro antes de limpar o agendamento.
+- **M2:** toda alteração sem formulário passa por `healthMutate`: sem consentimento não lança (nada de
+  página de erro nem de log ligando a requisição à revogação) e a tela recarregada mostra o aviso.
+- **B1:** `app.privacy_request_score_review` serializa por pessoa (`pg_advisory_xact_lock`), migração
+  `fase_2_revisao`. **B2/B3:** textos de cifragem, IA, demo e Índice ajustados ao que o sistema faz
+  (`LEGAL-REVIEW`, OI-09). **B4:** seed confere as duas URLs. **B5:** referências corrigidas.
+- **N2:** cifra dentro da transação, depois do guard. **N4:** textos fictícios na varredura de termos
+  proibidos. **N5:** data e hora reais nos formulários.
+
+**Aceito por ora:** N1, N3 e N6, em docs/legal/OPEN_ISSUES.md (PR2-N1, N3, N6).

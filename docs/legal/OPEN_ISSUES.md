@@ -111,6 +111,27 @@ abaixo (M-1), que tinha um caminho sem tratamento.
 | PR1b-R2-B3 | Baixa | O pedido de redefinição de senha agora lê `password_hash` (`auth_find_login`) para validar o cookie de aparelho, afrouxando o retorno mínimo da ADR-0015. **Correção:** assinar o cookie sobre um derivado (ex.: `sha256(password_hash)` ou `password_changed_at`) devolvido por uma função própria. | ADR-0015, OI-15 | Aberto |
 | PR1b-R2-B4 | Baixa | A migração `20261007002007_fase_1b_consentimento` foi editada antes do merge (checksum muda). Um banco que aplicou a versão anterior precisa de reset. Nenhum ambiente compartilhado a aplicou (só o banco local de dev). | ADR-0020 | Aceito: banco local recriado; CI aplica do zero |
 
+### Revisão da Fase 2 (ADR-0022)
+
+Nenhum achado crítico ou alto. Os médios, os baixos e três notas foram corrigidos na própria fase (com
+teste); as demais notas ficam registradas aqui.
+
+| ID | Sev. | Achado | Referência | Status |
+|---|---|---|---|---|
+| PR2-M1 | Média | O eliminador usava um registro global de eliminadores; um processo (ex.: worker dedicado da Fase 7) que esquecesse o registro "eliminaria" zero tabelas, zeraria o agendamento e gravaria `health_data_eliminated` no AuditLog. | LEG-D04, LEG-S06 | Resolvido: eliminadores injetados (`HEALTH_DATA_ERASERS`), lista vazia é erro (teste) |
+| PR2-M2 | Média | Arquivar, excluir e marcar hábito não tratavam a falta de consentimento: página de erro e log da plataforma ligando a requisição à revogação. | LEG-C04, LEG-R04 | Resolvido: `healthMutate` em todas as alterações sem formulário; e2e "revogou em outra aba" |
+| PR2-B1 | Baixa | Pedido de revisão do Índice com corrida (dois pedidos abertos em chamadas simultâneas). | LEG-D07, LEG-D08 | Resolvido: migração `fase_2_revisao` com trava por pessoa (teste de concorrência) |
+| PR2-B2 | Baixa | Textos "só você vê" e "a IA não lê o seu diário" prometiam mais do que o sistema garante; o aviso do demo omitia registros técnicos. | Art. 6º VI, LEG-I02 | Resolvido: textos ajustados (`LEGAL-REVIEW`, OI-09) |
+| PR2-B3 | Baixa | O aviso do Índice dizia "regularidade" e omitia o nível de humor/energia. | LEG-D08 | Resolvido: aviso e doc descrevem todos os componentes |
+| PR2-B4 | Baixa | O seed conferia só `MIGRATION_DATABASE_URL`. | Regra 6 | Resolvido: confere as duas URLs e exige o mesmo banco local |
+| PR2-B5 | Baixa | Comentários citavam arquivos inexistentes. | — | Resolvido no schema e no código (a migração já aplicada mantém o comentário antigo) |
+| PR2-N1 | Nota | Criar, editar e excluir os próprios registros não gera AuditLog (só a eliminação em massa). Leitura adotada: LEG-S06 cobre acesso, exportação e exclusão feitos pelo sistema ou por terceiros, não a edição pela própria pessoa. | LEG-S06 | Aberto (`LEGAL-REVIEW`) |
+| PR2-N2 | Nota | Texto cifrado antes da checagem de consentimento. | Regra 1 | Resolvido: cifra dentro da transação, depois do guard |
+| PR2-N3 | Nota | Decifrar dentro da transação interativa (timeout padrão de 5 s) pode estourar com KMS remoto e períodos longos. | LEG-S02 | Aberto (Fase 7, com o KMS real: decifrar fora da transação ou timeout explícito) |
+| PR2-N4 | Nota | Textos fictícios da demo fora da varredura de termos proibidos. | LEG-M03 | Resolvido: teste varre os textos gerados |
+| PR2-N5 | Nota | `datetime-local` só validado por formato (31/02 virava outra data). | — | Resolvido: validação de data e hora reais (teste) |
+| PR2-N6 | Nota | A Central de Privacidade ainda não lista as categorias novas (sono, humor, hábitos, diário, corpo). | LEG-D01 | Aberto (Fase 6, com a exportação) |
+
 ## Resolvidas
 
 | ID | Decisão | Data | Quem decidiu |

@@ -25,9 +25,9 @@ export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
   'disclaimer.draftLegal': 'RASCUNHO — revisão jurídica obrigatória.',
   // Fase 2 (ADR-0021): aviso do Índice de Bem-Estar (§14, LEG-D08) e do demo (LEG-X02). LEGAL-REVIEW, OI-09.
   'disclaimer.wellbeingScore':
-    'O Índice de Bem-Estar resume a regularidade dos seus registros e hábitos. Não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
+    'O Índice de Bem-Estar resume seus registros de sono, humor e energia, hábitos e a constância dos registros. Não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
   'disclaimer.demoData':
-    'Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado.',
+    'Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.',
 };
 
 export const APPROVED_DISCLAIMER_KEYS = Object.keys(APPROVED_DISCLAIMERS);

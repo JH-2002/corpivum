@@ -6,6 +6,7 @@ import type { FormState } from '@/components/forms/form-state';
 import { ConsentRequiredError } from '@/lib/errors';
 import { habitCheckSchema, habitInputSchema, streaksSchema } from '@/modules/habits';
 import { requireAppSession } from '@/modules/consent/server';
+import { healthMutate } from '@/modules/health/form-result';
 import { getHealthServices, setStreaksEnabled } from '@/modules/health/server';
 import { idSchema } from '@/modules/health/zod';
 
@@ -52,21 +53,21 @@ const idForm = (form: FormData) => idSchema.safeParse(form.get('id'));
 export async function archiveHabitAction(form: FormData): Promise<void> {
   const session = await requireAppSession();
   const id = idForm(form);
-  if (session.dataMode !== 'own' || !id.success) return;
-  await getHealthServices().habits.setArchived(
-    session.userId,
-    id.data,
-    form.get('archived') === 'true',
+  if (!id.success) return;
+  await healthMutate(session, () =>
+    getHealthServices().habits.setArchived(
+      session.userId,
+      id.data,
+      form.get('archived') === 'true',
+    ),
   );
-  revalidatePath('/', 'layout');
 }
 
 export async function deleteHabitAction(form: FormData): Promise<void> {
   const session = await requireAppSession();
   const id = idForm(form);
-  if (session.dataMode !== 'own' || !id.success) return;
-  await getHealthServices().habits.remove(session.userId, id.data);
-  revalidatePath('/', 'layout');
+  if (!id.success) return;
+  await healthMutate(session, () => getHealthServices().habits.remove(session.userId, id.data));
 }
 
 /** Check rápido (dashboard e página de hábitos). */
@@ -77,14 +78,11 @@ export async function setHabitCheckAction(form: FormData): Promise<void> {
     day: form.get('day'),
     done: form.get('done'),
   });
-  if (session.dataMode !== 'own' || !parsed.success) return;
-  await getHealthServices().habits.setCheck(
-    session.userId,
-    parsed.data.habitId,
-    parsed.data.day,
-    parsed.data.done,
+  if (!parsed.success) return;
+  const { habitId, day, done } = parsed.data;
+  await healthMutate(session, () =>
+    getHealthServices().habits.setCheck(session.userId, habitId, day, done),
   );
-  revalidatePath('/', 'layout');
 }
 
 /** Sequências (streaks) desativáveis, sem mensagem punitiva (LEG-F05). */

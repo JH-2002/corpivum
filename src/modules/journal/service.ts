@@ -60,9 +60,10 @@ export function createJournalService(deps: HealthDeps) {
 
     async create(userId: string, input: JournalInput): Promise<JournalWriteResult> {
       if (isFuture(input.day)) return { ok: false, error: 'future' };
-      const contentEnc = await deps.cipher.seal(userId, CONTENT, input.content);
-      const row = await deps.run(userId, (tx) =>
-        tx.journalEntry.create({
+      // Cifra só dentro da transação, depois da checagem de consentimento (regra 1).
+      const row = await deps.run(userId, async (tx) => {
+        const contentEnc = await deps.cipher.seal(userId, CONTENT, input.content);
+        return tx.journalEntry.create({
           data: {
             userId,
             entryDate: isoToDbDate(input.day),
@@ -71,8 +72,8 @@ export function createJournalService(deps: HealthDeps) {
             tags: input.tags,
           },
           select: { id: true },
-        }),
-      );
+        });
+      });
       return { ok: true, id: row.id };
     },
 
@@ -82,9 +83,10 @@ export function createJournalService(deps: HealthDeps) {
       input: JournalInput,
     ): Promise<JournalWriteResult | null> {
       if (isFuture(input.day)) return { ok: false, error: 'future' };
-      const contentEnc = await deps.cipher.seal(userId, CONTENT, input.content);
-      const { count } = await deps.run(userId, (tx) =>
-        tx.journalEntry.updateMany({
+      // Cifra só dentro da transação, depois da checagem de consentimento (regra 1).
+      const { count } = await deps.run(userId, async (tx) => {
+        const contentEnc = await deps.cipher.seal(userId, CONTENT, input.content);
+        return tx.journalEntry.updateMany({
           where: { id },
           data: {
             entryDate: isoToDbDate(input.day),
@@ -92,8 +94,8 @@ export function createJournalService(deps: HealthDeps) {
             mood: input.mood ?? null,
             tags: input.tags,
           },
-        }),
-      );
+        });
+      });
       return count === 1 ? { ok: true, id } : null;
     },
 
