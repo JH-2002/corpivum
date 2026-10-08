@@ -209,7 +209,8 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
       }
     }
 
-    // Corpo: uma medição por semana; altura e cintura na primeira e a cada 4 semanas.
+    // Corpo: uma medição por semana; altura e circunferências na primeira e a cada 4 semanas. Peito,
+    // braço e coxa sem `rand()`, para não mudar a sequência dos demais dados (corpo 3D, ADR-0026).
     weight += (rand() - 0.55) * 0.25;
     if (wd === 1 || i === 0) {
       const monthly = i === 0 || i % 28 < 7;
@@ -221,9 +222,9 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
         heightCm: i === 0 ? 170 : null,
         waistCm: monthly ? round(86 - progress * 2 + (rand() - 0.5), 1) : null,
         hipCm: monthly ? round(98 + (rand() - 0.5), 1) : null,
-        armCm: null,
-        thighCm: null,
-        chestCm: null,
+        armCm: monthly ? round(30 - progress * 0.4, 1) : null,
+        thighCm: monthly ? round(56 - progress * 0.8, 1) : null,
+        chestCm: monthly ? round(95 - progress * 1.2, 1) : null,
         bodyFatPct: null,
       });
     }

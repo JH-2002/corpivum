@@ -28,6 +28,9 @@ export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
     'O Índice de Bem-Estar resume seus registros de sono, humor e energia, hábitos e a constância dos registros. Não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
   'disclaimer.demoData':
     'Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.',
+  // Fase 3 (ADR-0026): aviso do corpo 3D (§15, LEG-M04). LEGAL-REVIEW, OI-09.
+  'disclaimer.bodyModel':
+    'Representação aproximada a partir das medidas que você informou. Não é avaliação corporal nem de saúde.',
 };
 
 export const APPROVED_DISCLAIMER_KEYS = Object.keys(APPROVED_DISCLAIMERS);
