@@ -10,16 +10,34 @@ cp .env.example .env
 # edite .env: troque "troque-localmente" por senhas locais e gere TRÊS valores diferentes
 # (KMS_LOCAL_MASTER_KEY, SESSION_SECRET, RATE_LIMIT_SECRET), cada um com:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-pnpm db:up              # Postgres 17 em 127.0.0.1 (cria app_migrator e app_user)
+pnpm db:up              # Postgres 17 em 127.0.0.1 (cria app_migrator, app_user, healthmind e healthmind_test)
+pnpm mail:up            # Mailpit: caixa de e-mail local em http://localhost:8025
 pnpm db:migrate         # aplica as migrações como app_migrator (tabelas, RLS, funções)
 pnpm db:verify-roles    # confirma papéis, privilégios, RLS e funções SECURITY DEFINER (LEG-S03)
 pnpm dev                # http://localhost:3000 (crie a conta em /cadastro)
 ```
 As senhas do `.env` só valem na primeira criação do volume. Para recriar o banco: `docker compose down -v`.
 
-O e-mail de verificação não é enviado em dev: o `ConsoleMailProvider` só registra o template e o destinatário
-mascarado. Para confirmar uma conta local, use `UPDATE users SET email_verified_at = now() WHERE email = '...'`
-como `app_migrator` (dados sintéticos).
+## E-mails em desenvolvimento (Mailpit)
+Com `APP_ENV=development`, os e-mails do app (verificação de cadastro, redefinição de senha, alertas de
+segurança) são entregues por SMTP ao **Mailpit** local, uma caixa de e-mail falsa (ADR-0023):
+
+1. `pnpm mail:up` (ou `docker compose up -d mailpit`).
+2. Cadastre-se em http://localhost:3000/cadastro com um e-mail inventado (ex.: `ana@exemplo.test`). Nada sai
+   da máquina: qualquer endereço serve e nenhum e-mail real é enviado.
+3. Abra http://localhost:8025, clique na mensagem e use o link `url:` para confirmar a conta.
+
+Detalhes:
+- SMTP em `127.0.0.1:1025` e interface em `127.0.0.1:8025`, só na sua máquina. Para outra porta SMTP, mude
+  `DEV_SMTP_PORT` no `.env` (o docker-compose usa o mesmo valor). `DEV_SMTP_HOST` só aceita host local.
+- As mensagens ficam só na memória do contêiner (até 200) e somem ao pará-lo: `docker compose stop mailpit`.
+- O texto é simplificado (modelo + parâmetros, como o link). O texto final vem do provedor real (Fase 7).
+- Os links trazem tokens de uso único: ficam só no Mailpit. O log do servidor mostra apenas `mail.sent`,
+  o modelo e o destinatário mascarado.
+- Mailpit desligado não quebra o cadastro: o log mostra `mail.dev_smtp_unavailable` e a mensagem se perde.
+  Nesse caso, confirme a conta com `UPDATE users SET email_verified_at = now() WHERE email = '...'` como
+  `app_migrator` (dados sintéticos), ou suba o Mailpit e peça "reenviar".
+- Testes (`APP_ENV=test`) continuam sem envio: as mensagens ficam em memória para os testes lerem.
 
 ## Antes de commitar
 ```sh
@@ -27,8 +45,25 @@ pnpm lint && pnpm typecheck && pnpm test
 pnpm test:db            # integração com Postgres: RLS, sessões, MFA, limites, age gate (exige db:up)
 pnpm test:e2e           # Playwright + axe (instale o navegador uma vez: pnpm exec playwright install chromium)
 ```
-**Atenção:** `test:db` e `test:e2e` apagam dados das tabelas de auth do banco do `.env` (só há dados
-sintéticos em dev). O e2e usa contas no domínio reservado `e2e.exemplo.test`.
+`test:db` e `test:e2e` usam **só o banco de testes** `healthmind_test` (`TEST_DATABASE_URL` e
+`TEST_MIGRATION_DATABASE_URL` no `.env`), aplicam as migrações nele e apagam as tabelas dele a cada rodada.
+O banco de desenvolvimento (`healthmind`) não é tocado: os testes recusam rodar se a URL de teste não
+terminar em `_test` ou apontar para o banco de desenvolvimento (ADR-0024). O e2e usa contas no domínio
+reservado `e2e.exemplo.test`.
+
+### Banco de testes num volume criado antes da ADR-0024
+O banco `healthmind_test` é criado sozinho quando o volume do Postgres é novo. Num volume que já existe:
+```sh
+pnpm db:test:init       # cria healthmind_test com os mesmos papéis e privilégios (idempotente)
+```
+e acrescente ao `.env` (mesmo usuário e senha das URLs de desenvolvimento, só troca o banco):
+```sh
+APP_TEST_DB_NAME=healthmind_test
+TEST_DATABASE_URL=postgresql://app_user:<senha>@localhost:<porta>/healthmind_test
+TEST_MIGRATION_DATABASE_URL=postgresql://app_migrator:<senha>@localhost:<porta>/healthmind_test
+```
+
+O `pnpm db:seed` grava no banco de **desenvolvimento** (é para usar o app logado com dados sintéticos).
 
 ## Regras
 - **Somente dados sintéticos.** Nunca use dados reais, nem os seus (CLAUDE.md regra 6).

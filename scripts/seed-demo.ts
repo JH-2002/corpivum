@@ -5,7 +5,7 @@
 import 'dotenv/config';
 import { randomBytes } from 'node:crypto';
 import { createVerifiedUser, seedSyntheticHealthData, withAdmin } from '../e2e/fixtures';
-import { assertDisposableDatabase } from '../tests/db/safety';
+import { assertLocalDatabase } from '../tests/db/safety';
 
 const EMAIL = 'demo@exemplo.invalid';
 
@@ -14,8 +14,8 @@ async function main(): Promise<void> {
     throw new Error('O seed só roda com APP_ENV=development.');
   }
   // As duas conexões (migrator e runtime) precisam ser locais e do mesmo banco (revisão B4).
-  assertDisposableDatabase(process.env.MIGRATION_DATABASE_URL);
-  assertDisposableDatabase(process.env.DATABASE_URL);
+  assertLocalDatabase(process.env.MIGRATION_DATABASE_URL);
+  assertLocalDatabase(process.env.DATABASE_URL);
   const target = (url: string | undefined) => {
     const u = new URL(url ?? '');
     return `${u.hostname}:${u.port}${u.pathname}`;

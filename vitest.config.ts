@@ -25,8 +25,8 @@ export default defineConfig({
         },
       },
       {
-        // Integração com Postgres real (RLS, sessões, limites). Exige `pnpm db:up` e migrações aplicadas.
-        // ATENÇÃO: limpa as tabelas de auth do banco apontado pelo .env (só dados sintéticos em dev).
+        // Integração com Postgres real (RLS, sessões, limites). Usa SÓ o banco de testes
+        // (TEST_DATABASE_URL, nome terminado em _test; ADR-0024): limpa as tabelas a cada arquivo.
         extends: true,
         test: {
           name: 'db',
@@ -34,6 +34,7 @@ export default defineConfig({
           environment: 'node',
           include: ['tests/db/**/*.test.ts'],
           globalSetup: ['./tests/db/global-setup.ts'],
+          setupFiles: ['./tests/db/use-test-db.ts'],
           fileParallelism: false,
           testTimeout: 20_000,
         },
