@@ -1319,10 +1319,10 @@
         "thigh": "Coxa"
       },
       "pick": "Escolha uma região na lista ou no modelo para ver a medida.",
-      "measure": "Circunferência: {value} cm",
+      "measure": "Circunferência: {value}",
       "recordedOn": "Registrada em {date}.",
       "beforePeriod": "Registrada antes do período escolhido.",
-      "change": "Variação no período: {delta} cm.",
+      "change": "Variação no período: {delta}.",
       "notInformed": "Sem medida informada até esta data. A região aparece na forma neutra padrão.",
       "height": "Altura",
       "weight": "Peso",

@@ -22,9 +22,12 @@ export { bodyShape, TORSO_DEPTH_RATIO, type BodyShape } from './shape';
 export {
   bodySnapshotAt,
   compareSnapshots,
+  firstMeasure,
   measurementDays,
+  toTwinRows,
   type BodySnapshot,
   type Direction,
   type MeasureDiff,
   type MeasureValue,
+  type TwinRow,
 } from './snapshot';

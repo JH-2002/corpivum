@@ -14,8 +14,22 @@ export interface BodySnapshot {
   values: Partial<Record<BodyField, MeasureValue>>;
 }
 
+/**
+ * Linha mínima que a interface do twin recebe: o dia e as medidas que o modelo usa, sem id, horário nem
+ * % de gordura (minimização do que vai ao navegador).
+ */
+export type TwinRow = { day: string } & Partial<Record<BodyField, number | null>>;
+
+/** Reduz as medições ao que o twin usa (`COMPARE_FIELDS`). */
+export function toTwinRows(records: readonly BodyRecord[]): TwinRow[] {
+  return records.map((r) => ({
+    day: r.day,
+    ...Object.fromEntries(COMPARE_FIELDS.map((f) => [f, r[f]])),
+  }));
+}
+
 /** Dias com medição no período, em ordem: as posições do controle de datas (§15). */
-export function measurementDays(records: readonly BodyRecord[]): string[] {
+export function measurementDays(records: readonly TwinRow[]): string[] {
   return [...new Set(records.map((r) => r.day))].sort();
 }
 
@@ -25,7 +39,7 @@ export function measurementDays(records: readonly BodyRecord[]): string[] {
  * interface mostra). Altura sem registro no período usa a última informada em qualquer data.
  */
 export function bodySnapshotAt(
-  records: readonly BodyRecord[],
+  records: readonly TwinRow[],
   day: string,
   fallbackHeightCm: number | null = null,
 ): BodySnapshot {
@@ -36,7 +50,7 @@ export function bodySnapshotAt(
   for (const r of sorted) {
     for (const field of COMPARE_FIELDS) {
       const v = r[field];
-      if (v !== null) values[field] = { value: v, day: r.day };
+      if (v !== null && v !== undefined) values[field] = { value: v, day: r.day };
     }
   }
   if (!values.heightCm && fallbackHeightCm !== null) {
@@ -69,4 +83,13 @@ export function compareSnapshots(before: BodySnapshot, after: BodySnapshot): Mea
       delta === null ? null : delta > 0 ? 'up' : delta < 0 ? 'down' : 'same';
     return { field, before: a, after: b, delta, direction };
   });
+}
+
+/** Primeiro valor informado do campo no período (base da "variação no período" do painel). */
+export function firstMeasure(records: readonly TwinRow[], field: BodyField): MeasureValue | null {
+  const row = [...records]
+    .sort((a, b) => a.day.localeCompare(b.day))
+    .find((r) => r[field] !== null && r[field] !== undefined);
+  const value = row?.[field];
+  return row && value !== null && value !== undefined ? { value, day: row.day } : null;
 }

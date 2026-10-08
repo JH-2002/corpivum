@@ -88,6 +88,7 @@ export const DEMO_ITEMS: readonly NavItem[] = [
   { key: 'habits', href: '/demo/habitos', icon: ListChecks },
   { key: 'journal', href: '/demo/diario', icon: NotebookPen },
   { key: 'body', href: '/demo/corpo', icon: PersonStanding },
+  { key: 'twin', href: '/demo/twin', icon: Orbit },
 ];
 
 export function isActivePath(pathname: string, href: string, exact = false): boolean {
