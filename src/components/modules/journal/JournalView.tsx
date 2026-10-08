@@ -6,11 +6,14 @@ import { buttonClasses } from '@/components/ui/Button';
 import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
 import { EntryActions } from '@/components/health/EntryActions';
 import type { HealthMode } from '@/components/health/HealthPage';
+import { PeriodInsights } from '@/components/insights/PeriodInsights';
 import { SupportNotice } from '@/components/health/SupportNotice';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { addDays, weekday, WEEK_ORDER } from '@/lib/dates';
 import { cn } from '@/lib/cn';
+import type { DateRange } from '@/lib/period';
+import { journalInsights, type JournalMeta } from '@/modules/insights';
 import { JOURNAL_TAGS, type JournalFilter, type JournalRecord } from '@/modules/journal';
 import { JournalForm } from './JournalForm';
 
@@ -98,6 +101,8 @@ function MonthCalendar({
  */
 export function JournalView({
   entries,
+  summary,
+  range,
   today,
   mode,
   basePath,
@@ -105,6 +110,12 @@ export function JournalView({
   filter,
 }: {
   entries: JournalRecord[];
+  /**
+   * Metadados (dia e etiquetas) do período e do anterior, sem filtro e sem texto, para o resumo
+   * (ADR-0025). O resumo descreve o período todo, não só o que o filtro mostra.
+   */
+  summary: { current: JournalMeta[]; previous: JournalMeta[] };
+  range: DateRange;
   today: string;
   mode: HealthMode;
   basePath: '/diario' | '/demo/diario';
@@ -125,9 +136,17 @@ export function JournalView({
   const longDay = (iso: string) =>
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'full', timeZone: 'UTC' });
   const seenDays = new Set<string>();
+  const insights = journalInsights({
+    entries: summary.current,
+    previous: summary.previous,
+    range,
+    today,
+  });
 
   return (
     <div className="flex flex-col gap-6">
+      <PeriodInsights insights={insights} demo={!own} />
+
       <section
         id="novo"
         aria-labelledby="journal-new"

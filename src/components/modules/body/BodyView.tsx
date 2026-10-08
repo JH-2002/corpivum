@@ -5,10 +5,13 @@ import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
+import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { StatTile } from '@/components/health/StatTile';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { toLocalDateTime } from '@/lib/dates';
+import type { DateRange } from '@/lib/period';
+import { bodyInsights } from '@/modules/insights';
 import { BODY_FIELDS, bmi, change, latest, type BodyField, type BodyRecord } from '@/modules/body';
 import { BodyForm } from './BodyForm';
 
@@ -28,10 +31,14 @@ const GIRTH_STYLE: Record<string, { color: string; dash?: string }> = {
 export function BodyView({
   records,
   latestHeightCm,
+  range,
+  today,
   mode,
 }: {
   records: BodyRecord[];
   latestHeightCm: number | null;
+  range: DateRange;
+  today: string;
   mode: HealthMode;
 }) {
   const t = useTranslations('body');
@@ -48,8 +55,12 @@ export function BodyView({
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'long', timeZone: 'UTC' });
   const empty = Object.fromEntries(BODY_FIELDS.map((f) => [f, null])) as Record<BodyField, null>;
 
+  const insights = bodyInsights({ records, range, today });
+
   return (
     <div className="flex flex-col gap-6">
+      <PeriodInsights insights={insights} demo={!own} />
+
       <section
         id="novo"
         aria-labelledby="body-new"
@@ -102,6 +113,8 @@ export function BodyView({
           <TimeChart
             title={t('weightChart')}
             badge={level('INFORMADO')}
+            guide="weight"
+            describedBy={summaryTextId('body')}
             data={records.map((r) => ({ day: r.day, weightKg: r.weightKg }))}
             series={[
               {
@@ -117,6 +130,8 @@ export function BodyView({
             <TimeChart
               title={t('girthChart')}
               badge={level('INFORMADO')}
+              guide="girth"
+              describedBy={summaryTextId('body')}
               data={records.map((r) => ({
                 day: r.day,
                 ...Object.fromEntries(usedGirths.map((f) => [f, r[f]])),

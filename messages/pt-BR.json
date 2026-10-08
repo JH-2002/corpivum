@@ -637,10 +637,47 @@
     "origin": "Origem: {badge}",
     "showTable": "Ver os dados em tabela",
     "date": "Data",
-    "empty": "—"
+    "empty": "—",
+    "guide": {
+      "title": "Como ler este gráfico",
+      "xAxis": "O eixo horizontal mostra os dias do período escolhido.",
+      "seriesTitle": "O que cada série representa",
+      "series": "{label}: {kind, select, bar {barras} other {linha {pattern, select, solid {contínua} dotted {pontilhada} other {tracejada}}}}{axis, select, left {, no eixo da esquerda} right {, no eixo da direita} other {}}{unit, select, none {} other {, em {unit}}}.",
+      "colorNote": "Além da cor, cada série tem um tipo de traço e um nome na legenda. Toque no nome da série para mostrá-la ou ocultá-la. Dias sem registro ficam sem barra; as linhas ligam os dias vizinhos que têm registro.",
+      "badge": "Selo “{badge}”: {hint}",
+      "tableNote": "Os mesmos valores estão em “Ver os dados em tabela”, logo abaixo do gráfico.",
+      "whatToDoTitle": "O que fazer com isso",
+      "combined": {
+        "axes": "As barras de sono usam o eixo da esquerda, em horas. Humor e energia usam o eixo da direita, na escala de 1 a 5 que você usa ao registrar.",
+        "whatToDo": "Use para observar como sono, humor e energia aparecem juntos nos seus registros ao longo dos dias. Aparecer junto não quer dizer que um explique o outro: é só o que você registrou."
+      },
+      "sleepDuration": {
+        "axes": "O eixo vertical mostra as horas dormidas em cada dia, do horário de deitar ao de acordar que você informou.",
+        "whatToDo": "Compare as barras com a sua própria média do período para notar noites mais curtas ou mais longas. Se algo no seu sono preocupar você, converse com um profissional de saúde."
+      },
+      "sleepSchedule": {
+        "axes": "Cada barra vai do horário em que você deitou (em cima) ao horário em que acordou (embaixo). O eixo vertical mostra as horas do dia, passando pela meia-noite.",
+        "whatToDo": "Barras alinhadas indicam horários parecidos de uma noite para outra; barras desencontradas mostram horários que variaram. Use isso para entender a sua própria rotina."
+      },
+      "mood": {
+        "axes": "O eixo vertical é a escala de 1 a 5 que você usa ao registrar humor, energia e estresse. Cada ponto é a média do dia.",
+        "whatToDo": "Observe a direção das linhas ao longo do período e os dias que se destacam. Se o humor ficar baixo por vários dias ou algo preocupar você, procure alguém de confiança ou um profissional de saúde."
+      },
+      "habits": {
+        "axes": "O eixo vertical mostra quantidades de hábitos. As barras são os hábitos marcados em cada dia; a linha mostra quantos estavam previstos para aquele dia. Hábitos de algumas vezes por semana não têm dia fixo e ficam fora da linha.",
+        "whatToDo": "Dias em que a barra fica abaixo da linha tiveram menos marcações que o previsto. Se acontecer com frequência, você pode ajustar a frequência do hábito ao que cabe na sua rotina, sem cobrança."
+      },
+      "weight": {
+        "axes": "O eixo vertical mostra o peso informado, em kg. Cada ponto é uma medição.",
+        "whatToDo": "Olhe a direção ao longo de várias medições, não um ponto isolado: o peso varia de um dia para outro. O app não define meta nem classifica valores."
+      },
+      "girth": {
+        "axes": "O eixo vertical mostra as circunferências informadas, em cm. Cada linha é uma medida, com traço próprio.",
+        "whatToDo": "Compare cada medida com ela mesma ao longo do tempo. O app não define meta nem classifica valores."
+      }
+    }
   },
   "dashboard": {
-    "greeting": "Seu resumo do período",
     "cardsTitle": "Indicadores do período",
     "cardNoData": "Sem registros neste período.",
     "origin": "De onde vem este número",
@@ -653,16 +690,6 @@
     "scheduledToday": "Previsto para hoje",
     "notScheduledToday": "Não previsto para hoje",
     "streak": "{count, plural, one {# dia seguido} other {# dias seguidos}}",
-    "summary": {
-      "sleepUp": "Seu sono médio registrado ficou {minutes} maior que no período anterior.",
-      "sleepDown": "Seu sono médio registrado ficou {minutes} menor que no período anterior.",
-      "moodUp": "Seu humor médio registrado subiu {points} ponto(s) em relação ao período anterior.",
-      "moodDown": "Seu humor médio registrado caiu {points} ponto(s) em relação ao período anterior.",
-      "habitsUp": "Você cumpriu {percent} pontos percentuais a mais dos seus hábitos que no período anterior.",
-      "habitsDown": "Você cumpriu {percent} pontos percentuais a menos dos seus hábitos que no período anterior.",
-      "logging": "Você fez registros em {days} de {total} dias deste período.",
-      "none": "Ainda não há registros neste período."
-    },
     "score": {
       "title": "Índice de Bem-Estar",
       "outOf": "de 100",
@@ -771,6 +798,139 @@
       "done": "Pedido de revisão registrado. Você recebe a resposta até {date}. Acompanhe na Central de Privacidade.",
       "error": "Não foi possível registrar o pedido. Tente novamente.",
       "demo": "O pedido de revisão só existe para os seus próprios dados."
+    }
+  },
+  "insights": {
+    "title": "Resumo do período",
+    "highlightsTitle": "Destaques do período",
+    "ruleBased": "Resumo montado por regras a partir dos seus registros, sem IA. Compara você só com o seu próprio histórico.",
+    "partialNote": "Poucos registros: o resumo considera só os dias que têm registro.",
+    "days": {
+      "weekday": "{wd, select, 0 {no domingo} 1 {na segunda} 2 {na terça} 3 {na quarta} 4 {na quinta} 5 {na sexta} 6 {no sábado} other {}}",
+      "date": "em {date}"
+    },
+    "dashboard": {
+      "empty": "Ainda não há registros neste período.",
+      "coverage": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você fez registros em {logged} de {total} dias.",
+      "partial": "Com poucos dias registrados, o resumo ainda não compara períodos.",
+      "sleepUp": "Seu sono médio registrado ficou {diff} maior que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "sleepDown": "Seu sono médio registrado ficou {diff} menor que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "moodUp": "Seu humor médio registrado ficou {diff} ponto(s) acima {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}.",
+      "moodDown": "Seu humor médio registrado ficou {diff} ponto(s) abaixo {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}.",
+      "moodDropGentle": "Seu humor médio registrado ficou {diff} ponto(s) abaixo {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}. Períodos assim acontecem, e registrar já é uma forma de se acompanhar.",
+      "habitsUp": "Você marcou {diff} pontos percentuais a mais dos seus hábitos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "habitsDown": "Você marcou {diff} pontos percentuais a menos dos seus hábitos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "habits": "Das marcações previstas pelos seus hábitos, você fez {percent}%.",
+      "steady": "Em relação {days, plural, =7 {à semana anterior} other {aos # dias anteriores}}, não houve mudança grande nos seus registros de sono, humor e hábitos.",
+      "supportPointer": "Se quiser conversar com alguém, há contatos de apoio logo abaixo.",
+      "highlights": {
+        "largest": {
+          "sleep": "Maior mudança: sono médio",
+          "mood": "Maior mudança: humor médio (pontos)",
+          "habits": "Maior mudança: hábitos marcados (pontos percentuais)"
+        },
+        "changeUp": "a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}",
+        "changeDown": "a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}"
+      }
+    },
+    "sleep": {
+      "empty": "Ainda não há noites registradas neste período.",
+      "average": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você dormiu em média {avg} por noite, considerando {count, plural, one {# noite registrada} other {# noites registradas}}.",
+      "partial": "Com poucas noites registradas, o resumo mostra só a média. Com mais registros, ele passa a comparar períodos.",
+      "compareSame": "A média ficou parecida com a {days, plural, =7 {da semana anterior} other {dos # dias anteriores}} (diferença de {diff}).",
+      "compareMore": "São {diff} a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "compareLess": "São {diff} a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "extremes": "{shortestCount, plural, one {Sua noite mais curta foi {shortest}} other {Suas noites mais curtas foram {shortest}}}; a mais longa, {longest}.",
+      "spread": "Seus horários de deitar e de acordar variaram cerca de {spread} em torno do seu horário médio.",
+      "spreadSteady": "Seus horários de deitar e de acordar ficaram parecidos de uma noite para outra.",
+      "highlights": {
+        "longest": "Noite mais longa",
+        "shortest": "Noite mais curta",
+        "change": "Diferença na média",
+        "onDays": "Registrada {when}",
+        "changeMore": "a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}",
+        "changeLess": "a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}"
+      }
+    },
+    "mood": {
+      "empty": "Ainda não há registros de humor neste período.",
+      "average": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, seu humor registrado ficou em média {mood} de 5, e a energia, {energy} de 5, em {count, plural, one {# registro} other {# registros}}.",
+      "partial": "Com poucos registros, ainda não dá para comparar com o período anterior.",
+      "compareSame": "A média ficou parecida com a {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}.",
+      "compareUp": "A média ficou {diff} ponto(s) acima da {days, plural, =7 {semana anterior} other {média dos # dias anteriores}}.",
+      "compareDown": "A média ficou {diff} ponto(s) abaixo da {days, plural, =7 {semana anterior} other {média dos # dias anteriores}}.",
+      "dropGentle": "A média ficou {diff} ponto(s) abaixo da {days, plural, =7 {semana anterior} other {média dos # dias anteriores}}. Períodos assim acontecem, e registrar já é uma forma de se acompanhar.",
+      "lowPeriod": "Neste período, seus registros de humor ficaram, em média, na parte de baixo da escala.",
+      "supportPointer": "Se quiser conversar com alguém, há contatos de apoio logo abaixo.",
+      "extremes": "O dia com humor mais alto foi {highest}; o com humor mais baixo, {lowest}.",
+      "highlights": {
+        "highest": "Dia com humor mais alto (1 a 5)",
+        "lowest": "Dia com humor mais baixo (1 a 5)",
+        "change": "Diferença na média de humor (pontos)",
+        "onDays": "Média do dia, {when}",
+        "changeUp": "acima {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}",
+        "changeDown": "abaixo {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}"
+      }
+    },
+    "habits": {
+      "empty": "Sem hábitos ativos com marcações previstas neste período.",
+      "completion": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você marcou {done} de {expected, plural, one {# vez prevista} other {# vezes previstas}} pela frequência que você definiu para cada hábito ({percent}%).",
+      "partial": "Ainda há poucas marcações previstas neste período para comparar.",
+      "compareSame": "Ficou parecido com {days, plural, =7 {a semana anterior} other {os # dias anteriores}}.",
+      "compareMore": "São {diff} pontos percentuais a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "compareLess": "São {diff} pontos percentuais a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "busiest": "O dia com mais marcações foi {when}, com {count, plural, one {# hábito} other {# hábitos}}.",
+      "streak": "{unit, select, weeks {Sua maior sequência no período foi de {count, plural, one {# semana} other {# semanas}} com a meta da semana atingida.} other {Sua maior sequência no período foi de {count, plural, one {# dia previsto} other {# dias previstos}} marcados em seguida.}}",
+      "highlights": {
+        "streak": "Maior sequência no período",
+        "streakUnit": "{unit, select, weeks {{count, plural, one {semana} other {semanas}} com a meta atingida} other {{count, plural, one {dia previsto marcado} other {dias previstos marcados em seguida}}}}",
+        "busiest": "Dia com mais marcações",
+        "onDays": "Hábitos marcados {when}",
+        "change": "Diferença no cumprimento (pontos percentuais)",
+        "changeMore": "a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}",
+        "changeLess": "a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}"
+      }
+    },
+    "journal": {
+      "empty": "Nenhuma entrada no diário neste período.",
+      "count": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você escreveu {count, plural, one {# entrada} other {# entradas}} no diário, em {daysWith, plural, one {# dia} other {# dias}} de {total}.",
+      "partial": "Com poucas entradas, o resumo mostra só a contagem.",
+      "compare": "{days, plural, =7 {Na semana anterior} other {Nos # dias anteriores}}, {previous, plural, =0 {não houve entradas} one {houve # entrada} other {houve # entradas}}.",
+      "topTag": "A etiqueta que você mais usou foi “{tag}”.",
+      "gap": "O maior intervalo entre duas entradas foi de {gap} dias.",
+      "latest": "A entrada mais recente foi {when}.",
+      "highlights": {
+        "topTag": "Etiqueta mais usada",
+        "tagCount": "{count, plural, one {em # entrada} other {em # entradas}}",
+        "daysWith": "Dias com entrada",
+        "ofTotal": "de {total} dias do período"
+      }
+    },
+    "body": {
+      "empty": "Nenhuma medida registrada neste período.",
+      "latestWeight": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, o último peso que você registrou foi {kg} kg, {when}.",
+      "count": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você registrou {count, plural, one {# medição} other {# medições}}, sem peso informado.",
+      "partial": "Com uma medição só, ainda não há variação para mostrar.",
+      "weightStable": "Do primeiro ao último registro do período, o peso variou menos de 0,5 kg.",
+      "weightChange": "Do primeiro ao último registro do período, o peso variou {kg} kg.",
+      "girthChange": "Entre as circunferências, a que mais variou foi a medida de {field}: {cm} cm.",
+      "countTail": "Foram {count, plural, one {# medição} other {# medições}} no período.",
+      "fields": {
+        "weightKg": "peso",
+        "heightCm": "altura",
+        "waistCm": "cintura",
+        "hipCm": "quadril",
+        "armCm": "braço",
+        "thighCm": "coxa",
+        "chestCm": "peito",
+        "bodyFatPct": "gordura corporal"
+      },
+      "highlights": {
+        "weightChange": "Variação do peso (kg)",
+        "sinceFirst": "Do primeiro ao último registro do período",
+        "girthChange": "Medida que mais variou (cm)",
+        "girthField": "Circunferência: {field}"
+      }
     }
   },
   "habits": {

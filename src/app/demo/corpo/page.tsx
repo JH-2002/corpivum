@@ -9,7 +9,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function DemoBodyPage() {
-  const { range, source } = await demoContext();
+  const { range, today, source } = await demoContext();
   const [records, height] = await Promise.all([source.body(range), source.latestHeightCm()]);
-  return <BodyView records={records} latestHeightCm={height} mode="publicDemo" />;
+  return (
+    <BodyView
+      records={records}
+      latestHeightCm={height}
+      range={range}
+      today={today}
+      mode="publicDemo"
+    />
+  );
 }

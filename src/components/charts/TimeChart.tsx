@@ -17,6 +17,7 @@ import {
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { cn } from '@/lib/cn';
+import { ChartGuide, type ChartGuideId } from './ChartGuide';
 import { formatNumber, hasValues, shortDay, valueOf } from './format';
 import { usePrefersReducedMotion } from './reduced-motion';
 
@@ -48,6 +49,10 @@ export interface TimeChartProps<T extends ChartRow> {
   rightDomain?: [number, number];
   /** Estilo compacto (sem eixo Y à direita no mobile). */
   className?: string;
+  /** "Como ler este gráfico" (ADR-0025). */
+  guide?: ChartGuideId;
+  /** Id do resumo em texto da tela, que descreve o período (`aria-describedby`). */
+  describedBy?: string;
 }
 
 /**
@@ -65,6 +70,8 @@ export function TimeChart<T extends ChartRow>({
   leftDomain,
   rightDomain,
   className,
+  guide,
+  describedBy,
 }: TimeChartProps<T>) {
   const t = useTranslations('charts');
   const tb = useTranslations('badges');
@@ -121,6 +128,7 @@ export function TimeChart<T extends ChartRow>({
   return (
     <section
       aria-labelledby={headingId}
+      aria-describedby={describedBy}
       className={cn(
         'flex flex-col gap-3 rounded-lg border border-border bg-surface p-4',
         className,
@@ -140,6 +148,7 @@ export function TimeChart<T extends ChartRow>({
         <StateView state="no-data" />
       ) : (
         <>
+          {guide ? <ChartGuide id={guide} series={series} badge={badge} /> : null}
           <div role="group" aria-label={t('legend')} className="flex flex-wrap gap-2">
             {series.map((s) => {
               const on = !hidden.has(s.key);

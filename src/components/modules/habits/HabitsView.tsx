@@ -10,9 +10,10 @@ import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
 import { EntryActions } from '@/components/health/EntryActions';
 import { HabitCheckButton } from '@/components/health/HabitCheckButton';
 import type { HealthMode } from '@/components/health/HealthPage';
+import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
-import { addDays, WEEK_ORDER } from '@/lib/dates';
+import { addDays, previousRange, WEEK_ORDER } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import {
   CHECK_BACKFILL_DAYS,
@@ -23,6 +24,7 @@ import {
   type HabitCheckRecord,
   type HabitRecord,
 } from '@/modules/habits';
+import { habitsInsights } from '@/modules/insights';
 import { HabitForm } from './HabitForm';
 
 /**
@@ -32,6 +34,7 @@ import { HabitForm } from './HabitForm';
 export function HabitsView({
   habits,
   checks,
+  previousChecks,
   streakChecks,
   range,
   today,
@@ -40,6 +43,8 @@ export function HabitsView({
 }: {
   habits: HabitRecord[];
   checks: HabitCheckRecord[];
+  /** Checks do período anterior de mesmo tamanho, para o resumo comparar (ADR-0025). */
+  previousChecks: HabitCheckRecord[];
   /** Checks desde o início do intervalo da sequência (para calcular o streak). */
   streakChecks: HabitCheckRecord[];
   range: DateRange;
@@ -75,8 +80,20 @@ export function HabitsView({
         ? t('frequencyTimes', { count: h.timesPerWeek ?? 1 })
         : t('frequency.daily');
 
+  const insights = habitsInsights({
+    habits,
+    checks,
+    previousChecks,
+    range,
+    previousRange: previousRange(range),
+    today,
+    streaksEnabled,
+  });
+
   return (
     <div className="flex flex-col gap-6">
+      <PeriodInsights insights={insights} demo={!own} />
+
       <section
         id="novo"
         aria-labelledby="habit-new"
@@ -116,6 +133,8 @@ export function HabitsView({
           <TimeChart
             title={t('chartTitle')}
             badge={level('INFORMADO')}
+            guide="habits"
+            describedBy={summaryTextId('habits')}
             data={dailyChecks(habits, checks, range)}
             series={[
               {

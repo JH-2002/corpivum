@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { HealthFrame, healthView } from '@/components/health/HealthPage';
 import { HabitsView } from '@/components/modules/habits/HabitsView';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
-import { addDays } from '@/lib/dates';
+import { addDays, previousRange } from '@/lib/dates';
 import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
 import { STREAK_LOOKBACK_DAYS } from '@/modules/habits';
@@ -26,19 +26,22 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
       </HealthFrame>
     );
   }
-  const [habits, checks, streakChecks, streaksEnabled] = await view.source.session((s) =>
-    Promise.all([
-      s.habits({ includeArchived: true }),
-      s.checks(range),
-      s.checks({ from: addDays(today, -STREAK_LOOKBACK_DAYS), to: today }),
-      s.streaksEnabled(),
-    ]),
+  const [habits, checks, previousChecks, streakChecks, streaksEnabled] = await view.source.session(
+    (s) =>
+      Promise.all([
+        s.habits({ includeArchived: true }),
+        s.checks(range),
+        s.checks(previousRange(range)),
+        s.checks({ from: addDays(today, -STREAK_LOOKBACK_DAYS), to: today }),
+        s.streaksEnabled(),
+      ]),
   );
   return (
     <HealthFrame page="habits" href="/habitos" session={session} view={view} preview={preview}>
       <HabitsView
         habits={habits}
         checks={checks}
+        previousChecks={previousChecks}
         streakChecks={streakChecks}
         range={range}
         today={today}

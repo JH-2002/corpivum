@@ -1,6 +1,6 @@
 /**
- * Módulo `wellbeing` (§14, LEG-D08, ADR-0021): Índice de Bem-Estar versionado e explicável e resumo do
- * dashboard por regras. Funções puras. Fórmulas documentadas em docs/WELLBEING_SCORE.md.
+ * Módulo `wellbeing` (§14, LEG-D08, ADR-0021): Índice de Bem-Estar versionado e explicável. O resumo do
+ * dashboard por regras fica em `@/modules/insights` (ADR-0025). Funções puras. Fórmulas documentadas em docs/WELLBEING_SCORE.md.
  */
 export {
   computeWellbeingScore,
@@ -13,10 +13,3 @@ export {
   type ScoreInput,
   type WellbeingScore,
 } from './score';
-export {
-  buildSummary,
-  SUMMARY_RULES,
-  type PeriodRecords,
-  type Summary,
-  type SummaryKey,
-} from './summary';

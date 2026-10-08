@@ -144,6 +144,19 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     reason: 'Nunca afirmar condição da pessoa (CLAUDE.md regra 8).',
   },
   {
+    id: 'population-norm',
+    pattern:
+      /\b(a?normal|normais|anormais)\b|\b(abaixo|acima|fora)\s+d[oa]s?\s+(recomendad|ideal|ideais|esperad|normal|saudave)\w*|\bfaixas?\s+(saudave\w*|normal|normais|ideal|ideais|recomendad\w*)|\bvalor(es)?\s+(ideal|ideais|de\s+referencia)\b|\b(maioria|media)\s+d[ao]s?\s+(pessoas|populacao|brasileir\w*)|\bpessoas\s+(da\s+sua\s+idade|como\s+voce)\b|\bpeso\s+ideal\b/,
+    reason:
+      'Comparar só com o próprio histórico e as próprias metas, nunca com norma ou faixa (ADR-0025).',
+  },
+  {
+    id: 'causal-claim',
+    pattern:
+      /\b(causou|causam?|causad[oa]s?|causaram)\b|\bpor\s+causa\s+d|\bdevido\s+(a|ao|aos|as)\b|\bgracas\s+(a|ao|aos|as)\b|\bresult(ou|a|aram)\s+(em|n[oa]s?)\b|\bfez\s+(voce|seu|sua)\b|\bporque\s+voce\b|\b(melhor|pior)(a|ou|aram)\s+(o\s+|a\s+)?(seu|sua)\s+(humor|sono|energia|estresse|bem-estar)/,
+    reason: 'Descrever e associar, nunca atribuir causa (§32, LEG-I04, ADR-0025).',
+  },
+  {
     id: 'clinical-report',
     pattern: /\blaudos?\b|\bavaliac(ao|oes)\s+clinicas?\b|\bprontuario/,
     reason: 'Relatórios não são laudo nem avaliação clínica (§29, LEG-M01).',

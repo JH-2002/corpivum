@@ -55,6 +55,36 @@ export function dailyChecks(
 }
 
 /**
+ * Maior sequência dentro do intervalo (destaque do período, ADR-0025). Mesma regra de `currentStreak`:
+ * dias esperados cumpridos em seguida (dias não previstos não quebram); para `times_per_week`, semanas
+ * completas do intervalo (de 7 dias, contadas a partir do fim) que atingiram a meta.
+ */
+export function longestStreak(
+  habit: HabitRecord,
+  checks: HabitCheckRecord[],
+  range: DateRange,
+): number {
+  const done = new Set(checks.filter((c) => c.habitId === habit.id).map((c) => c.day));
+  let best = 0;
+  let run = 0;
+  if (habit.frequency === 'times_per_week') {
+    for (let end = range.to; addDays(end, -6) >= range.from; end = addDays(end, -7)) {
+      if (end < habit.createdDay) break;
+      const count = eachDay({ from: addDays(end, -6), to: end }).filter((d) => done.has(d)).length;
+      run = count >= (habit.timesPerWeek ?? 1) ? run + 1 : 0;
+      best = Math.max(best, run);
+    }
+    return best;
+  }
+  for (const day of eachDay(range)) {
+    if (!isScheduled(habit, day)) continue;
+    run = done.has(day) ? run + 1 : 0;
+    best = Math.max(best, run);
+  }
+  return best;
+}
+
+/**
  * Sequência atual de dias esperados cumpridos. Hoje ainda sem check não quebra a sequência (o dia não
  * acabou). Para `times_per_week`, conta semanas (de 7 dias até hoje) que atingiram a meta.
  */

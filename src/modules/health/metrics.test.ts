@@ -2,6 +2,7 @@ import { bmi, change, latest, type BodyRecord } from '@/modules/body';
 import {
   completionRate,
   currentStreak,
+  longestStreak,
   expectedOccurrences,
   habitInputSchema,
   type HabitRecord,
@@ -104,6 +105,25 @@ describe('hábitos (§22, LEG-F05)', () => {
     expect(currentStreak(habit(), checks, '2026-10-07')).toBe(3);
     expect(currentStreak(habit(), checks.slice(1), '2026-10-07')).toBe(2);
     expect(currentStreak(habit(), [{ habitId: 'h', day: '2026-10-05' }], '2026-10-07')).toBe(0);
+  });
+
+  it('maior sequência no período (ADR-0025): diária, por dia da semana e semanal', () => {
+    const range = { from: '2026-10-01', to: '2026-10-14' };
+    const on = (days: string[]) => days.map((day) => ({ habitId: 'h', day }));
+    // 01–03 (3), falha em 04, 05–09 (5): a maior é 5.
+    const daily = on(['01', '02', '03', '05', '06', '07', '08', '09'].map((d) => `2026-10-${d}`));
+    expect(longestStreak(habit(), daily, range)).toBe(5);
+    // Fora do período não conta.
+    expect(longestStreak(habit(), on(['2026-09-30']), range)).toBe(0);
+    // Segundas e quartas (05, 07, 12, 14): dias não previstos não quebram a sequência.
+    const mw = habit({ frequency: 'weekdays', weekdays: [1, 3] });
+    expect(longestStreak(mw, on(['2026-10-05', '2026-10-07', '2026-10-12']), range)).toBe(3);
+    // 2x por semana: janelas 08–14 e 01–07, contadas a partir do fim do período.
+    const weekly = habit({ frequency: 'times_per_week', timesPerWeek: 2 });
+    expect(
+      longestStreak(weekly, on(['2026-10-02', '2026-10-03', '2026-10-09', '2026-10-10']), range),
+    ).toBe(2);
+    expect(longestStreak(weekly, on(['2026-10-02', '2026-10-09', '2026-10-10']), range)).toBe(1);
   });
 
   it('formulário normaliza a frequência', () => {

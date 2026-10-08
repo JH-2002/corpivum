@@ -4,11 +4,13 @@ import { TimeChart } from '@/components/charts/TimeChart';
 import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal, formatDuration } from '@/components/health/format';
+import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { StatTile } from '@/components/health/StatTile';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { addDays, toLocalDateTime } from '@/lib/dates';
+import { sleepInsights } from '@/modules/insights';
 import type { DateRange } from '@/lib/period';
 import {
   averageDurationMinutes,
@@ -27,11 +29,14 @@ import { SleepForm } from './SleepForm';
  */
 export function SleepView({
   records,
+  previous,
   range,
   today,
   mode,
 }: {
   records: SleepRecord[];
+  /** Noites do período anterior de mesmo tamanho, para o resumo comparar (ADR-0025). */
+  previous: SleepRecord[];
   range: DateRange;
   today: string;
   mode: HealthMode;
@@ -47,8 +52,12 @@ export function SleepView({
   const longDay = (iso: string) =>
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'full', timeZone: 'UTC' });
 
+  const insights = sleepInsights({ records, previous, range, today });
+
   return (
     <div className="flex flex-col gap-6">
+      <PeriodInsights insights={insights} demo={!own} />
+
       <section
         id="novo"
         aria-labelledby="sleep-new"
@@ -100,6 +109,8 @@ export function SleepView({
           <TimeChart
             title={t('durationChart')}
             badge={level('INFORMADO')}
+            guide="sleepDuration"
+            describedBy={summaryTextId('sleep')}
             data={dailyHours(records, range)}
             series={[
               {
@@ -111,7 +122,12 @@ export function SleepView({
               },
             ]}
           />
-          <ScheduleChart title={t('scheduleChart')} rows={records} badge={level('INFORMADO')} />
+          <ScheduleChart
+            title={t('scheduleChart')}
+            rows={records}
+            badge={level('INFORMADO')}
+            describedBy={summaryTextId('sleep')}
+          />
 
           <section aria-labelledby="sleep-list" className="flex flex-col gap-3">
             <h2 id="sleep-list" className="text-base font-semibold">

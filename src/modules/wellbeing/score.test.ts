@@ -1,9 +1,8 @@
-import { addDays, eachDay } from '@/lib/dates';
+import { eachDay } from '@/lib/dates';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
 import type { MoodRecord } from '@/modules/mood';
 import type { SleepRecord } from '@/modules/sleep';
 import { computeWellbeingScore, SCORE_V1, SCORE_VERSION, type ScoreInput } from './score';
-import { buildSummary } from './summary';
 
 const RANGE = { from: '2026-10-01', to: '2026-10-10' };
 
@@ -145,53 +144,5 @@ describe('Índice de Bem-Estar v1 (§14, LEG-D08)', () => {
     const days = eachDay(RANGE);
     const i = input({ sleep: days.map((d) => sleep(d)), mood: days.map((d) => mood(d, 4, 2)) });
     expect(computeWellbeingScore(i)).toEqual(computeWellbeingScore(i));
-  });
-});
-
-describe('resumo por regras (§11.1)', () => {
-  const prevRange = { from: '2026-09-21', to: '2026-09-30' };
-  const base = (range: typeof RANGE, sleepHours: number, moodValue: number) => {
-    const days = eachDay(range);
-    return {
-      range,
-      sleep: days.map((d) => sleep(d, '23:00', '07:00', sleepHours)),
-      mood: days.map((d) => mood(d, moodValue, 3)),
-      habits: [],
-      checks: [],
-      loggedDays: new Set(days),
-    };
-  };
-
-  it('descreve a maior mudança de sono primeiro', () => {
-    expect(buildSummary(base(RANGE, 8, 3), base(prevRange, 7, 3))).toEqual({
-      key: 'sleepUp',
-      values: { minutes: 60 },
-    });
-    expect(buildSummary(base(RANGE, 7, 3), base(prevRange, 8, 3)).key).toBe('sleepDown');
-  });
-
-  it('depois humor; sem mudança relevante, fala da constância', () => {
-    expect(buildSummary(base(RANGE, 8, 4), base(prevRange, 8, 3)).key).toBe('moodUp');
-    expect(buildSummary(base(RANGE, 8, 3), base(prevRange, 8, 3))).toEqual({
-      key: 'logging',
-      values: { days: 10, total: 10 },
-    });
-  });
-
-  it('sem nada registrado', () => {
-    const empty = {
-      range: RANGE,
-      sleep: [],
-      mood: [],
-      habits: [],
-      checks: [],
-      loggedDays: new Set<string>(),
-    };
-    expect(
-      buildSummary(empty, {
-        ...empty,
-        range: { from: addDays(RANGE.from, -10), to: addDays(RANGE.from, -1) },
-      }).key,
-    ).toBe('none');
   });
 });
