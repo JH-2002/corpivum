@@ -57,6 +57,12 @@ const envSchema = z
     STORAGE_PROVIDER: z.enum(['local']).default('local'),
     STORAGE_LOCAL_DIR: z.string().min(1).default('.storage'),
     MAIL_PROVIDER: z.enum(['console']).default('console'),
+    /**
+     * Só em APP_ENV=development: o provedor `console` entrega via SMTP ao Mailpit local
+     * (docker-compose), para ler os links de verificação. Só aceita host local.
+     */
+    DEV_SMTP_HOST: z.enum(['localhost', '127.0.0.1', '::1', 'mailpit']).default('localhost'),
+    DEV_SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(1025),
     /** Fila de jobs: `postgres` (ADR-0019, OI-14) ou `memory` (só dev/test). */
     JOB_QUEUE: z.enum(['memory', 'postgres']).default('memory'),
     /** `inline`: esta instância também consome a fila. `off`: só enfileira (worker em processo separado). */

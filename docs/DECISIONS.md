@@ -462,3 +462,19 @@ banco nas tabelas de saúde (PR1b-N1) e eliminação agendada cobrindo todas ela
   proibidos. **N5:** data e hora reais nos formulários.
 
 **Aceito por ora:** N1, N3 e N6, em docs/legal/OPEN_ISSUES.md (PR2-N1, N3, N6).
+
+## ADR-0023 — E-mail de desenvolvimento via Mailpit
+**Contexto.** Em desenvolvimento não havia como ler o e-mail de verificação: o `ConsoleMailProvider` só
+registra metadados, de propósito, para nenhum token ir ao log (LEG-R04).
+**Decisão.**
+- Mailpit (`axllent/mailpit:v1.31.2`, versão fixa) no `docker-compose.yml`, só local: SMTP em
+  `127.0.0.1:1025`, interface em `127.0.0.1:8025`, mensagens só em memória (sem volume).
+- Com `APP_ENV=development`, o provedor `console` entrega por SMTP ao Mailpit (`DevSmtpMailProvider`).
+  `APP_ENV=test` continua com a caixa em memória; em produção o `console` segue recusado por `parseEnv`.
+- Cliente SMTP mínimo com `node:net` (sem autenticação nem TLS, só para o Mailpit), sem dependência nova
+  (ADR-0009). `DEV_SMTP_HOST` aceita só host local (`localhost`, `127.0.0.1`, `::1`, `mailpit`): nada sai da
+  máquina. Destinatário com quebra de linha ou `<>` é recusado (injeção de cabeçalho/comando).
+- Token só no corpo entregue ao Mailpit; o log continua com `mail.sent`, o modelo e o destinatário mascarado.
+  Mailpit fora do ar não lança erro: registra `mail.dev_smtp_unavailable`, sem detalhes.
+**Consequências.** Mailpit é ferramenta local de desenvolvimento, não subprocessador (não trata dado de
+titular real). O provedor de e-mail de produção continua pendente (OI-11, Fase 7).
