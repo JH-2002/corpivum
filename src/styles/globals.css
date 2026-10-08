@@ -116,6 +116,13 @@
     border-radius: 2px;
   }
 
+  /* Alvo do passo atual do tour do painel (ADR-0025): contorno além do diálogo, não só cor de fundo */
+  [data-tour-active] {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 4px;
+    border-radius: 0.5rem;
+  }
+
   /* Números tabulares em dados (§6) */
   .tabular,
   data,

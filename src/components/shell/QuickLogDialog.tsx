@@ -17,6 +17,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useRef } from 'react';
+import { useDialogFocusLoop } from '@/components/ui/dialog-focus';
 import { IconButton } from '@/components/ui/IconButton';
 import { useShell } from './ShellProvider';
 
@@ -55,27 +56,7 @@ export function QuickLogDialog() {
     if (!quickLogOpen && dialog.open) dialog.close();
   }, [quickLogOpen]);
 
-  // O modal nativo deixa o Tab escapar para a interface do navegador; mantemos o ciclo dentro do diálogo.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
-      const focusables = dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled])');
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      if (!first || !last) return;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    dialog.addEventListener('keydown', onKeyDown);
-    return () => dialog.removeEventListener('keydown', onKeyDown);
-  }, []);
+  useDialogFocusLoop(dialogRef);
 
   return (
     <dialog

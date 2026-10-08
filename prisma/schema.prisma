@@ -45,6 +45,8 @@ model User {
   dataMode              DataMode? @map("data_mode")
   /// Sequências (streaks) de hábitos visíveis. Desativável (LEG-F05).
   streaksEnabled        Boolean   @default(true) @map("streaks_enabled")
+  /// Tour do painel concluído ou pulado (ADR-0025). NULL = abre sozinho na próxima visita ao início.
+  tourSeenAt            DateTime? @map("tour_seen_at") @db.Timestamptz(3)
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 

@@ -511,6 +511,10 @@ describe('escolha do passo 5 (§52.5)', () => {
     await withUserOn(db, pending.userId, (tx) =>
       tx.user.update({ where: { id: pending.userId }, data: { streaksEnabled: false } }),
     );
+    // Tour do painel visto (ADR-0025): coluna nova liberada só para UPDATE dela mesma.
+    await withUserOn(db, pending.userId, (tx) =>
+      tx.user.update({ where: { id: pending.userId }, data: { tourSeenAt: new Date() } }),
+    );
     await expect(
       withUserOn(db, pending.userId, (tx) =>
         tx.user.update({ where: { id: pending.userId }, data: { ageGateVersion: 'x' } }),

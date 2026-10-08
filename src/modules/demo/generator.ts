@@ -49,7 +49,7 @@ const SLEEP_NOTES = [
   'Dormi depois de ler um pouco.',
   'Acordei com barulho na rua.',
   'Noite tranquila.',
-  'Fui dormir mais tarde por causa de uma série.',
+  'Fui dormir mais tarde: fiquei vendo uma série.',
 ];
 
 const MOOD_NOTES = [

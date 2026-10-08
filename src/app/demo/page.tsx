@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { Suspense } from 'react';
 import { Dashboard } from '@/components/dashboard/Dashboard';
+import { Tour } from '@/components/tour/Tour';
 import { buttonClasses } from '@/components/ui/Button';
 import { buildDashboard } from '@/modules/health/dashboard';
 import { demoContext } from './demo-data';
@@ -27,6 +29,10 @@ export default async function DemoHomePage() {
         </Link>
       </section>
       <Dashboard data={data} mode="publicDemo" />
+      {/* Sem conta: lembrar que viu fica só no navegador (LEG-X02). */}
+      <Suspense fallback={null}>
+        <Tour autoStart persist="local" />
+      </Suspense>
     </div>
   );
 }
