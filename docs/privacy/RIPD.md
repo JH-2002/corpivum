@@ -33,6 +33,7 @@ subprocessador.
 | R11 | Dado fictício confundido com real (ou misturado aos dados da pessoa) | `{{}}` | Médio | `{{}}` |
 | R12 | Índice de Bem-Estar lido como avaliação de saúde | `{{}}` | Alto | `{{}}` |
 | R13 | Dado de saúde mantido após revogação além do prazo (eliminação incompleta) | `{{}}` | Alto | `{{}}` |
+| R14 | Corpo 3D lido como avaliação corporal, ou cérebro 3D lido como medição cerebral | `{{}}` | Alto | `{{}}` |
 
 ## 4. Medidas de mitigação
 | Risco | Medidas | Requisitos |
@@ -50,6 +51,7 @@ subprocessador.
 | R11 | Demo gerado em memória, nunca gravado nas tabelas de saúde; selo DEMO em todo dado; indicador no cabeçalho e faixa no modo demo; demo público sem sessão nem escrita (teste e2e) | LEG-X02, ADR-0021 |
 | R12 | Texto fixo "não é avaliação de saúde" (`disclaimer.wellbeingScore`), explicação dos critérios, sem classificação nem referência populacional, pedido de revisão | LEG-D08, LEG-M03, ADR-0021 |
 | R13 | Toda tabela de saúde com eliminador registrado; teste pelo catálogo do banco que falha se alguma tabela não for zerada; DELETE só por dono, sem depender do consentimento | LEG-D04, PR1b-B9, ADR-0021 |
+| R14 | Corpo só pelas medidas informadas (o peso não muda a forma), sem IMC, cor neutra, diferenças em número; cérebro igual para todas as pessoas, nunca colorido por dado, confiança só pela suficiência dos registros, `disclaimer.brainModel`, `disclaimer.neurochemistry` e `disclaimer.bodyModel` sempre visíveis; nada persistido; testes de glossário e de ausência de IMC | LEG-M04, LEG-M05, LEG-M03, ADR-0026 |
 
 ## 5. Parecer do encarregado
 `{{PARECER_ENCARREGADO}}`

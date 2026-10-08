@@ -527,3 +527,56 @@ destaques automáticos e um tour opcional, sem IA, comparando a pessoa só com e
 **Consequências.** Mudar limiar ou redação muda o texto exibido: os testes de `src/modules/insights` e
 `src/components/insights` precisam acompanhar. Os textos são RASCUNHO (`LEGAL-REVIEW`, OI-21). As contas
 criadas pelo e2e nascem com o tour visto; o demo do e2e marca o `localStorage`.
+
+## ADR-0026 — Health Digital Twin: corpo 3D, Antes × Agora e cérebro 3D educativo (Fase 3)
+**Contexto.** A Fase 3 implementa o §15–§18: corpo 3D paramétrico com controle de datas, regiões, vistas e
+comparação Antes × Agora, e o cérebro 3D educativo com painel. Exigências: corpo só com medidas próprias sob
+consentimento de saúde ativo (demo só fictício); cérebro sempre educacional com os avisos `disclaimer.*`
+(LEG-M05); mesmo padrão da camada explicativa (ADR-0025), sem IMC e sem juízo sobre o corpo; nenhum modelo
+externo sem licença em `docs/ASSETS.md`; o dashboard não pode regredir (§41).
+**Decisão.**
+- **Dependências:** `three` 0.186.1 e `@react-three/fiber` 9.8.1, versões fixas (ADR-0009). **Sem
+  `@react-three/drei`**, que estava na stack: traria ~20 dependências transitivas (algumas buscam dados em
+  CDN, como `detect-gpu`) só para controles de câmera. A rotação é própria (estado + arrasto + botões).
+- **Sem asset externo:** corpo e cérebro são geometria gerada em código (perfis de revolução, cápsulas,
+  esferas divididas em regiões). `docs/ASSETS.md` tem a regra de licença e o inventário (vazio). Teste de
+  fronteira: nas cenas não há loader nem URL.
+- **Forma só pelas medidas informadas:** altura e circunferências (peito, braço, cintura, quadril, coxa). O
+  **peso não muda a forma** (não se infere corpo a partir dele) e aparece só como número. Medida ausente =
+  forma neutra padrão, semitransparente, e o painel diz "sem medida informada". Valores fora da faixa do
+  desenho são limitados só no desenho; o número exibido é o informado. As dimensões neutras nunca aparecem
+  na interface e não são referência.
+- **Sem IMC e sem juízo:** o twin não usa `bmi()` (teste estático). Cor neutra; o destaque marca só a região
+  escolhida. Antes × Agora mostra número, seta e palavra (subiu/desceu/igual), nunca só a forma.
+- **Cérebro nunca colorido por dado:** modelo igual para todas as pessoas (dois tons neutros só separam
+  regiões vizinhas). Painel: nome, função geral (texto educativo), "seus registros" dos temas que o conteúdo
+  associa à região (sono, humor e energia, hábitos), dados usados (dias com registro) e nível de confiança
+  pela **suficiência dos registros** (`TWIN_RULES`: tema menos coberto; menos de 3 dias = baixo; 7 dias ou
+  mais e metade do período = alto), com selo INFERIDO e a frase "não indicam nada sobre esta região".
+  `disclaimer.brainModel` e `disclaimer.neurochemistry` sempre visíveis, no 3D e no 2D. Humor baixo mostra
+  o `SupportNotice` (CVV 188 / SAMU 192).
+- **Nada persistido:** temas do cérebro calculados na leitura, sem tabela `BrainIndicator` nem migração.
+  Minimização no navegador: o corpo recebe só dia e medidas (`toTwinRows`); o cérebro, só números já
+  resumidos no servidor (`brainThemes`), sem nota nem nome de hábito.
+- **Consentimento e demo:** `/twin` e `/twin/cerebro` usam `healthView`/`HealthFrame` como as telas de saúde:
+  sem consentimento ativo, só o aviso e nenhuma leitura. Demo na conta e demo público (`/demo/twin`,
+  `/demo/twin/cerebro`) usam o gerador fictício; o demo ganhou peito, braço e coxa sem mudar a sequência dos
+  demais dados.
+- **Camada explicativa:** `twinBodyInsights` e `brainInsights` (`insights.twin.*`, `insights.brain.*`) no
+  topo das telas, como alternativa textual do modelo (`aria-describedby`); "Como ler este modelo"
+  (`TwinGuide`, `twin.guide.*`). Novo aviso `disclaimer.bodyModel`.
+- **Sob demanda:** `three` só em `src/components/twin/scene/**`, carregado por `next/dynamic` com
+  `ssr: false` em `LazyScenes.tsx` (teste de fronteira). `scripts/route-js.mjs` mede o JS de entrada por
+  rota e falha se o three.js estiver nele (CI). Build da Fase 3: `/inicio` 376,7 → 377,0 KiB gzip (+0,3 KiB
+  do item novo na navegação do demo); chunk 3D ≈ 237 KiB gzip, baixado só no twin (o e2e confere).
+- **Sem WebGL ou contexto perdido:** SVG 2D com a mesma forma (`bodyLayout`) e as mesmas regiões, com aviso
+  em texto. `frameloop="demand"` (só renderiza quando algo muda), resolução e segmentos menores abaixo de
+  640px, comparação com um modelo por vez no celular. `prefers-reduced-motion`: troca de vista sem
+  transição; não há giro automático nem inércia em nenhum caso.
+- **Acessibilidade:** o desenho é decorativo para leitor de tela; tudo é acionável por botões (vistas, girar,
+  restaurar, lista de regiões com `aria-pressed`, controle de datas com `aria-valuetext`); painel com
+  `aria-live="polite"`; tooltip de ponteiro fecha com Esc. Modo privacidade local (estado só em memória)
+  oculta os números do twin; o global fica para a Fase 6.
+**Consequências.** Asset externo exige linha em `docs/ASSETS.md` e revisão. Mudar limiares de confiança ou
+redação muda o texto exibido (testes de `src/modules/twin`, `src/modules/insights` e
+`src/components/twin`). Textos educativos do cérebro e do twin são RASCUNHO (`LEGAL-REVIEW`, OI-22).
