@@ -4,6 +4,7 @@ import { TimeChart } from '@/components/charts/TimeChart';
 import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal } from '@/components/health/format';
+import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { StatTile } from '@/components/health/StatTile';
 import { SupportNotice } from '@/components/health/SupportNotice';
@@ -11,20 +12,27 @@ import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { localTime, toLocalDateTime, WEEK_ORDER } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
+import { moodInsights } from '@/modules/insights';
 import { averageOf, byWeekday, dailyAverages, type MoodRecord } from '@/modules/mood';
 import { MoodForm } from './MoodForm';
 
 /**
  * Tela de humor e energia (§21): registro rápido, médias do período, tendência, distribuição por dia da
- * semana e lista editável. Orientação de apoio sempre visível (§48).
+ * semana e lista editável. Orientação de apoio sempre visível (§48): logo abaixo do resumo quando o
+ * período tem humor baixo ou queda relevante (ADR-0025), senão no fim da tela.
  */
 export function MoodView({
   records,
+  previous,
   range,
+  today,
   mode,
 }: {
   records: MoodRecord[];
+  /** Registros do período anterior de mesmo tamanho, para o resumo comparar (ADR-0025). */
+  previous: MoodRecord[];
   range: DateRange;
+  today: string;
   mode: HealthMode;
 }) {
   const t = useTranslations('mood');
@@ -37,8 +45,12 @@ export function MoodView({
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'full', timeZone: 'UTC' });
   const stat = (v: number | null) => (v === null ? '—' : `${formatDecimal(v)} / 5`);
 
+  const insights = moodInsights({ records, previous, range, today });
+
   return (
     <div className="flex flex-col gap-6">
+      <PeriodInsights insights={insights} demo={!own} />
+
       <section
         id="novo"
         aria-labelledby="mood-new"
@@ -91,6 +103,8 @@ export function MoodView({
             title={t('trendChart')}
             description={t('trendDescription')}
             badge={level('INFORMADO')}
+            guide="mood"
+            describedBy={summaryTextId('mood')}
             data={dailyAverages(records, range)}
             leftDomain={[1, 5]}
             series={[
@@ -208,7 +222,7 @@ export function MoodView({
         </>
       )}
 
-      <SupportNotice />
+      {insights.supportSignal ? null : <SupportNotice />}
     </div>
   );
 }

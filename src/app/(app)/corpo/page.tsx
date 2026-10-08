@@ -24,7 +24,13 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   return (
     <HealthFrame page="body" href="/corpo" session={session} view={view} preview={preview}>
       {view.kind === 'data' ? (
-        <BodyView records={records} latestHeightCm={height} mode={view.mode} />
+        <BodyView
+          records={records}
+          latestHeightCm={height}
+          range={range}
+          today={today}
+          mode={view.mode}
+        />
       ) : null}
     </HealthFrame>
   );

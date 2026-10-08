@@ -23,6 +23,7 @@ import {
   truncateAll,
   type TestAuth,
 } from './helpers';
+import { readTourSeen, writeTourSeen } from '@/modules/health/preferences';
 
 /**
  * Tabelas de saúde da Fase 2 (ADR-0021): RLS por dono E consentimento (LEG-S03, LEG-C04, PR1b-N1),
@@ -511,6 +512,17 @@ describe('escolha do passo 5 (§52.5)', () => {
     await withUserOn(db, pending.userId, (tx) =>
       tx.user.update({ where: { id: pending.userId }, data: { streaksEnabled: false } }),
     );
+    // Tour do painel visto (ADR-0025): coluna nova liberada só para UPDATE dela mesma; idempotente.
+    expect(await withUserOn(db, pending.userId, (tx) => readTourSeen(tx, pending.userId))).toBe(
+      false,
+    );
+    await withUserOn(db, pending.userId, (tx) => writeTourSeen(tx, pending.userId));
+    await withUserOn(db, pending.userId, (tx) => writeTourSeen(tx, pending.userId));
+    expect(await withUserOn(db, pending.userId, (tx) => readTourSeen(tx, pending.userId))).toBe(
+      true,
+    );
+    // Sem `app.user_id`, a leitura não acha a conta (RLS).
+    expect(await db.$transaction((tx) => readTourSeen(tx, pending.userId))).toBe(false);
     await expect(
       withUserOn(db, pending.userId, (tx) =>
         tx.user.update({ where: { id: pending.userId }, data: { ageGateVersion: 'x' } }),

@@ -18,6 +18,17 @@ import { createFieldCipher } from '../src/modules/health/core';
 export const E2E_DOMAIN = 'e2e.exemplo.test';
 export const E2E_PASSWORD = 'cavalo bateria grampo e2e';
 export const STORAGE_STATE = 'e2e/.auth/pessoa.json';
+/** Mesma origem do `baseURL` do playwright.config.ts. */
+export const E2E_ORIGIN = 'http://localhost:3100';
+
+/**
+ * Demo público sem sessão e com o tour do painel já visto (ADR-0025): o tour é modal e cobriria a tela
+ * nos testes que não são sobre ele.
+ */
+export const DEMO_TOUR_SEEN_STATE = {
+  cookies: [],
+  origins: [{ origin: E2E_ORIGIN, localStorage: [{ name: 'hm_tour_demo_seen', value: '1' }] }],
+};
 
 export async function withAdmin<T>(fn: (db: pg.Client) => Promise<T>): Promise<T> {
   const db = new pg.Client({ connectionString: process.env.MIGRATION_DATABASE_URL });
@@ -39,23 +50,34 @@ type Purpose = 'health_data' | 'marketing' | 'product_metrics';
  * Cria conta adulta com e-mail verificado diretamente no banco. Por padrão já com o onboarding concluído
  * (Termos e Política aceitos na versão vigente), só o consentimento de dados de bem-estar (§52, LEG-C01) e
  * o passo 5 escolhido como "começar do zero" (`dataMode: 'own'`). `dataMode: null` para no passo 5;
- * `onboarded: false` deixa a conta no início do onboarding.
+ * `onboarded: false` deixa a conta no início do onboarding. O tour do painel já vem marcado como visto
+ * (`tourSeen: false` para testar a primeira visita, ADR-0025).
  */
 export async function createVerifiedUser(
   email: string,
   password = E2E_PASSWORD,
-  options: { onboarded?: boolean; purposes?: Purpose[]; dataMode?: 'own' | 'demo' | null } = {},
+  options: {
+    onboarded?: boolean;
+    purposes?: Purpose[];
+    dataMode?: 'own' | 'demo' | null;
+    tourSeen?: boolean;
+  } = {},
 ): Promise<string> {
-  const { onboarded = true, purposes = ['health_data'], dataMode = 'own' } = options;
+  const {
+    onboarded = true,
+    purposes = ['health_data'],
+    dataMode = 'own',
+    tourSeen = true,
+  } = options;
   const hash = await hashPassword(password);
   return withAdmin(async (db) => {
     const { rows } = await db.query<{ id: string }>(
       `INSERT INTO users (id, email, password_hash, adult_attested_at, age_gate_version,
-                          email_verified_at, onboarding_completed_at, data_mode, updated_at)
+                          email_verified_at, onboarding_completed_at, data_mode, tour_seen, updated_at)
        VALUES (gen_random_uuid(), $1, $2, now(), 'v1', now(), CASE WHEN $3 THEN now() END,
-               CASE WHEN $3 THEN $4::data_mode END, now())
+               CASE WHEN $3 THEN $4::data_mode END, $5, now())
        RETURNING id`,
-      [email, hash, onboarded, dataMode],
+      [email, hash, onboarded, dataMode, tourSeen],
     );
     const userId = rows[0]?.id ?? '';
     if (!onboarded) return userId;

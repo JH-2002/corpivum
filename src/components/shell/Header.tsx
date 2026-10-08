@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { logoutAction } from '@/app/(auth)/actions';
 import { Button, buttonClasses } from '@/components/ui/Button';
 import { Disclosure } from './Disclosure';
+import { HelpMenu } from './HelpMenu';
 import { DEMO_ITEMS, navItemForPath, type ShellVariant } from './nav-config';
 import { PeriodSelector } from './PeriodSelector';
 import { useShell } from './ShellProvider';
@@ -63,6 +64,7 @@ export function Header({
             >
               <ShieldCheck className="size-5" aria-hidden="true" />
             </Link>
+            <HelpMenu tourHref="/demo?tour=1" />
             <Link href="/cadastro" className={buttonClasses('primary', 'shrink-0')}>
               {t('demo.createAccount')}
             </Link>
@@ -72,7 +74,7 @@ export function Header({
         )}
       </div>
 
-      <div className="border-t border-border px-4 py-2 lg:px-6">
+      <div data-tour="period" className="border-t border-border px-4 py-2 lg:px-6">
         <PeriodSelector />
       </div>
     </header>
@@ -103,6 +105,8 @@ function AppActions({ onQuickLog }: { onQuickLog: () => void }) {
       >
         <ShieldCheck className="size-5" aria-hidden="true" />
       </Link>
+
+      <HelpMenu tourHref="/inicio?tour=1" />
 
       <Disclosure
         label={t('header.notifications')}

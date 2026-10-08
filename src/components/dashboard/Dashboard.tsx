@@ -16,6 +16,7 @@ import { TimeChart } from '@/components/charts/TimeChart';
 import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
 import { HabitCheckButton } from '@/components/health/HabitCheckButton';
 import { ScoreReviewForm } from '@/components/health/ScoreReviewForm';
+import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import type { DashboardData } from '@/modules/health/dashboard';
@@ -175,17 +176,10 @@ export function Dashboard({
     );
   }
 
-  const { cards, score, previousScore, summary } = data;
+  const { cards, score, previousScore } = data;
   const scoreTrend = trendOf(
     score.value !== null && previousScore.value !== null ? score.value - previousScore.value : null,
   );
-  const summaryText = t(`summary.${summary.key}`, {
-    minutes: summary.values.minutes ? formatDuration(summary.values.minutes) : '',
-    points: formatDecimal(summary.values.points ?? 0),
-    percent: summary.values.percent ?? 0,
-    days: summary.values.days ?? 0,
-    total: summary.values.total ?? 0,
-  });
 
   const sleepTrend = trendOf(cards.sleep.deltaMinutes);
   const moodTrend = trendOf(cards.mood.deltaMood);
@@ -194,18 +188,12 @@ export function Dashboard({
 
   const content = (
     <div className="flex flex-col gap-6">
-      <section aria-labelledby="dash-summary" className="flex flex-col gap-2">
-        <h2 id="dash-summary" className="text-xl font-semibold">
-          {t('greeting')}
-        </h2>
-        <p className="flex flex-wrap items-center gap-2">
-          <span>{summaryText}</span>
-          <ConfidenceBadge level={b('ESTIMADO')} />
-        </p>
-      </section>
+      {/* Resumo em texto por regras, destaques e, se for o caso, apoio (ADR-0025). */}
+      <PeriodInsights insights={data.insights} demo={mode !== 'own'} />
 
       <section
         aria-labelledby="dash-score"
+        data-tour="score"
         className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
       >
         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -242,7 +230,7 @@ export function Dashboard({
         )}
       </section>
 
-      <section aria-labelledby="dash-cards" className="flex flex-col gap-3">
+      <section aria-labelledby="dash-cards" data-tour="cards" className="flex flex-col gap-3">
         <h2 id="dash-cards" className="text-base font-semibold">
           {t('cardsTitle')}
         </h2>
@@ -347,39 +335,43 @@ export function Dashboard({
         </div>
       </section>
 
-      <TimeChart
-        title={t('combined.title')}
-        description={t('combined.description')}
-        badge={b('INFORMADO')}
-        data={data.combined}
-        rightDomain={[1, 5]}
-        series={[
-          {
-            key: 'sleepHours',
-            label: t('combined.sleep'),
-            unit: 'h',
-            kind: 'bar',
-            color: 'var(--hm-domain-sleep)',
-          },
-          {
-            key: 'mood',
-            label: t('combined.mood'),
-            unit: t('combined.scale'),
-            kind: 'line',
-            color: 'var(--hm-domain-mood)',
-            axis: 'right',
-          },
-          {
-            key: 'energy',
-            label: t('combined.energy'),
-            unit: t('combined.scale'),
-            kind: 'line',
-            color: 'var(--hm-domain-activity)',
-            dash: '6 4',
-            axis: 'right',
-          },
-        ]}
-      />
+      <div data-tour="chart">
+        <TimeChart
+          title={t('combined.title')}
+          description={t('combined.description')}
+          badge={b('INFORMADO')}
+          guide="combined"
+          describedBy={summaryTextId('dashboard')}
+          data={data.combined}
+          rightDomain={[1, 5]}
+          series={[
+            {
+              key: 'sleepHours',
+              label: t('combined.sleep'),
+              unit: 'h',
+              kind: 'bar',
+              color: 'var(--hm-domain-sleep)',
+            },
+            {
+              key: 'mood',
+              label: t('combined.mood'),
+              unit: t('combined.scale'),
+              kind: 'line',
+              color: 'var(--hm-domain-mood)',
+              axis: 'right',
+            },
+            {
+              key: 'energy',
+              label: t('combined.energy'),
+              unit: t('combined.scale'),
+              kind: 'line',
+              color: 'var(--hm-domain-activity)',
+              dash: '6 4',
+              axis: 'right',
+            },
+          ]}
+        />
+      </div>
 
       <TodayHabits data={data} mode={mode} />
 

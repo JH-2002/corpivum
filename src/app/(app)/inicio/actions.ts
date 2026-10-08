@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { FormState } from '@/components/forms/form-state';
 import { readPeriod } from '@/lib/period-server';
 import { getConsentService, requireAppSession } from '@/modules/consent/server';
+import { markTourSeen } from '@/modules/health/server';
 import { SCORE_VERSION } from '@/modules/wellbeing';
 import { requestScoreReview } from '@/modules/wellbeing/server';
 
@@ -45,4 +46,13 @@ export async function switchToOwnDataAction(): Promise<void> {
   await getConsentService().chooseDataMode(session.userId, 'own');
   revalidatePath('/', 'layout');
   redirect('/inicio');
+}
+
+/**
+ * Tour do painel concluído ou pulado (ADR-0025): não abre sozinho de novo. Sem entrada: o usuário vem
+ * da sessão. Reabrir pelo menu de ajuda continua possível.
+ */
+export async function markTourSeenAction(): Promise<void> {
+  const session = await requireAppSession();
+  await markTourSeen(session.userId);
 }

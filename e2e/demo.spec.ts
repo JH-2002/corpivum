@@ -1,13 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { foreignRowsSince } from './fixtures';
+import { DEMO_TOUR_SEEN_STATE, foreignRowsSince } from './fixtures';
 import { DEMO_ROUTES, VIEWPORTS } from './routes';
 
 /**
  * Demo público sem login (LEG-X02, §40, ADR-0021): dados fictícios com selo DEMO, sem formulários, sem
  * sessão e sem gravar nada no banco. Acessível (LEG-X01) e responsivo (320–1920px).
  */
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: DEMO_TOUR_SEEN_STATE });
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 

@@ -13,6 +13,7 @@ import {
   type TooltipContentProps,
   type TooltipValueType,
 } from 'recharts';
+import { ChartGuide } from '@/components/charts/ChartGuide';
 import { shortDay } from '@/components/charts/format';
 import { usePrefersReducedMotion } from '@/components/charts/reduced-motion';
 import { ChartTable } from '@/components/charts/TimeChart';
@@ -44,10 +45,13 @@ export function ScheduleChart({
   title,
   rows,
   badge,
+  describedBy,
 }: {
   title: string;
   rows: readonly ScheduleRow[];
   badge: ConfidenceLevel;
+  /** Id do resumo em texto da tela (`aria-describedby`, ADR-0025). */
+  describedBy?: string;
 }) {
   const t = useTranslations('sleep');
   const format = useFormatter();
@@ -75,6 +79,7 @@ export function ScheduleChart({
   return (
     <section
       aria-labelledby={headingId}
+      aria-describedby={describedBy}
       className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
     >
       <div className="flex items-start justify-between gap-2">
@@ -83,6 +88,7 @@ export function ScheduleChart({
         </h2>
         <ConfidenceBadge level={badge} />
       </div>
+      <ChartGuide id="sleepSchedule" badge={badge} />
       <div aria-hidden="true" className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} accessibilityLayer={false} margin={{ left: -8, right: 8 }}>

@@ -10,13 +10,15 @@ interface DisclosureProps {
   label: string;
   children: ReactNode;
   panelClassName?: string;
+  /** Alvo do tour do painel (`data-tour`, ADR-0025). */
+  tourId?: string;
 }
 
 /**
  * Painel suspenso no padrão "disclosure" (botão + aria-expanded), usado no menu da conta e nas
  * notificações. Fecha com Esc (devolvendo o foco ao botão), clique fora ou foco saindo do painel.
  */
-export function Disclosure({ trigger, label, children, panelClassName }: DisclosureProps) {
+export function Disclosure({ trigger, label, children, panelClassName, tourId }: DisclosureProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -48,7 +50,7 @@ export function Disclosure({ trigger, label, children, panelClassName }: Disclos
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative" data-tour={tourId}>
       <button
         ref={buttonRef}
         type="button"

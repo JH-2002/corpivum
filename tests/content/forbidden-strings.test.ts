@@ -96,6 +96,8 @@ describe('detector de alegações proibidas', () => {
     'brain-assertion': 'Seu cérebro está sobrecarregado',
     'you-are-condition': 'Você está deprimido',
     'clinical-report': 'Laudo do seu sono',
+    'population-norm': 'Seu sono está abaixo do recomendado para a sua idade',
+    'causal-claim': 'Seu humor caiu por causa das noites curtas',
   };
 
   /** Variações relatadas na revisão de privacidade: todas precisam ser detectadas. */
@@ -105,6 +107,19 @@ describe('detector de alegações proibidas', () => {
     'Melhora sua ansiedade',
     'Você está ansiosa demais',
     'Seu relatório vale como avaliação clínica',
+    // Comparação com norma ou faixa (ADR-0025).
+    'Você dormiu menos que o normal',
+    'Fora da faixa saudável',
+    'Acima da média da população',
+    'Pessoas da sua idade dormem mais',
+    'Seu peso ideal é 70 kg',
+    // Causa (ADR-0025).
+    'Dormir pouco causou a queda no seu humor',
+    'Sua energia subiu devido aos hábitos',
+    'Os hábitos melhoraram seu humor',
+    'O exercício fez você dormir melhor',
+    'Seu humor ficou baixo porque você dormiu pouco',
+    'Isso resultou em noites mais curtas',
   ];
 
   it.each(MORE_FORBIDDEN)('detecta variação: %s', (text) => {
@@ -121,6 +136,10 @@ describe('detector de alegações proibidas', () => {
     'Nos seus registros, dormir mais costuma aparecer junto com mais energia',
     'Central de Privacidade',
     'Registre os medicamentos que você já usa para receber lembretes',
+    'Seu sono médio registrado ficou 20 min menor que na semana anterior',
+    'Aparecer junto não quer dizer que um explique o outro',
+    'A média ficou parecida com a da semana anterior',
+    'O app não define meta nem classifica valores',
   ];
 
   it('tem um exemplo positivo para cada termo do glossário', () => {

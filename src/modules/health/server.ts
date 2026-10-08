@@ -2,6 +2,7 @@ import 'server-only';
 import { getAdapters } from '@/adapters';
 import { withUser } from '@/lib/db';
 import { APP_TIME_ZONE, localDay } from '@/lib/dates';
+import { readTourSeen, writeTourSeen } from './preferences';
 import { createBodyService, type BodyService } from '@/modules/body/service';
 import { withConsent } from '@/modules/consent/server';
 import { createHabitsService, type HabitsService } from '@/modules/habits/service';
@@ -55,6 +56,16 @@ export async function setStreaksEnabled(userId: string, enabled: boolean): Promi
   await withUser(userId, (tx) =>
     tx.user.update({ where: { id: userId }, data: { streaksEnabled: enabled } }),
   );
+}
+
+/** Tour do painel já visto ou pulado (ADR-0025). Preferência de interface, não é dado de saúde. */
+export function hasSeenTour(userId: string): Promise<boolean> {
+  return withUser(userId, (tx) => readTourSeen(tx, userId));
+}
+
+/** Marca o tour como visto (concluído ou pulado). Reabrir pelo menu de ajuda não depende disto. */
+export async function markTourSeen(userId: string): Promise<void> {
+  await withUser(userId, (tx) => writeTourSeen(tx, userId));
 }
 
 function servicesWith(d: HealthDeps): HealthServices {

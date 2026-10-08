@@ -14,13 +14,8 @@ import {
 import type { JournalRecord } from '@/modules/journal';
 import { averageOf, dailyAverages, type MoodRecord } from '@/modules/mood';
 import { averageDurationMinutes, dailyHours, type SleepRecord } from '@/modules/sleep';
-import {
-  buildSummary,
-  computeWellbeingScore,
-  type PeriodRecords,
-  type Summary,
-  type WellbeingScore,
-} from '@/modules/wellbeing';
+import { dashboardInsights, type ModuleInsights, type PeriodRecords } from '@/modules/insights';
+import { computeWellbeingScore, type WellbeingScore } from '@/modules/wellbeing';
 import type { HealthDataSource } from './source';
 
 /**
@@ -99,7 +94,8 @@ export interface DashboardData {
   previous: DateRange;
   score: WellbeingScore;
   previousScore: WellbeingScore;
-  summary: Summary;
+  /** Resumo em texto e destaques por regras (ADR-0025). */
+  insights: ModuleInsights;
   cards: {
     sleep: SleepCard;
     mood: MoodCard;
@@ -271,7 +267,7 @@ export async function buildDashboard(
     previous: prev,
     score,
     previousScore,
-    summary: buildSummary(now, before),
+    insights: dashboardInsights(now, before, today),
     cards,
     combined,
     todayHabits,

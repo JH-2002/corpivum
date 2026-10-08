@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useDialogFocusLoop } from './dialog-focus';
 import { buttonClasses, type ButtonVariant } from './Button';
 import { IconButton } from './IconButton';
 
@@ -41,28 +42,7 @@ export function ConfirmDialog({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
-      const focusables = dialog.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"])',
-      );
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      if (!first || !last) return;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    dialog.addEventListener('keydown', onKeyDown);
-    return () => dialog.removeEventListener('keydown', onKeyDown);
-  }, []);
+  useDialogFocusLoop(dialogRef);
 
   const close = () => setOpen(false);
 

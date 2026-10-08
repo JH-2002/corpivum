@@ -493,3 +493,37 @@ Rodar os testes apagava as contas de quem estava usando o app localmente.
   recusam rodar. O seed de desenvolvimento usa uma trava própria (só banco local).
 **Consequências.** A CI cria o banco de testes no volume novo e gera as URLs a partir do `.env.example`.
 Uma rodada completa de `test:db` + e2e não altera nenhuma tabela do banco de desenvolvimento (conferido).
+
+## ADR-0025 — Camada explicativa por regras: resumos, destaques, guia dos gráficos e tour
+**Contexto.** O dashboard tinha um resumo de uma frase; os módulos não tinham texto que explicasse o
+período, e os gráficos não diziam como lê-los. Pedido: resumo em texto, "Como ler este gráfico",
+destaques automáticos e um tour opcional, sem IA, comparando a pessoa só com ela mesma.
+**Decisão.**
+- Módulo puro `src/modules/insights`: uma função por tela (`sleepInsights`, `moodInsights`,
+  `habitsInsights`, `journalInsights`, `bodyInsights`, `dashboardInsights`) devolve estado
+  (`empty`/`partial`/`ok`), 2 a 4 frases e destaques como **chaves do i18n + argumentos tipados**
+  (inteiro, decimal, duração, dias, etiqueta e campo fixos). Nenhum argumento carrega conteúdo livre; o
+  diário usa só dia e etiquetas, sem decifrar o texto. Substitui o `buildSummary` da ADR-0021.
+- Comparações só com o período anterior de mesmo tamanho e com a frequência prevista de cada hábito
+  (não há modelo de metas antes da Fase 4). Limiares em `INSIGHT_RULES`. Dias extremos pelo dia da semana
+  em períodos de até 7 dias; senão, pela data. Rótulos neutros ("mais longa", "mais alto"), sem
+  "melhor/pior".
+- Humor: média ≤ 2, queda ≥ 0,5 ponto ou registro no ponto mais baixo → `supportSignal`. O resumo usa
+  texto acolhedor, sem dramatizar e sem causa, e o `SupportNotice` existente (CVV 188 / SAMU 192) aparece
+  logo abaixo do resumo (sem `role="status"`); sem o sinal, continua no rodapé da tela de humor. Vale
+  também no dashboard. Nenhuma frase de humor cita outro domínio.
+- Interface: `PeriodInsights` no topo de cada tela (selo ESTIMADO ou DEMO); os gráficos apontam para o
+  texto do resumo com `aria-describedby` (alternativa em texto). `ChartGuide` (`<details>`) descreve
+  eixos e cada série a partir das mesmas definições do desenho (tipo, traço, eixo, unidade), o selo e o
+  que fazer com a informação.
+- LEG-M03: novos termos `population-norm` e `causal-claim`. O texto gerado é montado com o catálogo
+  real nos testes e passa pelo glossário (completo, parcial, vazio e demo), fechando a lacuna da ADR-0004
+  para esta camada.
+- Tour: componente próprio (sem biblioteca, ADR-0009), `<dialog>` modal encaixado embaixo da tela,
+  passos ancorados em `data-tour` (passo sem alvo é pulado), Esc/"Pular" fecham, foco devolvido,
+  contorno no alvo e sem animação com `prefers-reduced-motion`. Conta: `users.tour_seen`, booleano sem data (minimização; GRANT só da
+  coluna); demo público: `localStorage` com try/catch, nada vai ao servidor. Reaberto pelo menu de ajuda
+  (`?tour=1`), que também explica os selos.
+**Consequências.** Mudar limiar ou redação muda o texto exibido: os testes de `src/modules/insights` e
+`src/components/insights` precisam acompanhar. Os textos são RASCUNHO (`LEGAL-REVIEW`, OI-21). As contas
+criadas pelo e2e nascem com o tour visto; o demo do e2e marca o `localStorage`.

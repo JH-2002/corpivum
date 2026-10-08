@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { Suspense } from 'react';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { HealthFrame, healthView } from '@/components/health/HealthPage';
 import { OpenQuickLogButton } from '@/components/shell/OpenQuickLogButton';
@@ -7,6 +8,8 @@ import { readPreviewState, type PageSearchParams } from '@/components/shell/Modu
 import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
 import { buildDashboard } from '@/modules/health/dashboard';
+import { hasSeenTour } from '@/modules/health/server';
+import { Tour } from '@/components/tour/Tour';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -25,6 +28,8 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
     view.kind === 'data' && !preview
       ? await view.source.session((s) => buildDashboard(s, range, today))
       : null;
+  // Só com o painel na tela; se a leitura falhar, o tour não abre sozinho (e o painel não cai).
+  const tourSeen = data ? await hasSeenTour(session.userId).catch(() => true) : true;
   return (
     <HealthFrame page="home" href="/inicio" session={session} view={view} preview={preview}>
       {data && view.kind === 'data' ? (
@@ -33,6 +38,12 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
           mode={view.mode}
           emptyAction={<OpenQuickLogButton>{t('pages.home.cta')}</OpenQuickLogButton>}
         />
+      ) : null}
+      {/* Tour opcional (ADR-0025): sozinho na primeira visita; reaberto pelo menu de ajuda. */}
+      {data ? (
+        <Suspense fallback={null}>
+          <Tour autoStart={!tourSeen} persist="server" />
+        </Suspense>
       ) : null}
     </HealthFrame>
   );
