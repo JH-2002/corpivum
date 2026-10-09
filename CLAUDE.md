@@ -31,7 +31,7 @@ interface ou resposta de IA pode contradizer isso.
 10. Texto jurídico é RASCUNHO marcado `LEGAL-REVIEW`. Nunca escrever "em conformidade com a LGPD".
 
 ## Stack
-Next.js (App Router) · React · TypeScript strict · Tailwind · React Three Fiber + Drei · Recharts ·
+Next.js (App Router) · React · TypeScript strict · Tailwind · React Three Fiber (sem Drei, ADR-0026) · Recharts ·
 PostgreSQL · Prisma · auth próprio (ADR-0014; Auth.js descartado) · Zod · Vitest · Playwright · pnpm.
 Adaptadores trocáveis: `LlmProvider`, `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQueue`,
 `AgeSignalProvider`, `WearableProvider`. Módulos em `src/modules/<dominio>`.
