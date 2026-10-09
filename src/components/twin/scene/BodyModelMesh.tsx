@@ -27,7 +27,7 @@ export function BodyModelMesh(props: BodySceneProps & { asset: BodyAsset }) {
     invalidate();
   }, [get, model]);
 
-  const height = asset.calibration.baseHeightM * morph.scale;
+  const height = asset.calibration.baseHeightM * morph.scale[1];
   return (
     <group position={[0, -height / 2, 0]} scale={morph.scale}>
       {parts.map((part, i) => (

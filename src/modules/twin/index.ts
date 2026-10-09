@@ -10,13 +10,17 @@ export {
   parseBodyModel,
   type BodyAsset,
   type BodyModel,
+  type MeasurePlane,
 } from './bodyModel';
 export { DEMO_TWIN_PROFILES, demoTwinRows } from './demoProfiles';
 export {
   bodyMorphWeights,
+  drawnGirthsCm,
+  drawnTolerance,
   modelGirthCm,
   MORPH_LIMITS,
   MORPH_NAMES,
+  outOfDrawingRange,
   type BodyCalibration,
   type BodyMorph,
   type MorphName,

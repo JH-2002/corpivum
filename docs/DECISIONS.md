@@ -643,42 +643,56 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   código do add-on é GPL e não entra no modelo). O asset pack "system assets" não é usado. Pipeline versionado em
   `scripts/assets/` (Blender headless + `gltfpack`); cada arquivo tem linha em `docs/ASSETS.md` (fonte, versões,
   autor, licença, SHA-256).
-- **Silhueta por variante** (o feminino lia como um corpo masculino com mais gordura): macros e targets do
-  MakeHuman aplicados à base e aos corpos de tamanho (`VARIANTS` em `build_body.py`). Feminino: gênero 0,
-  ombros mais estreitos que o quadril, cintura marcada (cintura/quadril da base entre 0,63 e 0,65, nunca abaixo:
-  LEG-M06; hoje 0,64), quadril e coxas mais cheios, peito de volume moderado e liso, pescoço e braços mais finos.
-  Masculino: gênero 1, com as circunferências do antigo modelo neutro (peito 84, braço 26,5, cintura 70, quadril 94
-  e coxa 53 cm, via massa corporal menor na base e ajuste fino pelos targets de circunferência), ombros mais largos
-  que o quadril, peito plano, volume da pelve reduzido. A variante neutra saiu (decisão do responsável pelo
-  produto, 2026-10-09).
-- **Pipeline:** por variante:
-  1. só a pele do corpo (olhos, dentes, língua e geometria genital são auxiliares e saem); mamilos achatados
-     (targets `nipple-*-decr`) e suavizados, região genital suavizada;
-  2. morphs regionais `<região>_min`/`_max` dos targets de circunferência do MakeHuman (a cintura tem morph
-     próprio: escala radial do tronco com queda suave em altura, metade do deslocamento para a frente, nada perto
-     dos braços; o target do MakeHuman só projetava o abdômen) e morph global
-     `size_min`/`size_max` da macro de massa do MakeHuman (0 e 1; a variante usa 0,5). É só uma base de forma: o
-     quanto usar vem das medidas, nunca do peso da pessoa;
-  3. calibração medida na malha completa (perímetro do fecho convexo do corte, como uma fita métrica; busto na
-     altura dos mamilos) em cada morph;
-  4. malha final: remesh por voxels de 8 mm (fecha boca, narinas e olhos), rosto suavizado na topologia nova,
-     decimação para ~8.500 triângulos e corte nos planos entre regiões (borda reta). Os morphs vêm da malha
-     completa por Surface Deform, que não exige a mesma topologia;
-  5. uma primitiva por região (peito, braço, cintura, quadril, coxa e o resto), com material próprio: no three
-     vira uma malha, o que reaproveita o clique e o destaque por região da Fase 3.
-- **Forma só pelas medidas informadas:** `bodyMorphWeights` recebe só a `BodyShape` (circunferências e altura
-  já limitadas por `bodyShape`), nunca o peso. O tamanho global é a média, nas regiões com medida, do quanto
-  cada uma pede do morph `size_*`; o resto vai para os morphs regionais. Limites conferidos nos renders do
-  pipeline (`MORPH_LIMITS`: tamanho até 3× para cima e 2× para baixo, regionais até 1,5× e 1×); extrapolar mais
-  deforma o corpo (caricatura). Acima disso a forma fica no limite e o número exibido continua o informado
-  (ADR-0026); a forma acompanha cintura de 48 a 100 cm no feminino e de 51 a 138 cm no masculino, e quadril de
-  74 a 149 cm (feminino) e 77 a 149 cm (masculino). Região
-  sem medida fica na circunferência base da variante enquanto os limites permitem compensar o tamanho global;
-  além disso, acompanha parte dele, esmaecida e com "sem medida informada". Sem nenhuma medida, a forma base.
-  Altura = escala uniforme. Continua sem IMC, sem juízo e sem cor por dado.
-- **Demo por variante:** no demo (e só nele), a série fictícia é deslocada no navegador para terminar em medidas
-  coerentes com a variante escolhida (`DEMO_TWIN_PROFILES`: feminino com cintura 70 e quadril 98 cm), com as
-  mesmas datas e variações. Com dados da pessoa, a variante nunca muda medida nenhuma.
+- **Dois modelos e valores de referência** (docs/specs/twin-ajustes-corporais.md, que substitui os pedidos
+  anteriores de cintura, busto e medidas do masculino): feminino e masculino; a variante neutra saiu (decisão do
+  responsável pelo produto, 2026-10-09). A base de cada modelo reproduz as circunferências de referência da seção 4
+  da especificação (feminino 86/25/68/96/54, masculino 96/31/80/98/57 cm em peito/braço/cintura/quadril/coxa)
+  dentro de máx(0,5 cm; 1%), medidas na malha final. São valores de calibração, não padrão de saúde nem de beleza;
+  nenhum texto os apresenta como ideal, normal ou meta, e a relação cintura/quadril é só interna (calibração e
+  testes), nunca exibida, como o IMC (LEG-M06).
+- **Forma fixa por modelo, sem controles livres:** o corpo é moldado só pelas medidas registradas (peito, braço,
+  cintura, quadril, coxa e altura). Largura de ombro, profundidade do tórax, projeção do busto, glúteos e abdômen
+  ficam fixos por modelo (`VARIANTS` em `build_body.py`: macros e targets do MakeHuman) e servem só para a forma e a
+  calibração. Feminino: ombros mais estreitos que o quadril, quadril e glúteos mais cheios, peito liso. Masculino:
+  ombros mais largos que o quadril, peito plano, volume da pelve reduzido. A interface não ganha sliders.
+- **Protocolo de medição** (README do pipeline): perímetro do fecho convexo do corte, como uma fita. Peito na
+  altura dos mamilos; cintura na menor circunferência entre 30% e 55% da altura entreperna→pescoço; quadril na
+  maior entre 5% e 35%; coxa a 10% de entreperna→joelho; braço perpendicular ao úmero a 55% de ombro→cotovelo. O
+  formulário de medidas ganha uma dica curta de como medir em cada circunferência, alinhada a isso (RASCUNHO,
+  `LEGAL-REVIEW`, OI-24).
+- **Pipeline:** por modelo:
+  1. só a pele do corpo (olhos, dentes, língua e geometria genital são auxiliares e saem antes de medir); mamilos
+     achatados (targets `nipple-*-decr`) e suavizados, região genital suavizada;
+  2. morphs regionais próprios e localizados: no tronco, faixas radiais com queda suave em altura, sem braços (o
+     peito não sobe até ombros e pescoço; a cintura cresce em volta do tronco com metade do deslocamento para a
+     frente; o quadril desce coxa abaixo, sem vinco na entreperna); no braço e na coxa, expansão em volta do eixo do
+     osso que some antes de ombro, cotovelo, virilha e joelho. Morph global `size_min`/`size_max` da macro de massa
+     do MakeHuman para corpos bem maiores ou menores sem caricatura. Nada disso usa o peso da pessoa;
+  3. ajuste automático da base (`fit_base`) com os próprios morphs até a referência, conferido na malha final em até
+     três passadas (o remesh e a decimação encolhem um pouco: o peito saía até 3 cm menor);
+  4. malha final: remesh por voxels de 8 mm (fecha boca, narinas e olhos), rosto suavizado, decimação para ~8.500
+     triângulos, remoção de dobras e corte nos planos entre regiões (borda reta); morphs da malha completa por
+     Surface Deform;
+  5. calibração na malha final: cada região na base, com cada morph em 1 e com o morph de cada OUTRA região em 1
+     (`cross`); os planos de medida vão para o manifesto (`measure`).
+- **Forma só pelas medidas informadas:** `bodyMorphWeights` recebe só a `BodyShape`, nunca o peso. Tamanho global
+  por mínimos quadrados nas regiões medidas (um braço maior não infla o tronco), com busca do tamanho que minimiza o
+  maior erro quando algum ajuste regional chega ao limite; ajuste regional resolvido junto com o efeito cruzado
+  (Gauss-Seidel). Altura: escala vertical cheia e, na horizontal, só a raiz dela (uma pessoa mais alta não é
+  proporcionalmente mais larga); a meta de cada região é a medida dividida pelo quanto a escala a multiplica (no
+  braço, pela direção do úmero). Antes, a escala uniforme fazia uma pessoa de 1,80 m no modelo feminino ter todas as
+  circunferências desenhadas ~12% maiores. Limites conferidos nos renders (`MORPH_LIMITS`); além deles, a forma fica
+  no limite, o número exibido continua o informado e o painel da região diz "Fora da faixa do desenho: o modelo
+  mostra o limite; o número é o informado." (texto, sem número do modelo; RASCUNHO, `LEGAL-REVIEW`). Região sem
+  medida mira a circunferência base enquanto os limites permitem. Continua sem IMC, sem juízo e sem cor por dado.
+- **Validação na geometria real (CI):** `tests/content/body-measures.test.ts` abre os `.glb` no Node (three +
+  meshopt), aplica os pesos do app e mede a malha final pelo protocolo: base × referência em máx(0,5 cm; 1%);
+  valores baixo, intermediário e alto de cada região em 150, 170 e 190 cm dentro de máx(1,0 cm; 2%); mudar uma
+  medida em 10 cm muda as outras até 1,0 cm; fora da faixa, só nos extremos de estatura, com o aviso do painel e o
+  desenho na direção pedida (hoje um caso: peito feminino −8% a 1,90 m).
+- **Demo por modelo:** no demo (e só nele), a série fictícia é deslocada no navegador para terminar nos valores de
+  referência do modelo escolhido, com as mesmas datas e variações. Com dados da pessoa, o modelo nunca muda medida
+  nenhuma.
 - **Os dois modelos, sempre (OI-24(e), decisão do responsável pelo produto, 2026-10-09):** depois da escolha, a
   tela do twin pede as duas variantes juntas, qualquer que seja ela, então os pedidos não revelam ao servidor qual corpo a
   pessoa vê. Os pedidos saem sem cookie (`credentials: 'omit'`). Trocar a variante não gera pedido novo.
@@ -688,7 +702,7 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   modelo você prefere ver?" ("Só muda a aparência; fica salvo neste navegador.") e, até a escolha, mostra o corpo
   gerado em código, sem pedir nenhum `.glb`. A troca fica no seletor abaixo dos controles.
 - **Orçamento testado no CI:** ≤ 150 KiB por variante e ≤ 300 KiB somando as duas (são baixadas juntas). Hoje:
-  124,5 + 122,4 = 246,9 KiB. O teste de conteúdo também exige as duas variantes e confere hash ×
+  125,9 + 122,1 = 248,0 KiB. O teste de conteúdo também exige as duas variantes e confere hash ×
   manifesto × nome × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, os nomes das regiões e dos
   morph targets e a coerência da calibração.
 - **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e

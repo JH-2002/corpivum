@@ -6,31 +6,31 @@ type Profile = Readonly<Partial<Record<BodyField, number>>>;
 
 /**
  * Medidas fictícias de cada variante no último dia do demo (ADR-0028), para o demo mostrar cada modelo com
- * proporções coerentes (feminino: cintura/quadril ~0,7). SÓ no demo: com dados da pessoa, a variante nunca
+ * proporções coerentes. SÓ no demo: com dados da pessoa, a variante nunca
  * muda medida nenhuma (é só aparência).
  */
 export const DEMO_TWIN_PROFILES: Readonly<Record<BodyModel, Profile>> = Object.freeze({
+  // Circunferências: os valores de referência de calibração de cada modelo (docs/specs/twin-ajustes-corporais.md,
+  // seção 4). Altura e peso fictícios.
   feminine: {
     heightCm: 163,
     weightKg: 60,
-    chestCm: 90,
-    armCm: 27,
-    waistCm: 70,
+    chestCm: 86,
+    armCm: 25,
+    waistCm: 68,
+    hipCm: 96,
+    thighCm: 54,
+  },
+  masculine: {
+    heightCm: 175,
+    weightKg: 76,
+    chestCm: 96,
+    armCm: 31,
+    waistCm: 80,
     hipCm: 98,
     thighCm: 57,
   },
-  // Medidas do antigo perfil neutro, com traços masculinos no modelo.
-  masculine: {
-    heightCm: 170,
-    weightKg: 68,
-    chestCm: 92,
-    armCm: 28.5,
-    waistCm: 77,
-    hipCm: 96,
-    thighCm: 55,
-  },
 });
-
 const round1 = (v: number) => Math.round(v * 10) / 10;
 
 /**

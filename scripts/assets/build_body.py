@@ -12,9 +12,11 @@ O que o script faz (e o que ele garante):
 - só a pele do corpo (grupo `body`): olhos, dentes, língua, geometria genital e roupas-guia são auxiliares e
   saem; sem pele, textura, UV ou rig;
 - mamilos achatados (targets `nipple-*-decr`) e suavizados em cada corpo; região genital suavizada;
-- morphs regionais `<região>_min`/`_max` dos targets de circunferência do MakeHuman e morph global
-  `size_min`/`size_max` da macro de massa (só base de forma; o app usa só as medidas informadas);
-- calibração em cm medida na malha completa (perímetro do fecho convexo do corte, como uma fita métrica);
+- forma fixa por modelo e base ajustada às circunferências de referência (`fit_base`), conferida na malha final;
+- morphs regionais `<região>_min`/`_max` próprios e localizados (faixas no tronco, eixo do osso nos membros) e
+  morph global `size_min`/`size_max` da macro de massa (só base de forma; o app usa só as medidas informadas);
+- calibração em cm medida na malha final pelo protocolo do README (fecho convexo do corte, como uma fita),
+  com o efeito cruzado entre regiões e os planos de medida para o teste de geometria do CI;
 - malha final por remesh de voxels (fecha boca, narinas e olhos; rosto de manequim), decimada e cortada nos
   planos entre regiões; morphs transferidos da malha completa por Surface Deform;
 - uma primitiva por região (material `region_<região>`), para o clique e o destaque por região.
@@ -33,65 +35,69 @@ from mathutils import Vector
 
 # Forma de cada variante: macros do MakeHuman e targets (peso) aplicados à base e aos corpos de tamanho, para
 # os sexos se distinguirem à primeira vista. MakeHuman: gênero 0 = feminino, 1 = masculino.
+# Forma de cada modelo. Dois grupos de parâmetros, nenhum deles exposto na interface:
+# - `macros`/`targets`/`mass`: forma fixa do modelo (largura de ombro, profundidade do tórax, projeção do busto,
+#   glúteos, abdômen), do MakeHuman. Ninguém mede esses parâmetros; eles só aproximam a forma da referência.
+# - `reference`: circunferências da base em cm (docs/specs/twin-ajustes-corporais.md, seção 4). O ajuste
+#   automático (`fit_base`) leva a malha final até elas, dentro de `REFERENCE_TOLERANCE`. Não são padrão de saúde
+#   nem de beleza, e a relação cintura/quadril que delas resulta é só interna (LEG-M06).
+# MakeHuman: gênero 0 = feminino, 1 = masculino.
 VARIANTS = {
-    # Ombros mais estreitos que o quadril, cintura marcada (cintura/quadril da base entre 0,63 e 0,65, não menos:
-    # LEG-M06), quadril e coxas cheios, peito de volume moderado e forma lisa, pescoço e braços mais finos.
     "feminine": {
-        "macros": {"gender": 0.0, "proportions": 1.0, "cupsize": 0.62, "firmness": 0.7},
+        "macros": {"gender": 0.0, "proportions": 1.0, "cupsize": 0.6, "firmness": 0.7},
         "targets": {
             "measure-shoulder-dist-decr": 0.6,
             "torso-vshape-decr": 0.5,
-            "hip-scale-horiz-incr": 0.25,
+            "hip-scale-horiz-incr": 0.2,
             "buttocks-volume-incr": 0.3,
-            "l-upperleg-fat-incr": 0.15,
-            "r-upperleg-fat-incr": 0.15,
-            "measure-waist-circ-decr": 0.25,
-            "stomach-pregnant-decr": 0.6,
+            "stomach-pregnant-decr": 0.5,
             "neck-scale-horiz-decr": 0.5,
             "measure-neck-circ-decr": 0.5,
-            "l-upperarm-fat-decr": 0.5,
-            "r-upperarm-fat-decr": 0.5,
         },
+        "reference": {"chest": 86.0, "arm": 25.0, "waist": 68.0, "hip": 96.0, "thigh": 54.0},
     },
-    # Circunferências do antigo modelo neutro (peito 84, braço 26,5, cintura 69, quadril 94, coxa 53 cm) com traços
-    # masculinos: ombros mais largos que o quadril, peito plano, volume da pelve reduzido.
     "masculine": {
-        # Massa corporal menor na forma base (a macro emagrece o corpo inteiro de forma natural); os targets de
-        # circunferência fazem só o ajuste fino (pesos altos deixam relevos no tronco).
-        "mass": 0.3,
-        "macros": {"gender": 1.0, "proportions": 1.0, "muscle": 0.45},
+        "macros": {"gender": 1.0, "proportions": 1.0, "muscle": 0.5},
         "targets": {
             "measure-shoulder-dist-incr": 0.35,
             "torso-vshape-incr": 0.3,
-            "torso-muscle-pectoral-decr": 0.6,
-            "torso-muscle-dorsi-decr": 0.5,
-            "measure-bust-circ-decr": 1.0,
-            "measure-upperarm-circ-decr": 0.37,
-            "measure-hips-circ-incr": 0.15,
-            "measure-waist-circ-decr": 0.3,
-            "stomach-pregnant-decr": 0.8,
+            "torso-muscle-pectoral-decr": 0.3,
+            "stomach-pregnant-decr": 0.5,
             "bulge-decr": 1.0,
         },
+        "reference": {"chest": 96.0, "arm": 31.0, "waist": 80.0, "hip": 98.0, "thigh": 57.0},
     },
 }
 REGIONS = ("chest", "arm", "waist", "hip", "thigh")
 MATERIALS = REGIONS + ("rest",)
-# Targets de circunferência do MakeHuman por região. A cintura não usa o do MakeHuman (projeta o abdômen):
-# tem morph próprio, radial em volta do tronco (`waist_coords`).
-MEASURE_TARGETS = {
-    "chest": "measure-bust-circ",
-    "arm": "measure-upperarm-circ",
-    "hip": "measure-hips-circ",
-    "thigh": "measure-thigh-circ",
+# Tolerância da base × referência, medida na malha final: máx(0,5 cm; 1%) (plano aprovado). O ajuste mira metade.
+def reference_tolerance(cm):
+    return max(0.5, 0.01 * cm)
+
+
+# Morphs regionais próprios e localizados (seções 5–7 da especificação): por unidade, a escala radial.
+# Tronco (peito, cintura, quadril): faixa em altura (gaussiana com sigma acima/abaixo em m) em volta do centro de
+# cada fatia, sem braços; para a frente só `front` do deslocamento. As faixas se sobrepõem (sem degrau entre elas);
+# o efeito de cada morph nas outras regiões vai para a calibração (`cross`) e o app compensa. O peito sobe pouco
+# (ombros e pescoço parados); o quadril desce coxa abaixo, sumindo em `below` m (sem vinco na entreperna). Membros (braço, coxa): em volta do eixo do osso, com subida e
+# descida ao longo dele (frações do eixo) para não mexer em ombro, cotovelo, virilha e joelho.
+REGION_SCALE = {"min": -0.22, "max": 0.24}
+TORSO_MORPHS = {
+    "chest": {"up": 0.055, "down": 0.09, "front": 0.8, "reach": (0.8, 1.0)},
+    "waist": {"up": 0.09, "down": 0.09, "front": 0.5, "reach": (0.7, 0.9)},
+    "hip": {"up": 0.09, "down": 0.09, "front": 0.6, "reach": (1.8, 2.2), "below": 0.09},
 }
-# Morph de cintura: escala radial do tronco no centro da faixa da cintura (fração da altura do tronco), com
-# queda gaussiana; para a frente, só uma parte do deslocamento (a circunferência cresce em volta, sem barriga).
-WAIST_CENTER_F = 0.42
-WAIST_SIGMA_F = 0.13
-WAIST_SCALE = {"waist_min": -0.16, "waist_max": 0.22}
-WAIST_FRONT_FACTOR = 0.5
-# Fração da distância lateral do ombro onde o morph de cintura começa a sumir e some de todo.
-WAIST_REACH = (0.7, 0.9)
+LIMB_MORPHS = {
+    # Começa longe da axila: engrossado, o braço não encosta no tronco na altura do peito.
+    "arm": {"ramp_in": (0.25, 0.45), "ramp_out": (0.8, 1.0)},
+    "thigh": {"ramp_in": (0.0, 0.0), "ramp_out": (0.75, 0.95), "groin": 0.07},
+}
+# Ajuste da base: iterações, passo máximo por iteração (unidades de morph) e total máximo antes de exigir
+# revisão da forma fixa do modelo.
+FIT_ITERATIONS = 10
+FIT_STEP_MAX = 0.6
+FIT_TOTAL_MAX = 1.5
+FIT_PASSES = 3
 # Vértices 0..BODY_VERTS-1 formam a pele do corpo; acima disso, só geometria auxiliar (grupo `body` do MPFB2).
 BODY_VERTS = 13380
 TARGET_TRIANGLES = 8500
@@ -159,31 +165,73 @@ def smoothstep(edge0, edge1, x):
     return t * t * (3 - 2 * t)
 
 
-def waist_coords(coords, lm, scale):
-    """Cintura maior (`scale` > 0) ou menor: escala radial dos vértices do tronco em volta do centro de cada fatia,
-    com queda gaussiana em altura. Para a frente (-Y), só `WAIST_FRONT_FACTOR` do deslocamento."""
-    span = lm.neck.z - lm.crotch_z
-    torso = [i for i in range(BODY_VERTS) if lm.region(coords[i]) in ("chest", "waist", "hip")]
+def torso_slices(coords, lm, indices):
+    """Centro (em y) de cada fatia de 1 cm do tronco: x = 0 (simetria), y = meio entre frente e costas."""
     slices = {}
-    for i in torso:
+    for i in indices:
         key = round(coords[i].z * 100)
         lo, hi = slices.get(key, (math.inf, -math.inf))
         slices[key] = (min(lo, coords[i].y), max(hi, coords[i].y))
+    return {k: (lo + hi) / 2 for k, (lo, hi) in slices.items()}
+
+
+def torso_morph(coords, lm, region, center_z, scale):
+    """Morph de uma faixa do tronco: escala radial em volta do centro de cada fatia, gaussiana em altura em torno
+    de `center_z`, nada perto dos braços; para a frente (-Y), só `front` do deslocamento. O quadril some na
+    entreperna (continuidade com as coxas)."""
+    cfg = TORSO_MORPHS[region]
+    below = cfg.get("below", 0.0)
+    regions = ("chest", "waist", "hip", "thigh") if below else ("chest", "waist", "hip")
+    torso = [
+        i for i in range(len(coords))
+        if lm.region(coords[i]) in regions and coords[i].z > lm.crotch_z - below
+    ]
+    centers = torso_slices(coords, lm, torso)
     out = [c.copy() for c in coords]
     for i in torso:
         p = coords[i]
-        f = (p.z - lm.crotch_z) / span
-        weight = math.exp(-0.5 * ((f - WAIST_CENTER_F) / WAIST_SIGMA_F) ** 2)
-        # Longe da linha média (onde passam os braços em pose A), nada se move; transição suave.
-        reach = abs(p.x) / abs(lm.shoulder.x)
-        weight *= 1.0 - smoothstep(WAIST_REACH[0], WAIST_REACH[1], reach)
-        lo, hi = slices[round(p.z * 100)]
-        dy = p.y - (lo + hi) / 2
+        sigma = cfg["up"] if p.z > center_z else cfg["down"]
+        weight = math.exp(-0.5 * ((p.z - center_z) / sigma) ** 2)
+        weight *= 1.0 - smoothstep(cfg["reach"][0], cfg["reach"][1], abs(p.x) / abs(lm.shoulder.x))
+        if below:
+            weight *= smoothstep(lm.crotch_z - below, lm.crotch_z, p.z)
+        else:
+            weight *= smoothstep(lm.crotch_z, lm.crotch_z + 0.06, p.z)
+        dy = p.y - centers[round(p.z * 100)]
         if dy < 0:
-            dy *= WAIST_FRONT_FACTOR
+            dy *= cfg["front"]
         out[i] = p + Vector((p.x, dy, 0.0)) * (weight * scale)
     return out
 
+
+def limb_morph(coords, lm, region, scale):
+    """Morph de braço ou coxa: escala radial em volta do eixo do osso (ombro→cotovelo, quadril→joelho), com subida
+    e descida ao longo dele; ombro, cotovelo, virilha e joelho ficam parados."""
+    cfg = LIMB_MORPHS[region]
+    a, b = (lm.shoulder, lm.elbow) if region == "arm" else (lm.upper_leg, lm.knee)
+    out = [c.copy() for c in coords]
+    for i, p in enumerate(coords):
+        if lm.region(p) != region:
+            continue
+        side = 1.0 if p.x * lm.side >= 0 else -1.0
+        q = Vector((p.x * side, p.y, p.z))  # lado do marco (esquerdo)
+        ab = b - a
+        t = (q - a).dot(ab) / ab.length_squared
+        weight = 1.0 - smoothstep(cfg["ramp_out"][0], cfg["ramp_out"][1], t)
+        if cfg["ramp_in"][1] > cfg["ramp_in"][0]:
+            weight *= smoothstep(cfg["ramp_in"][0], cfg["ramp_in"][1], t)
+        if region == "thigh":
+            weight *= smoothstep(lm.crotch_z, lm.crotch_z - cfg["groin"], p.z)
+        radial = q - (a + ab * t)
+        moved = q + radial * (weight * scale)
+        out[i] = Vector((moved.x * side, moved.y, moved.z))
+    return out
+
+
+def region_morph(coords, lm, planes, region, scale):
+    if region in TORSO_MORPHS:
+        return torso_morph(coords, lm, region, planes[region][0].z, scale)
+    return limb_morph(coords, lm, region, scale)
 
 def body_breadths(coords, lm, hip_z):
     """Diagnóstico da silhueta: largura nos ombros (deltoides) e no quadril, em cm."""
@@ -255,7 +303,9 @@ class Landmarks:
         t, d = segment_t_dist(q, self.shoulder, self.hand)
         if ARM_START_T < t <= 1.0 and d < self.arm_radius:
             return "arm"
-        if p.z >= self.neck.z or (t > 1.0 and d < self.arm_radius * 4):
+        # Mão e dedos: além do punho, perto do eixo e do lado de fora do quadril (sem pegar a lateral da coxa).
+        hand = t > 1.0 and d < self.arm_radius * 2.5 and abs(p.x) > 0.8 * abs(self.hand.x)
+        if p.z >= self.neck.z or hand:
             return "rest"
         if p.z < self.knee.z:
             return "rest"
@@ -306,10 +356,14 @@ def hull_perimeter(points):
     return sum(math.dist(hull[i], hull[(i + 1) % len(hull)]) for i in range(len(hull)))
 
 
-def girth_cm(obj, key_index, plane_co, plane_no, near):
-    """Perímetro (cm) do fecho convexo do corte da malha pelo plano, no laço mais próximo de `near`."""
+def girth_cm(mesh, coords, plane_co, plane_no, near):
+    """Perímetro (cm) do fecho convexo do corte da malha (com as posições `coords`) pelo plano, no laço mais
+    próximo de `near`: a fita métrica passa por cima das concavidades (protocolo do README)."""
     bm = bmesh.new()
-    bm.from_mesh(obj.data, use_shape_key=True, shape_key_index=key_index)
+    bm.from_mesh(mesh)
+    bm.verts.ensure_lookup_table()
+    for v in bm.verts:
+        v.co = coords[v.index]
     cut = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=plane_co,
                                  plane_no=plane_no, dist=1e-6)["geom_cut"]
     verts = {v for v in cut if isinstance(v, bmesh.types.BMVert)}
@@ -336,33 +390,41 @@ def girth_cm(obj, key_index, plane_co, plane_no, near):
     return 100.0 * hull_perimeter([((p - plane_co).dot(u), (p - plane_co).dot(w)) for p in best])
 
 
-def measure_planes(obj, lm):
-    """Planos de medida de cada região, escolhidos na forma base (os mesmos para min e max)."""
+def measure_planes(mesh, coords, lm):
+    """Protocolo de medição (README): plano, normal e ponto de referência do laço de cada circunferência.
+    Peito: horizontal nos mamilos. Cintura: horizontal de menor circunferência entre 30% e 55% da altura
+    entreperna→pescoço. Quadril: horizontal de maior circunferência entre 5% e 35%. Coxa: horizontal a 10% da
+    distância entreperna→joelho. Braço: perpendicular ao úmero, a 55% de ombro→cotovelo."""
     span = lm.neck.z - lm.crotch_z
     center = lambda z: Vector((0.0, 0.0, z))  # noqa: E731
     up = Vector((0.0, 0.0, 1.0))
 
     def scan(f0, f1, pick):
-        zs = [lm.crotch_z + span * (f0 + (f1 - f0) * i / 16) for i in range(17)]
-        vals = [(girth_cm(obj, 0, center(z), up, center(z)), z) for z in zs]
-        return pick(vals)[1]
+        zs = [lm.crotch_z + span * (f0 + (f1 - f0) * i / 24) for i in range(25)]
+        return pick((girth_cm(mesh, coords, center(z), up, center(z)), z) for z in zs)[1]
 
     planes = {
-        "waist": (center(scan(0.3, 0.55, min)), up),
-        "hip": (center(scan(0.05, 0.35, max)), up),
-        # Busto: na altura dos mamilos, como a fita métrica.
-        "chest": (center(lm.nipple_z), up),
+        "chest": (center(lm.nipple_z), up, center(lm.nipple_z)),
+        "waist": (center(scan(0.3, 0.55, min)), up, None),
+        "hip": (center(scan(0.05, 0.35, max)), up, None),
     }
-    for name in ("waist", "hip", "chest"):
-        co, no = planes[name]
+    for name in ("waist", "hip"):
+        co, no, _ = planes[name]
         planes[name] = (co, no, co)
     thigh_z = lm.crotch_z - 0.1 * (lm.crotch_z - lm.knee.z)
-    thigh_near = Vector((lm.upper_leg.x, lm.upper_leg.y, thigh_z))
-    planes["thigh"] = (Vector((0.0, 0.0, thigh_z)), up, thigh_near)
+    planes["thigh"] = (center(thigh_z), up, Vector((lm.upper_leg.x, lm.upper_leg.y, thigh_z)))
     arm_co = lm.shoulder.lerp(lm.elbow, 0.55)
     planes["arm"] = (arm_co, (lm.elbow - lm.shoulder).normalized(), arm_co)
     return planes
 
+
+def girths(mesh, coords, planes):
+    return {r: girth_cm(mesh, coords, *planes[r]) for r in REGIONS}
+
+
+def to_gltf(v):
+    """Blender (Z para cima, frente -Y) → glTF (Y para cima, frente +Z)."""
+    return [round(v.x, 5), round(v.z, 5), round(-v.y, 5)]
 
 # --- etapas --------------------------------------------------------------------------------------------
 
@@ -375,6 +437,54 @@ def clear_scene():
         for block in list(collection):
             if block.users == 0:
                 collection.remove(block)
+
+
+def fit_base(mesh, base, lm, planes, targets):
+    """Ajusta a base com os próprios morphs regionais até cada circunferência (malha completa) chegar ao alvo.
+    Os parâmetros fixos do modelo já devem deixar a base perto da referência: um ajuste grande é erro de forma."""
+    coords = [c.copy() for c in base]
+    total = dict.fromkeys(REGIONS, 0.0)
+    for _ in range(FIT_ITERATIONS):
+        current = girths(mesh, coords, planes)
+        errors = {r: targets[r] - current[r] for r in REGIONS}
+        if all(abs(e) < 0.1 for e in errors.values()):
+            break
+        for region, error in errors.items():
+            if abs(error) < 0.1:
+                continue
+            scale = REGION_SCALE["max"] if error > 0 else REGION_SCALE["min"]
+            moved = region_morph(coords, lm, planes, region, scale)
+            slope = girth_cm(mesh, moved, *planes[region]) - current[region]
+            if abs(slope) < 1e-3:
+                raise RuntimeError(f"Morph de {region} não muda a circunferência medida.")
+            weight = min(FIT_STEP_MAX, max(0.0, error / slope))
+            coords = [c + (m - c) * weight for c, m in zip(coords, moved)]
+            total[region] += weight if error > 0 else -weight
+    for region, amount in total.items():
+        if abs(amount) > FIT_TOTAL_MAX:
+            raise RuntimeError(
+                f"Ajuste de {region} grande demais ({amount:.2f} unidades): revise a forma fixa do modelo."
+            )
+    return coords
+
+
+def full_with_keys(mesh, keys):
+    """Objeto com a malha completa e as shape keys dadas (a primeira é a base)."""
+    obj = bpy.data.objects.new("full", mesh.copy())
+    bpy.context.collection.objects.link(obj)
+    base = keys["Basis"]
+    for vertex, co in zip(obj.data.vertices, base):
+        vertex.co = co
+    obj.data.update()
+    for name, coords in keys.items():
+        block = obj.shape_key_add(name=name, from_mix=False)
+        for point, co in zip(block.data, coords):
+            point.co = co
+    return obj
+
+
+def key_coords(obj, name):
+    return [p.co.copy() for p in obj.data.shape_keys.key_blocks[name].data]
 
 
 def build_variant(name, config, out_dir):
@@ -406,29 +516,18 @@ def build_variant(name, config, out_dir):
     size_coords, size_detail = {}, {}
     for key_name, body_mass in SIZE_MORPHS.items():
         obj = baked_human(body_mass)
-        size_coords[key_name] = [v.co.copy() for v in obj.data.vertices]
+        size_coords[key_name] = [v.co.copy() for v in obj.data.vertices][:BODY_VERTS]
         # Os mamilos mudam de lugar com o tamanho: cada corpo é suavizado nos próprios.
         size_detail[key_name] = detail_vertices(obj)
         bpy.data.objects.remove(obj, do_unlink=True)
     human = baked_human(config.get("mass", 0.5))
-
     lm = Landmarks(human)
     detail = detail_vertices(human)
     head = [i for i in range(BODY_VERTS) if human.data.vertices[i].co.z > lm.neck.z + 0.03]
     head_center = sum((human.data.vertices[i].co for i in head), Vector()) / len(head)
 
-    for region, stem in MEASURE_TARGETS.items():
-        for side, suffix in (("min", "decr"), ("max", "incr")):
-            TargetService.load_target(human, target_path(f"{stem}-{suffix}"), weight=0.0, name=f"{region}_{side}")
-    waist_base = [v.co.copy() for v in human.data.vertices]
-    for key_name, scale in WAIST_SCALE.items():
-        size_coords[key_name] = waist_coords(waist_base, lm, scale)
-    for key_name, coords in size_coords.items():
-        block = human.shape_key_add(name=key_name, from_mix=False)
-        for point, co in zip(block.data, coords):
-            point.co = co
-
-    # Só a pele do corpo; fecha as aberturas dos olhos deixadas pela geometria auxiliar.
+    # Só a pele do corpo (a geometria auxiliar sai antes de medir: a genital cruzaria o plano do quadril); fecha
+    # as aberturas dos olhos.
     bm = bmesh.new()
     bm.from_mesh(human.data)
     bm.verts.ensure_lookup_table()
@@ -439,56 +538,82 @@ def build_variant(name, config, out_dir):
     adj = neighbours(bm)
     bm.to_mesh(human.data)
     bm.free()
-    human.vertex_groups.clear()
+    mesh = human.data.copy()
+    bpy.data.objects.remove(human, do_unlink=True)
 
-    # Mamilos e região genital: na base, deslocamento aplicado também aos morphs de circunferência; os corpos de
-    # tamanho são suavizados nos próprios mamilos.
-    keys = human.data.shape_keys.key_blocks
-    base = [k.co.copy() for k in keys[0].data]
-    delta = {i: co - base[i] for i, co in smoothed(base, adj, detail, DETAIL_SMOOTH_ITERATIONS).items()}
-    for key in keys:
-        if key.name in size_detail:
-            coords = [p.co.copy() for p in key.data]
-            for i, co in smoothed(coords, adj, size_detail[key.name], DETAIL_SMOOTH_ITERATIONS).items():
-                key.data[i].co = co
-            continue
-        for i, d in delta.items():
-            key.data[i].co += d
-    # Altura da base e pés no chão.
-    min_z = min(v.co.z for v in keys[0].data)
-    for key in keys:
-        for p in key.data:
-            p.co.z -= min_z
+    # Mamilos e região genital suavizados em cada corpo (base e tamanhos); pés no chão pela base.
+    base = [v.co.copy() for v in mesh.vertices]
+    for i, co in smoothed(base, adj, detail, DETAIL_SMOOTH_ITERATIONS).items():
+        base[i] = co
+    for key_name, coords in size_coords.items():
+        for i, co in smoothed(coords, adj, size_detail[key_name], DETAIL_SMOOTH_ITERATIONS).items():
+            coords[i] = co
+    min_z = min(p.z for p in base)
+    for coords in (base, *size_coords.values()):
+        for p in coords:
+            p.z -= min_z
     for attr in ("neck", "head", "shoulder", "elbow", "hand", "upper_leg", "knee"):
         getattr(lm, attr).z -= min_z
     lm.crotch_z -= min_z
     lm.nipple_z -= min_z
     head_center.z -= min_z
-    height_m = max(v.co.z for v in keys[0].data)
-    # Fora do modo de edição, os vértices da malha não acompanham a Basis: sem isto, a cópia decimada voltaria à
-    # forma sem suavização e a translação dos pés iria parar nos morphs.
-    for vertex, point in zip(human.data.vertices, keys[0].data):
-        vertex.co = point.co
-    human.data.update()
+    height_m = max(p.z for p in base)
+    size_delta = {k: [c - b for c, b in zip(coords, base)] for k, coords in size_coords.items()}
 
-    planes = measure_planes(human, lm)
-    key_index = {k.name: i for i, k in enumerate(keys)}
+    planes = measure_planes(mesh, base, lm)
+    reference = config["reference"]
+    targets = dict(reference)
+    low = None
+    for attempt in range(1, FIT_PASSES + 1):
+        fitted = fit_base(mesh, base, lm, planes, targets)
+        keys = {"Basis": fitted}
+        for region in REGIONS:
+            for side, scale in REGION_SCALE.items():
+                keys[f"{region}_{side}"] = region_morph(fitted, lm, planes, region, scale)
+        for key_name, delta in size_delta.items():
+            keys[key_name] = [b + d for b, d in zip(fitted, delta)]
+        if low is not None:
+            bpy.data.objects.remove(low, do_unlink=True)
+        low = remeshed_with_morphs(full_with_keys(mesh, keys), head_center, lm)
+        # Base medida na malha final (a que a pessoa vê): o remesh e a decimação encolhem um pouco.
+        drawn = girths(low.data, key_coords(low, "Basis"), planes)
+        errors = {r: reference[r] - drawn[r] for r in REGIONS}
+        print(f"[build_body] {name} passada {attempt}: " + ", ".join(f"{r} {drawn[r]:.1f}" for r in REGIONS))
+        if all(abs(errors[r]) <= reference_tolerance(reference[r]) / 2 for r in REGIONS):
+            break
+        for region in REGIONS:
+            targets[region] += errors[region]
+    for region in REGIONS:
+        if abs(errors[region]) > reference_tolerance(reference[region]):
+            raise RuntimeError(f"{name}: {region} {drawn[region]:.1f} cm fora da referência {reference[region]}.")
+
+    # Calibração na malha final. `cross`: circunferência desta região com o morph de OUTRA região em 1 (só os
+    # efeitos acima de 0,05 cm); o app resolve os pesos juntos para cada medida informada sair certa.
     calibration = {}
     for region in REGIONS:
-        co, no, near = planes[region]
+        measure = lambda key: round(girth_cm(low.data, key_coords(low, key), *planes[region]), 2)  # noqa: E731
+        base_cm = measure("Basis")
+        cross = {}
+        for other in REGIONS:
+            if other == region:
+                continue
+            for side in REGION_SCALE:
+                value = measure(f"{other}_{side}")
+                if abs(value - base_cm) > 0.05:
+                    cross[f"{other}_{side}"] = value
         calibration[region] = {
-            "min": round(girth_cm(human, key_index[f"{region}_min"], co, no, near), 1),
-            "base": round(girth_cm(human, 0, co, no, near), 1),
-            "max": round(girth_cm(human, key_index[f"{region}_max"], co, no, near), 1),
-            "sizeMin": round(girth_cm(human, key_index["size_min"], co, no, near), 1),
-            "sizeMax": round(girth_cm(human, key_index["size_max"], co, no, near), 1),
+            "min": measure(f"{region}_min"),
+            "base": base_cm,
+            "max": measure(f"{region}_max"),
+            "sizeMin": measure("size_min"),
+            "sizeMax": measure("size_max"),
+            "cross": cross,
         }
 
-    body = remeshed_with_morphs(human, head_center, lm)
-    body.name = body.data.name = "body"
+    low.name = low.data.name = "body"
     bpy.ops.object.select_all(action="DESELECT")
-    body.select_set(True)
-    bpy.context.view_layer.objects.active = body
+    low.select_set(True)
+    bpy.context.view_layer.objects.active = low
     bpy.ops.export_scene.gltf(
         filepath=os.path.join(out_dir, f"body-{name}.glb"),
         export_format="GLB",
@@ -507,20 +632,24 @@ def build_variant(name, config, out_dir):
         export_cameras=False,
         export_lights=False,
     )
-    triangles = sum(len(p.vertices) - 2 for p in body.data.polygons)
-    shoulder_cm, hip_cm = body_breadths([p.co for p in keys[0].data], lm, planes["hip"][0].z)
-    silhouette = {
-        "shoulderCm": shoulder_cm,
-        "hipCm": hip_cm,
-        "waistToHip": round(calibration["waist"]["base"] / calibration["hip"]["base"], 2),
-    }
+    triangles = sum(len(p.vertices) - 2 for p in low.data.polygons)
+    shoulder_cm, hip_cm = body_breadths(key_coords(low, "Basis"), lm, planes["hip"][0].z)
     return {
         "baseHeightM": round(height_m, 3),
         "girthCm": calibration,
+        # Planos do protocolo em coordenadas glTF, para o teste de geometria no CI medir a malha final.
+        "planes": {
+            r: {"point": to_gltf(co), "normal": to_gltf(no), "near": to_gltf(near)}
+            for r, (co, no, near) in planes.items()
+        },
         "triangles": triangles,
-        "silhouette": silhouette,
+        # Diagnóstico interno (nunca vai à interface, LEG-M06).
+        "silhouette": {
+            "shoulderCm": shoulder_cm,
+            "hipCm": hip_cm,
+            "waistToHip": round(calibration["waist"]["base"] / calibration["hip"]["base"], 2),
+        },
     }
-
 
 def remove_folds(bm, passes=4):
     """Colapsa faces dobradas sobre si mesmas (normal contra a das vizinhas): a decimação as deixa em vincos,
@@ -635,7 +764,8 @@ def remeshed_with_morphs(full, head_center, lm):
 def assign_regions(obj, lm):
     obj.data.materials.clear()
     for name in MATERIALS:
-        mat = bpy.data.materials.new(f"region_{name}")
+        # Reaproveita o material de uma passada anterior: um novo viraria `region_x.001` e o app não o reconheceria.
+        mat = bpy.data.materials.get(f"region_{name}") or bpy.data.materials.new(f"region_{name}")
         obj.data.materials.append(mat)
     index = {name: i for i, name in enumerate(MATERIALS)}
     for poly in obj.data.polygons:

@@ -56,7 +56,12 @@ for (const variant of VARIANTS) {
     bytes: bytes.length,
     sha256,
     triangles: info.triangles,
-    calibration: { baseHeightM: info.baseHeightM, girthCm: info.girthCm },
+    calibration: {
+      baseHeightM: info.baseHeightM,
+      armAxis: info.planes.arm.normal,
+      girthCm: info.girthCm,
+    },
+    measure: info.planes,
   };
   console.log(`${variant}: ${name} (${(bytes.length / 1024).toFixed(1)} KiB)`);
 }

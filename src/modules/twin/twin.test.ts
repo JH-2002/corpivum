@@ -89,7 +89,7 @@ describe('morph targets do corpo .glb (ADR-0028)', () => {
   it('sem nenhuma medida: forma base da variante', () => {
     const { weights, scale } = morphOf({});
     for (const name of MORPH_NAMES) expect(weights[name]).toBe(0);
-    expect(scale).toBe(1);
+    expect(scale).toEqual([1, 1, 1]);
   });
 
   it('desenha a circunferência informada dentro da faixa do modelo', () => {
@@ -128,8 +128,11 @@ describe('morph targets do corpo .glb (ADR-0028)', () => {
   });
 
   it('altura informada vira escala uniforme; sem altura, a da variante', () => {
-    expect(morphOf({ heightCm: 182.6 }).scale).toBeCloseTo(1.1);
-    expect(morphOf({ waistCm: 80 }).scale).toBe(1);
+    const [x, y, z] = morphOf({ heightCm: 182.6 }).scale;
+    expect(y).toBeCloseTo(1.1);
+    expect(x).toBeCloseTo(Math.sqrt(1.1));
+    expect(z).toBe(x);
+    expect(morphOf({ waistCm: 80 }).scale).toEqual([1, 1, 1]);
   });
 });
 
