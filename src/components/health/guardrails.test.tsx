@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { GUARDRAIL_REASONS } from '@/modules/guardrails';
+import { GUARDRAIL_REASONS, SAFETY_REASONS } from '@/modules/guardrails';
 import { findForbiddenTerms } from '../../../tests/content/forbidden-terms';
 import { renderWithIntl } from '../../../tests/render';
 import { HelpMenu } from '../shell/HelpMenu';
@@ -22,6 +22,16 @@ describe('aviso de guardrail', () => {
     const section = notice.querySelector('section')?.textContent ?? '';
     expect(section).not.toMatch(/\d/);
     expect(findForbiddenTerms(section).map((t) => t.id)).toEqual([]);
+  });
+
+  it('erro comum de formulário não mostra orientação de crise', () => {
+    const { container } = renderWithIntl(
+      <GuardrailNotice reasons={['invalid_date', 'height_required']} />,
+    );
+    expect(screen.getByRole('heading', { name: 'Confira os dados da meta' })).toBeVisible();
+    expect(container).not.toHaveTextContent('188');
+    expect(container).not.toHaveTextContent('profissional de saúde');
+    expect(SAFETY_REASONS.has('invalid_date')).toBe(false);
   });
 
   it('motivo repetido aparece uma vez', () => {

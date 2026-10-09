@@ -4,7 +4,8 @@
  *
  * Cada texto vive no i18n (namespace em `DOCUMENT_MESSAGES`). `textHash` = SHA-256 do JSON desse namespace.
  * Mudou o texto? Suba a versão aqui E publique a nova linha em `policy_versions` numa migração nova
- * (INSERT, nunca UPDATE). O teste `catalog.test.ts` falha se o texto mudar sem isso, e o teste de banco
+ * (INSERT, nunca UPDATE), e arquive o texto antigo em `legal/archive/` (LEG-R03). O teste `catalog.test.ts`
+ * falha se o texto mudar sem isso, e o teste de banco
  * confere as versões publicadas. `requiresReconsent: true` = mudança substancial (pede nova escolha).
  */
 export const CONSENT_PURPOSES = [

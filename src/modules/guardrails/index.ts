@@ -9,6 +9,7 @@ export {
   checkWeightGoal,
   GUARDRAIL_REASONS,
   GUARDRAIL_RULES,
+  SAFETY_REASONS,
   type GuardrailReason,
   type GuardrailResult,
   type RecommendationTopic,

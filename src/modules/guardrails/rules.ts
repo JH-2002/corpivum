@@ -35,12 +35,26 @@ export type RecommendationTopic = (typeof ALLOWED_RECOMMENDATION_TOPICS)[number]
 export const GUARDRAIL_REASONS = [
   'target_below_safe_range',
   'pace_too_fast',
+  'calorie_target_below_floor',
   'height_required',
   'invalid_date',
-  'calorie_target_below_floor',
+  'invalid_input',
   'topic_not_allowed',
 ] as const;
 export type GuardrailReason = (typeof GUARDRAIL_REASONS)[number];
+
+/**
+ * Motivos de segurança: o alvo em si é arriscado. Só eles mostram a orientação profissional e o apoio
+ * (CVV 188 / SAMU 192); os demais são validação comum de formulário.
+ */
+export const SAFETY_REASONS: ReadonlySet<GuardrailReason> = new Set([
+  'target_below_safe_range',
+  'pace_too_fast',
+  'calorie_target_below_floor',
+]);
+
+/** Peso, altura ou calorias precisam ser números finitos e positivos (não depende só do Zod da entrada). */
+const positive = (v: number) => Number.isFinite(v) && v > 0;
 
 /**
  * Resultado de um guardrail. Bloqueado = a interface não aceita nem sugere o alvo e mostra a orientação
@@ -63,6 +77,13 @@ export interface WeightGoalInput {
 
 /** Meta de peso (§30, LEG-M04): nunca abaixo do IMC mínimo nem com perda mais rápida que o limite. */
 export function checkWeightGoal(input: WeightGoalInput): GuardrailResult {
+  if (
+    !positive(input.currentWeightKg) ||
+    !positive(input.targetWeightKg) ||
+    (input.heightCm !== null && !positive(input.heightCm))
+  ) {
+    return result(['invalid_input']);
+  }
   const reasons: GuardrailReason[] = [];
   const loss = input.currentWeightKg - input.targetWeightKg;
   const targetBmi = bmi(input.targetWeightKg, input.heightCm);
@@ -84,6 +105,7 @@ export function checkWeightGoal(input: WeightGoalInput): GuardrailResult {
 
 /** Meta calórica diária (LEG-M07): nunca abaixo do piso. */
 export function checkCalorieTarget(kcalPerDay: number): GuardrailResult {
+  if (!positive(kcalPerDay)) return result(['invalid_input']);
   return result(kcalPerDay < GUARDRAIL_RULES.minDailyKcal ? ['calorie_target_below_floor'] : []);
 }
 

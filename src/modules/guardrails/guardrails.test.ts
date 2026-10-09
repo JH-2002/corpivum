@@ -54,6 +54,21 @@ describe('meta de peso (LEG-M04)', () => {
   });
 });
 
+describe('entrada inválida (revisão de privacidade M7)', () => {
+  it('peso, altura ou calorias não finitos ou não positivos bloqueiam', () => {
+    for (const over of [
+      { targetWeightKg: 0 },
+      { currentWeightKg: Number.NaN },
+      { heightCm: -170 },
+      { targetWeightKg: Number.POSITIVE_INFINITY },
+    ]) {
+      expect(goal(over)).toEqual({ ok: false, reasons: ['invalid_input'] });
+    }
+    expect(checkCalorieTarget(Number.NaN)).toEqual({ ok: false, reasons: ['invalid_input'] });
+    expect(checkCalorieTarget(0)).toEqual({ ok: false, reasons: ['invalid_input'] });
+  });
+});
+
 describe('meta calórica (LEG-M07)', () => {
   it('abaixo do piso é bloqueada', () => {
     expect(checkCalorieTarget(1200)).toEqual({

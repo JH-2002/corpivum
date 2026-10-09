@@ -109,6 +109,16 @@ async function load(
   return { range, sleep, habits, checks, body, loggedDays };
 }
 
+/** Registros do Índice: os mesmos do período, com a constância contada sem as medições do corpo. */
+function scoreInput(period: Loaded): Loaded {
+  const bodyOnly = new Set(period.body.map((r) => r.day));
+  for (const r of [...period.sleep, ...period.checks]) bodyOnly.delete(r.day);
+  return {
+    ...period,
+    loggedDays: new Set([...period.loggedDays].filter((d) => !bodyOnly.has(d))),
+  };
+}
+
 function toSpark(points: Array<{ day: string; value: number | null }>): SparkPoint[] {
   return points.map((p) => ({ day: p.day, value: p.value }));
 }
@@ -171,8 +181,9 @@ export async function buildDashboard(
     source.hasAnyRecord(),
   ]);
 
-  const score = computeWellbeingScore(now);
-  const previousScore = computeWellbeingScore(before);
+  // O Índice não usa peso nem medidas, nem para a constância: pesar mais vezes não sobe o Índice (LEG-M06).
+  const score = computeWellbeingScore(scoreInput(now));
+  const previousScore = computeWellbeingScore(scoreInput(before));
   const cards = {
     sleep: sleepCard(now.sleep, before.sleep, range),
     habits: habitsCard(habits, now.checks, before.checks, range, prev),

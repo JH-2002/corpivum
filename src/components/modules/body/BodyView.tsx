@@ -7,6 +7,7 @@ import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { StatTile } from '@/components/health/StatTile';
+import { SupportNotice } from '@/components/health/SupportNotice';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { toLocalDateTime } from '@/lib/dates';
@@ -189,6 +190,8 @@ export function BodyView({
           </section>
         </>
       )}
+      {/* Apoio sempre visível no corpo (§48, ADR-0027; revisão de privacidade A1). */}
+      <SupportNotice />
     </div>
   );
 }

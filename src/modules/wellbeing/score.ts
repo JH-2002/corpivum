@@ -69,7 +69,7 @@ export interface ScoreInput {
   sleep: SleepRecord[];
   habits: HabitRecord[];
   checks: HabitCheckRecord[];
-  /** Dias com qualquer registro (sono, check, diário, corpo) no período. */
+  /** Dias com registro de sono ou check no período. Medições do corpo não entram (LEG-M06). */
   loggedDays: ReadonlySet<string>;
 }
 

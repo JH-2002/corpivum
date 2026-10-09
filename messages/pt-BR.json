@@ -902,7 +902,7 @@
     "badgesTitle": "O que significam os selos",
     "badgesIntro": "Todo dado exibido tem um selo que diz de onde ele vem.",
     "supportTitle": "Precisa de ajuda?",
-    "supportIntro": "Se algo sobre o seu corpo, a sua alimentação ou a sua rotina estiver pesando, conversar com um profissional de saúde pode ajudar."
+    "supportIntro": "Se algo sobre o seu corpo, a sua alimentação ou a sua rotina estiver difícil, conversar com um profissional de saúde pode ajudar."
   },
   "habits": {
     "markDone": "Marcar como feito",
@@ -1159,14 +1159,16 @@
   },
   "guardrails": {
     "title": "O app não acompanha esta meta",
+    "titleValidation": "Confira os dados da meta",
     "reasons": {
       "target_below_safe_range": "O alvo fica fora do que o app aceita para metas de peso.",
       "pace_too_fast": "O ritmo de mudança de peso é mais rápido do que o app acompanha.",
       "height_required": "Para metas de perda de peso, o app precisa da sua altura.",
       "invalid_date": "A data escolhida para a meta já passou ou é hoje.",
       "calorie_target_below_floor": "O alvo de calorias fica fora do que o app aceita.",
-      "topic_not_allowed": "O app não faz sugestões sobre esse tema."
+      "topic_not_allowed": "O app não faz sugestões sobre esse tema.",
+      "invalid_input": "Algum valor da meta não é válido. Confira e tente de novo."
     },
-    "professional": "Para objetivos de peso ou de alimentação, o melhor caminho é conversar com um profissional de saúde, como um nutricionista ou um médico, que conheça a sua história."
+    "professional": "Para esse tipo de objetivo, o melhor caminho é conversar com um profissional de saúde, como um nutricionista ou um médico, que conheça a sua história."
   }
 }

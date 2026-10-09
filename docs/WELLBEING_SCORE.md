@@ -23,7 +23,8 @@ não mudaram.
 | Atividade (`activity`) | 0,20 (fora até existir o módulo de atividade) |
 | Constância de registro (`logging`) | 0,20 |
 
-Os índices não são guardados; pedidos de revisão abertos com a v1 continuam com `score_version = 1`.
+Na constância de registro, dias só com medição do corpo não contam: pesar mais vezes não sobe o Índice
+(LEG-M06). Os índices não são guardados; pedidos de revisão abertos com a v1 continuam com `score_version = 1`.
 
 ## Versão 1 (`score_version = 1`, histórica)
 

@@ -65,6 +65,26 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
   });
 });
 
+describe('Índice sem recompensa por pesagem (LEG-M06, revisão M6)', () => {
+  it('dias só com medição do corpo não contam na constância de registro', async () => {
+    const full = generateDemoData(TODAY, TZ);
+    const range = { from: addDays(TODAY, -6), to: TODAY };
+    const sleep = full.sleep.filter((r) => r.day >= addDays(TODAY, -2));
+    const body = Array.from({ length: 7 }, (_, i) => ({
+      ...full.body[0]!,
+      id: `b-${i}`,
+      day: addDays(TODAY, -i),
+    }));
+    const d = await buildDashboard(
+      createDemoSource({ ...full, sleep, checks: [], body }),
+      range,
+      TODAY,
+    );
+    const logging = d.score.components.find((c) => c.id === 'logging');
+    expect(logging?.sample).toBe(new Set(sleep.map((r) => r.day)).size);
+  });
+});
+
 describe('textos fictícios da demo (LEG-M03)', () => {
   it('não contêm alegações clínicas proibidas (ficam fora do i18n)', async () => {
     const { findForbiddenTerms } = await import('../../../tests/content/forbidden-terms');

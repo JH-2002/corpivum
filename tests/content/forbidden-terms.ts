@@ -71,14 +71,14 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     pattern: new RegExp(
       `\\b(nivel|niveis|taxas?|quantidade|concentracao)\\s+(de\\s+|da\\s+|do\\s+)?(sua\\s+|seu\\s+)?${NEUROCHEMICALS}`,
     ),
-    reason: 'Nunca afirmar nível de neurotransmissor (regra 8, regra 8).',
+    reason: 'Nunca afirmar nível de neurotransmissor (regra 8, LEG-I04; ADR-0027).',
   },
   {
     id: 'neurochemical-release',
     pattern: new RegExp(
       `\\b(libera\\w*|produz\\w*|aument\\w*|reduz\\w*|diminu\\w*|dispar\\w*|eleva\\w*)\\s+(\\w+\\s+){0,3}${NEUROCHEMICALS}|\\b${NEUROCHEMICALS}\\s+(\\w+\\s+){0,2}(liberad|produzid|aumentad|elevad|baix|alt)\\w*`,
     ),
-    reason: 'Nunca afirmar liberação ou alteração de substância (regra 8, regra 8).',
+    reason: 'Nunca afirmar liberação ou alteração de substância (regra 8, LEG-I04; ADR-0027).',
   },
   {
     id: 'brain-state',
@@ -135,7 +135,7 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
   {
     id: 'brain-assertion',
     pattern: /\b(seu\s+)?cerebro\s+(esta|fica|anda|ficou|estava)\b/,
-    reason: 'Nunca afirmar estado cerebral (regra 8, regra 8).',
+    reason: 'Nunca afirmar estado cerebral (regra 8, LEG-I04; ADR-0027).',
   },
   {
     id: 'you-are-condition',
@@ -161,6 +161,12 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     pattern:
       /\b(corpo|shape|forma|silhueta|barriga)\s+(ideal|perfeit\w*|dos\s+sonhos|sarad\w*|definid\w*)\b|\bcorpo\s+de\s+(verao|praia)\b|\bprojeto\s+verao\b/,
     reason: 'Nada de corpo ideal ou meta de aparência (LEG-M06).',
+  },
+  {
+    id: 'bmi-classification',
+    pattern:
+      /\b(sobrepeso|obesidade|obes[oa]s?|magreza|desnutrid\w*|excesso\s+de\s+peso|abaixo\s+do\s+peso|acima\s+do\s+peso|peso\s+normal|eutrofi\w*)\b/,
+    reason: 'Sem classificação por IMC na interface (LEG-M06).',
   },
   {
     id: 'body-shaming',

@@ -609,10 +609,11 @@ com os corpos.
   constância dos registros, com pesos renormalizados (`docs/WELLBEING_SCORE.md`). Índices não são guardados,
   então não há o que migrar.
 - **Consentimento:** o texto de `consent_health_data` muda as categorias e vira nova versão com
-  reconsentimento (LEG-C06); a Política de Privacidade ganha nova versão de ciência.
-- **Apoio de crise:** sai junto com humor e diário. Fica contextual onde ainda faz sentido: quando um
-  guardrail de imagem corporal ou alimentação disparar, no modo de risco da IA (LEG-I07) e num acesso
-  permanente "Precisa de ajuda?" no menu de ajuda (orientação profissional, SAMU 192, CVV 188).
+  reconsentimento (LEG-C06); o texto da v1 fica arquivado em `legal/archive/` (hash conferido por teste). A
+  Política de Privacidade não muda: ela não lista categorias (registrado em OI-08).
+- **Apoio de crise:** sai junto com humor e diário. Fica fixo na tela de corpo, num acesso permanente
+  "Precisa de ajuda?" no menu de ajuda, quando um guardrail de segurança disparar e no modo de risco da IA
+  (LEG-I07). Orientação profissional, SAMU 192 e CVV 188.
 - **Entregue na reorientação:** guardrails (`checkWeightGoal`, `checkCalorieTarget`,
   `checkRecommendationTopic`; IMC mínimo 18,5, perda de até 1% do peso por semana, piso de 1.500 kcal,
   rascunho clínico), `GuardrailNotice` com orientação profissional e apoio, "Precisa de ajuda?" no menu de
