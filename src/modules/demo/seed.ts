@@ -28,21 +28,11 @@ export async function seedSyntheticData(deps: {
       noteEnc: r.note ? await seal('sleep_entries', 'note_enc', r.note) : null,
     })),
   );
-  const journal = await Promise.all(
-    data.journal.map(async (r) => ({
-      userId,
-      entryDate: isoToDbDate(r.day),
-      contentEnc: await seal('journal_entries', 'content_enc', r.content ?? ''),
-      mood: r.mood,
-      tags: r.tags,
-    })),
-  );
   const habitNames = await Promise.all(data.habits.map((h) => seal('habits', 'name_enc', h.name)));
 
   return run(userId, async (tx) => {
     let rows = 0;
     rows += (await tx.sleepEntry.createMany({ data: sleep })).count;
-    rows += (await tx.journalEntry.createMany({ data: journal })).count;
     rows += (
       await tx.bodyMeasurement.createMany({
         data: data.body.map((r) => ({

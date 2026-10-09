@@ -7,7 +7,6 @@ import {
   habitInputSchema,
   type HabitRecord,
 } from '@/modules/habits';
-import { journalFilterSchema } from '@/modules/journal';
 import { centeredMinutes, scheduleSpreadMinutes, sleepInputSchema } from '@/modules/sleep';
 import { bodyInputSchema } from '@/modules/body';
 import { sanitizePeriod, validateCustomRange } from '@/lib/period';
@@ -131,13 +130,6 @@ describe('hábitos (§22, LEG-F05)', () => {
     expect(
       habitInputSchema.safeParse({ name: 'Ler', frequency: 'weekdays', weekdays: [] }).success,
     ).toBe(false);
-  });
-});
-
-describe('diário (§19)', () => {
-  it('filtros só por humor e etiqueta; valores inválidos são ignorados', () => {
-    expect(journalFilterSchema.parse({ mood: '4', tag: 'work' })).toEqual({ mood: 4, tag: 'work' });
-    expect(journalFilterSchema.parse({ tag: 'qualquer coisa' })).toEqual({ tag: undefined });
   });
 });
 

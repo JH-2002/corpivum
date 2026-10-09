@@ -15,7 +15,6 @@ import type {
  */
 export function useInsightText(module: InsightModule) {
   const t = useTranslations('insights');
-  const tj = useTranslations('journal');
   const format = useFormatter();
   type Key = Parameters<typeof t>[0];
 
@@ -45,8 +44,6 @@ export function useInsightText(module: InsightModule) {
           a.value.map((d) => dayLabel(d, a.style)),
           { type: 'conjunction' },
         );
-      case 'tag':
-        return tj(`tags.${a.value}`);
       case 'field':
         return t(`body.fields.${a.value}`);
       case 'select':

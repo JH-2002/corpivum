@@ -11,7 +11,6 @@ import {
   type HabitCheckRecord,
   type HabitRecord,
 } from '@/modules/habits';
-import type { JournalRecord } from '@/modules/journal';
 import { averageDurationMinutes, dailyHours, type SleepRecord } from '@/modules/sleep';
 import { dashboardInsights, type ModuleInsights, type PeriodRecords } from '@/modules/insights';
 import { computeWellbeingScore, type WellbeingScore } from '@/modules/wellbeing';
@@ -55,12 +54,6 @@ export interface BodyCard {
   spark: SparkPoint[];
 }
 
-export interface JournalCard {
-  state: CardState;
-  count: number;
-  previousCount: number;
-}
-
 export interface TodayHabit {
   id: string;
   name: string;
@@ -88,7 +81,6 @@ export interface DashboardData {
     sleep: SleepCard;
     habits: HabitsCard;
     body: BodyCard;
-    journal: JournalCard;
   };
   combined: CombinedPoint[];
   todayHabits: TodayHabit[];
@@ -96,7 +88,6 @@ export interface DashboardData {
 }
 
 interface Loaded extends PeriodRecords {
-  journal: JournalRecord[];
   body: BodyRecord[];
 }
 
@@ -105,19 +96,17 @@ async function load(
   range: DateRange,
   habits: HabitRecord[],
 ): Promise<Loaded> {
-  const [sleep, checks, journal, body] = await Promise.all([
+  const [sleep, checks, body] = await Promise.all([
     source.sleep(range),
     source.checks(range),
-    source.journal(range),
     source.body(range),
   ]);
   const loggedDays = new Set<string>([
     ...sleep.map((r) => r.day),
     ...checks.map((r) => r.day),
-    ...journal.map((r) => r.day),
     ...body.map((r) => r.day),
   ]);
-  return { range, sleep, habits, checks, journal, body, loggedDays };
+  return { range, sleep, habits, checks, body, loggedDays };
 }
 
 function toSpark(points: Array<{ day: string; value: number | null }>): SparkPoint[] {
@@ -188,11 +177,6 @@ export async function buildDashboard(
     sleep: sleepCard(now.sleep, before.sleep, range),
     habits: habitsCard(habits, now.checks, before.checks, range, prev),
     body: bodyCard(now.body, heightCm),
-    journal: {
-      state: (now.journal.length ? 'ok' : 'no-data') as CardState,
-      count: now.journal.length,
-      previousCount: before.journal.length,
-    },
   };
 
   const combined = dailyHours(now.sleep, range).map((d) => ({

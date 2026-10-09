@@ -3,7 +3,6 @@ import type { DateRange } from '@/lib/period';
 import type { BodyRecord } from '@/modules/body';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
 import type { SleepRecord } from '@/modules/sleep';
-import type { JournalMeta } from './journal';
 
 /** Dados sintéticos para os testes da camada explicativa (nunca dados reais, CLAUDE.md regra 6). */
 
@@ -66,10 +65,6 @@ export function bodyEntry(day: string, over: Partial<BodyRecord> = {}): BodyReco
     bodyFatPct: null,
     ...over,
   };
-}
-
-export function journalOn(days: string[], tags: JournalMeta['tags'] = []): JournalMeta[] {
-  return days.map((day) => ({ day, tags }));
 }
 
 export const day = (offset: number) => addDays(WEEK.from, offset);

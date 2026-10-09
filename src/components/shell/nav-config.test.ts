@@ -15,7 +15,6 @@ describe('nav-config', () => {
       'home',
       'sleep',
       'habits',
-      'journal',
       'body',
       'nutrition',
       'activity',

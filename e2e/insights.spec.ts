@@ -25,7 +25,6 @@ const MODULES = [
   { path: '/inicio', title: 'Início' },
   { path: '/sono', title: 'Sono' },
   { path: '/habitos', title: 'Hábitos' },
-  { path: '/diario', title: 'Diário' },
   { path: '/corpo', title: 'Corpo' },
 ] as const;
 
@@ -130,7 +129,7 @@ test.describe('demo público com o tour já visto', () => {
   test.use({ storageState: DEMO_TOUR_SEEN_STATE });
 
   test('resumos com selo DEMO em todas as telas', async ({ page }) => {
-    for (const path of ['/demo', '/demo/sono', '/demo/habitos', '/demo/diario', '/demo/corpo']) {
+    for (const path of ['/demo', '/demo/sono', '/demo/habitos', '/demo/corpo']) {
       await page.goto(path);
       const summary = page.getByRole('region', { name: 'Resumo do período' });
       await expect(summary).toBeVisible();

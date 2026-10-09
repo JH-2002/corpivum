@@ -17,7 +17,6 @@
     "home": "Início",
     "sleep": "Sono",
     "habits": "Hábitos",
-    "journal": "Diário",
     "body": "Corpo",
     "nutrition": "Alimentação",
     "activity": "Atividade",
@@ -50,7 +49,6 @@
     "description": "Escolha o tipo de registro. Os formulários chegam nas próximas versões.",
     "sleep": "Sono",
     "habit": "Hábito",
-    "journal": "Diário",
     "body": "Peso e medidas",
     "meal": "Refeição",
     "water": "Água",
@@ -118,11 +116,6 @@
       "title": "Hábitos",
       "emptyTitle": "Nenhum hábito criado",
       "emptyDescription": "Crie um hábito com a frequência que fizer sentido para você."
-    },
-    "journal": {
-      "title": "Diário",
-      "emptyTitle": "Seu diário está em branco",
-      "emptyDescription": "Escreva livremente. O conteúdo não é compartilhado sem a sua escolha."
     },
     "body": {
       "title": "Corpo",
@@ -669,8 +662,6 @@
     "cardNoData": "Sem registros neste período.",
     "origin": "De onde vem este número",
     "scaleOutOf5": "de 5",
-    "journalCount": "{count, plural, =0 {Nenhuma entrada} one {# entrada} other {# entradas}}",
-    "journalPrevious": "{count, plural, =0 {Nenhuma no período anterior} one {# no período anterior} other {# no período anterior}}",
     "todayHabits": "Hábitos de hoje",
     "noHabits": "Você ainda não tem hábitos ativos.",
     "createHabit": "Criar um hábito",
@@ -692,8 +683,7 @@
     "cards": {
       "sleep": "Sono",
       "habits": "Hábitos",
-      "body": "Peso",
-      "journal": "Diário"
+      "body": "Peso"
     },
     "variation": {
       "duration": {
@@ -721,8 +711,7 @@
       "sleep": "Média da duração das {count, plural, one {# noite registrada} other {# noites registradas}} por você no período (do horário de deitar ao de acordar).",
       "habits": "Checks feitos ÷ dias previstos dos seus {count, plural, one {# hábito ativo} other {# hábitos ativos}} no período.",
       "body": "Último peso que você informou no período.",
-      "bodyWithBmi": "Último peso que você informou no período. IMC estimado a partir do peso e da altura informados: {bmi} (cálculo direto, sem classificação).",
-      "journal": "Quantidade de entradas do diário no período. O conteúdo não é lido para este número."
+      "bodyWithBmi": "Último peso que você informou no período. IMC estimado a partir do peso e da altura informados: {bmi} (cálculo direto, sem classificação)."
     },
     "combined": {
       "title": "Sono no período",
@@ -842,21 +831,6 @@
         "change": "Diferença no cumprimento (pontos percentuais)",
         "changeMore": "a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}",
         "changeLess": "a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}"
-      }
-    },
-    "journal": {
-      "empty": "Nenhuma entrada no diário neste período.",
-      "count": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você escreveu {count, plural, one {# entrada} other {# entradas}} no diário, em {daysWith, plural, one {# dia} other {# dias}} de {total}.",
-      "partial": "Com poucas entradas, o resumo mostra só a contagem.",
-      "compare": "{days, plural, =7 {Na semana anterior} other {Nos # dias anteriores}}, {previous, plural, =0 {não houve entradas} one {houve # entrada} other {houve # entradas}}.",
-      "topTag": "A etiqueta que você mais usou foi “{tag}”.",
-      "gap": "O maior intervalo entre duas entradas foi de {gap} dias.",
-      "latest": "A entrada mais recente foi {when}.",
-      "highlights": {
-        "topTag": "Etiqueta mais usada",
-        "tagCount": "{count, plural, one {em # entrada} other {em # entradas}}",
-        "daysWith": "Dias com entrada",
-        "ofTotal": "de {total} dias do período"
       }
     },
     "body": {
@@ -1071,64 +1045,6 @@
       "note": "Nota (opcional)",
       "noteHint": "Guardada cifrada no servidor; não aparece para outras pessoas no app.",
       "save": "Salvar registro",
-      "update": "Salvar alterações"
-    }
-  },
-  "journal": {
-    "newTitle": "Nova entrada",
-    "filtersTitle": "Filtrar",
-    "filtersHint": "Por período (no topo da página), humor e etiqueta. Não há busca no texto: o conteúdo fica cifrado.",
-    "filterAll": "Todos",
-    "filterApply": "Aplicar filtros",
-    "layoutLabel": "Forma de visualização",
-    "layout": {
-      "lista": "Lista",
-      "calendario": "Calendário"
-    },
-    "listTitle": "{count, plural, one {# entrada} other {# entradas}}",
-    "entryMood": "Humor do dia: {value} de 5",
-    "entryNoMood": "Sem humor informado",
-    "calendarDayEntries": "{date}: {count, plural, one {# entrada} other {# entradas}}",
-    "weekdayShort": {
-      "0": "D",
-      "1": "S",
-      "2": "T",
-      "3": "Q",
-      "4": "Q",
-      "5": "S",
-      "6": "S"
-    },
-    "weekdayLong": {
-      "0": "domingo",
-      "1": "segunda-feira",
-      "2": "terça-feira",
-      "3": "quarta-feira",
-      "4": "quinta-feira",
-      "5": "sexta-feira",
-      "6": "sábado"
-    },
-    "tags": {
-      "work": "Trabalho",
-      "study": "Estudos",
-      "family": "Família",
-      "friends": "Amizades",
-      "rest": "Descanso",
-      "movement": "Movimento",
-      "leisure": "Lazer",
-      "nature": "Natureza",
-      "routine": "Rotina",
-      "other": "Outros"
-    },
-    "form": {
-      "day": "Data",
-      "mood": "Humor do dia (opcional)",
-      "moodHint": "De 1 (muito para baixo) a 5 (muito bem).",
-      "noMood": "Não informar",
-      "content": "O que você quer registrar?",
-      "contentHint": "Guardado cifrado no servidor; não aparece para outras pessoas no app. Não é usado pela IA sem a sua autorização.",
-      "tags": "Etiquetas (opcional)",
-      "tagsHint": "Ajudam a filtrar depois.",
-      "save": "Salvar entrada",
       "update": "Salvar alterações"
     }
   },

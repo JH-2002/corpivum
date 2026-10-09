@@ -1,11 +1,4 @@
-import {
-  Moon,
-  NotebookPen,
-  Orbit,
-  PersonStanding,
-  ListChecks,
-  type LucideIcon,
-} from 'lucide-react';
+import { Moon, Orbit, PersonStanding, ListChecks, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { useTranslations } from 'next-intl';
@@ -290,17 +283,6 @@ export function Dashboard({
                 : t('origins.body')
             }
             spark={<Sparkline data={cards.body.spark} color="var(--hm-domain-body)" />}
-          />
-          <DomainCard
-            title={t('cards.journal')}
-            href={link('/diario')}
-            icon={NotebookPen}
-            tone="text-journal"
-            badge={b('INFORMADO')}
-            noData={cards.journal.state === 'no-data'}
-            value={t('journalCount', { count: cards.journal.count })}
-            variation={t('journalPrevious', { count: cards.journal.previousCount })}
-            origin={t('origins.journal')}
           />
         </div>
       </section>

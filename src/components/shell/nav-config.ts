@@ -8,7 +8,6 @@ import {
   ListChecks,
   type LucideIcon,
   Moon,
-  NotebookPen,
   Orbit,
   PersonStanding,
   Pill,
@@ -22,7 +21,6 @@ export type NavKey =
   | 'home'
   | 'sleep'
   | 'habits'
-  | 'journal'
   | 'body'
   | 'nutrition'
   | 'activity'
@@ -48,7 +46,6 @@ export const SIDEBAR_ITEMS: readonly NavItem[] = [
   { key: 'home', href: '/inicio', icon: House },
   { key: 'sleep', href: '/sono', icon: Moon },
   { key: 'habits', href: '/habitos', icon: ListChecks },
-  { key: 'journal', href: '/diario', icon: NotebookPen },
   { key: 'body', href: '/corpo', icon: PersonStanding },
   { key: 'nutrition', href: '/alimentacao', icon: Apple },
   { key: 'activity', href: '/atividade', icon: Activity },
@@ -82,7 +79,6 @@ export const DEMO_ITEMS: readonly NavItem[] = [
   { key: 'home', href: '/demo', icon: House, exact: true },
   { key: 'sleep', href: '/demo/sono', icon: Moon },
   { key: 'habits', href: '/demo/habitos', icon: ListChecks },
-  { key: 'journal', href: '/demo/diario', icon: NotebookPen },
   { key: 'body', href: '/demo/corpo', icon: PersonStanding },
   { key: 'twin', href: '/demo/twin', icon: Orbit },
 ];

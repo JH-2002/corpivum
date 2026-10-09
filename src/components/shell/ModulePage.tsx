@@ -11,7 +11,6 @@ export type PageKey =
   | 'home'
   | 'sleep'
   | 'habits'
-  | 'journal'
   | 'body'
   | 'nutrition'
   | 'activity'

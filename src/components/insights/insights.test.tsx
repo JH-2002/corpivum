@@ -7,7 +7,6 @@ import { createDemoSource } from '@/modules/health/source';
 import {
   bodyInsights,
   habitsInsights,
-  journalInsights,
   sleepInsights,
   type ModuleInsights,
 } from '@/modules/insights';
@@ -16,7 +15,6 @@ import {
   checksOn,
   day,
   habit,
-  journalOn,
   PREV_WEEK,
   sleepWeek,
   TODAY,
@@ -82,16 +80,6 @@ const FIXTURES: Record<string, ModuleInsights[]> = {
       today: TODAY,
       streaksEnabled: true,
     }),
-  ],
-  journal: [
-    journalInsights({
-      entries: [...journalOn([day(0), day(1)], ['work']), ...journalOn([day(5)], ['rest'])],
-      previous: journalOn([PREV_WEEK.from]),
-      range: WEEK,
-      today: TODAY,
-    }),
-    journalInsights({ entries: journalOn([day(2)]), previous: [], range: WEEK, today: TODAY }),
-    journalInsights({ entries: [], previous: [], range: WEEK, today: TODAY }),
   ],
   body: [
     bodyInsights({
@@ -173,17 +161,14 @@ describe('modo demo (LEG-X02)', () => {
   const prev = previousRange(range);
 
   it('todos os resumos ficam completos, com selo DEMO e sem termo proibido', async () => {
-    const [sleep, sleepPrev, habits, checks, checksPrev, journal, journalPrev, body] =
-      await Promise.all([
-        source.sleep(range),
-        source.sleep(prev),
-        source.habits(),
-        source.checks(range),
-        source.checks(prev),
-        source.journal(range),
-        source.journal(prev),
-        source.body(range),
-      ]);
+    const [sleep, sleepPrev, habits, checks, checksPrev, body] = await Promise.all([
+      source.sleep(range),
+      source.sleep(prev),
+      source.habits(),
+      source.checks(range),
+      source.checks(prev),
+      source.body(range),
+    ]);
     const dashboard = (await buildDashboard(source, range, TODAY)).insights;
     const all = [
       dashboard,
@@ -197,7 +182,6 @@ describe('modo demo (LEG-X02)', () => {
         today: TODAY,
         streaksEnabled: true,
       }),
-      journalInsights({ entries: journal, previous: journalPrev, range, today: TODAY }),
       bodyInsights({ records: body, range, today: TODAY }),
     ];
     for (const insights of all) {

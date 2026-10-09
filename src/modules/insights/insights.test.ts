@@ -6,7 +6,6 @@ import {
   checksOn,
   day,
   habit,
-  journalOn,
   PREV_WEEK,
   sleepNight,
   sleepWeek,
@@ -14,7 +13,6 @@ import {
   WEEK,
 } from './fixtures';
 import { habitsInsights } from './habits';
-import { journalInsights } from './journal';
 import { extremeDays, INSIGHT_RULES, periodArgs } from './rules';
 import { sleepInsights } from './sleep';
 import type { ModuleInsights } from './types';
@@ -211,42 +209,6 @@ describe('resumo de hábitos (LEG-F05)', () => {
       previousChecks: [],
     });
     expect(i.state).toBe('empty');
-  });
-});
-
-describe('resumo do diário (só metadados)', () => {
-  it('dados completos: contagem, comparação, etiqueta e intervalo', () => {
-    const i = journalInsights({
-      entries: [...journalOn([day(0), day(1)], ['work']), ...journalOn([day(5)], ['work', 'rest'])],
-      previous: journalOn([PREV_WEEK.from]),
-      range: WEEK,
-      today: TODAY,
-    });
-    expect(i.state).toBe('ok');
-    expect(keys(i)).toEqual(['count', 'compare', 'topTag', 'gap']);
-    expect(i.sentences[2]?.args.tag).toEqual({ kind: 'tag', value: 'work' });
-    expect(i.sentences[3]?.args.gap).toEqual({ kind: 'int', value: 4 });
-    expectSentenceBounds(i);
-  });
-
-  it('entradas seguidas: fala da mais recente em vez do intervalo', () => {
-    const i = journalInsights({
-      entries: journalOn([day(4), day(5), day(6)]),
-      previous: [],
-      range: WEEK,
-      today: TODAY,
-    });
-    expect(keys(i)).toEqual(['count', 'compare', 'latest']);
-  });
-
-  it('parcial e vazio', () => {
-    expect(
-      journalInsights({ entries: journalOn([day(1)]), previous: [], range: WEEK, today: TODAY })
-        .state,
-    ).toBe('partial');
-    expect(journalInsights({ entries: [], previous: [], range: WEEK, today: TODAY }).state).toBe(
-      'empty',
-    );
   });
 });
 

@@ -18,13 +18,11 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     const days = [
       ...data.sleep.map((r) => r.day),
       ...data.checks.map((r) => r.day),
-      ...data.journal.map((r) => r.day),
       ...data.body.map((r) => r.day),
     ];
     expect(Math.min(...days.map((d) => Date.parse(d)))).toBeGreaterThanOrEqual(Date.parse(first));
     expect(days.every((d) => d <= TODAY)).toBe(true);
     expect(data.sleep.length).toBeGreaterThan(70);
-    expect(data.journal.length).toBeGreaterThan(20);
     expect(data.body.length).toBeGreaterThanOrEqual(12);
   });
 
@@ -60,12 +58,10 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     expect(d.todayHabits).toHaveLength(3);
   });
 
-  it('período sem dados vira no-data; diário sem texto quando não pedido', async () => {
+  it('período sem dados vira no-data', async () => {
     const src = createDemoSource(data);
     const old = { from: '2020-01-01', to: '2020-01-31' };
     expect((await buildDashboard(src, old, TODAY)).state).toBe('no-data');
-    const entries = await src.journal({ from: addDays(TODAY, -30), to: TODAY });
-    expect(entries.every((e) => e.content === null)).toBe(true);
   });
 });
 
@@ -73,11 +69,9 @@ describe('textos fictícios da demo (LEG-M03)', () => {
   it('não contêm alegações clínicas proibidas (ficam fora do i18n)', async () => {
     const { findForbiddenTerms } = await import('../../../tests/content/forbidden-terms');
     const data = generateDemoData(TODAY, TZ);
-    const texts = [
-      ...data.sleep.map((r) => r.note),
-      ...data.journal.map((r) => r.content),
-      ...data.habits.map((h) => h.name),
-    ].filter((t): t is string => Boolean(t));
+    const texts = [...data.sleep.map((r) => r.note), ...data.habits.map((h) => h.name)].filter(
+      (t): t is string => Boolean(t),
+    );
     expect(texts.length).toBeGreaterThan(0);
     for (const text of new Set(texts)) expect(findForbiddenTerms(text)).toEqual([]);
   });

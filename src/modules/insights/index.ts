@@ -6,7 +6,6 @@
 export { bodyInsights, type BodyInsightsInput } from './body';
 export { dashboardInsights, type PeriodRecords } from './dashboard';
 export { habitsInsights, type HabitsInsightsInput } from './habits';
-export { journalInsights, type JournalInsightsInput, type JournalMeta } from './journal';
 export { INSIGHT_RULES } from './rules';
 export { sleepInsights, type SleepInsightsInput } from './sleep';
 export { twinBodyInsights, type TwinBodyInsightsInput } from './twin';

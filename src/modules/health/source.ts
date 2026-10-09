@@ -2,7 +2,6 @@ import type { DateRange } from '@/lib/period';
 import type { BodyRecord } from '@/modules/body';
 import type { DemoDataset } from '@/modules/demo/generator';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
-import type { JournalFilter, JournalRecord } from '@/modules/journal';
 import type { SleepRecord } from '@/modules/sleep';
 
 /**
@@ -15,10 +14,6 @@ export interface HealthDataSource {
   sleep(range: DateRange, opts?: { withText?: boolean }): Promise<SleepRecord[]>;
   habits(opts?: { includeArchived?: boolean }): Promise<HabitRecord[]>;
   checks(range: DateRange): Promise<HabitCheckRecord[]>;
-  journal(
-    range: DateRange,
-    opts?: { withText?: boolean; filter?: JournalFilter },
-  ): Promise<JournalRecord[]>;
   body(range: DateRange): Promise<BodyRecord[]>;
   latestHeightCm(): Promise<number | null>;
   streaksEnabled(): Promise<boolean>;
@@ -43,12 +38,6 @@ export function createDemoSource(data: DemoDataset): HealthDataSource {
         .map((r) => (opts?.withText ? r : { ...r, note: null })),
     habits: async () => data.habits,
     checks: async (range) => data.checks.filter((c) => inRange(c.day, range)),
-    journal: async (range, opts) =>
-      data.journal
-        .filter((r) => inRange(r.day, range))
-        .filter((r) => !opts?.filter?.mood || r.mood === opts.filter.mood)
-        .filter((r) => !opts?.filter?.tag || r.tags.includes(opts.filter.tag))
-        .map((r) => (opts?.withText ? r : { ...r, content: null })),
     body: async (range) => data.body.filter((r) => inRange(r.day, range)),
     latestHeightCm: async () => data.body.find((r) => r.heightCm !== null)?.heightCm ?? null,
     streaksEnabled: async () => true,

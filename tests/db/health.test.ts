@@ -10,7 +10,6 @@ import { withConsentOn } from '@/modules/consent/guard';
 import { createHabitsService } from '@/modules/habits/service';
 import { createFieldCipher, type HealthDeps } from '@/modules/health/core';
 import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
-import { createJournalService } from '@/modules/journal/service';
 import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import { createSleepService } from '@/modules/sleep/service';
 import { createTestConsent } from './consent-helpers';
@@ -63,7 +62,6 @@ function services() {
   return {
     sleep: createSleepService(deps),
     habits: createHabitsService(deps),
-    journal: createJournalService(deps),
     body: createBodyService(deps),
   };
 }
@@ -77,7 +75,6 @@ async function onboarded(purposes: Array<'health_data'>) {
 
 const RANGE = { from: '2026-09-01', to: '2026-10-07' };
 const SECRET_NOTE = 'nota-secreta-sintetica-sono';
-const SECRET_JOURNAL = 'diario-secreto-sintetico';
 const SECRET_HABIT = 'habito-secreto-sintetico';
 
 /** Um registro em cada tabela de saúde, pelos serviços reais. */
@@ -110,14 +107,19 @@ async function seedAll(userId: string) {
     timesPerWeek: null,
   });
   expect(await s.habits.setCheck(userId, habitId, '2026-10-06', true)).toBe('ok');
-  const journal = await s.journal.create(userId, {
-    day: '2026-10-06',
-    content: SECRET_JOURNAL,
-    mood: 4,
-    tags: ['work'],
-  });
+  // Diário saiu do app (ADR-0027); a tabela some na migração da reorientação. Até lá, linha direta.
+  const journal = await withConsentOn(db, userId, 'health_data', (tx) =>
+    tx.journalEntry.create({
+      data: {
+        userId,
+        entryDate: new Date('2026-10-06T00:00:00Z'),
+        contentEnc: new Uint8Array([1]),
+        tags: ['work'],
+      },
+    }),
+  );
   const body = await s.body.create(userId, { measuredAt: '2026-10-06T08:00', weightKg: 70 });
-  if (!sleep.ok || !journal.ok || !body.ok) throw new Error('seed');
+  if (!sleep.ok || !body.ok) throw new Error('seed');
   return { sleepId: sleep.id, moodId: mood.id, habitId, journalId: journal.id, bodyId: body.id };
 }
 
@@ -270,8 +272,6 @@ describe('isolamento entre pessoas (LEG-S03)', () => {
     expect(await s.sleep.list(b.userId, RANGE)).toEqual([]);
     expect(await s.habits.listHabits(b.userId)).toEqual([]);
     expect(await s.habits.listChecks(b.userId, RANGE)).toEqual([]);
-    expect(await s.journal.list(b.userId, RANGE)).toEqual([]);
-    expect(await s.journal.get(b.userId, ids.journalId)).toBeNull();
     expect(await s.body.list(b.userId, RANGE)).toEqual([]);
 
     expect(
@@ -283,7 +283,6 @@ describe('isolamento entre pessoas (LEG-S03)', () => {
     expect(await s.sleep.remove(b.userId, ids.sleepId)).toBe(false);
     expect(await s.habits.remove(b.userId, ids.habitId)).toBe(false);
     expect(await s.habits.setCheck(b.userId, ids.habitId, '2026-10-06', false)).toBe('not_found');
-    expect(await s.journal.remove(b.userId, ids.journalId)).toBe(false);
     expect(await s.body.remove(b.userId, ids.bodyId)).toBe(false);
 
     const counts = await countsFor(a.userId);
@@ -373,29 +372,27 @@ describe('cifragem de campo (LEG-S02)', () => {
     const a = await onboarded(['health_data']);
     const b = await onboarded(['health_data']);
     await seedAll(a.userId);
-    const { rows } = await admin.query<{ note: Buffer; content: Buffer; name: Buffer }>(
+    const { rows } = await admin.query<{ note: Buffer; name: Buffer }>(
       `SELECT (SELECT note_enc FROM sleep_entries WHERE user_id = $1) AS note,
-              (SELECT content_enc FROM journal_entries WHERE user_id = $1) AS content,
               (SELECT name_enc FROM habits WHERE user_id = $1) AS name`,
       [a.userId],
     );
     const row = rows[0];
     if (!row) throw new Error('sem linha');
     expect(row.note.includes(Buffer.from(SECRET_NOTE))).toBe(false);
-    expect(row.content.includes(Buffer.from(SECRET_JOURNAL))).toBe(false);
     expect(row.name.includes(Buffer.from(SECRET_HABIT))).toBe(false);
 
-    const field = { table: 'journal_entries', column: 'content_enc' };
-    expect(await deps.cipher.open(a.userId, field, row.content)).toBe(SECRET_JOURNAL);
-    await expect(deps.cipher.open(b.userId, field, row.content)).rejects.toThrow();
+    const field = { table: 'sleep_entries', column: 'note_enc' };
+    expect(await deps.cipher.open(a.userId, field, row.note)).toBe(SECRET_NOTE);
+    await expect(deps.cipher.open(b.userId, field, row.note)).rejects.toThrow();
     await expect(
-      deps.cipher.open(a.userId, { table: 'sleep_entries', column: 'note_enc' }, row.content),
+      deps.cipher.open(a.userId, { table: 'habits', column: 'name_enc' }, row.note),
     ).rejects.toThrow();
 
-    const [entry] = await services().journal.list(a.userId, RANGE, { withText: true });
-    expect(entry?.content).toBe(SECRET_JOURNAL);
-    const [meta] = await services().journal.list(a.userId, RANGE);
-    expect(meta?.content).toBeNull();
+    const [entry] = await services().sleep.list(a.userId, RANGE, { withText: true });
+    expect(entry?.note).toBe(SECRET_NOTE);
+    const [meta] = await services().sleep.list(a.userId, RANGE);
+    expect(meta?.note).toBeNull();
   });
 });
 

@@ -18,8 +18,6 @@ export const INSIGHT_RULES = Object.freeze({
   scheduleSteadyMinutes: 15,
   /** Variação de peso (kg) abaixo da qual o texto diz "ficou estável". */
   weightKg: 0.5,
-  /** Maior intervalo sem entrada no diário que vale mencionar (dias). */
-  journalGapDays: 3,
   /** Máximo de frases no resumo. */
   maxSentences: 4,
 });

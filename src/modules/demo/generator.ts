@@ -2,7 +2,6 @@ import { addDays, eachDay, fromLocalDateTime, weekday } from '@/lib/dates';
 import { round } from '@/lib/stats';
 import type { BodyRecord } from '@/modules/body';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
-import type { JournalRecord, JournalTag } from '@/modules/journal';
 import type { SleepRecord } from '@/modules/sleep';
 
 /**
@@ -18,7 +17,6 @@ export interface DemoDataset {
   sleep: SleepRecord[];
   habits: HabitRecord[];
   checks: HabitCheckRecord[];
-  journal: JournalRecord[];
   body: BodyRecord[];
 }
 
@@ -49,46 +47,20 @@ const SLEEP_NOTES = [
   'Fui dormir mais tarde: fiquei vendo uma série.',
 ];
 
-const JOURNAL_TEXTS: Array<{ text: string; tags: JournalTag[] }> = [
-  {
-    text: 'Hoje organizei a semana e consegui terminar as tarefas pendentes. Quero manter o ritmo.',
-    tags: ['work', 'routine'],
-  },
-  {
-    text: 'Passei a tarde no parque. Fazia tempo que não ficava um tempo ao ar livre sem pressa.',
-    tags: ['nature', 'leisure'],
-  },
-  {
-    text: 'Jantar com a família. Conversamos bastante e rimos de histórias antigas.',
-    tags: ['family'],
-  },
-  {
-    text: 'Dia cansativo. Fui dormir cedo para descansar melhor amanhã.',
-    tags: ['rest'],
-  },
-  {
-    text: 'Comecei um curso online. Estudei uma hora antes do jantar.',
-    tags: ['study'],
-  },
-  {
-    text: 'Treino leve de manhã e um bom café depois. Gosto de começar o dia assim.',
-    tags: ['movement', 'routine'],
-  },
-  {
-    text: 'Encontrei amigos que não via há meses. Combinamos de repetir logo.',
-    tags: ['friends', 'leisure'],
-  },
-];
-
 /**
- * Sorteios que o humor (removido, ADR-0027) consumia por dia, na mesma ordem: presença, humor, energia,
- * estresse, horário, duas emoções e nota. Consumir os mesmos sorteios mantém a sequência dos demais dados
- * do demo (sono, hábitos, corpo) igual à de antes da remoção.
+ * Sorteios que o humor e o diário (removidos, ADR-0027) consumiam por dia, na mesma ordem. Consumir os
+ * mesmos sorteios mantém a sequência dos demais dados do demo (sono, hábitos, corpo) igual à de antes.
+ * Humor: presença, humor, energia, estresse, horário, duas emoções e nota.
  */
 function skipRemovedMood(rand: () => number): void {
   if (rand() >= 0.85) return;
   for (let k = 0; k < 6; k++) rand();
   if (rand() < 0.1) rand();
+}
+
+/** Diário: presença (~3 por semana) e sorteio do texto. */
+function skipRemovedJournal(rand: () => number): void {
+  if (rand() < 0.4) rand();
 }
 
 /** Gera o conjunto de demonstração terminando em `today` (inclusive). */
@@ -99,7 +71,6 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
 
   const sleep: SleepRecord[] = [];
   const checks: HabitCheckRecord[] = [];
-  const journal: JournalRecord[] = [];
   const body: BodyRecord[] = [];
 
   const habits: HabitRecord[] = [
@@ -168,19 +139,7 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
     if (!weekend && rand() < 0.7) checks.push({ habitId: 'demo-habit-2', day });
     if ([1, 3, 5].includes(wd) && rand() < 0.75) checks.push({ habitId: 'demo-habit-3', day });
 
-    // Diário: ~3 entradas por semana.
-    if (rand() < 0.4) {
-      const entry = JOURNAL_TEXTS[Math.floor(rand() * JOURNAL_TEXTS.length)] ?? JOURNAL_TEXTS[0];
-      if (entry) {
-        journal.push({
-          id: `demo-journal-${i}`,
-          day,
-          mood: null,
-          tags: entry.tags,
-          content: entry.text,
-        });
-      }
-    }
+    skipRemovedJournal(rand);
 
     // Corpo: uma medição por semana; altura e circunferências na primeira e a cada 4 semanas. Peito,
     // braço e coxa sem `rand()`, para não mudar a sequência dos demais dados (corpo 3D, ADR-0026).
@@ -203,6 +162,5 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
     }
   });
 
-  journal.reverse();
-  return { today, sleep, habits, checks, journal, body };
+  return { today, sleep, habits, checks, body };
 }

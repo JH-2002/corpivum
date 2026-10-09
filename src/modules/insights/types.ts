@@ -1,5 +1,4 @@
 import type { BodyField } from '@/modules/body';
-import type { JournalTag } from '@/modules/journal';
 
 /**
  * Camada explicativa por regras (ADR-0025). As funções deste módulo devolvem CHAVES do i18n
@@ -7,7 +6,7 @@ import type { JournalTag } from '@/modules/journal';
  * carrega conteúdo livre (nota, texto do diário, nome de hábito): só números, dias, etiquetas fixas e
  * campos fixos.
  */
-export type InsightModule = 'dashboard' | 'sleep' | 'habits' | 'journal' | 'body' | 'twin';
+export type InsightModule = 'dashboard' | 'sleep' | 'habits' | 'body' | 'twin';
 
 /** Argumento de uma frase, com o formato que a interface deve aplicar. */
 export type InsightArg =
@@ -19,7 +18,6 @@ export type InsightArg =
   | { kind: 'duration'; value: number }
   /** Dias `YYYY-MM-DD`, exibidos pelo dia da semana (períodos de até 7 dias) ou pela data. */
   | { kind: 'days'; value: string[]; style: DayStyle }
-  | { kind: 'tag'; value: JournalTag }
   | { kind: 'field'; value: BodyField }
   /** Valor para `select` do ICU (ex.: `recent`). */
   | { kind: 'select'; value: string };

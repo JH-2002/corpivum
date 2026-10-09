@@ -10,7 +10,7 @@ import {
 } from './fixtures';
 
 /**
- * Fase 2 (ADR-0021): passo 5 do onboarding (§52.5), registros de sono, hábitos, diário e corpo
+ * Fase 2 (ADR-0021): passo 5 do onboarding (§52.5), registros de sono, hábitos e corpo
  * (criar, editar, excluir), dashboard com período global, pedido de revisão do Índice (LEG-D08) e
  * bloqueio após revogar (LEG-C04). Cada teste usa uma pessoa sintética própria.
  */
@@ -52,7 +52,6 @@ test('passo 5: demonstração sem gravar nada e depois "começar com meus dados"
       db.query<{ n: number }>(
         `SELECT (SELECT count(*) FROM sleep_entries WHERE user_id = $1)
               + (SELECT count(*) FROM habits WHERE user_id = $1)
-              + (SELECT count(*) FROM journal_entries WHERE user_id = $1)
               + (SELECT count(*) FROM body_measurements WHERE user_id = $1) AS n`,
         [userId],
       ),
@@ -128,45 +127,6 @@ test('hábitos: criar, marcar no dashboard e ocultar sequências', async ({ page
   await expectNoAxeViolations(page);
 });
 
-test('diário: entrada cifrada, filtro por etiqueta e calendário, sem busca no texto', async ({
-  page,
-}) => {
-  const { userId } = await newPerson(page, 'diario');
-  await page.goto('/diario');
-  await expect(page.getByRole('searchbox')).toHaveCount(0);
-  await page
-    .getByRole('textbox', { name: 'O que você quer registrar?' })
-    .fill('Texto sintético do diário de teste.');
-  await page.getByLabel('Natureza').check();
-  await page.getByRole('button', { name: 'Salvar entrada' }).click();
-  await expect(
-    page.locator('li p').filter({ hasText: 'Texto sintético do diário de teste.' }),
-  ).toBeVisible();
-
-  const { rows } = await withAdmin((db) =>
-    db.query<{ content: Buffer }>(
-      'SELECT content_enc AS content FROM journal_entries WHERE user_id = $1',
-      [userId],
-    ),
-  );
-  expect(rows[0]?.content.includes(Buffer.from('Texto sintético'))).toBe(false);
-
-  await page.getByLabel('Etiquetas').selectOption('work');
-  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
-  await expect(
-    page.locator('li p').filter({ hasText: 'Texto sintético do diário de teste.' }),
-  ).toHaveCount(0);
-  await page.getByLabel('Etiquetas').selectOption('nature');
-  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
-  await expect(
-    page.locator('li p').filter({ hasText: 'Texto sintético do diário de teste.' }),
-  ).toBeVisible();
-
-  await page.getByRole('link', { name: 'Calendário' }).click();
-  await expect(page.getByRole('link', { name: /1 entrada$/ })).toBeVisible();
-  await expectNoAxeViolations(page);
-});
-
 test('corpo: medição com vírgula decimal e IMC estimado sem classificação', async ({ page }) => {
   await newPerson(page, 'corpo');
   await page.goto('/corpo');
@@ -225,7 +185,7 @@ test('após revogar os dados de bem-estar, nenhuma tela de saúde mostra dados',
   await page.getByRole('button', { name: 'Revogar: Dados de bem-estar' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Revogar agora' }).click();
   await expect(page.getByText(/Revogado: eliminação em/)).toBeVisible();
-  for (const path of ['/inicio', '/sono', '/habitos', '/diario', '/corpo']) {
+  for (const path of ['/inicio', '/sono', '/habitos', '/corpo']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: 'Autorização revogada' })).toBeVisible();
     await expect(page.locator('.recharts-wrapper')).toHaveCount(0);
