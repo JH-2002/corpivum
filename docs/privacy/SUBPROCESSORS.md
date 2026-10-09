@@ -1,6 +1,6 @@
 # Subprocessadores e serviços de terceiros
 
-> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.1 (Fase 0)
+> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.2 (reorientação, ADR-0027)
 > Requisitos: LEG-S10 (residência no Brasil), LEG-D06 (informação sobre compartilhamento), LEG-I03.
 
 Regra: banco, storage, filas, jobs **e execução das funções/servidores** ficam no Brasil. Todo serviço que
@@ -29,6 +29,8 @@ vendidos nem compartilhados para vantagem econômica (LGPD art. 11, §4º).
 | GitHub (repositório, Actions, CodeQL, Dependabot) | Código-fonte, CI, varredura de segurança | Código e metadados de commits; **apenas dados sintéticos** (CLAUDE.md regra 6) | EUA |
 | Registro npm / imagens Docker (postgres, semgrep, gitleaks) | Download de dependências e ferramentas | Nenhum dado de usuário | Global |
 | Registro de regras do Semgrep | Download de regras públicas | Nenhum dado; executado com `--metrics=off` | Global |
+
+Reorientação (ADR-0027): nenhum subprocessador novo nem removido; menos categorias de dado passam pelos mesmos provedores (sem humor, diário e medicamentos).
 
 Não usados: SDKs de publicidade, analytics de terceiros, fontes remotas (Google Fonts), telemetria do Next.js
 (`NEXT_TELEMETRY_DISABLED=1`) e telemetria da CLI do Prisma (`CHECKPOINT_DISABLE=1`, no `.env` e na CI).
