@@ -636,52 +636,68 @@ diverge do PRODUCT_SPEC §5 ("nunca imagens anatômicas realistas") e §15 ("neu
 regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_ADDENDUM e em OI-24.
 **Decisão.**
 - **Realismo restrito à forma (LEG-M06):** sem pele, textura nem cor de pele. Superfície lisa, sem mamilos e
-  sem detalhe genital, rosto estilizado (suavizado). Nenhum modelo identifica pessoa real. Não há teste
-  automático para isso: cada troca de modelo traz capturas das três variantes (frente, perfil, costas) no PR.
-- **Fonte:** MakeHuman/MPFB2, assets CC0 (o código do add-on é GPL; o modelo exportado é CC0 e não leva
-  código). Download feito pelo responsável, fora do repositório; pipeline versionado em `scripts/assets/`
-  (Blender headless + `gltfpack`). Cada arquivo tem linha em `docs/ASSETS.md` (fonte, autor, licença,
-  SHA-256).
-- **Pipeline:** por variante (macro de gênero 0, 0,5 e 1; demais macros no padrão), remove olhos, dentes e
-  geometria auxiliar, suaviza peito, região genital e rosto, cria os morphs `<região>_min`/`<região>_max` a
-  partir dos targets de circunferência do MakeHuman, decima uma cópia sem shape keys e transfere os morphs
-  por Surface Deform. Cada região (peito, braço, cintura, quadril, coxa e o resto) é uma primitiva com
-  material próprio: no three vira uma malha, o que reaproveita o clique e o destaque por região da Fase 3.
-  A calibração (circunferência em cm em min, base e max e a altura da base) é medida na própria malha e
-  gravada em `src/modules/twin/bodyAssets.ts` (arquivo gerado).
+  sem detalhe genital, rosto de manequim (sem olhos, nariz nem boca). Nenhum modelo identifica pessoa real. Não
+  há teste automático para isso: cada troca de modelo traz capturas das três variantes (frente e perfil, temas
+  claro e escuro) para revisão antes do PR.
+- **Fonte:** malha base e targets do MakeHuman que vêm dentro da extensão MPFB2 (CC0, `LICENSE.ASSETS.md`; o
+  código do add-on é GPL e não entra no modelo). O asset pack "system assets" não é usado. Pipeline versionado em
+  `scripts/assets/` (Blender headless + `gltfpack`); cada arquivo tem linha em `docs/ASSETS.md` (fonte, versões,
+  autor, licença, SHA-256).
+- **Pipeline:** por variante (macro de gênero 0, 0,5 e 1; demais macros no padrão):
+  1. só a pele do corpo (olhos, dentes, língua e geometria genital são auxiliares e saem); mamilos achatados
+     (targets `nipple-*-decr`) e suavizados, região genital suavizada;
+  2. morphs regionais `<região>_min`/`_max` dos targets de circunferência do MakeHuman e morph global
+     `size_min`/`size_max` da macro de massa do MakeHuman (0 e 1; a variante usa 0,5). É só uma base de forma: o
+     quanto usar vem das medidas, nunca do peso da pessoa;
+  3. calibração medida na malha completa (perímetro do fecho convexo do corte, como uma fita métrica; busto na
+     altura dos mamilos) em cada morph;
+  4. malha final: remesh por voxels de 8 mm (fecha boca, narinas e olhos), rosto suavizado na topologia nova,
+     decimação para ~8.500 triângulos e corte nos planos entre regiões (borda reta). Os morphs vêm da malha
+     completa por Surface Deform, que não exige a mesma topologia;
+  5. uma primitiva por região (peito, braço, cintura, quadril, coxa e o resto), com material próprio: no three
+     vira uma malha, o que reaproveita o clique e o destaque por região da Fase 3.
+- **Forma só pelas medidas informadas:** `bodyMorphWeights` recebe só a `BodyShape` (circunferências e altura
+  já limitadas por `bodyShape`), nunca o peso. O tamanho global é a média, nas regiões com medida, do quanto
+  cada uma pede do morph `size_*`; o resto vai para os morphs regionais. Limites conferidos nos renders do
+  pipeline (`MORPH_LIMITS`: tamanho até 3× para cima e 2× para baixo, regionais até 1,5× e 1×); extrapolar mais
+  deforma o corpo (caricatura). Acima disso a forma fica no limite e o número exibido continua o informado
+  (ADR-0026); na variante neutra, a forma acompanha até cerca de 110 cm de cintura e 140 cm de quadril. Região
+  sem medida fica na circunferência base da variante enquanto os limites permitem compensar o tamanho global;
+  além disso, acompanha parte dele, esmaecida e com "sem medida informada". Sem nenhuma medida, a forma base.
+  Altura = escala uniforme. Continua sem IMC, sem juízo e sem cor por dado.
+- **Os três modelos, sempre (OI-24(e), decisão do responsável pelo produto, 2026-10-09):** a tela do twin pede
+  as três variantes juntas, qualquer que seja a escolha, então os pedidos não revelam ao servidor qual corpo a
+  pessoa vê. Os pedidos saem sem cookie (`credentials: 'omit'`). Trocar a variante não gera pedido novo.
+- **Modelo do corpo é preferência de visualização:** `neutral` (padrão), `feminine` ou `masculine`, só no
+  navegador (`localStorage`, `hm.twin.bodyModel`, ADR-0006), validada com Zod. Não vai ao servidor, não entra em
+  cálculo e não é tratada nem inferida como dado de sexo ou gênero. Texto: "A escolha fica salva neste navegador,
+  não na sua conta."
+- **Orçamento testado no CI:** ≤ 150 KiB por variante e ≤ 400 KiB somando as três (são baixadas juntas). Hoje:
+  122,1 + 126,6 + 120,1 = 368,8 KiB. O teste de conteúdo também exige as três variantes e confere hash ×
+  manifesto × nome × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, os nomes das regiões e dos
+  morph targets e a coerência da calibração.
 - **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e
   `Cache-Control: immutable`. Nada é buscado fora do domínio (LEG-S10). Só o padrão exato
-  `/models/<nome>.<hash>.glb` fica fora do matcher do proxy (como `_next/static`; o resto de `/models/`, como um
-  404, passa pelo proxy e recebe CSP; o teste barra qualquer outro arquivo na pasta, PR3b-B2): são arquivos CC0 sem dado pessoal, o demo público os carrega sem sessão e o
-  `no-store` do proxy anularia o cache. Teste de fronteira: o único loader
-  fica em `src/components/twin/scene/assets.ts`, com caminho relativo `/models/`; nenhuma URL absoluta nas
-  cenas.
-- **Compressão meshopt** (`EXT_meshopt_compression` + `KHR_mesh_quantization`), não Draco: o decodificador
-  vem com o `three` (`three/addons/libs/meshopt_decoder.module.js`), importado só junto do primeiro modelo, e não exige arquivos em
-  `public/`. Ele compila WASM, então a CSP ganha `'wasm-unsafe-eval'` (permite só compilar WebAssembly; `eval`
-  de JS continua bloqueado), só quando o manifesto tem modelo. Limitar ao twin não funciona: na navegação
-  client-side vale a CSP do documento inicial (PR3b-B1). `gltfpack` entra como devDependency de versão fixa, sem dependências
-  transitivas (ADR-0009).
-- **Orçamento testado no CI:** ≤ 300 KiB por variante (arquivo comprimido). O teste de conteúdo também
-  confere hash × manifesto × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, e os nomes das
-  regiões e dos morph targets.
-- **Forma só pelas medidas informadas:** `bodyMorphWeights` recebe só a `BodyShape` (circunferências e
-  altura já limitadas por `bodyShape`), nunca o peso. Altura = escala uniforme. Medida ausente = forma base da
-  variante, região esmaecida e "sem medida informada". Continua sem IMC, sem juízo e sem cor por dado.
-- **Modelo do corpo é preferência de visualização:** `neutral` (padrão), `feminine` ou `masculine`, só no
-  navegador (`localStorage`, `hm.twin.bodyModel`, ADR-0006), validada com Zod. Não é salva na conta, não entra
-  em cálculo e não é tratada nem inferida como dado de sexo ou gênero. O pedido do `.glb` revela a variante no
-  caminho do arquivo (registros técnicos da hospedagem); por isso ele sai sem cookie (`credentials: 'omit'`) e o
-  texto promete só `não na sua conta` (PR3b-M1, OI-24).
+  `/models/<nome>.<hash>.glb` fica fora do matcher do proxy (como `_next/static`): são arquivos CC0 sem dado
+  pessoal, o demo público os carrega sem sessão e o `no-store` do proxy anularia o cache. O resto de `/models/`
+  (um 404, outro tipo de arquivo) passa pelo proxy e recebe CSP, e o teste barra qualquer outro arquivo na pasta
+  (PR3b-B2). Teste de fronteira: o único loader fica em `src/components/twin/scene/assets.ts`, com caminho
+  relativo `/models/`; nenhuma URL absoluta nas cenas.
+- **Compressão meshopt** (`EXT_meshopt_compression` + `KHR_mesh_quantization`), não Draco: o decodificador vem
+  com o `three` (`three/addons/libs/meshopt_decoder.module.js`), importado só junto do primeiro modelo, sem
+  arquivos em `public/`. Ele compila WASM, então a CSP ganha `'wasm-unsafe-eval'` (permite só compilar
+  WebAssembly; `eval` de JS continua bloqueado), só quando o manifesto tem modelo. Limitar ao twin não funciona:
+  na navegação client-side vale a CSP do documento inicial (PR3b-B1). `gltfpack` entra como devDependency de
+  versão fixa, sem dependências transitivas (ADR-0009).
 - **Material holográfico próprio** (`ShaderMaterial` com os chunks de morph do three): fresnel nas bordas,
-  preenchimento translúcido e varredura sutil. Cores por tokens `--hm-holo-*` nos temas claro e escuro (no
-  claro, mistura normal e azul mais escuro). A varredura só anda com a aba visível e o canvas na tela; com
+  preenchimento translúcido e varredura sutil. Cores por tokens `--hm-holo-*` nos temas claro e escuro (no claro,
+  mistura normal e azul mais escuro). A varredura só anda com a aba visível e o canvas na tela; com
   `prefers-reduced-motion`, fica parada e não há quadro extra.
-- **Sob demanda e fallbacks em cascata:** o `.glb` só é pedido quando o 3D aparece, e só a variante escolhida.
-  Enquanto carrega ou se falhar, a geometria gerada em código da Fase 3 com o mesmo material; sem WebGL, o
-  SVG 2D (sem variante), e o `.glb` nem é buscado. A escolha de variante fica abaixo dos controles de vista
-  (`BodyModelPicker`), vale para o corpo e para o Antes × Agora. Build: chunk 3D ≈ 237 → 257 KiB gzip
-  (GLTFLoader + meshopt), ainda fora da entrada de todas as rotas (`scripts/route-js.mjs`).
+- **Sob demanda e fallbacks em cascata:** os `.glb` só são pedidos quando o 3D aparece. Enquanto carregam ou se
+  falharem, a geometria gerada em código da Fase 3 com o mesmo material; sem WebGL, o SVG 2D (sem variante), e
+  nenhum `.glb` é buscado. A escolha de variante fica abaixo dos controles de vista (`BodyModelPicker`) e vale
+  para o corpo e para o Antes × Agora. Build: chunk 3D ≈ 237 → 257 KiB gzip (GLTFLoader + meshopt), ainda fora
+  da entrada de todas as rotas (`scripts/route-js.mjs`).
 **Consequências.** Trocar um modelo exige rodar o pipeline, que regrava o manifesto e o nome por hash, e
 atualizar `docs/ASSETS.md` (o teste falha se divergirem). Textos novos (`twin.bodyModel.*`) são RASCUNHO
 (`LEGAL-REVIEW`, OI-24).

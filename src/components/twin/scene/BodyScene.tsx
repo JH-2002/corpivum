@@ -1,12 +1,13 @@
 'use client';
 
 import { useThree } from '@react-three/fiber';
-import { Component, Suspense, useLayoutEffect, useMemo, type ReactNode } from 'react';
+import { Component, Suspense, useEffect, useLayoutEffect, useMemo, type ReactNode } from 'react';
 import { Vector2 } from 'three';
 import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
 import type { BodyRegion } from '@/modules/twin';
 import { bodyLayout, type ProfilePoint } from '../layout';
 import type { BodySceneProps } from '../types';
+import { preloadAllBodyModels } from './assets';
 import { BodyModelMesh } from './BodyModelMesh';
 import { regionHandlers, TwinCanvas, Turntable } from './common';
 import { HologramMaterial, regionHoloState, useHoloTheme } from './Hologram';
@@ -33,6 +34,8 @@ export function BodyScene(props: BodySceneProps) {
   const { model, angle, instant, compact, onFail } = props;
   const asset = BODY_ASSETS[model];
   const code = <CodeBody {...props} />;
+  // Os três modelos, sempre (OI-24(e)); o cache faz cada arquivo ser pedido uma vez só.
+  useEffect(() => preloadAllBodyModels(), []);
   return (
     <TwinCanvas compact={compact} cameraZ={3.6} onFail={onFail}>
       <Turntable angle={angle} instant={instant}>

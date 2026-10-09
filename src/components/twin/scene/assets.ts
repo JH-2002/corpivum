@@ -1,6 +1,7 @@
 import { Mesh, type BufferGeometry, type Matrix4 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { BODY_REGIONS, type BodyAsset, type BodyRegion } from '@/modules/twin';
+import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
 
 /**
  * Único ponto que carrega arquivo 3D (ADR-0028, teste de fronteira; único `fetch` das cenas): só `.glb` do próprio app em
@@ -59,4 +60,15 @@ export function loadBodyParts(asset: BodyAsset): Promise<BodyPart[]> {
     });
   cache.set(asset.file, promise);
   return promise;
+}
+
+/**
+ * Pede os três modelos de uma vez, qualquer que seja a variante escolhida (OI-24(e)): pelos pedidos, o
+ * servidor nunca sabe qual corpo a pessoa vê. A escolha fica só no navegador.
+ */
+export function preloadAllBodyModels(): void {
+  for (const asset of Object.values(BODY_ASSETS)) {
+    // A falha de um modelo não escolhido não aparece; a do escolhido cai no fallback da cena.
+    if (asset) loadBodyParts(asset).catch(() => undefined);
+  }
 }

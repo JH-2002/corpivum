@@ -14,6 +14,8 @@ export {
 } from './bodyModel';
 export {
   bodyMorphWeights,
+  modelGirthCm,
+  MORPH_LIMITS,
   MORPH_NAMES,
   type BodyCalibration,
   type BodyMorph,
