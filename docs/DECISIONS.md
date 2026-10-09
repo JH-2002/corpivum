@@ -583,3 +583,37 @@ externo sem licença em `docs/ASSETS.md`; o dashboard não pode regredir (§41).
 **Consequências.** Asset externo exige linha em `docs/ASSETS.md` e revisão. Mudar limiares de confiança ou
 redação muda o texto exibido (testes de `src/modules/twin`, `src/modules/insights` e
 `src/components/twin`). Textos educativos do cérebro e do twin são RASCUNHO (`LEGAL-REVIEW`, OI-22).
+
+## ADR-0027 — Reorientação do produto para o desenvolvimento corporal
+**Contexto.** Decisão de produto (responsável pelo produto, 2026-10-08): o HealthMind 360 passa a focar no
+desenvolvimento corporal. Saem humor e energia, diário, cérebro 3D, indicadores neuroquímicos e medicamentos.
+Ficam corpo e medidas, sono, hábitos, alimentação, atividade física, metas, o twin do corpo, o assistente de IA
+opcional, relatórios e a linha do tempo. A Fase 3b (twin holográfico) foi interrompida e será replanejada só
+com os corpos.
+**Decisão.**
+- **Documentos:** PRODUCT_SPEC, SPEC_ADDENDUM, LEGAL_REQUIREMENTS (v4), INTENDED_USE, ROPA, RIPD e
+  SUBPROCESSORS refletem o novo escopo. IDs de requisito não são reaproveitados: LEG-M02 (medicamentos) e
+  LEG-M05 (cérebro e neuroquímica) ficam como revogados.
+- **Imagem corporal e alimentação viram requisito central:** LEG-M04 (metas e recomendações) é reescrito e
+  ganha LEG-M06 (imagem corporal), LEG-M07 (alimentação) e LEG-M08 (sem prescrição de dieta ou treino:
+  atividades de profissões regulamentadas, Lei 8.234/1991 e Lei 9.696/1998). Os limiares numéricos são
+  rascunho com revisão clínica (`LEGAL-REVIEW`, OI-23). As regras ficam num módulo puro
+  (`src/modules/guardrails`) com testes, para as metas e recomendações usarem.
+- **Remoção de código e dados:** módulos, rotas, textos (inclusive `disclaimer.brainModel`,
+  `disclaimer.neurochemistry`, `disclaimer.medications` e `disclaimer.medicationsScope`), testes, dados do demo
+  e itens de navegação de humor, diário, cérebro e medicamentos. Uma migração remove `mood_entries`,
+  `journal_entries` e os tipos ligados a elas. Só existem dados locais de desenvolvimento (regra 6), então
+  não há eliminação de dado real. Rotas removidas redirecionam para a tela inicial (links salvos não quebram).
+  A varredura de alegações cerebrais e neuroquímicas continua no teste de termos proibidos (regra 8).
+- **Índice de Bem-Estar v2:** sem o componente humor e energia; regularidade do sono, hábitos, atividade e
+  constância dos registros, com pesos renormalizados (`docs/WELLBEING_SCORE.md`). Índices não são guardados,
+  então não há o que migrar.
+- **Consentimento:** o texto de `consent_health_data` muda as categorias e vira nova versão com
+  reconsentimento (LEG-C06); a Política de Privacidade ganha nova versão de ciência.
+- **Apoio de crise:** sai junto com humor e diário. Fica contextual onde ainda faz sentido: quando um
+  guardrail de imagem corporal ou alimentação disparar, no modo de risco da IA (LEG-I07) e num acesso
+  permanente "Precisa de ajuda?" no menu de ajuda (orientação profissional, SAMU 192, CVV 188).
+**Consequências.** O ADR-0026 continua valendo para o corpo; as partes sobre o cérebro deixam de existir.
+OI-19 e as partes de OI-21 e OI-22 sobre humor e cérebro são fechadas por escopo removido. As fases futuras
+(`docs/prompts/`) perdem medicamentos (Fase 4) e o diário (Fase 5). Reintroduzir qualquer módulo removido exige
+nova ADR, nova versão do consentimento e revisão do RIPD.

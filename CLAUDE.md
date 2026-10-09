@@ -1,8 +1,9 @@
 # HealthMind 360
 
-Plataforma pessoal de acompanhamento de bem-estar (sono, humor, hábitos, corpo, alimentação,
-atividade, diário, medicamentos informados pelo usuário) com visualização 3D e assistente de IA.
-Público: adultos (18+) no Brasil. Idioma principal: pt-BR.
+Plataforma pessoal de acompanhamento do desenvolvimento corporal com foco em bem-estar (corpo e medidas,
+sono, hábitos, alimentação, atividade física, metas), com twin 3D do corpo e assistente de IA opcional.
+Público: adultos (18+) no Brasil. Idioma principal: pt-BR. Humor, diário, cérebro 3D, neuroquímica e
+medicamentos foram removidos (ADR-0027).
 
 ## Leia antes de planejar
 - `docs/LEGAL_REQUIREMENTS.md`: requisitos legais com IDs `LEG-xx`
@@ -14,7 +15,9 @@ Em conflito: LEGAL_REQUIREMENTS > SPEC_ADDENDUM > PRODUCT_SPEC.
 
 ## Posicionamento (inegociável)
 Produto de bem-estar e autoacompanhamento. NÃO é dispositivo médico: não diagnostica, não trata,
-não monitora doenças, não sugere doses, não substitui profissional de saúde. Nenhum texto de
+não monitora doenças, não sugere doses, não prescreve dieta nem treino, não substitui profissional de saúde.
+Imagem corporal e alimentação são requisito central: nada julga o corpo nem incentiva restrição
+(LEG-M04, M06, M07, M08; guardrails em `src/modules/guardrails`). Nenhum texto de
 interface ou resposta de IA pode contradizer isso.
 
 ## Regras inegociáveis
@@ -22,7 +25,7 @@ interface ou resposta de IA pode contradizer isso.
 2. Nunca vender ou compartilhar dados de saúde. Sem SDKs de publicidade, sem trackers de terceiros.
 3. Envio ao LLM exige consentimento próprio (padrão desligado) e envio mínimo.
 4. Menores de 18 não criam conta e não têm dado persistido.
-5. Nunca logar conteúdo de saúde, diário, medicamentos ou mensagens da IA. Só metadados.
+5. Nunca logar conteúdo de saúde, notas, alimentação, medidas ou mensagens da IA. Só metadados.
 6. Nunca usar dados reais em desenvolvimento (apenas seed sintético). Nunca commitar segredos.
 7. Todo dado exibido tem selo: MEDIDO | INFORMADO | ESTIMADO | INFERIDO | RECOMENDADO | DEMO.
 8. Nunca afirmar estado cerebral, nível de neurotransmissor, liberação de substância, transtorno
