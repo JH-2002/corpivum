@@ -12,6 +12,7 @@ export {
   type BodyAsset,
   type BodyModel,
 } from './bodyModel';
+export { DEMO_TWIN_PROFILES, demoTwinRows } from './demoProfiles';
 export {
   bodyMorphWeights,
   modelGirthCm,

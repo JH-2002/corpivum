@@ -7,6 +7,7 @@ import { cn } from '@/lib/cn';
 import {
   bodyShape,
   bodySnapshotAt,
+  demoTwinRows,
   firstMeasure,
   measurementDays,
   REGION_FIELD,
@@ -33,8 +34,8 @@ import { ViewControls } from './ViewControls';
  * (`TwinRow`). Selos INFORMADO/ESTIMADO, ou DEMO na demonstração (CLAUDE.md regra 7).
  */
 export function BodyTwin({
-  rows,
-  latestHeightCm,
+  rows: inputRows,
+  latestHeightCm: inputHeightCm,
   demo,
   describedBy,
 }: {
@@ -44,12 +45,20 @@ export function BodyTwin({
   describedBy: string;
 }) {
   const t = useTranslations('twin.body');
+  const [model] = useBodyModel();
+  // No demo, medidas fictícias coerentes com a variante escolhida (só no navegador, ADR-0028).
+  const { rows, latestHeightCm } = useMemo(
+    () =>
+      demo
+        ? demoTwinRows(inputRows, inputHeightCm, model)
+        : { rows: inputRows, latestHeightCm: inputHeightCm },
+    [demo, inputRows, inputHeightCm, model],
+  );
   const days = useMemo(() => measurementDays(rows), [rows]);
   const [index, setIndex] = useState(Math.max(0, days.length - 1));
   const [selected, setSelected] = useState<BodyRegion | null>(null);
   const [hover, setHover] = useState<HoverInfo<BodyRegion> | null>(null);
   const [hideValues, setHideValues] = useState(false);
-  const [model] = useBodyModel();
   const turntable = useTurntable(VIEW_ANGLE.front);
   const compact = useCompact();
   const fmt = useTwinFormat(hideValues);

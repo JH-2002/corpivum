@@ -643,10 +643,17 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   código do add-on é GPL e não entra no modelo). O asset pack "system assets" não é usado. Pipeline versionado em
   `scripts/assets/` (Blender headless + `gltfpack`); cada arquivo tem linha em `docs/ASSETS.md` (fonte, versões,
   autor, licença, SHA-256).
-- **Pipeline:** por variante (macro de gênero 0, 0,5 e 1; demais macros no padrão):
+- **Silhueta por variante** (o feminino lia como um corpo masculino com mais gordura): macros e targets do
+  MakeHuman aplicados à base e aos corpos de tamanho (`VARIANTS` em `build_body.py`). Feminino: gênero 0,
+  ombros mais estreitos que o quadril, cintura marcada (cintura/quadril 0,67 na base), quadril e coxas mais cheios,
+  peito de volume moderado, pescoço e braços mais finos. Masculino: gênero 1, ombros largos, tronco em V, quadril
+  estreito, peito plano, volume da pelve reduzido. Neutro: gênero 0,5, sem volume de peito, intermediário.
+- **Pipeline:** por variante:
   1. só a pele do corpo (olhos, dentes, língua e geometria genital são auxiliares e saem); mamilos achatados
      (targets `nipple-*-decr`) e suavizados, região genital suavizada;
-  2. morphs regionais `<região>_min`/`_max` dos targets de circunferência do MakeHuman e morph global
+  2. morphs regionais `<região>_min`/`_max` dos targets de circunferência do MakeHuman (a cintura tem morph
+     próprio: escala radial do tronco com queda suave em altura, metade do deslocamento para a frente, nada perto
+     dos braços; o target do MakeHuman só projetava o abdômen) e morph global
      `size_min`/`size_max` da macro de massa do MakeHuman (0 e 1; a variante usa 0,5). É só uma base de forma: o
      quanto usar vem das medidas, nunca do peso da pessoa;
   3. calibração medida na malha completa (perímetro do fecho convexo do corte, como uma fita métrica; busto na
@@ -665,6 +672,9 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   sem medida fica na circunferência base da variante enquanto os limites permitem compensar o tamanho global;
   além disso, acompanha parte dele, esmaecida e com "sem medida informada". Sem nenhuma medida, a forma base.
   Altura = escala uniforme. Continua sem IMC, sem juízo e sem cor por dado.
+- **Demo por variante:** no demo (e só nele), a série fictícia é deslocada no navegador para terminar em medidas
+  coerentes com a variante escolhida (`DEMO_TWIN_PROFILES`: feminino com cintura 70 e quadril 98 cm), com as
+  mesmas datas e variações. Com dados da pessoa, a variante nunca muda medida nenhuma.
 - **Os três modelos, sempre (OI-24(e), decisão do responsável pelo produto, 2026-10-09):** a tela do twin pede
   as três variantes juntas, qualquer que seja a escolha, então os pedidos não revelam ao servidor qual corpo a
   pessoa vê. Os pedidos saem sem cookie (`credentials: 'omit'`). Trocar a variante não gera pedido novo.
@@ -673,7 +683,7 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   cálculo e não é tratada nem inferida como dado de sexo ou gênero. Texto: "A escolha fica salva neste navegador,
   não na sua conta."
 - **Orçamento testado no CI:** ≤ 150 KiB por variante e ≤ 400 KiB somando as três (são baixadas juntas). Hoje:
-  122,1 + 126,6 + 120,1 = 368,8 KiB. O teste de conteúdo também exige as três variantes e confere hash ×
+  122,2 + 125,9 + 121,2 = 369,3 KiB. O teste de conteúdo também exige as três variantes e confere hash ×
   manifesto × nome × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, os nomes das regiões e dos
   morph targets e a coerência da calibração.
 - **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e

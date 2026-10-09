@@ -1,5 +1,6 @@
 import { bodyEntry, day } from '@/modules/insights/fixtures';
 import { parseBodyModel } from './bodyModel';
+import { DEMO_TWIN_PROFILES, demoTwinRows } from './demoProfiles';
 import {
   bodyMorphWeights,
   modelGirthCm,
@@ -9,7 +10,7 @@ import {
 } from './morph';
 import { BODY_REGIONS, COMPARE_FIELDS, type BodyRegion } from './regions';
 import { bodyShape } from './shape';
-import { bodySnapshotAt, compareSnapshots, measurementDays } from './snapshot';
+import { bodySnapshotAt, compareSnapshots, measurementDays, toTwinRows } from './snapshot';
 
 /** Dados sintéticos (CLAUDE.md regra 6). */
 const records = [
@@ -129,6 +130,30 @@ describe('morph targets do corpo .glb (ADR-0028)', () => {
   it('altura informada vira escala uniforme; sem altura, a da variante', () => {
     expect(morphOf({ heightCm: 182.6 }).scale).toBeCloseTo(1.1);
     expect(morphOf({ waistCm: 80 }).scale).toBe(1);
+  });
+});
+
+describe('perfis do demo por variante (ADR-0028)', () => {
+  const rows = toTwinRows([
+    bodyEntry(day(0), { weightKg: 70, waistCm: 82, hipCm: 97 }),
+    bodyEntry(day(6), { weightKg: 71, waistCm: 83.6, hipCm: 97.7 }),
+  ]);
+
+  it('termina nas medidas do perfil e preserva a variação entre os dias', () => {
+    const { rows: shown, latestHeightCm } = demoTwinRows(rows, 172, 'feminine');
+    const last = shown[shown.length - 1]!;
+    expect(last.waistCm).toBe(DEMO_TWIN_PROFILES.feminine.waistCm);
+    expect(last.hipCm).toBe(DEMO_TWIN_PROFILES.feminine.hipCm);
+    expect(latestHeightCm).toBe(DEMO_TWIN_PROFILES.feminine.heightCm);
+    expect(last.waistCm! - shown[0]!.waistCm!).toBeCloseTo(1.6);
+    expect(last.weightKg! - shown[0]!.weightKg!).toBeCloseTo(1);
+  });
+
+  it('feminino com cintura/quadril perto de 0,7; não cria medida que não existia', () => {
+    const f = DEMO_TWIN_PROFILES.feminine;
+    expect(f.waistCm! / f.hipCm!).toBeCloseTo(0.71, 1);
+    const { rows: shown } = demoTwinRows(rows, null, 'masculine');
+    expect(shown.every((r) => r.chestCm == null)).toBe(true);
   });
 });
 
