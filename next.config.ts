@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
       { source: '/:path*', headers: SECURITY_HEADERS },
       // Modelos 3D com hash no nome (ADR-0028): o conteúdo de um nome nunca muda.
       {
-        source: '/models/:file*',
+        source: '/models/:file([a-z0-9-]+\\.[0-9a-f]+\\.glb)',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
     ];

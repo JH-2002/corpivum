@@ -14,9 +14,12 @@ describe('CSP (LEG-S05)', () => {
     expect(script).not.toContain("'unsafe-eval'");
   });
 
-  it('libera só a compilação de WebAssembly (meshopt, ADR-0028), não o eval de JS', () => {
-    const script = prod.split('; ').find((d) => d.startsWith('script-src')) ?? '';
-    expect(script).toContain("'wasm-unsafe-eval'");
+  it('WebAssembly (meshopt, ADR-0028) só quando há modelo 3D; nunca o eval de JS', () => {
+    const script = (csp: string) => csp.split('; ').find((d) => d.startsWith('script-src')) ?? '';
+    expect(script(prod)).not.toContain('wasm-unsafe-eval');
+    const withModels = script(buildCsp('n', { dev: false, https: true, wasm: true }));
+    expect(withModels).toContain("'wasm-unsafe-eval'");
+    expect(withModels).not.toContain("'unsafe-eval'");
   });
 
   it('bloqueia frames, objetos, base e envio de formulário para fora', () => {
@@ -57,6 +60,11 @@ describe('proxy', () => {
     const source = proxyConfig.matcher[0]?.source ?? '';
     const re = new RegExp(`^${source}$`);
     expect(re.test('/models/body-neutral.0123abcd.glb')).toBe(false);
+    // Fora do padrão exato, passa pelo proxy (CSP): 404, outro tipo, subpasta.
+    expect(re.test('/models/x.svg')).toBe(true);
+    expect(re.test('/models/nao-existe')).toBe(true);
+    expect(re.test('/models/a/body.0123abcd.glb')).toBe(true);
+    expect(re.test('/models/body-neutral.0123abcd.glb.html')).toBe(true);
     expect(re.test('/twin')).toBe(true);
     expect(re.test('/modelos')).toBe(true);
     expect(re.test('/demo/twin')).toBe(true);

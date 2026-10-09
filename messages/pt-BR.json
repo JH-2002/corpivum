@@ -1097,7 +1097,7 @@
       "neutral": "Neutro",
       "feminine": "Feminino",
       "masculine": "Masculino",
-      "hint": "Só muda a aparência do modelo. A escolha fica neste navegador e não é guardada como dado sobre você."
+      "hint": "Só muda a aparência do modelo. A escolha fica salva neste navegador, não na sua conta."
     },
     "body": {
       "title": "Seu corpo em 3D",

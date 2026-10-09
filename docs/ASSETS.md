@@ -31,13 +31,21 @@ Também vale:
 
 ## Inventário atual
 
-**Nenhum asset externo.** Fase 3 (ADR-0026):
+**Nenhum asset externo ainda.** Os modelos do corpo da Fase 3b (ADR-0028) entram na tabela abaixo quando
+forem gerados pelo pipeline (`scripts/assets/`).
 
 | Item | Como é feito | Licença |
 |---|---|---|
-| Corpo 3D (`src/components/twin/scene/BodyScene.tsx`) | Geometria gerada em código (perfis de revolução, cápsulas e esferas do three.js) | Código do projeto |
+| Corpo 3D de reserva (`src/components/twin/scene/BodyScene.tsx`) | Geometria gerada em código (perfis de revolução, cápsulas e esferas do three.js), usada enquanto o `.glb` carrega, se ele falhar ou faltar | Código do projeto |
 | Versões 2D (`src/components/twin/fallback/`) | SVG desenhado em código | Código do projeto |
-| Iluminação | Luz ambiente e direcional do three.js, sem mapa de ambiente | — |
+| Material holográfico (`src/components/twin/scene/Hologram.tsx`) | Shader próprio, sem luz, textura nem mapa de ambiente | Código do projeto |
 
-Bibliotecas (código, não assets) seguem a política de dependências da ADR-0009: `three` (MIT) e
-`@react-three/fiber` (MIT).
+### Modelos do corpo (ADR-0028)
+
+| Asset | Origem | Autor | Licença | Atribuição | Uso comercial / modificação | SHA-256 | Revisão |
+|---|---|---|---|---|---|---|---|
+
+Bibliotecas e ferramentas (código, não assets) seguem a política de dependências da ADR-0009: `three`
+(MIT), `@react-three/fiber` (MIT) e, só no pipeline, `gltfpack` (MIT). O MPFB2 (código GPL) roda só no
+Blender da pessoa responsável e não entra no repositório; os assets dele usados aqui (malha base e targets do
+MakeHuman) são CC0 1.0.

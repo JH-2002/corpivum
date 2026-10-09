@@ -650,15 +650,17 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   A calibração (circunferência em cm em min, base e max e a altura da base) é medida na própria malha e
   gravada em `src/modules/twin/bodyAssets.ts` (arquivo gerado).
 - **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e
-  `Cache-Control: immutable`. Nada é buscado fora do domínio (LEG-S10). `/models/` fica fora do matcher do
-  proxy (como `_next/static`): são arquivos CC0 sem dado pessoal, o demo público os carrega sem sessão e o
+  `Cache-Control: immutable`. Nada é buscado fora do domínio (LEG-S10). Só o padrão exato
+  `/models/<nome>.<hash>.glb` fica fora do matcher do proxy (como `_next/static`; o resto de `/models/`, como um
+  404, passa pelo proxy e recebe CSP; o teste barra qualquer outro arquivo na pasta, PR3b-B2): são arquivos CC0 sem dado pessoal, o demo público os carrega sem sessão e o
   `no-store` do proxy anularia o cache. Teste de fronteira: o único loader
   fica em `src/components/twin/scene/assets.ts`, com caminho relativo `/models/`; nenhuma URL absoluta nas
   cenas.
 - **Compressão meshopt** (`EXT_meshopt_compression` + `KHR_mesh_quantization`), não Draco: o decodificador
-  vem com o `three` (`three/addons/libs/meshopt_decoder.module.js`), entra no chunk 3D e não exige arquivos em
+  vem com o `three` (`three/addons/libs/meshopt_decoder.module.js`), importado só junto do primeiro modelo, e não exige arquivos em
   `public/`. Ele compila WASM, então a CSP ganha `'wasm-unsafe-eval'` (permite só compilar WebAssembly; `eval`
-  de JS continua bloqueado). `gltfpack` entra como devDependency de versão fixa, sem dependências
+  de JS continua bloqueado), só quando o manifesto tem modelo. Limitar ao twin não funciona: na navegação
+  client-side vale a CSP do documento inicial (PR3b-B1). `gltfpack` entra como devDependency de versão fixa, sem dependências
   transitivas (ADR-0009).
 - **Orçamento testado no CI:** ≤ 300 KiB por variante (arquivo comprimido). O teste de conteúdo também
   confere hash × manifesto × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, e os nomes das
@@ -667,8 +669,10 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   altura já limitadas por `bodyShape`), nunca o peso. Altura = escala uniforme. Medida ausente = forma base da
   variante, região esmaecida e "sem medida informada". Continua sem IMC, sem juízo e sem cor por dado.
 - **Modelo do corpo é preferência de visualização:** `neutral` (padrão), `feminine` ou `masculine`, só no
-  navegador (`localStorage`, `hm.twin.bodyModel`, ADR-0006), validada com Zod. Não vai ao servidor, não entra
-  em cálculo e não é tratada nem inferida como dado de sexo ou gênero.
+  navegador (`localStorage`, `hm.twin.bodyModel`, ADR-0006), validada com Zod. Não é salva na conta, não entra
+  em cálculo e não é tratada nem inferida como dado de sexo ou gênero. O pedido do `.glb` revela a variante no
+  caminho do arquivo (registros técnicos da hospedagem); por isso ele sai sem cookie (`credentials: 'omit'`) e o
+  texto promete só `não na sua conta` (PR3b-M1, OI-24).
 - **Material holográfico próprio** (`ShaderMaterial` com os chunks de morph do three): fresnel nas bordas,
   preenchimento translúcido e varredura sutil. Cores por tokens `--hm-holo-*` nos temas claro e escuro (no
   claro, mistura normal e azul mais escuro). A varredura só anda com a aba visível e o canvas na tela; com

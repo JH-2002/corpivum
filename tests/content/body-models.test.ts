@@ -49,10 +49,9 @@ function readGlb(bytes: Buffer): Gltf {
 const entries = Object.entries(BODY_ASSETS);
 
 describe('modelos do corpo (ADR-0028)', () => {
-  it('todo .glb em public/models está no manifesto', () => {
-    const files = existsSync(MODELS_DIR)
-      ? readdirSync(MODELS_DIR).filter((f) => f.endsWith('.glb'))
-      : [];
+  it('public/models só tem .glb do manifesto, com nome por hash (fora do proxy, ADR-0028)', () => {
+    const files = existsSync(MODELS_DIR) ? readdirSync(MODELS_DIR) : [];
+    for (const f of files) expect(f).toMatch(/^[a-z0-9-]+\.[0-9a-f]{8}\.glb$/);
     const listed = entries.map(([, a]) => path.basename(a.file));
     expect(files.sort()).toEqual(listed.sort());
   });
