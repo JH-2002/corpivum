@@ -10,8 +10,6 @@ import { withConsentOn } from '@/modules/consent/guard';
 import { createHabitsService } from '@/modules/habits/service';
 import { createFieldCipher, type HealthDeps } from '@/modules/health/core';
 import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
-import { createJournalService } from '@/modules/journal/service';
-import { createMoodService } from '@/modules/mood/service';
 import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import { createSleepService } from '@/modules/sleep/service';
 import { createTestConsent } from './consent-helpers';
@@ -37,14 +35,7 @@ let deps: HealthDeps;
 const TZ = 'America/Sao_Paulo';
 
 /** Tabelas de saúde conhecidas. Tabela nova com `user_id` precisa ser classificada aqui ou em NON_HEALTH. */
-const HEALTH_TABLES = [
-  'body_measurements',
-  'habit_checks',
-  'habits',
-  'journal_entries',
-  'mood_entries',
-  'sleep_entries',
-];
+const HEALTH_TABLES = ['body_measurements', 'habit_checks', 'habits', 'sleep_entries'];
 /** Tabelas com `user_id` que NÃO são dado de saúde (auth, provas, logs). */
 const NON_HEALTH = new Set([
   'sessions',
@@ -63,9 +54,7 @@ const ALL = { acceptTerms: true, acceptPrivacy: true } as const;
 function services() {
   return {
     sleep: createSleepService(deps),
-    mood: createMoodService(deps),
     habits: createHabitsService(deps),
-    journal: createJournalService(deps),
     body: createBodyService(deps),
   };
 }
@@ -79,7 +68,6 @@ async function onboarded(purposes: Array<'health_data'>) {
 
 const RANGE = { from: '2026-09-01', to: '2026-10-07' };
 const SECRET_NOTE = 'nota-secreta-sintetica-sono';
-const SECRET_JOURNAL = 'diario-secreto-sintetico';
 const SECRET_HABIT = 'habito-secreto-sintetico';
 
 /** Um registro em cada tabela de saúde, pelos serviços reais. */
@@ -92,14 +80,6 @@ async function seedAll(userId: string) {
     awakenings: 1,
     note: SECRET_NOTE,
   });
-  const mood = await s.mood.create(userId, {
-    loggedAt: '2026-10-06T09:00',
-    mood: 4,
-    energy: 3,
-    stress: 2,
-    emotions: ['calm'],
-    note: 'nota-humor',
-  });
   const habitId = await s.habits.create(userId, {
     name: SECRET_HABIT,
     frequency: 'daily',
@@ -107,15 +87,9 @@ async function seedAll(userId: string) {
     timesPerWeek: null,
   });
   expect(await s.habits.setCheck(userId, habitId, '2026-10-06', true)).toBe('ok');
-  const journal = await s.journal.create(userId, {
-    day: '2026-10-06',
-    content: SECRET_JOURNAL,
-    mood: 4,
-    tags: ['work'],
-  });
   const body = await s.body.create(userId, { measuredAt: '2026-10-06T08:00', weightKg: 70 });
-  if (!sleep.ok || !mood.ok || !journal.ok || !body.ok) throw new Error('seed');
-  return { sleepId: sleep.id, moodId: mood.id, habitId, journalId: journal.id, bodyId: body.id };
+  if (!sleep.ok || !body.ok) throw new Error('seed');
+  return { sleepId: sleep.id, habitId, bodyId: body.id };
 }
 
 async function countsFor(userId: string): Promise<Record<string, number>> {
@@ -265,11 +239,8 @@ describe('isolamento entre pessoas (LEG-S03)', () => {
     const ids = await seedAll(a.userId);
 
     expect(await s.sleep.list(b.userId, RANGE)).toEqual([]);
-    expect(await s.mood.list(b.userId, RANGE)).toEqual([]);
     expect(await s.habits.listHabits(b.userId)).toEqual([]);
     expect(await s.habits.listChecks(b.userId, RANGE)).toEqual([]);
-    expect(await s.journal.list(b.userId, RANGE)).toEqual([]);
-    expect(await s.journal.get(b.userId, ids.journalId)).toBeNull();
     expect(await s.body.list(b.userId, RANGE)).toEqual([]);
 
     expect(
@@ -279,10 +250,8 @@ describe('isolamento entre pessoas (LEG-S03)', () => {
       }),
     ).toBeNull();
     expect(await s.sleep.remove(b.userId, ids.sleepId)).toBe(false);
-    expect(await s.mood.remove(b.userId, ids.moodId)).toBe(false);
     expect(await s.habits.remove(b.userId, ids.habitId)).toBe(false);
     expect(await s.habits.setCheck(b.userId, ids.habitId, '2026-10-06', false)).toBe('not_found');
-    expect(await s.journal.remove(b.userId, ids.journalId)).toBe(false);
     expect(await s.body.remove(b.userId, ids.bodyId)).toBe(false);
 
     const counts = await countsFor(a.userId);
@@ -319,13 +288,7 @@ describe('consentimento no banco, não só na aplicação (LEG-C04)', () => {
 
     await expect(s.sleep.list(a.userId, RANGE)).rejects.toBeInstanceOf(ConsentRequiredError);
     await expect(
-      s.mood.create(a.userId, {
-        loggedAt: '2026-10-06T10:00',
-        mood: 3,
-        energy: 3,
-        stress: 3,
-        emotions: [],
-      }),
+      s.body.create(a.userId, { measuredAt: '2026-10-06T10:00', weightKg: 70 }),
     ).rejects.toBeInstanceOf(ConsentRequiredError);
 
     // Sem o guard da aplicação: só `app.user_id`.
@@ -378,29 +341,27 @@ describe('cifragem de campo (LEG-S02)', () => {
     const a = await onboarded(['health_data']);
     const b = await onboarded(['health_data']);
     await seedAll(a.userId);
-    const { rows } = await admin.query<{ note: Buffer; content: Buffer; name: Buffer }>(
+    const { rows } = await admin.query<{ note: Buffer; name: Buffer }>(
       `SELECT (SELECT note_enc FROM sleep_entries WHERE user_id = $1) AS note,
-              (SELECT content_enc FROM journal_entries WHERE user_id = $1) AS content,
               (SELECT name_enc FROM habits WHERE user_id = $1) AS name`,
       [a.userId],
     );
     const row = rows[0];
     if (!row) throw new Error('sem linha');
     expect(row.note.includes(Buffer.from(SECRET_NOTE))).toBe(false);
-    expect(row.content.includes(Buffer.from(SECRET_JOURNAL))).toBe(false);
     expect(row.name.includes(Buffer.from(SECRET_HABIT))).toBe(false);
 
-    const field = { table: 'journal_entries', column: 'content_enc' };
-    expect(await deps.cipher.open(a.userId, field, row.content)).toBe(SECRET_JOURNAL);
-    await expect(deps.cipher.open(b.userId, field, row.content)).rejects.toThrow();
+    const field = { table: 'sleep_entries', column: 'note_enc' };
+    expect(await deps.cipher.open(a.userId, field, row.note)).toBe(SECRET_NOTE);
+    await expect(deps.cipher.open(b.userId, field, row.note)).rejects.toThrow();
     await expect(
-      deps.cipher.open(a.userId, { table: 'sleep_entries', column: 'note_enc' }, row.content),
+      deps.cipher.open(a.userId, { table: 'habits', column: 'name_enc' }, row.note),
     ).rejects.toThrow();
 
-    const [entry] = await services().journal.list(a.userId, RANGE, { withText: true });
-    expect(entry?.content).toBe(SECRET_JOURNAL);
-    const [meta] = await services().journal.list(a.userId, RANGE);
-    expect(meta?.content).toBeNull();
+    const [entry] = await services().sleep.list(a.userId, RANGE, { withText: true });
+    expect(entry?.note).toBe(SECRET_NOTE);
+    const [meta] = await services().sleep.list(a.userId, RANGE);
+    expect(meta?.note).toBeNull();
   });
 });
 
@@ -408,17 +369,6 @@ describe('validações do banco', () => {
   it('recusa valores fora de faixa mesmo vindos do runtime', async () => {
     const a = await onboarded(['health_data']);
     const bad: Array<(tx: Tx) => Promise<unknown>> = [
-      async (tx: Tx) =>
-        tx.moodEntry.create({
-          data: {
-            userId: a.userId,
-            loggedAt: new Date(),
-            mood: 9,
-            energy: 3,
-            stress: 3,
-            emotions: [],
-          },
-        }),
       async (tx: Tx) =>
         tx.sleepEntry.create({
           data: {

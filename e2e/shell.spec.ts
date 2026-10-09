@@ -82,11 +82,24 @@ test.describe('avisos obrigatórios', () => {
     await page.goto('/inicio');
     await expect(page.getByRole('contentinfo')).toContainText('Não diagnostica, não trata');
   });
+});
 
-  test('medicamentos mostra o aviso fixo (LEG-M02)', async ({ page }) => {
-    await page.goto('/medicamentos');
-    await expect(page.getByText('Siga a orientação do seu prescritor.')).toBeVisible();
-  });
+test.describe('rotas removidas na reorientação (ADR-0027)', () => {
+  for (const [from, to] of [
+    ['/humor', '/inicio'],
+    ['/diario', '/inicio'],
+    ['/medicamentos', '/inicio'],
+    ['/twin/cerebro', '/twin'],
+    ['/demo/humor', '/demo'],
+    ['/demo/diario', '/demo'],
+    ['/demo/twin/cerebro', '/demo/twin'],
+  ] as const) {
+    test(`${from} leva a ${to}`, async ({ page }) => {
+      await page.goto(from);
+      await page.waitForURL((url) => url.pathname === to);
+      expect(new URL(page.url()).pathname).toBe(to);
+    });
+  }
 });
 
 test.describe('tema', () => {

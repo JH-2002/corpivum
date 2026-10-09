@@ -1,6 +1,6 @@
 /**
  * Logger estruturado que aceita SOMENTE metadados tipados (CLAUDE.md regra 5, LEG-R04).
- * Não há campo livre: conteúdo de saúde, diário, medicamentos ou mensagens da IA não cabe aqui.
+ * Não há campo livre: conteúdo de saúde, notas, medidas ou mensagens da IA não cabe aqui.
  * Em tempo de execução, só as chaves de `FIELDS` passam, e textos precisam ter formato de identificador.
  * Para adicionar um campo, inclua-o em `LogMeta` e em `FIELDS` e justifique no PR.
  */

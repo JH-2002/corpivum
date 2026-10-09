@@ -1,15 +1,32 @@
 # Índice de Bem-Estar: fórmulas
 
-> Fonte da verdade: `src/modules/wellbeing/score.ts` (`SCORE_V1`), testes em
+> Fonte da verdade: `src/modules/wellbeing/score.ts` (`SCORE_V2`), testes em
 > `src/modules/wellbeing/score.test.ts`. Requisitos: §14, LEG-D08. `LEGAL-REVIEW` e revisão clínica dos
 > textos antes do lançamento (OPEN_ISSUES OI-09).
 
 ## O que é e o que não é
 Número de 0 a 100 que resume os **registros da própria pessoa** no período selecionado: regularidade do
-sono, humor e energia informados, cumprimento de hábitos e constância de registro. **Não é avaliação de saúde**: não usa referência populacional, não classifica, não indica
-risco nem condição. Selo na interface: ESTIMADO (cálculo direto a partir de dados informados).
+sono, cumprimento de hábitos, atividade (quando houver o módulo) e constância de registro. **Não é avaliação
+de saúde**: não usa referência populacional, não classifica, não indica risco nem condição. **Peso e medidas
+nunca entram** (LEG-M06). Selo na interface: ESTIMADO (cálculo direto a partir de dados informados).
 
-## Versão 1 (`score_version = 1`)
+## Versão 2 (`score_version = 2`, vigente, ADR-0027)
+
+A v1 sem o componente humor e energia (removido do produto). Os pesos restantes foram renormalizados na mesma
+proporção da v1 (0,25 : 0,20 : 0,15 : 0,15) e arredondados para somar 1. Limiares e fórmulas dos componentes
+não mudaram.
+
+| Componente | Peso |
+|---|---|
+| Regularidade do sono (`sleepRegularity`) | 0,33 |
+| Hábitos (`habits`) | 0,27 |
+| Atividade (`activity`) | 0,20 (fora até existir o módulo de atividade) |
+| Constância de registro (`logging`) | 0,20 |
+
+Na constância de registro, dias só com medição do corpo não contam: pesar mais vezes não sobe o Índice
+(LEG-M06). Os índices não são guardados; pedidos de revisão abertos com a v1 continuam com `score_version = 1`.
+
+## Versão 1 (`score_version = 1`, histórica)
 
 | Componente | Peso | Entra quando | Cálculo (0–100) |
 |---|---|---|---|
@@ -35,7 +52,7 @@ componente fora, o card mostra "dados parciais" e a explicação lista o motivo 
 ## Resumo do dashboard (§11.1)
 Gerado por regras em `src/modules/wellbeing/summary.ts` (`SUMMARY_RULES`), sem IA. Compara com o período
 anterior e descreve a primeira mudança relevante, nesta ordem: sono médio (≥ 20 min, com ≥ 3 registros nos
-dois períodos), humor médio (≥ 0,3 ponto), cumprimento de hábitos (≥ 10 pontos percentuais). Sem mudança
+dois períodos) e cumprimento de hábitos (≥ 10 pontos percentuais). Desde a v2 (ADR-0027) não há humor. Sem mudança
 relevante, informa em quantos dias houve registro. Linguagem descritiva, sem causa nem julgamento.
 
 ## Como mudar

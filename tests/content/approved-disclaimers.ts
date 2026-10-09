@@ -9,15 +9,6 @@ export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
     'O HealthMind 360 é uma ferramenta de bem-estar e autoacompanhamento. Não diagnostica, não trata e não monitora doenças, e não substitui profissional de saúde.',
   'disclaimer.notMedicalDevice':
     'Este aplicativo não é um dispositivo médico e não faz recomendações de diagnóstico ou tratamento.',
-  'disclaimer.medications': 'Siga a orientação do seu prescritor.',
-  'disclaimer.medicationsScope':
-    'O app não sugere doses, não verifica interações e não altera nada automaticamente.',
-  // Fase 3 (ADR-0026, revisão de privacidade M1): o modelo é igual para todas as pessoas; só os números
-  // do painel vêm do que a pessoa relatou. LEGAL-REVIEW, OI-09/OI-22.
-  'disclaimer.brainModel':
-    'Modelo aproximado e educacional, igual para todas as pessoas: não usa nem representa os seus dados. Os números do painel são estimativas a partir do que você relatou, não uma medição cerebral.',
-  'disclaimer.neurochemistry':
-    'Conteúdo educativo. Não é medição laboratorial e não indica níveis de neurotransmissores no seu corpo.',
   'disclaimer.aiGenerated':
     'Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.',
   'disclaimer.reportFooter':
@@ -25,9 +16,10 @@ export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
   'disclaimer.riskSupport':
     'Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).',
   'disclaimer.draftLegal': 'RASCUNHO — revisão jurídica obrigatória.',
-  // Fase 2 (ADR-0021): aviso do Índice de Bem-Estar (§14, LEG-D08) e do demo (LEG-X02). LEGAL-REVIEW, OI-09.
+  // Fase 2 (ADR-0021): aviso do Índice de Bem-Estar (§14, LEG-D08) e do demo (LEG-X02). Índice v2 sem
+  // humor e energia (ADR-0027). LEGAL-REVIEW, OI-09.
   'disclaimer.wellbeingScore':
-    'O Índice de Bem-Estar resume seus registros de sono, humor e energia, hábitos e a constância dos registros. Não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
+    'O Índice de Bem-Estar resume seus registros de sono, hábitos e a constância dos registros. Não usa peso nem medidas, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
   'disclaimer.demoData':
     'Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.',
   // Fase 3 (ADR-0026): aviso do corpo 3D (§15, LEG-M04). LEGAL-REVIEW, OI-09.

@@ -53,7 +53,6 @@ describe('strings proibidas (LEG-M03)', () => {
     for (const [key, approved] of Object.entries(APPROVED_DISCLAIMERS)) {
       expect(byKey.get(key), `aviso ausente ou alterado sem aprovação: ${key}`).toBe(approved);
     }
-    expect(byKey.get('disclaimer.medications')).toBe('Siga a orientação do seu prescritor.');
     expect(byKey.get('disclaimer.riskSupport')).toMatch(/\b188\b/);
     expect(byKey.get('disclaimer.riskSupport')).toMatch(/\b192\b/);
   });
@@ -98,6 +97,14 @@ describe('detector de alegações proibidas', () => {
     'clinical-report': 'Laudo do seu sono',
     'population-norm': 'Seu sono está abaixo do recomendado para a sua idade',
     'causal-claim': 'Seu humor caiu por causa das noites curtas',
+    'ideal-body': 'Chegue ao corpo ideal até o verão',
+    'bmi-classification': 'Seu IMC indica sobrepeso',
+    'body-shaming': 'Hora de secar a barriga',
+    'fat-burning': 'Treino para queimar gordura',
+    'food-judgment': 'Evite comidas proibidas',
+    restriction: 'Experimente o jejum intermitente',
+    'guilt-language': 'Exagerou no fim de semana? Sem deslizes desta vez',
+    'diet-or-training-prescription': 'Receba seu plano alimentar em minutos',
   };
 
   /** Variações relatadas na revisão de privacidade: todas precisam ser detectadas. */
@@ -130,16 +137,22 @@ describe('detector de alegações proibidas', () => {
     'Melhore sua rotina de sono com pequenas pausas',
     'Pausas curtas ajudam a reduzir o cansaço do dia',
     'Tratamento de dados pessoais conforme sua escolha',
-    'Registre seu sono e humor',
+    'Registre seu sono e suas medidas',
     'Siga a orientação de quem acompanha você',
-    'Médias do período: sono, humor e atividade',
-    'Nos seus registros, dormir mais costuma aparecer junto com mais energia',
+    'Médias do período: sono, hábitos e atividade',
+    'Nos seus registros, dormir mais costuma aparecer junto com mais minutos ativos',
     'Central de Privacidade',
-    'Registre os medicamentos que você já usa para receber lembretes',
+    'O app não faz sugestões sobre remédios',
     'Seu sono médio registrado ficou 20 min menor que na semana anterior',
     'Aparecer junto não quer dizer que um explique o outro',
     'A média ficou parecida com a da semana anterior',
     'O app não define meta nem classifica valores',
+    'Registre o que você comeu, quando quiser',
+    'Sua refeição foi registrada',
+    'Seu peso registrado ficou estável na semana',
+    'Você pode registrar a sua atividade do dia',
+    'O app não acompanha esta meta',
+    'Converse com um nutricionista ou um profissional de educação física',
   ];
 
   it('tem um exemplo positivo para cada termo do glossário', () => {

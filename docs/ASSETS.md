@@ -32,7 +32,6 @@ Também vale:
 | Item | Como é feito | Licença |
 |---|---|---|
 | Corpo 3D (`src/components/twin/scene/BodyScene.tsx`) | Geometria gerada em código (perfis de revolução, cápsulas e esferas do three.js) | Código do projeto |
-| Cérebro 3D (`src/components/twin/scene/BrainScene.tsx`) | Esferas deformadas e divididas em regiões em código | Código do projeto |
 | Versões 2D (`src/components/twin/fallback/`) | SVG desenhado em código | Código do projeto |
 | Iluminação | Luz ambiente e direcional do three.js, sem mapa de ambiente | — |
 

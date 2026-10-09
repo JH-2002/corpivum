@@ -1,6 +1,5 @@
 import { useTranslations } from 'next-intl';
 import { StatTile } from '@/components/health/StatTile';
-import { SupportNotice } from '@/components/health/SupportNotice';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import type { ModuleInsights } from '@/modules/insights';
 import { useInsightText } from './text';
@@ -12,8 +11,7 @@ export function summaryTextId(module: ModuleInsights['module']): string {
 
 /**
  * Resumo do período em texto (ADR-0025, §11.1): 2 a 4 frases por regras, com selo ESTIMADO (ou DEMO).
- * Serve também de alternativa textual aos gráficos para leitor de tela. Com `supportSignal`, a
- * orientação de apoio (CVV 188 / SAMU 192, §48) aparece logo abaixo, sem anúncio de alerta.
+ * Serve também de alternativa textual aos gráficos para leitor de tela.
  */
 export function PeriodSummary({ insights, demo }: { insights: ModuleInsights; demo: boolean }) {
   const t = useTranslations('insights');
@@ -42,7 +40,6 @@ export function PeriodSummary({ insights, demo }: { insights: ModuleInsights; de
         ) : null}
         <p className="text-sm text-fg-muted">{t('ruleBased')}</p>
       </section>
-      {insights.supportSignal ? <SupportNotice /> : null}
     </>
   );
 }

@@ -6,8 +6,6 @@ import { readTourSeen, writeTourSeen } from './preferences';
 import { createBodyService, type BodyService } from '@/modules/body/service';
 import { withConsent } from '@/modules/consent/server';
 import { createHabitsService, type HabitsService } from '@/modules/habits/service';
-import { createJournalService, type JournalService } from '@/modules/journal/service';
-import { createMoodService, type MoodService } from '@/modules/mood/service';
 import { createSleepService, type SleepService } from '@/modules/sleep/service';
 import { createDemoSource, type HealthDataSource } from './source';
 import { generateDemoData } from '@/modules/demo/generator';
@@ -30,9 +28,7 @@ function healthDeps(): HealthDeps {
 
 interface HealthServices {
   sleep: SleepService;
-  mood: MoodService;
   habits: HabitsService;
-  journal: JournalService;
   body: BodyService;
 }
 
@@ -71,9 +67,7 @@ export async function markTourSeen(userId: string): Promise<void> {
 function servicesWith(d: HealthDeps): HealthServices {
   return {
     sleep: createSleepService(d),
-    mood: createMoodService(d),
     habits: createHabitsService(d),
-    journal: createJournalService(d),
     body: createBodyService(d),
   };
 }
@@ -86,10 +80,8 @@ export function createOwnSource(userId: string, bound?: HealthDeps): HealthDataS
   return {
     kind: 'own',
     sleep: (range, opts) => s.sleep.list(userId, range, opts),
-    mood: (range, opts) => s.mood.list(userId, range, opts),
     habits: (opts) => s.habits.listHabits(userId, opts),
     checks: (range) => s.habits.listChecks(userId, range),
-    journal: (range, opts) => s.journal.list(userId, range, opts),
     body: (range) => s.body.list(userId, range),
     latestHeightCm: () => s.body.latestHeightCm(userId),
     streaksEnabled: () =>
@@ -104,9 +96,7 @@ export function createOwnSource(userId: string, bound?: HealthDeps): HealthDataS
       run(userId, async (tx) => {
         const found = await Promise.all([
           tx.sleepEntry.findFirst({ select: { id: true } }),
-          tx.moodEntry.findFirst({ select: { id: true } }),
           tx.habit.findFirst({ select: { id: true } }),
-          tx.journalEntry.findFirst({ select: { id: true } }),
           tx.bodyMeasurement.findFirst({ select: { id: true } }),
         ]);
         return found.some((row) => row !== null);

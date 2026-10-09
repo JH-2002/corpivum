@@ -1,6 +1,6 @@
 /**
  * Envio de e-mail transacional. O provedor real entra em docs/privacy/SUBPROCESSORS.md (LEG-S10).
- * E-mails carregam só o necessário (link, código); nunca conteúdo de saúde, diário ou medicamentos.
+ * E-mails carregam só o necessário (link, código); nunca conteúdo de saúde, notas ou medidas.
  */
 export type MailTemplateId =
   | 'email-verification'

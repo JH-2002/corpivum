@@ -58,12 +58,12 @@ test.describe('sidebar recolhível no tablet', () => {
     const toggle = page.getByRole('button', { name: 'Expandir menu lateral' });
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     const sidebar = page.getByRole('navigation', { name: 'Navegação principal' });
-    await expect(sidebar.getByRole('link', { name: 'Diário' })).toBeVisible();
+    await expect(sidebar.getByRole('link', { name: 'Alimentação' })).toBeVisible();
     await toggle.click();
     await expect(page.getByRole('button', { name: 'Recolher menu lateral' })).toHaveAttribute(
       'aria-expanded',
       'true',
     );
-    await expect(sidebar.getByText('Diário')).toBeVisible();
+    await expect(sidebar.getByText('Alimentação')).toBeVisible();
   });
 });

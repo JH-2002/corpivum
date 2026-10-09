@@ -2,9 +2,7 @@ import { addDays, eachDay } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import type { BodyRecord } from '@/modules/body';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
-import type { MoodRecord } from '@/modules/mood';
 import type { SleepRecord } from '@/modules/sleep';
-import type { JournalMeta } from './journal';
 
 /** Dados sintéticos para os testes da camada explicativa (nunca dados reais, CLAUDE.md regra 6). */
 
@@ -32,26 +30,6 @@ export function sleepWeek(range: DateRange, minutes: number[]): SleepRecord[] {
   return eachDay(range).flatMap((day, i) => {
     const m = minutes[i];
     return m === undefined ? [] : [sleepNight(day, m)];
-  });
-}
-
-export function moodEntry(day: string, mood: number, energy = 3): MoodRecord {
-  return {
-    id: `m-${day}-${mood}`,
-    loggedAt: `${day}T15:00:00.000Z`,
-    day,
-    mood,
-    energy,
-    stress: 2,
-    emotions: [],
-    note: null,
-  };
-}
-
-export function moodWeek(range: DateRange, values: Array<number | undefined>): MoodRecord[] {
-  return eachDay(range).flatMap((day, i) => {
-    const v = values[i];
-    return v === undefined ? [] : [moodEntry(day, v)];
   });
 }
 
@@ -87,10 +65,6 @@ export function bodyEntry(day: string, over: Partial<BodyRecord> = {}): BodyReco
     bodyFatPct: null,
     ...over,
   };
-}
-
-export function journalOn(days: string[], tags: JournalMeta['tags'] = []): JournalMeta[] {
-  return days.map((day) => ({ day, tags }));
 }
 
 export const day = (offset: number) => addDays(WEEK.from, offset);

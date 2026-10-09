@@ -1,7 +1,7 @@
 import { addDays, previousRange } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
-import { delta, round } from '@/lib/stats';
-import { bmi, change, latest, series, type BodyRecord } from '@/modules/body';
+import { delta } from '@/lib/stats';
+import { change, latest, series, type BodyRecord } from '@/modules/body';
 import {
   completionRate,
   currentStreak,
@@ -11,8 +11,6 @@ import {
   type HabitCheckRecord,
   type HabitRecord,
 } from '@/modules/habits';
-import type { JournalRecord } from '@/modules/journal';
-import { averageOf, dailyAverages, type MoodRecord } from '@/modules/mood';
 import { averageDurationMinutes, dailyHours, type SleepRecord } from '@/modules/sleep';
 import { dashboardInsights, type ModuleInsights, type PeriodRecords } from '@/modules/insights';
 import { computeWellbeingScore, type WellbeingScore } from '@/modules/wellbeing';
@@ -38,15 +36,6 @@ export interface SleepCard {
   spark: SparkPoint[];
 }
 
-export interface MoodCard {
-  state: CardState;
-  avgMood: number | null;
-  avgEnergy: number | null;
-  deltaMood: number | null;
-  count: number;
-  spark: SparkPoint[];
-}
-
 export interface HabitsCard {
   state: CardState;
   /** 0–100. */
@@ -61,14 +50,7 @@ export interface BodyCard {
   weightKg: number | null;
   weightDay: string | null;
   changeKg: number | null;
-  bmi: number | null;
   spark: SparkPoint[];
-}
-
-export interface JournalCard {
-  state: CardState;
-  count: number;
-  previousCount: number;
 }
 
 export interface TodayHabit {
@@ -82,8 +64,6 @@ export interface TodayHabit {
 export interface CombinedPoint {
   day: string;
   sleepHours: number | null;
-  mood: number | null;
-  energy: number | null;
 }
 
 export interface DashboardData {
@@ -98,10 +78,8 @@ export interface DashboardData {
   insights: ModuleInsights;
   cards: {
     sleep: SleepCard;
-    mood: MoodCard;
     habits: HabitsCard;
     body: BodyCard;
-    journal: JournalCard;
   };
   combined: CombinedPoint[];
   todayHabits: TodayHabit[];
@@ -109,7 +87,6 @@ export interface DashboardData {
 }
 
 interface Loaded extends PeriodRecords {
-  journal: JournalRecord[];
   body: BodyRecord[];
 }
 
@@ -118,21 +95,27 @@ async function load(
   range: DateRange,
   habits: HabitRecord[],
 ): Promise<Loaded> {
-  const [sleep, mood, checks, journal, body] = await Promise.all([
+  const [sleep, checks, body] = await Promise.all([
     source.sleep(range),
-    source.mood(range),
     source.checks(range),
-    source.journal(range),
     source.body(range),
   ]);
   const loggedDays = new Set<string>([
     ...sleep.map((r) => r.day),
-    ...mood.map((r) => r.day),
     ...checks.map((r) => r.day),
-    ...journal.map((r) => r.day),
     ...body.map((r) => r.day),
   ]);
-  return { range, sleep, mood, habits, checks, journal, body, loggedDays };
+  return { range, sleep, habits, checks, body, loggedDays };
+}
+
+/** Registros do Índice: os mesmos do período, com a constância contada sem as medições do corpo. */
+function scoreInput(period: Loaded): Loaded {
+  const bodyOnly = new Set(period.body.map((r) => r.day));
+  for (const r of [...period.sleep, ...period.checks]) bodyOnly.delete(r.day);
+  return {
+    ...period,
+    loggedDays: new Set([...period.loggedDays].filter((d) => !bodyOnly.has(d))),
+  };
 }
 
 function toSpark(points: Array<{ day: string; value: number | null }>): SparkPoint[] {
@@ -147,19 +130,6 @@ function sleepCard(now: SleepRecord[], before: SleepRecord[], range: DateRange):
     deltaMinutes: delta(avg, averageDurationMinutes(before)),
     count: now.length,
     spark: toSpark(dailyHours(now, range).map((d) => ({ day: d.day, value: d.hours }))),
-  };
-}
-
-function moodCard(now: MoodRecord[], before: MoodRecord[], range: DateRange): MoodCard {
-  const avgMood = averageOf(now, 'mood');
-  const d = delta(avgMood, averageOf(before, 'mood'));
-  return {
-    state: now.length ? 'ok' : 'no-data',
-    avgMood,
-    avgEnergy: averageOf(now, 'energy'),
-    deltaMood: d === null ? null : round(d, 1),
-    count: now.length,
-    spark: toSpark(dailyAverages(now, range).map((x) => ({ day: x.day, value: x.mood }))),
   };
 }
 
@@ -182,14 +152,13 @@ function habitsCard(
   };
 }
 
-function bodyCard(now: BodyRecord[], heightCm: number | null): BodyCard {
+function bodyCard(now: BodyRecord[]): BodyCard {
   const w = latest(now, 'weightKg');
   return {
     state: w ? 'ok' : 'no-data',
     weightKg: w?.value ?? null,
     weightDay: w?.day ?? null,
     changeKg: change(now, 'weightKg'),
-    bmi: bmi(w?.value ?? null, latest(now, 'heightCm')?.value ?? heightCm),
     spark: series(now, 'weightKg').map((p) => ({ day: p.day, value: p.value })),
   };
 }
@@ -202,34 +171,25 @@ export async function buildDashboard(
 ): Promise<DashboardData> {
   const prev = previousRange(range);
   const habits = await source.habits();
-  const [now, before, heightCm, streaksEnabled, hasAny] = await Promise.all([
+  const [now, before, streaksEnabled, hasAny] = await Promise.all([
     load(source, range, habits),
     load(source, prev, habits),
-    source.latestHeightCm(),
     source.streaksEnabled(),
     source.hasAnyRecord(),
   ]);
 
-  const score = computeWellbeingScore(now);
-  const previousScore = computeWellbeingScore(before);
+  // O Índice não usa peso nem medidas, nem para a constância: pesar mais vezes não sobe o Índice (LEG-M06).
+  const score = computeWellbeingScore(scoreInput(now));
+  const previousScore = computeWellbeingScore(scoreInput(before));
   const cards = {
     sleep: sleepCard(now.sleep, before.sleep, range),
-    mood: moodCard(now.mood, before.mood, range),
     habits: habitsCard(habits, now.checks, before.checks, range, prev),
-    body: bodyCard(now.body, heightCm),
-    journal: {
-      state: (now.journal.length ? 'ok' : 'no-data') as CardState,
-      count: now.journal.length,
-      previousCount: before.journal.length,
-    },
+    body: bodyCard(now.body),
   };
 
-  const sleepByDay = new Map(dailyHours(now.sleep, range).map((d) => [d.day, d.hours]));
-  const combined = dailyAverages(now.mood, range).map((d) => ({
+  const combined = dailyHours(now.sleep, range).map((d) => ({
     day: d.day,
-    sleepHours: sleepByDay.get(d.day) ?? null,
-    mood: d.mood,
-    energy: d.energy,
+    sleepHours: d.hours,
   }));
 
   // Hábitos de hoje só fazem sentido se o período inclui hoje.

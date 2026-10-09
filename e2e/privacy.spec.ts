@@ -72,6 +72,45 @@ test('revogar os dados de bem-estar: aviso com a data, bloqueio imediato e reaut
   ]);
 });
 
+test('reorientação: quem autorizou a v1 da saúde revê o texto novo antes de continuar (LEG-C06)', async ({
+  page,
+}) => {
+  const email = e2eEmail('reconsente-v2');
+  const userId = await createVerifiedUser(email, E2E_PASSWORD, { purposes: [] });
+  // Conta de antes da v2 (ADR-0027): a prova aponta para a v1. O gatilho só aceita a versão vigente,
+  // então a linha entra com os gatilhos desligados numa transação (banco local de teste).
+  await withAdmin(async (db) => {
+    await db.query('BEGIN');
+    try {
+      await db.query('ALTER TABLE consent_records DISABLE TRIGGER USER');
+      await db.query(
+        `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at,
+                                      updated_at)
+         SELECT gen_random_uuid(), $1, 'health_data', v.id, v.text_hash, now() - interval '1 day', now()
+           FROM policy_versions v WHERE v.document = 'consent_health_data' AND v.version = 1`,
+        [userId],
+      );
+      await db.query('ALTER TABLE consent_records ENABLE TRIGGER USER');
+      await db.query('COMMIT');
+    } catch (error) {
+      await db.query('ROLLBACK');
+      throw error;
+    }
+  });
+
+  await login(page, email);
+  await expect(page).toHaveURL(/\/boas-vindas\/atualizacao/);
+  await expect(page.getByRole('heading', { name: 'Atualizamos nossos documentos' })).toBeVisible();
+  await expect(
+    page.getByText(/peso e medidas, sono, hábitos, alimentação e atividade física/),
+  ).toBeVisible();
+  await expect(page.getByText(/humor|diário|medicamentos/i)).toHaveCount(0);
+  await expectNoAxeViolations(page);
+  await page.getByRole('radio', { name: 'Manter autorização' }).check();
+  await page.getByRole('button', { name: 'Salvar e continuar' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
+});
+
 test('marketing: autorizar e revogar com 1 clique cada, sem afetar o resto (LEG-C04/C05)', async ({
   page,
 }) => {

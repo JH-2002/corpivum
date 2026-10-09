@@ -10,7 +10,7 @@ import {
 } from './fixtures';
 
 /**
- * Fase 2 (ADR-0021): passo 5 do onboarding (§52.5), registros de sono, humor, hábitos, diário e corpo
+ * Fase 2 (ADR-0021): passo 5 do onboarding (§52.5), registros de sono, hábitos e corpo
  * (criar, editar, excluir), dashboard com período global, pedido de revisão do Índice (LEG-D08) e
  * bloqueio após revogar (LEG-C04). Cada teste usa uma pessoa sintética própria.
  */
@@ -51,9 +51,7 @@ test('passo 5: demonstração sem gravar nada e depois "começar com meus dados"
     withAdmin((db) =>
       db.query<{ n: number }>(
         `SELECT (SELECT count(*) FROM sleep_entries WHERE user_id = $1)
-              + (SELECT count(*) FROM mood_entries WHERE user_id = $1)
               + (SELECT count(*) FROM habits WHERE user_id = $1)
-              + (SELECT count(*) FROM journal_entries WHERE user_id = $1)
               + (SELECT count(*) FROM body_measurements WHERE user_id = $1) AS n`,
         [userId],
       ),
@@ -106,27 +104,6 @@ test('sono: registrar, editar e excluir', async ({ page }) => {
   await expect(page.getByText(/acordou às 07:35/)).toHaveCount(0);
 });
 
-test('humor: validação, registro e apoio CVV/SAMU no ponto mais baixo da escala', async ({
-  page,
-}) => {
-  await newPerson(page, 'humor');
-  await page.goto('/humor');
-  await page.getByRole('button', { name: 'Salvar registro' }).click();
-  await expect(
-    page.getByRole('alert').filter({ hasText: 'Confira os campos destacados.' }),
-  ).toBeVisible();
-
-  await page.getByRole('group', { name: 'Humor' }).getByLabel('1', { exact: true }).check();
-  await page.getByRole('group', { name: 'Energia' }).getByLabel('2', { exact: true }).check();
-  await page.getByRole('group', { name: 'Estresse' }).getByLabel('4', { exact: true }).check();
-  await page.getByLabel('Cansaço').check();
-  await page.getByRole('button', { name: 'Salvar registro' }).click();
-  await expect(page.getByRole('status').getByText('Registro salvo.')).toBeVisible();
-  await expect(page.getByText(/CVV atende 24 horas pelo telefone 188/).first()).toBeVisible();
-  await expect(page.getByText('Humor 1 · Energia 2 · Estresse 4 (de 5)')).toBeVisible();
-  await expectNoAxeViolations(page);
-});
-
 test('hábitos: criar, marcar no dashboard e ocultar sequências', async ({ page }) => {
   await newPerson(page, 'habitos');
   await page.goto('/habitos');
@@ -147,45 +124,6 @@ test('hábitos: criar, marcar no dashboard e ocultar sequências', async ({ page
   await page.getByRole('button', { name: 'Ocultar sequências' }).click();
   await expect(page.getByText('As sequências (dias seguidos) estão ocultas.')).toBeVisible();
   await expect(page.getByText(/dia seguido/)).toHaveCount(0);
-  await expectNoAxeViolations(page);
-});
-
-test('diário: entrada cifrada, filtro por etiqueta e calendário, sem busca no texto', async ({
-  page,
-}) => {
-  const { userId } = await newPerson(page, 'diario');
-  await page.goto('/diario');
-  await expect(page.getByRole('searchbox')).toHaveCount(0);
-  await page
-    .getByRole('textbox', { name: 'O que você quer registrar?' })
-    .fill('Texto sintético do diário de teste.');
-  await page.getByLabel('Natureza').check();
-  await page.getByRole('button', { name: 'Salvar entrada' }).click();
-  await expect(
-    page.locator('li p').filter({ hasText: 'Texto sintético do diário de teste.' }),
-  ).toBeVisible();
-
-  const { rows } = await withAdmin((db) =>
-    db.query<{ content: Buffer }>(
-      'SELECT content_enc AS content FROM journal_entries WHERE user_id = $1',
-      [userId],
-    ),
-  );
-  expect(rows[0]?.content.includes(Buffer.from('Texto sintético'))).toBe(false);
-
-  await page.getByLabel('Etiquetas').selectOption('work');
-  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
-  await expect(
-    page.locator('li p').filter({ hasText: 'Texto sintético do diário de teste.' }),
-  ).toHaveCount(0);
-  await page.getByLabel('Etiquetas').selectOption('nature');
-  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
-  await expect(
-    page.locator('li p').filter({ hasText: 'Texto sintético do diário de teste.' }),
-  ).toBeVisible();
-
-  await page.getByRole('link', { name: 'Calendário' }).click();
-  await expect(page.getByRole('link', { name: /1 entrada$/ })).toBeVisible();
   await expectNoAxeViolations(page);
 });
 
@@ -237,7 +175,7 @@ test('dashboard com dados: período global, explicação e pedido de revisão do
       [userId],
     ),
   );
-  expect(rows).toEqual([{ kind: 'automated_review', score_version: 1, days: 6 }]);
+  expect(rows).toEqual([{ kind: 'automated_review', score_version: 2, days: 6 }]);
 });
 
 test('após revogar os dados de bem-estar, nenhuma tela de saúde mostra dados', async ({ page }) => {
@@ -247,7 +185,7 @@ test('após revogar os dados de bem-estar, nenhuma tela de saúde mostra dados',
   await page.getByRole('button', { name: 'Revogar: Dados de bem-estar' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Revogar agora' }).click();
   await expect(page.getByText(/Revogado: eliminação em/)).toBeVisible();
-  for (const path of ['/inicio', '/sono', '/humor', '/habitos', '/diario', '/corpo']) {
+  for (const path of ['/inicio', '/sono', '/habitos', '/corpo']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: 'Autorização revogada' })).toBeVisible();
     await expect(page.locator('.recharts-wrapper')).toHaveCount(0);

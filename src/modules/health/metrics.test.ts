@@ -7,8 +7,6 @@ import {
   habitInputSchema,
   type HabitRecord,
 } from '@/modules/habits';
-import { journalFilterSchema } from '@/modules/journal';
-import { moodInputSchema } from '@/modules/mood';
 import { centeredMinutes, scheduleSpreadMinutes, sleepInputSchema } from '@/modules/sleep';
 import { bodyInputSchema } from '@/modules/body';
 import { sanitizePeriod, validateCustomRange } from '@/lib/period';
@@ -62,17 +60,6 @@ describe('sono (§20)', () => {
         quality: '6',
       }).success,
     ).toBe(false);
-  });
-});
-
-describe('humor (§21)', () => {
-  it('escalas 1–5 obrigatórias e emoções de lista fechada, sem repetição', () => {
-    const base = { loggedAt: '2026-10-01T10:00', mood: '3', energy: '3', stress: '3' };
-    expect(moodInputSchema.parse({ ...base, emotions: ['calm', 'calm'] }).emotions).toEqual([
-      'calm',
-    ]);
-    expect(moodInputSchema.safeParse({ ...base, emotions: ['ansiedade'] }).success).toBe(false);
-    expect(moodInputSchema.safeParse({ ...base, mood: '', emotions: [] }).success).toBe(false);
   });
 });
 
@@ -143,13 +130,6 @@ describe('hábitos (§22, LEG-F05)', () => {
     expect(
       habitInputSchema.safeParse({ name: 'Ler', frequency: 'weekdays', weekdays: [] }).success,
     ).toBe(false);
-  });
-});
-
-describe('diário (§19)', () => {
-  it('filtros só por humor e etiqueta; valores inválidos são ignorados', () => {
-    expect(journalFilterSchema.parse({ mood: '4', tag: 'work' })).toEqual({ mood: 4, tag: 'work' });
-    expect(journalFilterSchema.parse({ tag: 'qualquer coisa' })).toEqual({ tag: undefined });
   });
 });
 

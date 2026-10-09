@@ -1,7 +1,7 @@
 import { useTranslations } from 'next-intl';
 
 /** Quantidade de itens (`p1`…) de cada guia em `twin.guide.<id>.points`. */
-export const TWIN_GUIDES = { body: 4, compare: 2, brain: 3 } as const;
+export const TWIN_GUIDES = { body: 4, compare: 2 } as const;
 export type TwinGuideId = keyof typeof TWIN_GUIDES;
 
 /**
@@ -28,7 +28,6 @@ export function TwinGuide({ id }: { id: TwinGuideId }) {
           {t('badges', {
             informed: tb('INFORMADO'),
             estimated: tb('ESTIMADO'),
-            inferred: tb('INFERIDO'),
           })}
         </p>
         <p className="font-semibold">{t('whatToDoTitle')}</p>

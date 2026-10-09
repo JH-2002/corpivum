@@ -8,7 +8,7 @@ import { TimeChart } from './TimeChart';
 
 const SERIES = [
   { key: 'hours', label: 'Sono', unit: 'h', kind: 'bar' as const, color: 'red' },
-  { key: 'mood', label: 'Humor', kind: 'line' as const, color: 'blue', dash: '4 2' },
+  { key: 'steps', label: 'Passos', kind: 'line' as const, color: 'blue', dash: '4 2' },
 ];
 
 describe('gráficos (§13, §34)', () => {
@@ -17,7 +17,7 @@ describe('gráficos (§13, §34)', () => {
       <TimeChart
         title="Sono no período"
         badge="INFORMADO"
-        data={[{ day: '2026-10-01', hours: null, mood: null }]}
+        data={[{ day: '2026-10-01', hours: null, steps: null }]}
         series={SERIES}
       />,
     );
@@ -31,9 +31,9 @@ describe('gráficos (§13, §34)', () => {
         title="Sono no período"
         badge="DEMO"
         data={[
-          { day: '2026-10-01', hours: 7.5, mood: null },
-          { day: '2026-10-02', hours: null, mood: 4 },
-          { day: '2026-10-03', hours: null, mood: null },
+          { day: '2026-10-01', hours: 7.5, steps: null },
+          { day: '2026-10-02', hours: null, steps: 4 },
+          { day: '2026-10-03', hours: null, steps: null },
         ]}
         series={SERIES}
       />,
@@ -43,9 +43,9 @@ describe('gráficos (§13, §34)', () => {
     await userEvent.click(sono);
     expect(sono).toHaveAttribute('aria-pressed', 'false');
     // A última série visível não some.
-    const humor = screen.getByRole('button', { name: /^Humor/ });
-    await userEvent.click(humor);
-    expect(humor).toHaveAttribute('aria-pressed', 'true');
+    const steps = screen.getByRole('button', { name: /^Passos/ });
+    await userEvent.click(steps);
+    expect(steps).toHaveAttribute('aria-pressed', 'true');
 
     expect(screen.getByRole('button', { name: 'Origem do dado: Demo' })).toBeInTheDocument();
     const table = screen.getByRole('table', { name: 'Sono no período' });
@@ -57,18 +57,25 @@ describe('gráficos (§13, §34)', () => {
   it('"Como ler este gráfico": séries com tipo, traço, eixo e unidade; selo e o que fazer', async () => {
     renderWithIntl(
       <TimeChart
-        title="Sono, humor e energia"
+        title="Sono e passos"
         badge="INFORMADO"
         guide="combined"
         describedBy="resumo"
-        data={[{ day: '2026-10-01', hours: 7.5, mood: 4 }]}
+        data={[{ day: '2026-10-01', hours: 7.5, steps: 4 }]}
         series={[
           { key: 'hours', label: 'Sono', unit: 'h', kind: 'bar', color: 'red' },
-          { key: 'mood', label: 'Humor', kind: 'line', color: 'blue', dash: '6 4', axis: 'right' },
+          {
+            key: 'steps',
+            label: 'Passos',
+            kind: 'line',
+            color: 'blue',
+            dash: '6 4',
+            axis: 'right',
+          },
         ]}
       />,
     );
-    expect(screen.getByRole('region', { name: 'Sono, humor e energia' })).toHaveAttribute(
+    expect(screen.getByRole('region', { name: 'Sono e passos' })).toHaveAttribute(
       'aria-describedby',
       'resumo',
     );
@@ -77,7 +84,7 @@ describe('gráficos (§13, §34)', () => {
     const guide = summary.closest('details');
     expect(guide).toHaveAttribute('open');
     expect(guide).toHaveTextContent('Sono: barras, no eixo da esquerda, em h.');
-    expect(guide).toHaveTextContent('Humor: linha tracejada, no eixo da direita.');
+    expect(guide).toHaveTextContent('Passos: linha tracejada, no eixo da direita.');
     expect(guide).toHaveTextContent('Selo “Informado”: Você registrou este dado.');
     expect(guide).toHaveTextContent('O que fazer com isso');
   });

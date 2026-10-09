@@ -1,14 +1,12 @@
 import type { BodyField } from '@/modules/body';
-import type { JournalTag } from '@/modules/journal';
 
 /**
  * Camada explicativa por regras (ADR-0025). As funções deste módulo devolvem CHAVES do i18n
  * (`insights.<módulo>.*`) e argumentos tipados; o texto final é montado na interface. Nenhum argumento
- * carrega conteúdo livre (nota, texto do diário, nome de hábito): só números, dias, etiquetas fixas e
+ * carrega conteúdo livre (nota, nome de hábito): só números, dias, etiquetas fixas e
  * campos fixos.
  */
-export type InsightModule =
-  'dashboard' | 'sleep' | 'mood' | 'habits' | 'journal' | 'body' | 'twin' | 'brain';
+export type InsightModule = 'dashboard' | 'sleep' | 'habits' | 'body' | 'twin';
 
 /** Argumento de uma frase, com o formato que a interface deve aplicar. */
 export type InsightArg =
@@ -20,7 +18,6 @@ export type InsightArg =
   | { kind: 'duration'; value: number }
   /** Dias `YYYY-MM-DD`, exibidos pelo dia da semana (períodos de até 7 dias) ou pela data. */
   | { kind: 'days'; value: string[]; style: DayStyle }
-  | { kind: 'tag'; value: JournalTag }
   | { kind: 'field'; value: BodyField }
   /** Valor para `select` do ICU (ex.: `recent`). */
   | { kind: 'select'; value: string };
@@ -53,9 +50,4 @@ export interface ModuleInsights {
   /** Frases do resumo, na ordem de leitura. 2 a 4 quando `ok`; `MAX_SENTENCES` no máximo. */
   sentences: InsightSentence[];
   highlights: Highlight[];
-  /**
-   * Humor baixo, queda relevante ou registro no ponto mais baixo da escala: a interface mostra a
-   * orientação de apoio (CVV 188 / SAMU 192, §48) junto do resumo. Não é avaliação de risco.
-   */
-  supportSignal: boolean;
 }

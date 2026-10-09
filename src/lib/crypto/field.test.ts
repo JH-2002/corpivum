@@ -22,7 +22,7 @@ describe('criptografia de campo (LEG-S02, ADR-0016)', () => {
 
   it.each([
     { userId: 'u-2', table: 'users', column: 'totp_secret' },
-    { userId: 'u-1', table: 'journal', column: 'totp_secret' },
+    { userId: 'u-1', table: 'sleep_entries', column: 'totp_secret' },
     { userId: 'u-1', table: 'users', column: 'outra' },
   ])('falha com contexto diferente %o', async (other) => {
     const blob = await encryptField(kms, ctx, 'x');

@@ -7,8 +7,6 @@ import { createDemoSource } from '@/modules/health/source';
 import {
   bodyInsights,
   habitsInsights,
-  journalInsights,
-  moodInsights,
   sleepInsights,
   type ModuleInsights,
 } from '@/modules/insights';
@@ -17,8 +15,6 @@ import {
   checksOn,
   day,
   habit,
-  journalOn,
-  moodWeek,
   PREV_WEEK,
   sleepWeek,
   TODAY,
@@ -33,10 +29,6 @@ import { PeriodInsights } from './PeriodInsights';
  * ADR-0004 (strings fora do catálogo não eram varridas): toda frase gerada passa pelo glossário LEG-M03.
  */
 
-/** Tom acolhedor: o resumo de humor não dramatiza (pedido de produto, ADR-0025). */
-const ALARMIST_TERMS =
-  /\b(alarmante|grave|gravissim\w*|preocupante|perigos\w*|critic\w*|urgente|risco|alerta|cuidado|atencao)\b|!/;
-
 function textOf(insights: ModuleInsights, demo = false): string {
   const { container, unmount } = renderWithIntl(<PeriodInsights insights={insights} demo={demo} />);
   const text = container.textContent ?? '';
@@ -49,7 +41,6 @@ function expectClean(text: string) {
   expect(findForbiddenTerms(text).map((t) => t.id)).toEqual([]);
 }
 
-const steadyMood = moodWeek(PREV_WEEK, Array(7).fill(4));
 const FIXTURES: Record<string, ModuleInsights[]> = {
   sleep: [
     sleepInsights({
@@ -60,28 +51,6 @@ const FIXTURES: Record<string, ModuleInsights[]> = {
     }),
     sleepInsights({ records: sleepWeek(WEEK, [400]), previous: [], range: WEEK, today: TODAY }),
     sleepInsights({ records: [], previous: [], range: WEEK, today: TODAY }),
-  ],
-  mood: [
-    moodInsights({
-      records: moodWeek(WEEK, [4, 5, 4, 3, 4, 4, 4]),
-      previous: steadyMood,
-      range: WEEK,
-      today: TODAY,
-    }),
-    moodInsights({
-      records: moodWeek(WEEK, [3, 4, 3, 4, 3, 4, 3]),
-      previous: steadyMood,
-      range: WEEK,
-      today: TODAY,
-    }),
-    moodInsights({
-      records: moodWeek(WEEK, [2, 2, 2, 3, 2, 2, 1]),
-      previous: [],
-      range: WEEK,
-      today: TODAY,
-    }),
-    moodInsights({ records: moodWeek(WEEK, [1]), previous: [], range: WEEK, today: TODAY }),
-    moodInsights({ records: [], previous: [], range: WEEK, today: TODAY }),
   ],
   habits: [
     habitsInsights({
@@ -111,16 +80,6 @@ const FIXTURES: Record<string, ModuleInsights[]> = {
       today: TODAY,
       streaksEnabled: true,
     }),
-  ],
-  journal: [
-    journalInsights({
-      entries: [...journalOn([day(0), day(1)], ['work']), ...journalOn([day(5)], ['rest'])],
-      previous: journalOn([PREV_WEEK.from]),
-      range: WEEK,
-      today: TODAY,
-    }),
-    journalInsights({ entries: journalOn([day(2)]), previous: [], range: WEEK, today: TODAY }),
-    journalInsights({ entries: [], previous: [], range: WEEK, today: TODAY }),
   ],
   body: [
     bodyInsights({
@@ -195,44 +154,6 @@ describe('texto do resumo (ADR-0025)', () => {
   });
 });
 
-describe('humor: tom acolhedor, sem causa, apoio junto do resumo (§48)', () => {
-  it('nenhuma frase de humor dramatiza nem atribui causa', () => {
-    for (const insights of FIXTURES.mood!) {
-      const sentences = [...textOf(insights).matchAll(/[^.]+\./g)].map((m) => m[0]);
-      for (const s of sentences) {
-        expect(s).not.toMatch(ALARMIST_TERMS);
-        expect(findForbiddenTerms(s).map((t) => t.id)).not.toContain('causal-claim');
-        // Não liga o humor a outro domínio.
-        expect(s).not.toMatch(/\b(sono|dormi\w*|hábito\w*|exercício|peso)\b/i);
-      }
-    }
-  });
-
-  it('queda relevante: frase acolhedora e CVV 188 logo abaixo do resumo, uma única vez', () => {
-    const { container } = renderWithIntl(
-      <PeriodInsights insights={FIXTURES.mood![1]!} demo={false} />,
-    );
-    expect(container).toHaveTextContent('Períodos assim acontecem');
-    expect(container).toHaveTextContent(
-      'Se quiser conversar com alguém, há contatos de apoio logo abaixo.',
-    );
-    const notices = container.querySelectorAll('aside');
-    expect(notices).toHaveLength(1);
-    expect(notices[0]).toHaveTextContent('188');
-    // Logo depois do resumo, sem anúncio de alerta.
-    const summary = screen.getByRole('heading', { name: 'Resumo do período' }).closest('section');
-    expect(summary?.nextElementSibling).toBe(notices[0]);
-    expect(notices[0]).not.toHaveAttribute('role');
-  });
-
-  it('período sem sinal: o resumo não traz o aviso (ele fica no rodapé da tela)', () => {
-    const { container } = renderWithIntl(
-      <PeriodInsights insights={FIXTURES.mood![0]!} demo={false} />,
-    );
-    expect(container.querySelector('aside')).toBeNull();
-  });
-});
-
 describe('modo demo (LEG-X02)', () => {
   const data = generateDemoData(TODAY, 'America/Sao_Paulo');
   const source = createDemoSource(data);
@@ -240,34 +161,18 @@ describe('modo demo (LEG-X02)', () => {
   const prev = previousRange(range);
 
   it('todos os resumos ficam completos, com selo DEMO e sem termo proibido', async () => {
-    const [
-      sleep,
-      sleepPrev,
-      mood,
-      moodPrev,
-      habits,
-      checks,
-      checksPrev,
-      journal,
-      journalPrev,
-      body,
-    ] = await Promise.all([
+    const [sleep, sleepPrev, habits, checks, checksPrev, body] = await Promise.all([
       source.sleep(range),
       source.sleep(prev),
-      source.mood(range),
-      source.mood(prev),
       source.habits(),
       source.checks(range),
       source.checks(prev),
-      source.journal(range),
-      source.journal(prev),
       source.body(range),
     ]);
     const dashboard = (await buildDashboard(source, range, TODAY)).insights;
     const all = [
       dashboard,
       sleepInsights({ records: sleep, previous: sleepPrev, range, today: TODAY }),
-      moodInsights({ records: mood, previous: moodPrev, range, today: TODAY }),
       habitsInsights({
         habits,
         checks,
@@ -277,7 +182,6 @@ describe('modo demo (LEG-X02)', () => {
         today: TODAY,
         streaksEnabled: true,
       }),
-      journalInsights({ entries: journal, previous: journalPrev, range, today: TODAY }),
       bodyInsights({ records: body, range, today: TODAY }),
     ];
     for (const insights of all) {

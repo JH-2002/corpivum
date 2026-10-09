@@ -1,23 +1,12 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { generateDemoData } from '@/modules/demo/generator';
-import { brainThemes } from '@/modules/insights';
-import {
-  bodyEntry,
-  checksOn,
-  day,
-  habit,
-  moodWeek,
-  sleepWeek,
-  TODAY,
-  WEEK,
-} from '@/modules/insights/fixtures';
+import { bodyEntry, day, TODAY } from '@/modules/insights/fixtures';
 import { toTwinRows } from '@/modules/twin';
 import { findForbiddenTerms } from '../../../tests/content/forbidden-terms';
 import { renderWithIntl } from '../../../tests/render';
 import { BodyTwin } from './BodyTwin';
-import { BrainTwin } from './BrainTwin';
-import { TwinBodyView, TwinBrainView } from './TwinViews';
+import { TwinBodyView } from './TwinViews';
 
 /**
  * Health Twin (ADR-0026). O jsdom não tem WebGL: os testes passam pela versão 2D, com os mesmos
@@ -144,92 +133,6 @@ describe('corpo 3D (§15, §16)', () => {
       expect(disclaimer).toContain('Não é avaliação corporal');
       // O namespace disclaimer.* é isento da varredura (LEG-M03).
       expectClean((container.textContent ?? '').replace(disclaimer, ''));
-      unmount();
-    }
-  });
-});
-
-describe('cérebro 3D educativo (§17, §18, LEG-M05)', () => {
-  const themes = brainThemes({
-    sleep: sleepWeek(WEEK, [420, 400, 450, 430, 410, 400, 420]),
-    mood: moodWeek(WEEK, [4, 3, 4, 4, 3, 4, 4]),
-    previousMood: [],
-    habits: [habit()],
-    checks: checksOn('h1', [day(0), day(1)]),
-    range: WEEK,
-  });
-
-  it('avisos obrigatórios sempre visíveis, também na versão 2D', () => {
-    renderWithIntl(<BrainTwin themes={themes} demo={false} describedBy="x" />);
-    expect(screen.getByTestId('brain-2d')).toBeInTheDocument();
-    const note = screen.getByTestId('brain-disclaimers');
-    expect(note).toHaveTextContent('não uma medição cerebral');
-    expect(note).toHaveTextContent('Não é medição laboratorial');
-  });
-
-  it('painel: função geral, seus registros, dados usados e confiança pelo tema menos coberto', async () => {
-    const user = userEvent.setup();
-    renderWithIntl(<BrainTwin themes={themes} demo={false} describedBy="x" />);
-    const frontal = screen.getByRole('button', { name: 'Lobo frontal' });
-    await user.click(frontal);
-    const panel = document.getElementById(frontal.getAttribute('aria-controls')!)!;
-    expect(panel).toHaveTextContent('Conteúdo educativo');
-    expect(panel).toHaveTextContent('planejamento');
-    expect(panel).toHaveTextContent('Sono médio por noite');
-    expect(panel).toHaveTextContent('Eles não indicam nada sobre esta região');
-    expect(panel).toHaveTextContent('Hábitos: 2 dias com registro no período');
-    // Hábitos com 2 dias: abaixo do mínimo → confiança baixa.
-    expect(within(panel).getByTestId('brain-confidence')).toHaveTextContent('Baixo');
-
-    await user.click(screen.getByRole('button', { name: 'Lobo occipital' }));
-    expect(panel).toHaveTextContent('só educativo');
-    expect(within(panel).getByTestId('brain-confidence')).toHaveTextContent('Não se aplica');
-  });
-
-  it('modo privacidade oculta os números do painel', async () => {
-    const user = userEvent.setup();
-    renderWithIntl(<BrainTwin themes={themes} demo={false} describedBy="x" />);
-    await user.click(screen.getByRole('button', { name: 'Tronco encefálico' }));
-    await user.click(screen.getByRole('button', { name: 'Ocultar valores' }));
-    expect(screen.queryByText(/7 h/)).toBeNull();
-    expect(screen.getAllByText('oculto').length).toBeGreaterThan(0);
-  });
-
-  it('todas as regiões, com e sem dados e no demo: texto limpo (glossário LEG-M03)', async () => {
-    const user = userEvent.setup();
-    const demo = generateDemoData(TODAY, 'America/Sao_Paulo');
-    const empty = brainThemes({
-      sleep: [],
-      mood: [],
-      previousMood: [],
-      habits: [],
-      checks: [],
-      range: WEEK,
-    });
-    for (const [data, mode] of [
-      [themes, 'own'],
-      [empty, 'own'],
-      [brainThemes({ ...demo, previousMood: [], range: WEEK }), 'publicDemo'],
-    ] as const) {
-      const { container, unmount } = renderWithIntl(
-        <TwinBrainView themes={data} range={WEEK} today={TODAY} mode={mode} />,
-      );
-      for (const name of [
-        'Lobo frontal',
-        'Lobo parietal',
-        'Lobo temporal',
-        'Lobo occipital',
-        'Cerebelo',
-        'Tronco encefálico',
-      ]) {
-        await user.click(screen.getByRole('button', { name }));
-        // O namespace disclaimer.* é isento da varredura: tira os avisos antes de varrer.
-        const text = (container.textContent ?? '').replace(
-          screen.getByTestId('brain-disclaimers').textContent ?? '',
-          '',
-        );
-        expectClean(text);
-      }
       unmount();
     }
   });

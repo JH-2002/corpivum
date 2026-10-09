@@ -16,13 +16,10 @@
     "expand": "Expandir menu lateral",
     "home": "Início",
     "sleep": "Sono",
-    "mood": "Humor e energia",
     "habits": "Hábitos",
-    "journal": "Diário",
     "body": "Corpo",
     "nutrition": "Alimentação",
     "activity": "Atividade",
-    "medications": "Medicamentos",
     "goals": "Metas",
     "timeline": "Timeline",
     "twin": "Health Twin",
@@ -33,8 +30,7 @@
     "privacy": "Central de Privacidade",
     "more": "Mais",
     "moreTitle": "Mais seções",
-    "log": "Registrar",
-    "moodShort": "Humor"
+    "log": "Registrar"
   },
   "header": {
     "notifications": "Notificações",
@@ -51,14 +47,11 @@
     "title": "O que você quer registrar?",
     "description": "Escolha o tipo de registro. Os formulários chegam nas próximas versões.",
     "sleep": "Sono",
-    "mood": "Humor e energia",
     "habit": "Hábito",
-    "journal": "Diário",
     "body": "Peso e medidas",
     "meal": "Refeição",
     "water": "Água",
-    "activity": "Atividade",
-    "medication": "Medicamento"
+    "activity": "Atividade"
   },
   "period": {
     "label": "Período",
@@ -109,7 +102,7 @@
     "home": {
       "title": "Seu estado atual",
       "emptyTitle": "Boas-vindas ao HealthMind 360",
-      "emptyDescription": "Quando você registrar sono, humor ou hábitos, seu resumo aparece aqui. Leva poucos segundos.",
+      "emptyDescription": "Quando você registrar sono, hábitos ou medidas, seu resumo aparece aqui. Leva poucos segundos.",
       "cta": "Fazer o primeiro registro"
     },
     "sleep": {
@@ -117,20 +110,10 @@
       "emptyTitle": "Nenhum registro de sono ainda",
       "emptyDescription": "Registre a hora em que deitou e acordou para acompanhar duração e regularidade."
     },
-    "mood": {
-      "title": "Humor e energia",
-      "emptyTitle": "Nenhum registro de humor ainda",
-      "emptyDescription": "Anote como você está em uma escala rápida. Dá para incluir uma nota curta, se quiser."
-    },
     "habits": {
       "title": "Hábitos",
       "emptyTitle": "Nenhum hábito criado",
       "emptyDescription": "Crie um hábito com a frequência que fizer sentido para você."
-    },
-    "journal": {
-      "title": "Diário",
-      "emptyTitle": "Seu diário está em branco",
-      "emptyDescription": "Escreva livremente. O conteúdo não é compartilhado sem a sua escolha."
     },
     "body": {
       "title": "Corpo",
@@ -146,11 +129,6 @@
       "title": "Atividade",
       "emptyTitle": "Nenhuma atividade registrada",
       "emptyDescription": "Registre caminhadas, treinos ou qualquer movimento do seu dia."
-    },
-    "medications": {
-      "title": "Medicamentos",
-      "emptyTitle": "Nenhum medicamento registrado",
-      "emptyDescription": "Registre os medicamentos que você já usa para receber lembretes nos horários que você definir."
     },
     "goals": {
       "title": "Metas",
@@ -199,15 +177,11 @@
   "disclaimer": {
     "wellbeingOnly": "O HealthMind 360 é uma ferramenta de bem-estar e autoacompanhamento. Não diagnostica, não trata e não monitora doenças, e não substitui profissional de saúde.",
     "notMedicalDevice": "Este aplicativo não é um dispositivo médico e não faz recomendações de diagnóstico ou tratamento.",
-    "medications": "Siga a orientação do seu prescritor.",
-    "medicationsScope": "O app não sugere doses, não verifica interações e não altera nada automaticamente.",
-    "brainModel": "Modelo aproximado e educacional, igual para todas as pessoas: não usa nem representa os seus dados. Os números do painel são estimativas a partir do que você relatou, não uma medição cerebral.",
-    "neurochemistry": "Conteúdo educativo. Não é medição laboratorial e não indica níveis de neurotransmissores no seu corpo.",
     "aiGenerated": "Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.",
     "reportFooter": "Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.",
     "riskSupport": "Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).",
     "draftLegal": "RASCUNHO — revisão jurídica obrigatória.",
-    "wellbeingScore": "O Índice de Bem-Estar resume seus registros de sono, humor e energia, hábitos e a constância dos registros. Não é avaliação de saúde, não indica condição e não substitui profissional de saúde.",
+    "wellbeingScore": "O Índice de Bem-Estar resume seus registros de sono, hábitos e a constância dos registros. Não usa peso nem medidas, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.",
     "demoData": "Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.",
     "bodyModel": "Representação aproximada a partir das medidas que você informou. Não é avaliação corporal nem de saúde."
   },
@@ -336,7 +310,7 @@
   "onboarding": {
     "welcome": {
       "title": "Boas-vindas ao HealthMind 360",
-      "intro": "Um espaço para você registrar sono, humor, hábitos, corpo, alimentação e atividade, e enxergar padrões da sua rotina.",
+      "intro": "Um espaço para você registrar corpo e medidas, sono, hábitos, alimentação e atividade, e acompanhar a sua evolução no seu ritmo.",
       "doesTitle": "O que o app faz",
       "does1": "Organiza o que você registra e mostra tendências ao longo do tempo.",
       "does2": "Sugere hábitos gerais de bem-estar, sempre como sugestão.",
@@ -398,8 +372,8 @@
     "purposes": {
       "health_data": {
         "title": "Dados de bem-estar",
-        "collected": "O que você registrar sobre sono, humor, hábitos, diário, peso e medidas, alimentação, atividade e medicamentos que você informar.",
-        "purpose": "Guardar seus registros, mostrar seus dados e tendências e calcular indicadores de bem-estar só para você.",
+        "collected": "O que você registrar sobre peso e medidas, sono, hábitos, alimentação e atividade física.",
+        "purpose": "Guardar seus registros, mostrar seus dados, tendências e o modelo 3D do seu corpo, e calcular indicadores de bem-estar só para você. Nada disso avalia, classifica ou julga o seu corpo.",
         "processors": "A equipe do HealthMind 360 ('{{CONTROLADOR}}') e os provedores de infraestrutura listados em Subprocessadores, com dados armazenados no Brasil. Nunca vendemos nem compartilhamos esses dados para publicidade.",
         "refusal": "Você continua com acesso à conta e à Central de Privacidade, mas não consegue registrar nem ver dados de bem-estar.",
         "revoke": "Na Central de Privacidade. O uso para na hora e os dados já registrados são eliminados depois de 30 dias, a menos que você autorize de novo antes."
@@ -448,7 +422,7 @@
     },
     "healthMissing": {
       "title": "Registro de bem-estar desativado",
-      "body": "Para registrar e ver dados de sono, humor, hábitos e os demais, é preciso autorizar o uso de dados de bem-estar.",
+      "body": "Para registrar e ver dados de corpo, sono, hábitos e os demais, é preciso autorizar o uso de dados de bem-estar.",
       "action": "Abrir a Central de Privacidade"
     },
     "healthRevoked": {
@@ -649,8 +623,8 @@
       "tableNote": "Os mesmos valores estão em “Ver os dados em tabela”, logo abaixo do gráfico.",
       "whatToDoTitle": "O que fazer com isso",
       "combined": {
-        "axes": "As barras de sono usam o eixo da esquerda, em horas. Humor e energia usam o eixo da direita, na escala de 1 a 5 que você usa ao registrar.",
-        "whatToDo": "Use para observar como sono, humor e energia aparecem juntos nos seus registros ao longo dos dias. Aparecer junto não quer dizer que um explique o outro: é só o que você registrou."
+        "axes": "As barras mostram as horas de sono de cada dia, no eixo da esquerda.",
+        "whatToDo": "Use para observar como o seu sono variou ao longo dos dias. É só o que você registrou, sem comparação com outras pessoas."
       },
       "sleepDuration": {
         "axes": "O eixo vertical mostra as horas dormidas em cada dia, do horário de deitar ao de acordar que você informou.",
@@ -659,10 +633,6 @@
       "sleepSchedule": {
         "axes": "Cada barra vai do horário em que você deitou (em cima) ao horário em que acordou (embaixo). O eixo vertical mostra as horas do dia, passando pela meia-noite.",
         "whatToDo": "Barras alinhadas indicam horários parecidos de uma noite para outra; barras desencontradas mostram horários que variaram. Use isso para entender a sua própria rotina."
-      },
-      "mood": {
-        "axes": "O eixo vertical é a escala de 1 a 5 que você usa ao registrar humor, energia e estresse. Cada ponto é a média do dia.",
-        "whatToDo": "Observe a direção das linhas ao longo do período e os dias que se destacam. Se o humor ficar baixo por vários dias ou algo preocupar você, procure alguém de confiança ou um profissional de saúde."
       },
       "habits": {
         "axes": "O eixo vertical mostra quantidades de hábitos. As barras são os hábitos marcados em cada dia; a linha mostra quantos estavam previstos para aquele dia. Hábitos de algumas vezes por semana não têm dia fixo e ficam fora da linha.",
@@ -683,8 +653,6 @@
     "cardNoData": "Sem registros neste período.",
     "origin": "De onde vem este número",
     "scaleOutOf5": "de 5",
-    "journalCount": "{count, plural, =0 {Nenhuma entrada} one {# entrada} other {# entradas}}",
-    "journalPrevious": "{count, plural, =0 {Nenhuma no período anterior} one {# no período anterior} other {# no período anterior}}",
     "todayHabits": "Hábitos de hoje",
     "noHabits": "Você ainda não tem hábitos ativos.",
     "createHabit": "Criar um hábito",
@@ -694,7 +662,7 @@
     "score": {
       "title": "Índice de Bem-Estar",
       "outOf": "de 100",
-      "insufficient": "Ainda não há registros suficientes para calcular o índice neste período. Registre sono, humor ou hábitos em alguns dias e ele aparece aqui.",
+      "insufficient": "Ainda não há registros suficientes para calcular o índice neste período. Registre sono ou hábitos em alguns dias e ele aparece aqui.",
       "partial": "Dados parciais: alguns componentes ficaram fora do cálculo. Veja o motivo em \"Como é calculado\".",
       "reviewDemo": "Com dados de demonstração não há pedido de revisão: o índice não se refere a você.",
       "trend": {
@@ -705,10 +673,8 @@
     },
     "cards": {
       "sleep": "Sono",
-      "mood": "Humor e energia",
       "habits": "Hábitos",
-      "body": "Peso",
-      "journal": "Diário"
+      "body": "Peso"
     },
     "variation": {
       "duration": {
@@ -734,19 +700,13 @@
     },
     "origins": {
       "sleep": "Média da duração das {count, plural, one {# noite registrada} other {# noites registradas}} por você no período (do horário de deitar ao de acordar).",
-      "mood": "Média do humor que você informou em {count, plural, one {# registro} other {# registros}} (escala de 1 a 5). Energia média: {energy}.",
       "habits": "Checks feitos ÷ dias previstos dos seus {count, plural, one {# hábito ativo} other {# hábitos ativos}} no período.",
-      "body": "Último peso que você informou no período.",
-      "bodyWithBmi": "Último peso que você informou no período. IMC estimado a partir do peso e da altura informados: {bmi} (cálculo direto, sem classificação).",
-      "journal": "Quantidade de entradas do diário no período. O conteúdo não é lido para este número."
+      "body": "Último peso que você informou no período."
     },
     "combined": {
-      "title": "Sono, humor e energia no período",
-      "description": "Horas dormidas por dia e médias diárias de humor e energia que você registrou.",
-      "sleep": "Sono",
-      "mood": "Humor",
-      "energy": "Energia",
-      "scale": "de 5"
+      "title": "Sono no período",
+      "description": "Horas dormidas por dia que você registrou.",
+      "sleep": "Sono"
     },
     "twin": {
       "title": "Health Twin",
@@ -775,10 +735,6 @@
       "sleepRegularity": {
         "name": "Regularidade do sono",
         "rule": "Quanto os seus horários de deitar e de acordar variaram (precisa de 3 noites ou mais)."
-      },
-      "moodEnergy": {
-        "name": "Humor e energia",
-        "rule": "Média do humor e da energia que você informou (precisa de 3 registros ou mais)."
       },
       "habits": {
         "name": "Hábitos",
@@ -816,18 +772,13 @@
       "partial": "Com poucos dias registrados, o resumo ainda não compara períodos.",
       "sleepUp": "Seu sono médio registrado ficou {diff} maior que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
       "sleepDown": "Seu sono médio registrado ficou {diff} menor que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
-      "moodUp": "Seu humor médio registrado ficou {diff} ponto(s) acima {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}.",
-      "moodDown": "Seu humor médio registrado ficou {diff} ponto(s) abaixo {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}.",
-      "moodDropGentle": "Seu humor médio registrado ficou {diff} ponto(s) abaixo {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}. Períodos assim acontecem, e registrar já é uma forma de se acompanhar.",
       "habitsUp": "Você marcou {diff} pontos percentuais a mais dos seus hábitos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
       "habitsDown": "Você marcou {diff} pontos percentuais a menos dos seus hábitos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
       "habits": "Das marcações previstas pelos seus hábitos, você fez {percent}%.",
-      "steady": "Em relação {days, plural, =7 {à semana anterior} other {aos # dias anteriores}}, não houve mudança grande nos seus registros de sono, humor e hábitos.",
-      "supportPointer": "Se quiser conversar com alguém, há contatos de apoio logo abaixo.",
+      "steady": "Em relação {days, plural, =7 {à semana anterior} other {aos # dias anteriores}}, não houve mudança grande nos seus registros de sono e hábitos.",
       "highlights": {
         "largest": {
           "sleep": "Maior mudança: sono médio",
-          "mood": "Maior mudança: humor médio (pontos)",
           "habits": "Maior mudança: hábitos marcados (pontos percentuais)"
         },
         "changeUp": "a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}",
@@ -853,26 +804,6 @@
         "changeLess": "a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}"
       }
     },
-    "mood": {
-      "empty": "Ainda não há registros de humor neste período.",
-      "average": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, seu humor registrado ficou em média {mood} de 5, e a energia, {energy} de 5, em {count, plural, one {# registro} other {# registros}}.",
-      "partial": "Com poucos registros, ainda não dá para comparar com o período anterior.",
-      "compareSame": "A média ficou parecida com a {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}.",
-      "compareUp": "A média ficou {diff} ponto(s) acima da {days, plural, =7 {semana anterior} other {média dos # dias anteriores}}.",
-      "compareDown": "A média ficou {diff} ponto(s) abaixo da {days, plural, =7 {semana anterior} other {média dos # dias anteriores}}.",
-      "dropGentle": "A média ficou {diff} ponto(s) abaixo da {days, plural, =7 {semana anterior} other {média dos # dias anteriores}}. Períodos assim acontecem, e registrar já é uma forma de se acompanhar.",
-      "lowPeriod": "Neste período, seus registros de humor ficaram, em média, na parte de baixo da escala.",
-      "supportPointer": "Se quiser conversar com alguém, há contatos de apoio logo abaixo.",
-      "extremes": "O dia com humor mais alto foi {highest}; o com humor mais baixo, {lowest}.",
-      "highlights": {
-        "highest": "Dia com humor mais alto (1 a 5)",
-        "lowest": "Dia com humor mais baixo (1 a 5)",
-        "change": "Diferença na média de humor (pontos)",
-        "onDays": "Média do dia, {when}",
-        "changeUp": "acima {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}",
-        "changeDown": "abaixo {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}"
-      }
-    },
     "habits": {
       "empty": "Sem hábitos ativos com marcações previstas neste período.",
       "completion": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você marcou {done} de {expected, plural, one {# vez prevista} other {# vezes previstas}} pela frequência que você definiu para cada hábito ({percent}%).",
@@ -890,21 +821,6 @@
         "change": "Diferença no cumprimento (pontos percentuais)",
         "changeMore": "a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}",
         "changeLess": "a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}"
-      }
-    },
-    "journal": {
-      "empty": "Nenhuma entrada no diário neste período.",
-      "count": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você escreveu {count, plural, one {# entrada} other {# entradas}} no diário, em {daysWith, plural, one {# dia} other {# dias}} de {total}.",
-      "partial": "Com poucas entradas, o resumo mostra só a contagem.",
-      "compare": "{days, plural, =7 {Na semana anterior} other {Nos # dias anteriores}}, {previous, plural, =0 {não houve entradas} one {houve # entrada} other {houve # entradas}}.",
-      "topTag": "A etiqueta que você mais usou foi “{tag}”.",
-      "gap": "O maior intervalo entre duas entradas foi de {gap} dias.",
-      "latest": "A entrada mais recente foi {when}.",
-      "highlights": {
-        "topTag": "Etiqueta mais usada",
-        "tagCount": "{count, plural, one {em # entrada} other {em # entradas}}",
-        "daysWith": "Dias com entrada",
-        "ofTotal": "de {total} dias do período"
       }
     },
     "body": {
@@ -940,19 +856,6 @@
       "dates": "O controle de datas percorre {count, plural, one {# data de medição} other {# datas de medição}}: a primeira {first} e a última {last}.",
       "weightNote": "O peso aparece só em número: ele não muda o formato do modelo.",
       "partial": "Com uma data de medição só, ainda não há como percorrer nem comparar datas."
-    },
-    "brain": {
-      "empty": "Ainda não há registros de sono, humor ou hábitos neste período.",
-      "educational": "O cérebro 3D é um modelo educativo, igual para todas as pessoas: cores e formas não mudam com os seus registros.",
-      "themesUsed": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, há {sleep, plural, one {# dia} other {# dias}} com sono, {mood, plural, one {# dia} other {# dias}} com humor e {habits, plural, one {# dia} other {# dias}} com hábitos registrados.",
-      "pickRegion": "Escolha uma região para ler sobre ela e ver os seus registros dos temas que o conteúdo educativo associa a ela.",
-      "indicators": {
-        "sleepAverage": "Sono médio por noite",
-        "sleepSpread": "Variação dos horários de deitar e acordar",
-        "moodAverage": "Humor médio (escala de 1 a 5)",
-        "energyAverage": "Energia média (escala de 1 a 5)",
-        "habitsCompletion": "Hábitos marcados em relação ao previsto (%)"
-      }
     }
   },
   "tour": {
@@ -996,7 +899,9 @@
     "menu": "Ajuda",
     "tour": "Fazer o tour do painel",
     "badgesTitle": "O que significam os selos",
-    "badgesIntro": "Todo dado exibido tem um selo que diz de onde ele vem."
+    "badgesIntro": "Todo dado exibido tem um selo que diz de onde ele vem.",
+    "supportTitle": "Precisa de ajuda?",
+    "supportIntro": "Se algo sobre o seu corpo, a sua alimentação ou a sua rotina estiver difícil, conversar com um profissional de saúde pode ajudar."
   },
   "habits": {
     "markDone": "Marcar como feito",
@@ -1135,121 +1040,6 @@
       "update": "Salvar alterações"
     }
   },
-  "mood": {
-    "newTitle": "Registrar humor e energia",
-    "listTitle": "Registros",
-    "trendChart": "Humor, energia e estresse no período",
-    "trendDescription": "Médias diárias do que você registrou (escala de 1 a 5).",
-    "scale": "de 5",
-    "weekdayTitle": "Humor por dia da semana",
-    "weekdayDescription": "Média do humor que você registrou em cada dia da semana, no período.",
-    "weekdayValue": "{value} ({count, plural, one {# registro} other {# registros}})",
-    "weekdayNone": "sem registros",
-    "entrySummary": "Humor {mood} · Energia {energy} · Estresse {stress} (de 5)",
-    "weekdays": {
-      "0": "Domingo",
-      "1": "Segunda",
-      "2": "Terça",
-      "3": "Quarta",
-      "4": "Quinta",
-      "5": "Sexta",
-      "6": "Sábado"
-    },
-    "stats": {
-      "mood": "Humor médio",
-      "energy": "Energia média",
-      "stress": "Estresse médio",
-      "count": "Registros"
-    },
-    "emotions": {
-      "calm": "Calma",
-      "joy": "Alegria",
-      "gratitude": "Gratidão",
-      "motivation": "Motivação",
-      "focus": "Foco",
-      "tiredness": "Cansaço",
-      "worry": "Preocupação",
-      "irritation": "Irritação",
-      "sadness": "Tristeza",
-      "boredom": "Tédio"
-    },
-    "form": {
-      "loggedAt": "Quando",
-      "mood": "Humor",
-      "moodLow": "muito para baixo",
-      "moodHigh": "muito bem",
-      "energy": "Energia",
-      "energyLow": "sem energia",
-      "energyHigh": "muita energia",
-      "stress": "Estresse",
-      "stressLow": "tranquilo",
-      "stressHigh": "muito estressado",
-      "emotions": "Emoções (opcional)",
-      "emotionsHint": "Marque as que combinam com o momento.",
-      "note": "Nota curta (opcional)",
-      "noteHint": "Guardada cifrada no servidor; não aparece para outras pessoas no app.",
-      "save": "Salvar registro",
-      "update": "Salvar alterações"
-    }
-  },
-  "journal": {
-    "newTitle": "Nova entrada",
-    "filtersTitle": "Filtrar",
-    "filtersHint": "Por período (no topo da página), humor e etiqueta. Não há busca no texto: o conteúdo fica cifrado.",
-    "filterAll": "Todos",
-    "filterApply": "Aplicar filtros",
-    "layoutLabel": "Forma de visualização",
-    "layout": {
-      "lista": "Lista",
-      "calendario": "Calendário"
-    },
-    "listTitle": "{count, plural, one {# entrada} other {# entradas}}",
-    "entryMood": "Humor do dia: {value} de 5",
-    "entryNoMood": "Sem humor informado",
-    "calendarDayEntries": "{date}: {count, plural, one {# entrada} other {# entradas}}",
-    "weekdayShort": {
-      "0": "D",
-      "1": "S",
-      "2": "T",
-      "3": "Q",
-      "4": "Q",
-      "5": "S",
-      "6": "S"
-    },
-    "weekdayLong": {
-      "0": "domingo",
-      "1": "segunda-feira",
-      "2": "terça-feira",
-      "3": "quarta-feira",
-      "4": "quinta-feira",
-      "5": "sexta-feira",
-      "6": "sábado"
-    },
-    "tags": {
-      "work": "Trabalho",
-      "study": "Estudos",
-      "family": "Família",
-      "friends": "Amizades",
-      "rest": "Descanso",
-      "movement": "Movimento",
-      "leisure": "Lazer",
-      "nature": "Natureza",
-      "routine": "Rotina",
-      "other": "Outros"
-    },
-    "form": {
-      "day": "Data",
-      "mood": "Humor do dia (opcional)",
-      "moodHint": "De 1 (muito para baixo) a 5 (muito bem).",
-      "noMood": "Não informar",
-      "content": "O que você quer registrar?",
-      "contentHint": "Guardado cifrado no servidor; não aparece para outras pessoas no app. Não é usado pela IA sem a sua autorização.",
-      "tags": "Etiquetas (opcional)",
-      "tagsHint": "Ajudam a filtrar depois.",
-      "save": "Salvar entrada",
-      "update": "Salvar alterações"
-    }
-  },
   "body": {
     "newTitle": "Registrar peso e medidas",
     "listTitle": "Medições",
@@ -1284,11 +1074,7 @@
     }
   },
   "twin": {
-    "sectionsLabel": "Seções do Health Twin",
-    "sections": {
-      "body": "Corpo 3D",
-      "brain": "Cérebro 3D"
-    },
+    "title": "Corpo 3D",
     "viewer": {
       "loading": "Carregando o modelo 3D…",
       "fallback": "Este navegador não exibe 3D aqui. Você está vendo uma versão 2D com as mesmas informações.",
@@ -1351,7 +1137,7 @@
     "guide": {
       "title": "Como ler este modelo",
       "whatToDoTitle": "O que fazer com isso",
-      "badges": "Selos: “{informed}” é o que você registrou; “{estimated}” é um cálculo direto a partir disso, como a variação; “{inferred}” é uma associação feita pelo app.",
+      "badges": "Selos: “{informed}” é o que você registrou; “{estimated}” é um cálculo direto a partir disso, como a variação.",
       "body": {
         "points": {
           "p1": "O modelo é uma representação aproximada, neutra e sem traços realistas, ajustada só pelas medidas que você informou: altura e circunferências.",
@@ -1367,71 +1153,21 @@
           "p2": "A tabela mostra cada medida nas duas datas, a diferença em número e uma seta: ↑ subiu, ↓ desceu, = igual."
         },
         "whatToDo": "Compare cada medida com ela mesma. Mudanças pequenas entre duas datas são comuns e podem vir da própria forma de medir."
-      },
-      "brain": {
-        "points": {
-          "p1": "O cérebro 3D é estilizado e educativo, igual para todas as pessoas. As regiões não mudam de cor nem de forma com os seus registros: o destaque só marca a região escolhida.",
-          "p2": "No painel, “Seus registros” mostra números do que você registrou nos temas que o conteúdo associa à região (sono, humor e energia, hábitos). Eles não dizem nada sobre a região.",
-          "p3": "O nível de confiança indica se há dias suficientes com registro nesses temas no período."
-        },
-        "whatToDo": "Use como conteúdo educativo e para pensar na sua rotina. Se algo no seu sono, humor ou bem-estar preocupar você, converse com um profissional de saúde."
-      }
-    },
-    "brain": {
-      "title": "Cérebro 3D educativo",
-      "regionsTitle": "Regiões",
-      "pick": "Escolha uma região na lista ou no modelo para ler sobre ela.",
-      "educational": "Conteúdo educativo",
-      "functionTitle": "Função geral",
-      "themesTitle": "Seus registros nos temas ligados (não são sobre a região)",
-      "noThemes": "O app não tem registros ligados a esta região. O conteúdo aqui é só educativo.",
-      "notAboutRegion": "Estes números são os seus registros sobre cada tema, no período. Eles não indicam nada sobre esta região.",
-      "noRecords": "Sem registro no período.",
-      "dataUsedTitle": "Dados usados",
-      "dataUsed": "{theme}: {days, plural, =0 {nenhum dia} one {# dia} other {# dias}} com registro no período.",
-      "dataUsedNone": "Nenhum dado seu: só conteúdo educativo.",
-      "confidenceTitle": "Nível de confiança dos seus registros",
-      "confidence": {
-        "none": "Não se aplica",
-        "low": "Baixo",
-        "medium": "Médio",
-        "high": "Alto"
-      },
-      "confidenceHint": "Diz se há dias suficientes com registro nos temas ligados à região. Não diz nada sobre a região.",
-      "themes": {
-        "sleep": "Sono",
-        "mood": "Humor e energia",
-        "habits": "Hábitos"
-      },
-      "regions": {
-        "frontal": {
-          "name": "Lobo frontal",
-          "function": "Fica na parte da frente. Em linhas gerais, é associado a planejamento, atenção, tomada de decisões e movimentos voluntários.",
-          "themes": "Na literatura geral, sono, humor e rotina costumam ser associados à atenção e ao planejamento no dia a dia."
-        },
-        "parietal": {
-          "name": "Lobo parietal",
-          "function": "Fica no alto, atrás do frontal. Em linhas gerais, é associado à percepção do toque e à noção de posição do corpo no espaço."
-        },
-        "temporal": {
-          "name": "Lobo temporal",
-          "function": "Fica nas laterais, perto das orelhas. Em linhas gerais, é associado à audição, à linguagem e à memória.",
-          "themes": "Na literatura geral, o sono costuma ser associado à memória, e as emoções, a áreas próximas desta região."
-        },
-        "occipital": {
-          "name": "Lobo occipital",
-          "function": "Fica na parte de trás. Em linhas gerais, é associado à visão."
-        },
-        "cerebellum": {
-          "name": "Cerebelo",
-          "function": "Fica embaixo e atrás. Em linhas gerais, é associado ao equilíbrio e à coordenação dos movimentos."
-        },
-        "brainstem": {
-          "name": "Tronco encefálico",
-          "function": "Liga o cérebro à medula espinhal. Em linhas gerais, é associado a funções automáticas, como a respiração e o ciclo de sono e vigília.",
-          "themes": "Na literatura geral, o ciclo de sono e vigília é um dos temas ligados a esta região."
-        }
       }
     }
+  },
+  "guardrails": {
+    "title": "O app não acompanha esta meta",
+    "titleValidation": "Confira os dados da meta",
+    "reasons": {
+      "target_below_safe_range": "O app não acompanha esta meta de perda de peso.",
+      "pace_too_fast": "O ritmo de mudança de peso é mais rápido do que o app acompanha.",
+      "height_required": "Para metas de perda de peso, o app precisa da sua altura.",
+      "invalid_date": "A data escolhida para a meta já passou ou é hoje.",
+      "calorie_target_below_floor": "O alvo de calorias fica fora do que o app aceita.",
+      "topic_not_allowed": "O app não faz sugestões sobre esse tema.",
+      "invalid_input": "Algum valor da meta não é válido. Confira e tente de novo."
+    },
+    "professional": "Para esse tipo de objetivo, o melhor caminho é conversar com um profissional de saúde, como um nutricionista ou um médico, que conheça a sua história."
   }
 }

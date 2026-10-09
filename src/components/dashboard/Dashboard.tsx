@@ -1,12 +1,4 @@
-import {
-  Moon,
-  NotebookPen,
-  Orbit,
-  PersonStanding,
-  Smile,
-  ListChecks,
-  type LucideIcon,
-} from 'lucide-react';
+import { Moon, Orbit, PersonStanding, ListChecks, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { useTranslations } from 'next-intl';
@@ -182,7 +174,6 @@ export function Dashboard({
   );
 
   const sleepTrend = trendOf(cards.sleep.deltaMinutes);
-  const moodTrend = trendOf(cards.mood.deltaMood);
   const habitsTrend = trendOf(cards.habits.deltaPoints);
   const bodyTrend = trendOf(cards.body.changeKg);
 
@@ -254,34 +245,6 @@ export function Dashboard({
             spark={<Sparkline data={cards.sleep.spark} color="var(--hm-domain-sleep)" />}
           />
           <DomainCard
-            title={t('cards.mood')}
-            href={link('/humor')}
-            icon={Smile}
-            tone="text-mood"
-            badge={b('ESTIMADO')}
-            noData={cards.mood.state === 'no-data'}
-            value={
-              cards.mood.avgMood !== null ? (
-                <>
-                  {formatDecimal(cards.mood.avgMood)}
-                  <span className="text-base font-normal text-fg-muted"> {t('scaleOutOf5')}</span>
-                </>
-              ) : null
-            }
-            variation={
-              moodTrend && cards.mood.deltaMood !== null
-                ? `${TREND_ARROW[moodTrend]} ${t(`variation.points.${moodTrend}`, {
-                    value: formatDecimal(Math.abs(cards.mood.deltaMood)),
-                  })}`
-                : null
-            }
-            origin={t('origins.mood', {
-              count: cards.mood.count,
-              energy: formatDecimal(cards.mood.avgEnergy ?? 0),
-            })}
-            spark={<Sparkline data={cards.mood.spark} color="var(--hm-domain-mood)" />}
-          />
-          <DomainCard
             title={t('cards.habits')}
             href={link('/habitos')}
             icon={ListChecks}
@@ -314,23 +277,8 @@ export function Dashboard({
                   })}`
                 : null
             }
-            origin={
-              cards.body.bmi !== null
-                ? t('origins.bodyWithBmi', { bmi: formatDecimal(cards.body.bmi) })
-                : t('origins.body')
-            }
+            origin={t('origins.body')}
             spark={<Sparkline data={cards.body.spark} color="var(--hm-domain-body)" />}
-          />
-          <DomainCard
-            title={t('cards.journal')}
-            href={link('/diario')}
-            icon={NotebookPen}
-            tone="text-journal"
-            badge={b('INFORMADO')}
-            noData={cards.journal.state === 'no-data'}
-            value={t('journalCount', { count: cards.journal.count })}
-            variation={t('journalPrevious', { count: cards.journal.previousCount })}
-            origin={t('origins.journal')}
           />
         </div>
       </section>
@@ -343,7 +291,6 @@ export function Dashboard({
           guide="combined"
           describedBy={summaryTextId('dashboard')}
           data={data.combined}
-          rightDomain={[1, 5]}
           series={[
             {
               key: 'sleepHours',
@@ -351,23 +298,6 @@ export function Dashboard({
               unit: 'h',
               kind: 'bar',
               color: 'var(--hm-domain-sleep)',
-            },
-            {
-              key: 'mood',
-              label: t('combined.mood'),
-              unit: t('combined.scale'),
-              kind: 'line',
-              color: 'var(--hm-domain-mood)',
-              axis: 'right',
-            },
-            {
-              key: 'energy',
-              label: t('combined.energy'),
-              unit: t('combined.scale'),
-              kind: 'line',
-              color: 'var(--hm-domain-activity)',
-              dash: '6 4',
-              axis: 'right',
             },
           ]}
         />

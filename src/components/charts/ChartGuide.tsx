@@ -7,7 +7,6 @@ export const CHART_GUIDES = [
   'combined',
   'sleepDuration',
   'sleepSchedule',
-  'mood',
   'habits',
   'weight',
   'girth',

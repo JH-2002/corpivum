@@ -7,6 +7,7 @@ import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { StatTile } from '@/components/health/StatTile';
+import { SupportNotice } from '@/components/health/SupportNotice';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { toLocalDateTime } from '@/lib/dates';
@@ -18,9 +19,9 @@ import { BodyForm } from './BodyForm';
 const GIRTHS: BodyField[] = ['waistCm', 'hipCm', 'armCm', 'thighCm', 'chestCm'];
 const GIRTH_STYLE: Record<string, { color: string; dash?: string }> = {
   waistCm: { color: 'var(--hm-domain-body)' },
-  hipCm: { color: 'var(--hm-domain-journal)', dash: '6 4' },
+  hipCm: { color: 'var(--hm-series-violet)', dash: '6 4' },
   armCm: { color: 'var(--hm-domain-activity)', dash: '2 3' },
-  thighCm: { color: 'var(--hm-domain-mood)', dash: '8 3 2 3' },
+  thighCm: { color: 'var(--hm-series-amber)', dash: '8 3 2 3' },
   chestCm: { color: 'var(--hm-domain-sleep)', dash: '1 4' },
 };
 
@@ -189,6 +190,8 @@ export function BodyView({
           </section>
         </>
       )}
+      {/* Apoio sempre visível no corpo (§48, ADR-0027; revisão de privacidade A1). */}
+      <SupportNotice />
     </div>
   );
 }

@@ -8,27 +8,21 @@ import {
   ListChecks,
   type LucideIcon,
   Moon,
-  NotebookPen,
   Orbit,
   PersonStanding,
-  Pill,
   Settings,
   ShieldCheck,
-  Smile,
   Target,
 } from 'lucide-react';
 import type { Route } from 'next';
 
 export type NavKey =
   | 'home'
-  | 'sleep'
-  | 'mood'
-  | 'habits'
-  | 'journal'
   | 'body'
+  | 'sleep'
+  | 'habits'
   | 'nutrition'
   | 'activity'
-  | 'medications'
   | 'goals'
   | 'timeline'
   | 'twin'
@@ -48,14 +42,11 @@ export interface NavItem {
 /** Itens da sidebar, na ordem da §9. */
 export const SIDEBAR_ITEMS: readonly NavItem[] = [
   { key: 'home', href: '/inicio', icon: House },
-  { key: 'sleep', href: '/sono', icon: Moon },
-  { key: 'mood', href: '/humor', icon: Smile },
-  { key: 'habits', href: '/habitos', icon: ListChecks },
-  { key: 'journal', href: '/diario', icon: NotebookPen },
   { key: 'body', href: '/corpo', icon: PersonStanding },
+  { key: 'sleep', href: '/sono', icon: Moon },
+  { key: 'habits', href: '/habitos', icon: ListChecks },
   { key: 'nutrition', href: '/alimentacao', icon: Apple },
   { key: 'activity', href: '/atividade', icon: Activity },
-  { key: 'medications', href: '/medicamentos', icon: Pill },
   { key: 'goals', href: '/metas', icon: Target },
   { key: 'timeline', href: '/timeline', icon: History },
   { key: 'twin', href: '/twin', icon: Orbit },
@@ -83,11 +74,9 @@ export const MORE_ITEMS: readonly NavItem[] = ALL_NAV_ITEMS.filter(
  */
 export const DEMO_ITEMS: readonly NavItem[] = [
   { key: 'home', href: '/demo', icon: House, exact: true },
-  { key: 'sleep', href: '/demo/sono', icon: Moon },
-  { key: 'mood', href: '/demo/humor', icon: Smile },
-  { key: 'habits', href: '/demo/habitos', icon: ListChecks },
-  { key: 'journal', href: '/demo/diario', icon: NotebookPen },
   { key: 'body', href: '/demo/corpo', icon: PersonStanding },
+  { key: 'sleep', href: '/demo/sono', icon: Moon },
+  { key: 'habits', href: '/demo/habitos', icon: ListChecks },
   { key: 'twin', href: '/demo/twin', icon: Orbit },
 ];
 

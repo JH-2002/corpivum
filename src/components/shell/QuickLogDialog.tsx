@@ -7,10 +7,7 @@ import {
   ListChecks,
   type LucideIcon,
   Moon,
-  NotebookPen,
-  Pill,
   Scale,
-  Smile,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -21,24 +18,20 @@ import { useDialogFocusLoop } from '@/components/ui/dialog-focus';
 import { IconButton } from '@/components/ui/IconButton';
 import { useShell } from './ShellProvider';
 
-type QuickLogKey =
-  'sleep' | 'mood' | 'habit' | 'journal' | 'body' | 'meal' | 'water' | 'activity' | 'medication';
+type QuickLogKey = 'sleep' | 'habit' | 'body' | 'meal' | 'water' | 'activity';
 
 const ITEMS: ReadonlyArray<{ key: QuickLogKey; href: Route; icon: LucideIcon; tone: string }> = [
   { key: 'sleep', href: '/sono#novo', icon: Moon, tone: 'text-sleep' },
-  { key: 'mood', href: '/humor#novo', icon: Smile, tone: 'text-mood' },
   { key: 'habit', href: '/habitos#novo', icon: ListChecks, tone: 'text-primary' },
-  { key: 'journal', href: '/diario#novo', icon: NotebookPen, tone: 'text-journal' },
   { key: 'body', href: '/corpo#novo', icon: Scale, tone: 'text-body' },
   { key: 'meal', href: '/alimentacao', icon: Apple, tone: 'text-nutrition' },
   { key: 'water', href: '/alimentacao', icon: Droplet, tone: 'text-info' },
   { key: 'activity', href: '/atividade', icon: Activity, tone: 'text-activity' },
-  { key: 'medication', href: '/medicamentos', icon: Pill, tone: 'text-medications' },
 ];
 
 /**
  * Seletor rápido do tipo de registro (§7). <dialog> nativo em modo modal: foco preso, fundo inerte,
- * Esc fecha e o foco volta ao elemento que abriu. Sono, humor, hábitos, diário e corpo levam direto ao
+ * Esc fecha e o foco volta ao elemento que abriu. Sono, hábitos e corpo levam direto ao
  * formulário do módulo (≤ 3 cliques, §3); os demais chegam nas fases seguintes.
  */
 export function QuickLogDialog() {

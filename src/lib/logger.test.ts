@@ -21,8 +21,8 @@ describe('logger', () => {
 
   it('descarta chaves fora da allowlist mesmo vindas de objeto não literal', () => {
     const { records, logger } = capture();
-    const meta = { userId: 'u1', journalText: 'dormi mal e chorei' };
-    logger.info('journal.created', meta);
+    const meta = { userId: 'u1', noteText: 'dormi mal e chorei' };
+    logger.info('note.created', meta);
     expect(records[0]).toMatchObject({ userId: 'u1' });
     expect(JSON.stringify(records[0])).not.toContain('dormi mal');
   });

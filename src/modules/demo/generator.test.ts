@@ -17,16 +17,12 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     const first = addDays(TODAY, -(DEMO_DAYS - 1));
     const days = [
       ...data.sleep.map((r) => r.day),
-      ...data.mood.map((r) => r.day),
       ...data.checks.map((r) => r.day),
-      ...data.journal.map((r) => r.day),
       ...data.body.map((r) => r.day),
     ];
     expect(Math.min(...days.map((d) => Date.parse(d)))).toBeGreaterThanOrEqual(Date.parse(first));
     expect(days.every((d) => d <= TODAY)).toBe(true);
     expect(data.sleep.length).toBeGreaterThan(70);
-    expect(data.mood.length).toBeGreaterThan(60);
-    expect(data.journal.length).toBeGreaterThan(20);
     expect(data.body.length).toBeGreaterThanOrEqual(12);
   });
 
@@ -37,12 +33,6 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
       expect(h).toBeLessThanOrEqual(24);
       expect(r.quality).toBeGreaterThanOrEqual(1);
       expect(r.quality).toBeLessThanOrEqual(5);
-    }
-    for (const r of data.mood) {
-      for (const v of [r.mood, r.energy, r.stress]) {
-        expect(v).toBeGreaterThanOrEqual(1);
-        expect(v).toBeLessThanOrEqual(5);
-      }
     }
     for (const r of data.body) {
       if (r.weightKg !== null) expect(r.weightKg).toBeGreaterThan(20);
@@ -60,7 +50,7 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     expect(d.source).toBe('demo');
     expect(d.state).toBe('ok');
     expect(d.score.value).not.toBeNull();
-    for (const card of [d.cards.sleep, d.cards.mood, d.cards.habits, d.cards.body]) {
+    for (const card of [d.cards.sleep, d.cards.habits, d.cards.body]) {
       expect(card.state).toBe('ok');
       expect(card.spark.some((p) => p.value !== null)).toBe(true);
     }
@@ -68,12 +58,30 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     expect(d.todayHabits).toHaveLength(3);
   });
 
-  it('período sem dados vira no-data; diário sem texto quando não pedido', async () => {
+  it('período sem dados vira no-data', async () => {
     const src = createDemoSource(data);
     const old = { from: '2020-01-01', to: '2020-01-31' };
     expect((await buildDashboard(src, old, TODAY)).state).toBe('no-data');
-    const entries = await src.journal({ from: addDays(TODAY, -30), to: TODAY });
-    expect(entries.every((e) => e.content === null)).toBe(true);
+  });
+});
+
+describe('Índice sem recompensa por pesagem (LEG-M06, revisão M6)', () => {
+  it('dias só com medição do corpo não contam na constância de registro', async () => {
+    const full = generateDemoData(TODAY, TZ);
+    const range = { from: addDays(TODAY, -6), to: TODAY };
+    const sleep = full.sleep.filter((r) => r.day >= addDays(TODAY, -2));
+    const body = Array.from({ length: 7 }, (_, i) => ({
+      ...full.body[0]!,
+      id: `b-${i}`,
+      day: addDays(TODAY, -i),
+    }));
+    const d = await buildDashboard(
+      createDemoSource({ ...full, sleep, checks: [], body }),
+      range,
+      TODAY,
+    );
+    const logging = d.score.components.find((c) => c.id === 'logging');
+    expect(logging?.sample).toBe(new Set(sleep.map((r) => r.day)).size);
   });
 });
 
@@ -81,12 +89,9 @@ describe('textos fictícios da demo (LEG-M03)', () => {
   it('não contêm alegações clínicas proibidas (ficam fora do i18n)', async () => {
     const { findForbiddenTerms } = await import('../../../tests/content/forbidden-terms');
     const data = generateDemoData(TODAY, TZ);
-    const texts = [
-      ...data.sleep.map((r) => r.note),
-      ...data.mood.map((r) => r.note),
-      ...data.journal.map((r) => r.content),
-      ...data.habits.map((h) => h.name),
-    ].filter((t): t is string => Boolean(t));
+    const texts = [...data.sleep.map((r) => r.note), ...data.habits.map((h) => h.name)].filter(
+      (t): t is string => Boolean(t),
+    );
     expect(texts.length).toBeGreaterThan(0);
     for (const text of new Set(texts)) expect(findForbiddenTerms(text)).toEqual([]);
   });

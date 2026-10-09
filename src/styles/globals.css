@@ -52,12 +52,11 @@
   --color-info-soft: var(--hm-info-soft);
 
   --color-sleep: var(--hm-domain-sleep);
-  --color-mood: var(--hm-domain-mood);
+  --color-series-amber: var(--hm-series-amber);
   --color-activity: var(--hm-domain-activity);
   --color-nutrition: var(--hm-domain-nutrition);
   --color-body: var(--hm-domain-body);
-  --color-journal: var(--hm-domain-journal);
-  --color-medications: var(--hm-domain-medications);
+  --color-series-violet: var(--hm-series-violet);
 
   /* Tipografia: uma família sans-serif, 6 tamanhos */
   --font-sans:

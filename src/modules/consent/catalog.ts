@@ -4,7 +4,8 @@
  *
  * Cada texto vive no i18n (namespace em `DOCUMENT_MESSAGES`). `textHash` = SHA-256 do JSON desse namespace.
  * Mudou o texto? Suba a versão aqui E publique a nova linha em `policy_versions` numa migração nova
- * (INSERT, nunca UPDATE). O teste `catalog.test.ts` falha se o texto mudar sem isso, e o teste de banco
+ * (INSERT, nunca UPDATE), e arquive o texto antigo em `legal/archive/` (LEG-R03). O teste `catalog.test.ts`
+ * falha se o texto mudar sem isso, e o teste de banco
  * confere as versões publicadas. `requiresReconsent: true` = mudança substancial (pede nova escolha).
  */
 export const CONSENT_PURPOSES = [
@@ -61,9 +62,11 @@ export const CURRENT_VERSIONS = {
     textHash: '705838b552199e7dfe1a5f0b8d996b8b0e03369ddbe82db54de9d6b88cc4121f',
     requiresReconsent: true,
   },
+  // v2 (ADR-0027): categorias do novo escopo (sem humor, diário e medicamentos). Mudança substancial:
+  // quem autorizou a v1 escolhe de novo antes de qualquer tratamento (LEG-C06).
   consent_health_data: {
-    version: 1,
-    textHash: '676f9d3b37e7bbda4f0badfc4cf6e6008ad3062a75d12cd8e43d90c44c3e0433',
+    version: 2,
+    textHash: 'cd0d42d175c05e0cb6e0e5d492fb4402cde382283bb64f9f3b649d9d91886c6e',
     requiresReconsent: true,
   },
   consent_marketing: {

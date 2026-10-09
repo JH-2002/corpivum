@@ -3,26 +3,29 @@
 > Versão reconstruída a partir do pacote v3. Numeração de seções compatível com
 > `docs/SPEC_ADDENDUM.md` e `docs/LEGAL_REQUIREMENTS.md`, que têm precedência sobre este documento.
 > Fórmulas, textos de saúde e fluxos de risco dependem de revisão clínica antes do lançamento.
+> **ADR-0027 (reorientação):** o produto foca no desenvolvimento corporal. Humor e energia, diário, cérebro 3D,
+> indicadores neuroquímicos e medicamentos foram removidos; as seções correspondentes ficam marcadas.
 
 ---
 
 ## Parte I — Produto
 
 ### §1 Visão e objetivos
-HealthMind 360 é uma plataforma web pessoal de acompanhamento de bem-estar. A pessoa registra sono, humor,
-energia, hábitos, diário, peso e medidas, alimentação, atividade física e medicamentos que já usa, e o app
-transforma esses registros em uma visão integrada: um dashboard do estado atual, um "Health Digital Twin" em 3D,
-uma linha do tempo pessoal, relatórios e um assistente de IA opcional.
+HealthMind 360 é uma plataforma web pessoal de acompanhamento do desenvolvimento corporal, com foco em
+bem-estar. A pessoa registra peso e medidas, sono, hábitos, alimentação e atividade física, define metas próprias,
+e o app transforma esses registros em uma visão integrada: um dashboard do estado atual, um "Health Digital
+Twin" do corpo em 3D, uma linha do tempo pessoal, relatórios e um assistente de IA opcional. O app não prescreve
+dieta nem treino (LEG-M08) e trata imagem corporal e alimentação com guardrails próprios (LEG-M04, M06, M07).
 
 Objetivos:
-1. Tornar visível a relação entre hábitos e bem-estar (ex.: sono → humor → atividade).
+1. Tornar visível a relação entre rotina e evolução do corpo (ex.: sono, atividade e medidas no tempo).
 2. Facilitar o registro diário em poucos segundos.
 3. Explicar sempre de onde vem cada número exibido.
 4. Respeitar a privacidade como característica central do produto, não como opção escondida.
 
 ### §2 Público e personas
 Adultos (18+) no Brasil, em pt-BR.
-- **Organizada(o):** quer ver tendências de sono, humor e hábitos num só lugar.
+- **Organizada(o):** quer ver tendências de sono, hábitos e medidas num só lugar.
 - **Em mudança de rotina:** começou a treinar ou a mudar alimentação e quer acompanhar evolução.
 - **Curiosa(o) por dados:** gosta de gráficos, correlações e visualizações.
 O produto não é desenhado nem divulgado para crianças ou adolescentes.
@@ -31,16 +34,16 @@ O produto não é desenhado nem divulgado para crianças ou adolescentes.
 1. Bem-estar, não medicina: o app descreve padrões, não diagnostica.
 2. Transparência: todo dado tem origem e nível de confiabilidade visíveis (§39).
 3. Registro rápido: qualquer registro diário em até 3 toques/cliques a partir do dashboard.
-4. Sem culpa: linguagem neutra, sem punição por dias sem registro.
+4. Sem culpa: linguagem neutra, sem punição por dias sem registro e sem juízo sobre o corpo (LEG-M06).
 5. Privacidade por padrão: o mínimo de dados, IA desligada até a pessoa ativar.
 6. Acessível e leve: funciona em celular modesto e com teclado/leitor de tela.
 
 ### §4 Escopo do MVP
-Dentro: conta e onboarding, dashboard, sono, humor/energia, hábitos, diário, peso/medidas, alimentação
-(registro simples), atividade física, medicamentos (registro e lembrete), metas, timeline, corpo 3D,
-cérebro 3D educacional, IA opcional, recomendações, relatórios, Central de Privacidade, modo demo.
+Dentro: conta e onboarding, dashboard, peso/medidas, sono, hábitos, alimentação (registro simples), atividade
+física, metas, timeline, corpo 3D, IA opcional, recomendações, relatórios, Central de Privacidade, modo demo.
 Fora do MVP: integrações com wearables e apps de saúde, cobrança, app nativo, compartilhamento com
-profissionais, comunidade/social, busca textual no diário.
+profissionais, comunidade/social, planos de dieta ou de treino (LEG-M08).
+Removidos (ADR-0027): humor e energia, diário, cérebro 3D, indicadores neuroquímicos, medicamentos.
 
 ---
 
@@ -53,8 +56,7 @@ Evitar estética hospitalar (branco frio, cruz vermelha) e estética infantil ou
 
 ### §6 Design tokens
 - **Cores funcionais:** primária (azul-petróleo), secundária (verde-água), neutros em 10 tons, e cores por
-  domínio (sono = índigo, humor = âmbar, atividade = verde, alimentação = laranja, corpo = azul,
-  diário = violeta, medicamentos = cinza-azulado). Estados: sucesso, aviso, erro, informação.
+  domínio (sono = índigo, atividade = verde, alimentação = laranja, corpo = azul). Estados: sucesso, aviso, erro, informação.
 - Contraste mínimo AA em todos os pares texto/fundo, nos dois temas.
 - **Tipografia:** uma família sans-serif legível, escala de 6 tamanhos, números tabulares em gráficos e cards.
 - **Espaçamento:** escala de 4px. Raios de borda e sombras em 3 níveis.
@@ -71,8 +73,7 @@ Título da página, seletor de período global (§10), atalho para registro ráp
 (perfil, configurações, Central de Privacidade, sair).
 
 ### §9 Sidebar
-Itens: Início, Sono, Humor e energia, Hábitos, Diário, Corpo, Alimentação, Atividade, Medicamentos, Metas,
-Timeline, Health Twin, HealthMind AI, Relatórios, Configurações. Item ativo com indicação visual além da cor.
+Itens: Início, Corpo, Sono, Hábitos, Alimentação, Atividade, Metas, Timeline, Health Twin, HealthMind AI, Relatórios, Configurações. Item ativo com indicação visual além da cor.
 
 ### §10 Seletor de período global
 Opções: 7 dias, 30 dias, 90 dias, 12 meses, personalizado. A escolha vale para dashboard, gráficos, twin e
@@ -83,9 +84,9 @@ relatórios, e persiste na sessão. Exibe sempre o intervalo de datas em texto.
    semana."
 2. Índice de Bem-Estar (§14) com tendência.
 3. Cards por domínio (§12).
-4. Gráfico principal combinado: sono × humor × atividade no período.
+4. Gráfico principal combinado: sono × atividade no período.
 5. Hábitos do dia com check rápido.
-6. Próximos lembretes (medicamentos, hábitos).
+6. Próximos lembretes (hábitos, registro).
 7. Atalho para o Health Twin.
 Sem dados: estado vazio acolhedor com convite para o primeiro registro, sem gráficos vazios (§34).
 
@@ -100,8 +101,8 @@ acessível para cada gráfico.
 
 ### §14 Índice de Bem-Estar (Health Score)
 Indicador de 0 a 100 que resume a regularidade dos registros e hábitos. **Não é avaliação de saúde.**
-- Componentes iniciais: regularidade do sono, humor/energia autorrelatados, cumprimento de hábitos, atividade
-  física em relação à meta da própria pessoa, constância de registro.
+- Componentes (v2, ADR-0027): regularidade do sono, cumprimento de hábitos, atividade física em relação à meta
+  da própria pessoa, constância de registro. Peso e medidas nunca entram no Índice.
 - Pesos iniciais configuráveis em módulo próprio, versionado (`score_version`) e documentado.
 - Componentes sem dados suficientes ficam fora do cálculo e o card mostra "dados parciais".
 - Tooltip "como é calculado" e botão "pedir revisão" (LEG-D08).
@@ -120,32 +121,24 @@ Dois modelos lado a lado com rotação sincronizada, escolhendo duas datas. Dife
 setas, não só em formato. Modo privacidade oculta valores (§44/§45).
 
 ### §17 Estado neurocomportamental (cérebro 3D)
-Visualização **educacional** de um cérebro estilizado com regiões clicáveis. O painel lateral mostra: nome da
-região, função geral em linguagem acessível, quais dados da pessoa se relacionam a esse tema (ex.: sono,
-humor), os dados usados e o nível de confiança. Avisos fixos: modelo aproximado; estimativa a partir de
-autorrelato, não é medição cerebral.
+**Removido (ADR-0027).** Fora do escopo desde a reorientação para o desenvolvimento corporal.
 
 ### §18 Indicadores neuroquímicos educacionais
-Conteúdo educativo sobre como hábitos (sono, atividade, luz solar, rotina) são associados, na literatura geral,
-a sistemas como sono/vigília e humor. O app nunca afirma nível de neurotransmissor, liberação de substância nem
-estado cerebral da pessoa. Selo sempre INFERIDO ou educacional, com aviso fixo: não é medição laboratorial.
+**Removido (ADR-0027).** Fora do escopo desde a reorientação para o desenvolvimento corporal.
 
 ---
 
 ## Parte IV — Módulos de dados
 
 ### §19 Diário
-Entrada de texto livre com data, humor do dia (escala), tags e prompts opcionais de reflexão. Edição e exclusão
-a qualquer momento. Conteúdo criptografado. Visualização em lista e calendário. A IA só lê trechos que a pessoa
-escolher, com consentimento de IA ativo.
+**Removido (ADR-0027).** Fora do escopo desde a reorientação para o desenvolvimento corporal.
 
 ### §20 Sono
 Registro de horário de deitar e acordar, qualidade (1–5), despertares e notas. Métricas: duração, regularidade,
 média do período, consistência de horário. Gráficos de duração e de horário (barras flutuantes).
 
 ### §21 Humor e energia
-Registro rápido em escalas (humor 1–5, energia 1–5, estresse 1–5) com emoções opcionais por etiqueta e nota
-curta. Gráfico de tendência e distribuição por dia da semana.
+**Removido (ADR-0027).** Fora do escopo desde a reorientação para o desenvolvimento corporal.
 
 ### §22 Hábitos
 Criar hábitos com frequência (diária, dias específicos, X vezes por semana). Check diário, histórico em
@@ -153,20 +146,21 @@ calendário e sequência (streak) **desativável**, sem mensagens punitivas.
 
 ### §23 Peso e medidas
 Peso, altura, circunferências (cintura, quadril, braço, coxa, peito) e % de gordura se a pessoa souber
-(selo INFORMADO). IMC calculado (ESTIMADO) com texto neutro. Gráficos de evolução e alimentação do corpo 3D.
+(selo INFORMADO). IMC calculado (ESTIMADO) com texto neutro, sem faixa nem classificação na interface (LEG-M06);
+o IMC serve aos guardrails de metas (LEG-M04). Gráficos de evolução e alimentação do corpo 3D.
 
 ### §24 Medicamentos
-Registro de medicamentos que a pessoa já usa conforme orientação de quem prescreveu: nome, como ela descreve a
-dose, horários, início/fim, notas. Lembretes e marcação "tomei / não tomei". Sem sugestão de dose, sem
-verificação de interações, sem alteração automática. Aviso fixo: "Siga a orientação do seu prescritor."
+**Removido (ADR-0027).** Fora do escopo desde a reorientação para o desenvolvimento corporal.
 
 ### §25 Alimentação
 Registro simples por refeição: descrição, horário, categoria e percepção (fome, saciedade, satisfação).
-Água consumida. Estimativa calórica opcional, desligada por padrão. Sem metas restritivas (LEG-M04).
+Água consumida. Estimativa calórica opcional, desligada por padrão. Sem metas restritivas, sem rótulo de comida
+"boa" ou "ruim" e sem plano alimentar (LEG-M04, M07, M08).
 
 ### §26 Atividade física e progressão
 Registro de atividades (tipo, duração, intensidade percebida, distância opcional) e de treinos de força
-(exercício, séries, repetições, carga). Progressão por exercício em gráfico. Resumo semanal de minutos ativos.
+(exercício, séries, repetições, carga). Progressão por exercício em gráfico. Resumo semanal de minutos ativos. O app registra o que a pessoa fez; não
+prescreve treino (LEG-M08).
 
 ---
 
@@ -176,12 +170,14 @@ Registro de atividades (tipo, duração, intensidade percebida, distância opcio
 Chat opcional que conversa sobre os próprios dados da pessoa: resume períodos, aponta associações, sugere
 reflexões. Desligado até a pessoa ativar o consentimento específico. Mostra antes "o que a IA verá", cita os
 dados usados em cada resposta e rotula "Gerado por IA". Não diagnostica, não fala de doses, não faz afirmações
-neuroquímicas. Em sinais de risco, interrompe e orienta (§48).
+neuroquímicas, não prescreve dieta nem treino e segue os guardrails de imagem corporal e alimentação. Em sinais
+de risco, interrompe e orienta (§48).
 
 ### §28 Recomendações
 Cartões de sugestão gerados por regras (e opcionalmente refinados por IA), cada um com: Motivo (dados que
 levaram à sugestão), Ação, Dificuldade, Tempo estimado, Objetivo relacionado. A pessoa pode aceitar, adiar,
 dispensar ou pedir revisão. Temas permitidos: sono, rotina, hábitos, movimento, hidratação, pausas, registro.
+Nunca sobre perda de peso agressiva, restrição alimentar ou aparência (LEG-M04, M06, M07).
 
 ### §29 Relatórios
 Semanal, mensal e anual. Conteúdo: resumo por domínio, gráficos principais, metas, destaques. Exportação em
@@ -189,19 +185,20 @@ PDF, CSV e JSON. Rodapé: "Material de autoacompanhamento, não é laudo nem ava
 
 ### §30 Metas
 Metas por domínio (sono, atividade, hábitos, peso, registro) com valor-alvo, prazo e barra de progresso.
-Metas de peso com limites de segurança. Tom neutro ao revisar metas não atingidas.
+Metas de peso com limites de segurança (`src/modules/guardrails`, LEG-M04). Tom neutro ao revisar metas não
+atingidas.
 
 ### §31 Timeline pessoal
 Linha do tempo única com todos os registros, filtrável por domínio e período, agrupada por dia. Marcos
 automáticos (meta atingida, novo hábito, mudança de medida).
 
 ### §32 Correlações e insights
-Cálculo de associações simples entre séries (ex.: dias com mais sono × humor do dia seguinte), com tamanho da
+Cálculo de associações simples entre séries (ex.: dias com mais sono × minutos ativos no dia seguinte), com tamanho da
 amostra visível e linguagem de associação ("nos seus registros, X costuma aparecer junto com Y"), nunca de causa.
 Só exibido com amostra mínima configurável.
 
 ### §33 Notificações e lembretes
-Lembretes de medicamentos, hábitos e registro diário por e-mail e push, processados no servidor. Configuráveis
+Lembretes de hábitos e registro diário por e-mail e push, processados no servidor. Configuráveis
 por tipo e horário silencioso. Sem notificações insistentes.
 
 ---
@@ -226,9 +223,9 @@ LlmProvider, KmsProvider, StorageProvider, MailProvider, JobQueue, AgeSignalProv
 Jobs em fila para lembretes, relatórios e exportações. Hospedagem no Brasil.
 
 ### §38 Banco de dados
-Entidades principais: User, Profile, SleepEntry, MoodEntry, Habit, HabitCheck, JournalEntry, BodyMeasurement,
-MealEntry, WaterEntry, ActivityEntry, StrengthSet, Medication, MedicationSchedule, MedicationLog, Goal,
-Recommendation, AiConversation, AiMessage, Report, WellbeingScore, BrainIndicator, Notification.
+Entidades principais: User, Profile, SleepEntry, Habit, HabitCheck, BodyMeasurement, MealEntry, WaterEntry,
+ActivityEntry, StrengthSet, Goal, Recommendation, AiConversation, AiMessage, Report, WellbeingScore,
+Notification. (MoodEntry, JournalEntry, Medication* e BrainIndicator removidos, ADR-0027.)
 Todas com id, user_id, created_at, updated_at. Campos sensíveis criptografados.
 
 ### §39 Níveis de confiabilidade
@@ -236,7 +233,7 @@ Todo dado exibido tem um selo:
 - **MEDIDO:** veio de dispositivo/integração (futuro).
 - **INFORMADO:** a pessoa registrou.
 - **ESTIMADO:** cálculo direto a partir de dados informados (ex.: IMC).
-- **INFERIDO:** padrão ou associação calculada (ex.: correlações, indicadores do cérebro 3D).
+- **INFERIDO:** padrão ou associação calculada (ex.: correlações).
 - **RECOMENDADO:** sugestão do sistema.
 Cada selo tem tooltip explicando o significado.
 
@@ -270,8 +267,10 @@ streaks ligados/desligados, perfil, segurança da conta.
 Fluxo curto de boas-vindas, criação de conta e escolha entre demo e dados próprios. Detalhado na §52 do adendo.
 
 ### §48 Alertas de risco e segurança do usuário
-Quando o diário, o humor ou o chat indicarem sofrimento intenso ou risco, o app interrompe o fluxo normal e exibe
-orientação acolhedora com CVV 188 (apoio emocional, 24h) e SAMU 192 (emergência), sem continuar dando conselhos.
+Quando o chat indicar sofrimento intenso ou risco, ou quando um guardrail de imagem corporal ou alimentação
+disparar (LEG-M04, M06, M07), o app interrompe o fluxo normal e exibe orientação acolhedora para buscar
+profissional de saúde, com CVV 188 (apoio emocional, 24h) e SAMU 192 (emergência), sem continuar dando
+conselhos. Acesso permanente "Precisa de ajuda?" no menu de ajuda.
 Textos revisados por profissional habilitado antes do lançamento.
 
 ### §49 Testes e qualidade
@@ -280,7 +279,7 @@ usuários, teste de strings proibidas, suíte adversarial da IA.
 
 ### §50 Roadmap futuro
 Integrações com wearables e plataformas de saúde (com novo consentimento), app mobile, compartilhamento
-controlado com profissional escolhido pela pessoa, busca no diário com criptografia adequada.
+controlado com profissional escolhido pela pessoa.
 
 ### §51 Entrega e critérios de aceite
 Repositório com README, instruções de execução local, seed de demo, CI verde, documentação de arquitetura,

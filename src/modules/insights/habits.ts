@@ -30,7 +30,7 @@ export interface HabitsInsightsInput {
 export function habitsInsights(input: HabitsInsightsInput): ModuleInsights {
   const { habits, checks, previousChecks, range, today, streaksEnabled } = input;
   const period = periodArgs(range, today);
-  const base = { module: 'habits' as const, highlights: [], supportSignal: false };
+  const base = { module: 'habits' as const, highlights: [] };
   const active = habits.filter((h) => !h.archived);
   const rate = completionRate(active, checks, range);
   if (active.length === 0 || rate === null) {

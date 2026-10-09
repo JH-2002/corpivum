@@ -1,6 +1,5 @@
 import { bodyEntry, day } from '@/modules/insights/fixtures';
-import { brainConfidence, TWIN_RULES } from './confidence';
-import { BODY_REGIONS, BRAIN_REGION_THEMES, brainLobeAt, COMPARE_FIELDS } from './regions';
+import { BODY_REGIONS, COMPARE_FIELDS } from './regions';
 import { bodyShape } from './shape';
 import { bodySnapshotAt, compareSnapshots, measurementDays } from './snapshot';
 
@@ -73,31 +72,5 @@ describe('Antes × Agora (§16)', () => {
       delta: -0.2,
       direction: 'down',
     });
-  });
-});
-
-describe('cérebro educativo (LEG-M05)', () => {
-  it('divisão estilizada dos lobos', () => {
-    expect(brainLobeAt({ outward: 0, y: 0.5, z: 0.8 })).toBe('frontal');
-    expect(brainLobeAt({ outward: 0, y: 0.2, z: -0.9 })).toBe('occipital');
-    expect(brainLobeAt({ outward: 0.8, y: -0.4, z: 0 })).toBe('temporal');
-    expect(brainLobeAt({ outward: -0.8, y: -0.4, z: 0 })).toBe('parietal');
-    expect(brainLobeAt({ outward: 0, y: 1, z: 0 })).toBe('parietal');
-  });
-
-  it('confiança mede só a suficiência dos registros, pelo tema menos coberto', () => {
-    const days = { sleep: 20, mood: 5, habits: 1 };
-    expect(brainConfidence([], days, 30)).toBe('none');
-    expect(brainConfidence(['sleep'], days, 30)).toBe('high');
-    expect(brainConfidence(['sleep', 'mood'], days, 30)).toBe('medium');
-    expect(brainConfidence(['sleep', 'mood', 'habits'], days, 30)).toBe('low');
-    // Muitos dias, mas pouca cobertura de um período longo: não chega a alto.
-    expect(brainConfidence(['sleep'], days, 90)).toBe('medium');
-    expect(TWIN_RULES.minDays).toBe(3);
-  });
-
-  it('regiões sem tema registrado no app são só educativas', () => {
-    expect(BRAIN_REGION_THEMES.occipital).toEqual([]);
-    expect(BRAIN_REGION_THEMES.frontal).toContain('sleep');
   });
 });
