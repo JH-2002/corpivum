@@ -31,16 +31,64 @@ import bmesh
 import bpy
 from mathutils import Vector
 
-VARIANTS = {"feminine": 0.0, "neutral": 0.5, "masculine": 1.0}
+# Forma de cada variante: macros do MakeHuman e targets (peso) aplicados à base e aos corpos de tamanho, para
+# os sexos se distinguirem à primeira vista. MakeHuman: gênero 0 = feminino, 1 = masculino.
+VARIANTS = {
+    # Ombros mais estreitos que o quadril, cintura marcada (cintura/quadril ~0,7), quadril e coxas cheios, peito de
+    # volume moderado e forma suave, pescoço e braços mais finos.
+    "feminine": {
+        "macros": {"gender": 0.0, "proportions": 1.0, "cupsize": 0.55, "firmness": 0.7},
+        "targets": {
+            "measure-shoulder-dist-decr": 0.6,
+            "torso-vshape-decr": 0.5,
+            "hip-scale-horiz-incr": 0.25,
+            "buttocks-volume-incr": 0.3,
+            "l-upperleg-fat-incr": 0.15,
+            "r-upperleg-fat-incr": 0.15,
+            "stomach-pregnant-decr": 0.6,
+            "neck-scale-horiz-decr": 0.5,
+            "measure-neck-circ-decr": 0.5,
+            "l-upperarm-fat-decr": 0.5,
+            "r-upperarm-fat-decr": 0.5,
+        },
+    },
+    # Intermediário: sem volume de peito, sem tronco em V e sem quadril largo.
+    "neutral": {
+        "macros": {"gender": 0.5, "proportions": 0.5, "cupsize": 0.0, "firmness": 0.5},
+        "targets": {"bulge-decr": 1.0, "stomach-pregnant-decr": 0.4},
+    },
+    # Ombros claramente mais largos que o quadril, tronco em V, quadril estreito, peito plano.
+    "masculine": {
+        "macros": {"gender": 1.0, "proportions": 1.0, "muscle": 0.5},
+        "targets": {
+            "measure-shoulder-dist-incr": 0.35,
+            "torso-vshape-incr": 0.45,
+            "hip-scale-horiz-decr": 0.35,
+            "buttocks-volume-decr": 0.2,
+            "torso-muscle-pectoral-decr": 0.4,
+            "stomach-pregnant-decr": 0.6,
+            "bulge-decr": 1.0,
+        },
+    },
+}
 REGIONS = ("chest", "arm", "waist", "hip", "thigh")
 MATERIALS = REGIONS + ("rest",)
+# Targets de circunferência do MakeHuman por região. A cintura não usa o do MakeHuman (projeta o abdômen):
+# tem morph próprio, radial em volta do tronco (`waist_coords`).
 MEASURE_TARGETS = {
-    "chest": ("torso", "measure-bust-circ"),
-    "arm": ("arms", "measure-upperarm-circ"),
-    "waist": ("torso", "measure-waist-circ"),
-    "hip": ("torso", "measure-hips-circ"),
-    "thigh": ("legs", "measure-thigh-circ"),
+    "chest": "measure-bust-circ",
+    "arm": "measure-upperarm-circ",
+    "hip": "measure-hips-circ",
+    "thigh": "measure-thigh-circ",
 }
+# Morph de cintura: escala radial do tronco no centro da faixa da cintura (fração da altura do tronco), com
+# queda gaussiana; para a frente, só uma parte do deslocamento (a circunferência cresce em volta, sem barriga).
+WAIST_CENTER_F = 0.42
+WAIST_SIGMA_F = 0.13
+WAIST_SCALE = {"waist_min": -0.16, "waist_max": 0.22}
+WAIST_FRONT_FACTOR = 0.5
+# Fração da distância lateral do ombro onde o morph de cintura começa a sumir e some de todo.
+WAIST_REACH = (0.7, 0.9)
 # Vértices 0..BODY_VERTS-1 formam a pele do corpo; acima disso, só geometria auxiliar (grupo `body` do MPFB2).
 BODY_VERTS = 13380
 TARGET_TRIANGLES = 8500
@@ -101,6 +149,44 @@ def group_indices(obj, name):
     return {v.index for v in obj.data.vertices if any(g.group == group.index for g in v.groups)}
 
 
+def smoothstep(edge0, edge1, x):
+    t = min(1.0, max(0.0, (x - edge0) / (edge1 - edge0)))
+    return t * t * (3 - 2 * t)
+
+
+def waist_coords(coords, lm, scale):
+    """Cintura maior (`scale` > 0) ou menor: escala radial dos vértices do tronco em volta do centro de cada fatia,
+    com queda gaussiana em altura. Para a frente (-Y), só `WAIST_FRONT_FACTOR` do deslocamento."""
+    span = lm.neck.z - lm.crotch_z
+    torso = [i for i in range(BODY_VERTS) if lm.region(coords[i]) in ("chest", "waist", "hip")]
+    slices = {}
+    for i in torso:
+        key = round(coords[i].z * 100)
+        lo, hi = slices.get(key, (math.inf, -math.inf))
+        slices[key] = (min(lo, coords[i].y), max(hi, coords[i].y))
+    out = [c.copy() for c in coords]
+    for i in torso:
+        p = coords[i]
+        f = (p.z - lm.crotch_z) / span
+        weight = math.exp(-0.5 * ((f - WAIST_CENTER_F) / WAIST_SIGMA_F) ** 2)
+        # Longe da linha média (onde passam os braços em pose A), nada se move; transição suave.
+        reach = abs(p.x) / abs(lm.shoulder.x)
+        weight *= 1.0 - smoothstep(WAIST_REACH[0], WAIST_REACH[1], reach)
+        lo, hi = slices[round(p.z * 100)]
+        dy = p.y - (lo + hi) / 2
+        if dy < 0:
+            dy *= WAIST_FRONT_FACTOR
+        out[i] = p + Vector((p.x, dy, 0.0)) * (weight * scale)
+    return out
+
+
+def body_breadths(coords, lm, hip_z):
+    """Diagnóstico da silhueta: largura nos ombros (deltoides) e no quadril, em cm."""
+    shoulders = [p.x for p in coords if abs(p.z - lm.shoulder.z) < 0.03]
+    hips = [p.x for p in coords if abs(p.z - hip_z) < 0.01 and lm.region(p) in ("hip", "waist", "thigh")]
+    return round(100 * (max(shoulders) - min(shoulders)), 1), round(100 * (max(hips) - min(hips)), 1)
+
+
 def detail_vertices(obj):
     """Mamilos (com folga em volta) e região genital do corpo, para suavizar."""
     nipples = group_indices(obj, "nipple") | group_indices(obj, "nippleTip")
@@ -143,7 +229,7 @@ class Landmarks:
         self.arm_radius = 0.38 * (self.elbow - self.shoulder).length
 
     def boundary_planes(self):
-        """Planos das bordas entre regiões (mesmos limites de egion): alturas e cortes do braço."""
+        """Planos das bordas entre regiões (mesmos limites de `region`): alturas e cortes do braço."""
         up = Vector((0.0, 0.0, 1.0))
         span = self.neck.z - self.crotch_z
         planes = [(Vector((0.0, 0.0, z)), up) for z in (
@@ -286,19 +372,24 @@ def clear_scene():
                 collection.remove(block)
 
 
-def build_variant(name, gender, out_dir):
+def build_variant(name, config, out_dir):
     HumanService = mpfb("mpfb.services.humanservice", "HumanService")
     TargetService = mpfb("mpfb.services.targetservice", "TargetService")
-    LocationService = mpfb("mpfb.services.locationservice", "LocationService")
-    targets = LocationService.get_mpfb_data("targets")
+
+    def target_path(stem):
+        path = TargetService.target_full_path(stem)
+        if path is None or os.path.basename(path).split(".")[0] != stem:
+            raise RuntimeError(f"Target do MakeHuman não encontrado: {stem}")
+        return path
 
     def baked_human(body_mass):
         macros = TargetService.get_default_macro_info_dict()
-        macros["gender"] = gender
+        macros.update(config["macros"])
         macros["weight"] = body_mass
         obj = HumanService.create_human(mask_helpers=False, feet_on_ground=True, scale=0.1, macro_detail_dict=macros)
-        for target in ("nipple-point-decr", "nipple-size-decr"):
-            TargetService.load_target(obj, os.path.join(targets, "breast", f"{target}.target.gz"), weight=1.0)
+        shape = {**config["targets"], "nipple-point-decr": 1.0, "nipple-size-decr": 1.0}
+        for stem, weight in shape.items():
+            TargetService.load_target(obj, target_path(stem), weight=weight)
         TargetService.bake_targets(obj)
         for mod in list(obj.modifiers):
             obj.modifiers.remove(mod)
@@ -321,10 +412,12 @@ def build_variant(name, gender, out_dir):
     head = [i for i in range(BODY_VERTS) if human.data.vertices[i].co.z > lm.neck.z + 0.03]
     head_center = sum((human.data.vertices[i].co for i in head), Vector()) / len(head)
 
-    for region, (folder, stem) in MEASURE_TARGETS.items():
+    for region, stem in MEASURE_TARGETS.items():
         for side, suffix in (("min", "decr"), ("max", "incr")):
-            path = os.path.join(targets, folder, f"{stem}-{suffix}.target.gz")
-            TargetService.load_target(human, path, weight=0.0, name=f"{region}_{side}")
+            TargetService.load_target(human, target_path(f"{stem}-{suffix}"), weight=0.0, name=f"{region}_{side}")
+    waist_base = [v.co.copy() for v in human.data.vertices]
+    for key_name, scale in WAIST_SCALE.items():
+        size_coords[key_name] = waist_coords(waist_base, lm, scale)
     for key_name, coords in size_coords.items():
         block = human.shape_key_add(name=key_name, from_mix=False)
         for point, co in zip(block.data, coords):
@@ -410,7 +503,36 @@ def build_variant(name, gender, out_dir):
         export_lights=False,
     )
     triangles = sum(len(p.vertices) - 2 for p in body.data.polygons)
-    return {"baseHeightM": round(height_m, 3), "girthCm": calibration, "triangles": triangles}
+    shoulder_cm, hip_cm = body_breadths([p.co for p in keys[0].data], lm, planes["hip"][0].z)
+    silhouette = {
+        "shoulderCm": shoulder_cm,
+        "hipCm": hip_cm,
+        "waistToHip": round(calibration["waist"]["base"] / calibration["hip"]["base"], 2),
+    }
+    return {
+        "baseHeightM": round(height_m, 3),
+        "girthCm": calibration,
+        "triangles": triangles,
+        "silhouette": silhouette,
+    }
+
+
+def remove_folds(bm, passes=4):
+    """Colapsa faces dobradas sobre si mesmas (normal contra a das vizinhas): a decimação as deixa em vincos,
+    como o do esterno, e elas aparecem como uma fenda escura."""
+    for _ in range(passes):
+        bm.normal_update()
+        folded = []
+        for face in bm.faces:
+            ring = [g for e in face.edges for g in e.link_faces if g is not face]
+            avg = sum((g.normal for g in ring), Vector())
+            if avg.length > 1e-9 and face.normal.dot(avg.normalized()) < -0.2:
+                folded.append(face)
+        if not folded:
+            return
+        edges = list({e for face in folded for e in face.edges})
+        bmesh.ops.collapse(bm, edges=edges, uvs=False)
+    bm.normal_update()
 
 
 def remeshed_with_morphs(full, head_center, lm):
@@ -461,9 +583,13 @@ def remeshed_with_morphs(full, head_center, lm):
     coords = [v.co.copy() for v in bm.verts]
     for i, co in smoothed(coords, neighbours(bm), set(range(len(coords))), LOW_SMOOTH_ITERATIONS, 0.3).items():
         bm.verts[i].co = co
+    remove_folds(bm)
     for co, no in lm.boundary_planes():
         geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
         bmesh.ops.bisect_plane(bm, geom=geom, plane_co=co, plane_no=no, dist=1e-5)
+    # Sem faces degeneradas nem invertidas (a decimação deixa algumas em vincos, como o do esterno).
+    bmesh.ops.dissolve_degenerate(bm, edges=bm.edges[:], dist=1e-5)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.to_mesh(low.data)
     bm.free()
     assign_regions(low, lm)
