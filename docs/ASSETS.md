@@ -21,7 +21,11 @@ Também vale:
 - Asset servido pelo próprio app (`'self'`). A CSP (`src/lib/security/csp.ts`) não libera CDN de terceiros
   e nada é buscado fora do domínio (LEG-S10). Isso exclui HDRI/ambientes, fontes 3D e decodificadores
   (Draco/KTX2) remotos.
-- Modelo humano, quando houver, segue o §15: neutro, sem traços realistas, sem identificar pessoa real.
+- Modelo humano segue a ADR-0028 (substitui a regra do §15 para o twin): forma anatômica em estilo
+  holográfico, sem pele nem textura, superfície lisa, sem mamilos nem detalhe genital, rosto estilizado, sem
+  identificar pessoa real.
+- Modelos 3D ficam em `public/models/<nome>.<sha8>.glb`, gerados pelo pipeline versionado em `scripts/assets/`
+  a partir de downloads feitos fora do repositório.
 - Licenças com cláusula "não comercial", "sem derivados" ou de uso restrito a saúde/medicina exigem
   `LEGAL-REVIEW` antes de entrar (registrar em docs/legal/OPEN_ISSUES.md).
 

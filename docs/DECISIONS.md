@@ -627,3 +627,53 @@ só o twin tem "Ocultar valores". Metas (Fase 4) e IA (Fase 5) precisam usar `sr
 OI-19 e as partes de OI-21 e OI-22 sobre humor e cérebro são fechadas por escopo removido. As fases futuras
 (`docs/prompts/`) perdem medicamentos (Fase 4) e o diário (Fase 5). Reintroduzir qualquer módulo removido exige
 nova ADR, nova versão do consentimento e revisão do RIPD.
+
+## ADR-0028 — Twin holográfico do corpo com modelos .glb (Fase 3b)
+**Contexto.** A Fase 3b troca a geometria gerada em código do corpo (ADR-0026) por um corpo humano realista na
+forma, em três variantes (feminino, masculino e neutro), em estilo de holograma azul semitransparente. Ela foi
+interrompida pela reorientação (ADR-0027) e refeita só com o corpo; o cérebro e o BodyParts3D saíram. Isso
+diverge do PRODUCT_SPEC §5 ("nunca imagens anatômicas realistas") e §15 ("neutro, sem traços realistas") e da
+regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_ADDENDUM e em OI-24.
+**Decisão.**
+- **Realismo restrito à forma (LEG-M06):** sem pele, textura nem cor de pele. Superfície lisa, sem mamilos e
+  sem detalhe genital, rosto estilizado (suavizado). Nenhum modelo identifica pessoa real. Não há teste
+  automático para isso: cada troca de modelo traz capturas das três variantes (frente, perfil, costas) no PR.
+- **Fonte:** MakeHuman/MPFB2, assets CC0 (o código do add-on é GPL; o modelo exportado é CC0 e não leva
+  código). Download feito pelo responsável, fora do repositório; pipeline versionado em `scripts/assets/`
+  (Blender headless + `gltfpack`). Cada arquivo tem linha em `docs/ASSETS.md` (fonte, autor, licença,
+  SHA-256).
+- **Pipeline:** por variante (macro de gênero 0, 0,5 e 1; demais macros no padrão), remove olhos, dentes e
+  geometria auxiliar, suaviza peito, região genital e rosto, cria os morphs `<região>_min`/`<região>_max` a
+  partir dos targets de circunferência do MakeHuman, decima uma cópia sem shape keys e transfere os morphs
+  por Surface Deform. Cada região (peito, braço, cintura, quadril, coxa e o resto) é uma primitiva com
+  material próprio: no three vira uma malha, o que reaproveita o clique e o destaque por região da Fase 3.
+  A calibração (circunferência em cm em min, base e max e a altura da base) é medida na própria malha e
+  gravada em `src/modules/twin/bodyAssets.ts` (arquivo gerado).
+- **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e
+  `Cache-Control: immutable`. Nada é buscado fora do domínio (LEG-S10). Teste de fronteira: o único loader
+  fica em `src/components/twin/scene/assets.ts`, com caminho relativo `/models/`; nenhuma URL absoluta nas
+  cenas.
+- **Compressão meshopt** (`EXT_meshopt_compression` + `KHR_mesh_quantization`), não Draco: o decodificador
+  vem com o `three` (`three/addons/libs/meshopt_decoder.module.js`), entra no chunk 3D e não exige arquivos em
+  `public/`. Ele compila WASM, então a CSP ganha `'wasm-unsafe-eval'` (permite só compilar WebAssembly; `eval`
+  de JS continua bloqueado). `gltfpack` entra como devDependency de versão fixa, sem dependências
+  transitivas (ADR-0009).
+- **Orçamento testado no CI:** ≤ 300 KiB por variante (arquivo comprimido). O teste de conteúdo também
+  confere hash × manifesto × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, e os nomes das
+  regiões e dos morph targets.
+- **Forma só pelas medidas informadas:** `bodyMorphWeights` recebe só a `BodyShape` (circunferências e
+  altura já limitadas por `bodyShape`), nunca o peso. Altura = escala uniforme. Medida ausente = forma base da
+  variante, região esmaecida e "sem medida informada". Continua sem IMC, sem juízo e sem cor por dado.
+- **Modelo do corpo é preferência de visualização:** `neutral` (padrão), `feminine` ou `masculine`, só no
+  navegador (`localStorage`, `hm.twin.bodyModel`, ADR-0006), validada com Zod. Não vai ao servidor, não entra
+  em cálculo e não é tratada nem inferida como dado de sexo ou gênero.
+- **Material holográfico próprio** (`ShaderMaterial` com os chunks de morph do three): fresnel nas bordas,
+  preenchimento translúcido e varredura sutil. Cores por tokens `--hm-holo-*` nos temas claro e escuro (no
+  claro, mistura normal e azul mais escuro). A varredura só anda com a aba visível e o canvas na tela; com
+  `prefers-reduced-motion`, fica parada e não há quadro extra.
+- **Sob demanda e fallbacks em cascata:** o `.glb` só é pedido quando o 3D aparece, e só a variante escolhida.
+  Enquanto carrega ou se falhar, a geometria gerada em código da Fase 3 com o mesmo material; sem WebGL, o
+  SVG 2D (sem variante), e o `.glb` nem é buscado.
+**Consequências.** Trocar um modelo exige rodar o pipeline, que regrava o manifesto e o nome por hash, e
+atualizar `docs/ASSETS.md` (o teste falha se divergirem). Textos novos (`twin.bodyModel.*`) são RASCUNHO
+(`LEGAL-REVIEW`, OI-24).
