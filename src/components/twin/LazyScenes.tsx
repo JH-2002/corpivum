@@ -22,8 +22,3 @@ export const LazyBodyScene = dynamic(() => import('./scene/BodyScene').then((m) 
   ssr: false,
   loading: SceneLoading,
 });
-
-export const LazyBrainScene = dynamic(
-  () => import('./scene/BrainScene').then((m) => m.BrainScene),
-  { ssr: false, loading: SceneLoading },
-);

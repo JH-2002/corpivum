@@ -12,12 +12,6 @@ export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
   'disclaimer.medications': 'Siga a orientação do seu prescritor.',
   'disclaimer.medicationsScope':
     'O app não sugere doses, não verifica interações e não altera nada automaticamente.',
-  // Fase 3 (ADR-0026, revisão de privacidade M1): o modelo é igual para todas as pessoas; só os números
-  // do painel vêm do que a pessoa relatou. LEGAL-REVIEW, OI-09/OI-22.
-  'disclaimer.brainModel':
-    'Modelo aproximado e educacional, igual para todas as pessoas: não usa nem representa os seus dados. Os números do painel são estimativas a partir do que você relatou, não uma medição cerebral.',
-  'disclaimer.neurochemistry':
-    'Conteúdo educativo. Não é medição laboratorial e não indica níveis de neurotransmissores no seu corpo.',
   'disclaimer.aiGenerated':
     'Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.',
   'disclaimer.reportFooter':

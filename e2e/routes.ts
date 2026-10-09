@@ -12,7 +12,6 @@ export const ROUTES = [
   { path: '/metas', title: 'Metas' },
   { path: '/timeline', title: 'Timeline' },
   { path: '/twin', title: 'Health Twin' },
-  { path: '/twin/cerebro', title: 'Health Twin' },
   { path: '/ia', title: 'HealthMind AI' },
   { path: '/relatorios', title: 'Relatórios' },
   { path: '/configuracoes', title: 'Configurações' },
@@ -31,7 +30,6 @@ export const DEMO_ROUTES = [
   { path: '/demo/diario?vista=calendario', title: 'Diário' },
   { path: '/demo/corpo', title: 'Corpo' },
   { path: '/demo/twin', title: 'Health Twin' },
-  { path: '/demo/twin/cerebro', title: 'Health Twin' },
 ] as const;
 
 export const VIEWPORTS = [

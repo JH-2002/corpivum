@@ -1,4 +1,4 @@
-import type { BodyRegion, BodyShape, BrainRegion } from '@/modules/twin';
+import type { BodyRegion, BodyShape } from '@/modules/twin';
 
 /** Ponteiro sobre uma região: posição na tela para o tooltip. */
 export interface HoverInfo<R extends string> {
@@ -24,5 +24,3 @@ export interface SceneCommon<R extends string> {
 export interface BodySceneProps extends SceneCommon<BodyRegion> {
   shape: BodyShape;
 }
-
-export type BrainSceneProps = SceneCommon<BrainRegion>;

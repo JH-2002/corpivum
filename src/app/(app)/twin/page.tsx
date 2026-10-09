@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { HealthFrame, healthView } from '@/components/health/HealthPage';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
-import { TwinBodyView, TwinSections } from '@/components/twin/TwinViews';
+import { TwinBodyView } from '@/components/twin/TwinViews';
 import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('twin.sections');
-  return { title: t('body') };
+  const t = await getTranslations('twin');
+  return { title: t('title') };
 }
 
 /**
@@ -29,7 +29,6 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
     <HealthFrame page="twin" href="/twin" session={session} view={view} preview={preview}>
       {view.kind === 'data' ? (
         <div className="flex flex-col gap-6">
-          <TwinSections base="/twin" current="body" />
           <TwinBodyView
             records={records}
             latestHeightCm={height}

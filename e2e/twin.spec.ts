@@ -103,22 +103,6 @@ test.describe('demo público', () => {
       await expectNoAxeViolations(page);
     });
 
-    test('cérebro 3D educativo: avisos, regiões e painel', async ({ page }) => {
-      await page.goto('/demo/twin/cerebro');
-      await expect(viewer(page)).toHaveAttribute('data-twin-mode', '3d');
-      const note = page.getByTestId('brain-disclaimers');
-      await expect(note).toContainText('não uma medição cerebral');
-      await expect(note).toContainText('Não é medição laboratorial');
-
-      await page.getByRole('button', { name: 'Lobo frontal' }).click();
-      await expect(page.getByText('Função geral')).toBeVisible();
-      await expect(page.getByText('Eles não indicam nada sobre esta região')).toBeVisible();
-      await expect(page.getByTestId('brain-confidence')).toHaveText(/Baixo|Médio|Alto/);
-      await page.getByRole('button', { name: 'Lobo occipital' }).click();
-      await expect(page.getByTestId('brain-confidence')).toHaveText('Não se aplica');
-      await expectNoAxeViolations(page);
-    });
-
     test('reduced motion: vistas aplicadas sem transição, sem erro', async ({ page }) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(String(e)));
@@ -148,28 +132,16 @@ test.describe('demo público', () => {
         .getByRole('button', { name: 'Quadril' }),
     ).toHaveAttribute('aria-pressed', 'true');
     await expectNoAxeViolations(page);
-
-    await page.goto('/demo/twin/cerebro');
-    await expect(page.getByTestId('brain-2d')).toBeVisible();
-    await expect(page.getByTestId('brain-disclaimers')).toContainText('não uma medição cerebral');
-    await page.getByTestId('brain-2d').locator('[data-region="cerebellum"]').click();
-    await expect(page.getByRole('button', { name: 'Cerebelo' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
   });
 
   test('320px: sem rolagem horizontal e um modelo por vez na comparação', async ({ page }) => {
     await disableWebGL(page);
     await page.setViewportSize({ width: 320, height: 640 });
-    for (const path of ['/demo/twin', '/demo/twin/cerebro']) {
-      await page.goto(path);
-      await expect(viewer(page)).toBeVisible();
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
-        320,
-      );
-    }
     await page.goto('/demo/twin');
+    await expect(viewer(page)).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      320,
+    );
     const showing = page.getByRole('group', { name: 'Modelo exibido' });
     await expect(showing.getByRole('button', { name: 'Agora' })).toHaveAttribute(
       'aria-pressed',
@@ -200,8 +172,6 @@ test.describe('conta', () => {
       body.getByRole('button', { name: 'Origem do dado: Informado' }).first(),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Origem do dado: Demo' })).toHaveCount(0);
-    await page.goto('/twin/cerebro');
-    await expect(page.getByTestId('brain-disclaimers')).toBeVisible();
   });
 
   test('sem registro de medidas: estado "sem dados", sem modelo', async ({ page }) => {
@@ -220,10 +190,8 @@ test.describe('conta', () => {
     await page.getByRole('button', { name: 'Revogar: Dados de bem-estar' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Revogar agora' }).click();
     await expect(page.getByText(/Revogado: eliminação em/)).toBeVisible();
-    for (const path of ['/twin', '/twin/cerebro']) {
-      await page.goto(path);
-      await expect(page.getByRole('heading', { name: 'Autorização revogada' })).toBeVisible();
-      await expect(page.locator('[data-twin-mode]')).toHaveCount(0);
-    }
+    await page.goto('/twin');
+    await expect(page.getByRole('heading', { name: 'Autorização revogada' })).toBeVisible();
+    await expect(page.locator('[data-twin-mode]')).toHaveCount(0);
   });
 });
