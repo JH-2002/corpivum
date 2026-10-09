@@ -82,11 +82,6 @@ test.describe('avisos obrigatórios', () => {
     await page.goto('/inicio');
     await expect(page.getByRole('contentinfo')).toContainText('Não diagnostica, não trata');
   });
-
-  test('medicamentos mostra o aviso fixo (LEG-M02)', async ({ page }) => {
-    await page.goto('/medicamentos');
-    await expect(page.getByText('Siga a orientação do seu prescritor.')).toBeVisible();
-  });
 });
 
 test.describe('tema', () => {

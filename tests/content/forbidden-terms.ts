@@ -88,18 +88,18 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
   {
     id: 'dose-advice',
     pattern: /\b(dose|dosagem|posologia)\s+(recomendad|ideal|sugerid|cert|corret|adequad)\w*/,
-    reason: 'Sem sugestão de dose (LEG-M02).',
+    reason: 'Sem sugestão de dose (LEG-I04; medicamentos fora do produto, ADR-0027).',
   },
   {
     id: 'medication-change',
     pattern:
       /\b(aument\w*|reduz\w*|diminu\w*|ajust\w*|suspend\w*|interromp\w*|par[ea] de tomar|troqu\w*|substitu\w*)\s+(\w+\s+){0,3}(dose|dosagem|medicament\w*|remedio\w*|medicac\w*)/,
-    reason: 'Sem recomendação de mudança de medicação (LEG-M02, LEG-I04).',
+    reason: 'Sem recomendação de mudança de medicação (LEG-I04).',
   },
   {
     id: 'drug-interaction',
     pattern: /\binterac(ao|oes)\s+(medicamentos\w*|entre\s+(medicamentos|remedios))/,
-    reason: 'Sem verificação de interações (LEG-M02).',
+    reason: 'Sem verificação de interações (LEG-I04).',
   },
   {
     id: 'replaces-professional',

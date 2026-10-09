@@ -14,7 +14,6 @@ export type PageKey =
   | 'body'
   | 'nutrition'
   | 'activity'
-  | 'medications'
   | 'goals'
   | 'timeline'
   | 'twin'

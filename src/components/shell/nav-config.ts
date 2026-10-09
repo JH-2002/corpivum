@@ -10,7 +10,6 @@ import {
   Moon,
   Orbit,
   PersonStanding,
-  Pill,
   Settings,
   ShieldCheck,
   Target,
@@ -19,12 +18,11 @@ import type { Route } from 'next';
 
 export type NavKey =
   | 'home'
+  | 'body'
   | 'sleep'
   | 'habits'
-  | 'body'
   | 'nutrition'
   | 'activity'
-  | 'medications'
   | 'goals'
   | 'timeline'
   | 'twin'
@@ -44,12 +42,11 @@ export interface NavItem {
 /** Itens da sidebar, na ordem da §9. */
 export const SIDEBAR_ITEMS: readonly NavItem[] = [
   { key: 'home', href: '/inicio', icon: House },
+  { key: 'body', href: '/corpo', icon: PersonStanding },
   { key: 'sleep', href: '/sono', icon: Moon },
   { key: 'habits', href: '/habitos', icon: ListChecks },
-  { key: 'body', href: '/corpo', icon: PersonStanding },
   { key: 'nutrition', href: '/alimentacao', icon: Apple },
   { key: 'activity', href: '/atividade', icon: Activity },
-  { key: 'medications', href: '/medicamentos', icon: Pill },
   { key: 'goals', href: '/metas', icon: Target },
   { key: 'timeline', href: '/timeline', icon: History },
   { key: 'twin', href: '/twin', icon: Orbit },
@@ -77,9 +74,9 @@ export const MORE_ITEMS: readonly NavItem[] = ALL_NAV_ITEMS.filter(
  */
 export const DEMO_ITEMS: readonly NavItem[] = [
   { key: 'home', href: '/demo', icon: House, exact: true },
+  { key: 'body', href: '/demo/corpo', icon: PersonStanding },
   { key: 'sleep', href: '/demo/sono', icon: Moon },
   { key: 'habits', href: '/demo/habitos', icon: ListChecks },
-  { key: 'body', href: '/demo/corpo', icon: PersonStanding },
   { key: 'twin', href: '/demo/twin', icon: Orbit },
 ];
 

@@ -37,7 +37,7 @@ describe('guarda de sessão nas páginas de (app)', () => {
   const files = pages(APP_DIR);
 
   it('encontra as páginas', () => {
-    expect(files.length).toBeGreaterThanOrEqual(16);
+    expect(files.length).toBeGreaterThanOrEqual(15);
   });
 
   it.each(files.map((f) => [path.relative(APP_DIR, f), f]))(

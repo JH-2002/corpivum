@@ -13,12 +13,11 @@ describe('nav-config', () => {
   it('a sidebar segue a ordem da §9', () => {
     expect(SIDEBAR_ITEMS.map((i) => i.key)).toEqual([
       'home',
+      'body',
       'sleep',
       'habits',
-      'body',
       'nutrition',
       'activity',
-      'medications',
       'goals',
       'timeline',
       'twin',
@@ -50,7 +49,7 @@ describe('nav-config', () => {
     expect(isActivePath('/sono', '/sono')).toBe(true);
     expect(isActivePath('/sono/123', '/sono')).toBe(true);
     expect(isActivePath('/sonolencia', '/sono')).toBe(false);
-    expect(navItemForPath('/medicamentos')?.key).toBe('medications');
+    expect(navItemForPath('/corpo')?.key).toBe('body');
     expect(navItemForPath('/inexistente')).toBeUndefined();
   });
 });

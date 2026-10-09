@@ -53,7 +53,6 @@ describe('strings proibidas (LEG-M03)', () => {
     for (const [key, approved] of Object.entries(APPROVED_DISCLAIMERS)) {
       expect(byKey.get(key), `aviso ausente ou alterado sem aprovação: ${key}`).toBe(approved);
     }
-    expect(byKey.get('disclaimer.medications')).toBe('Siga a orientação do seu prescritor.');
     expect(byKey.get('disclaimer.riskSupport')).toMatch(/\b188\b/);
     expect(byKey.get('disclaimer.riskSupport')).toMatch(/\b192\b/);
   });
@@ -130,12 +129,12 @@ describe('detector de alegações proibidas', () => {
     'Melhore sua rotina de sono com pequenas pausas',
     'Pausas curtas ajudam a reduzir o cansaço do dia',
     'Tratamento de dados pessoais conforme sua escolha',
-    'Registre seu sono e humor',
+    'Registre seu sono e suas medidas',
     'Siga a orientação de quem acompanha você',
-    'Médias do período: sono, humor e atividade',
-    'Nos seus registros, dormir mais costuma aparecer junto com mais energia',
+    'Médias do período: sono, hábitos e atividade',
+    'Nos seus registros, dormir mais costuma aparecer junto com mais minutos ativos',
     'Central de Privacidade',
-    'Registre os medicamentos que você já usa para receber lembretes',
+    'O app não faz sugestões sobre remédios',
     'Seu sono médio registrado ficou 20 min menor que na semana anterior',
     'Aparecer junto não quer dizer que um explique o outro',
     'A média ficou parecida com a da semana anterior',

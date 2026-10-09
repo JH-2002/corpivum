@@ -6,7 +6,6 @@ export const ROUTES = [
   { path: '/corpo', title: 'Corpo' },
   { path: '/alimentacao', title: 'Alimentação' },
   { path: '/atividade', title: 'Atividade' },
-  { path: '/medicamentos', title: 'Medicamentos' },
   { path: '/metas', title: 'Metas' },
   { path: '/timeline', title: 'Timeline' },
   { path: '/twin', title: 'Health Twin' },
