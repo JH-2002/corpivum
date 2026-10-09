@@ -5,35 +5,35 @@ import { Vector2 } from 'three';
 import type { BodyRegion } from '@/modules/twin';
 import { bodyLayout, type ProfilePoint } from '../layout';
 import type { BodySceneProps } from '../types';
-import { regionHandlers, TwinCanvas, Turntable, useModelColors } from './common';
+import { regionHandlers, TwinCanvas, Turntable } from './common';
+import { HologramMaterial, useHoloTheme } from './Hologram';
 
 const toVectors = (points: readonly ProfilePoint[]) => points.map(([r, y]) => new Vector2(r, y));
 
 /**
- * Corpo 3D paramétrico (§15, ADR-0026): manequim neutro, sem traços realistas, gerado em código (sem
- * modelo externo, docs/ASSETS.md). A forma vem só das medidas informadas; regiões sem medida ficam na
- * forma neutra, semitransparentes. Cor única; o destaque marca só a região escolhida.
+ * Corpo 3D paramétrico (§15, ADR-0026): manequim neutro gerado em código, com o material holográfico
+ * (ADR-0028). A forma vem só das medidas informadas; regiões sem medida ficam na forma neutra, mais
+ * transparentes. Nenhuma cor vem de dado; o destaque marca só a região escolhida.
  */
 export function BodyScene(props: BodySceneProps) {
   const { shape, angle, instant, selected, compact, onFail } = props;
   const layout = useMemo(() => bodyLayout(shape), [shape]);
-  const colors = useModelColors();
+  const theme = useHoloTheme();
   const segments = compact ? 24 : 48;
   const missing = new Set(shape.missing);
 
-  const material = (region: BodyRegion | null) => {
-    const isSelected = region !== null && region === selected;
-    const isMissing = region !== null && missing.has(region);
-    return (
-      <meshStandardMaterial
-        color={isSelected ? colors.selected : colors.base}
-        roughness={0.75}
-        metalness={0.05}
-        transparent={isMissing && !isSelected}
-        opacity={isMissing && !isSelected ? 0.55 : 1}
-      />
-    );
-  };
+  const material = (region: BodyRegion | null) => (
+    <HologramMaterial
+      theme={theme}
+      state={
+        region !== null && region === selected
+          ? 'selected'
+          : region !== null && missing.has(region)
+            ? 'dimmed'
+            : 'base'
+      }
+    />
+  );
   const handlers = (region: BodyRegion) => regionHandlers(region, props);
   const legHeight = layout.leg.top - layout.leg.bottom;
   const legY = (layout.leg.top + layout.leg.bottom) / 2;

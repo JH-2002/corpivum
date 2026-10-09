@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
+import { usePrefersReducedMotion } from '@/components/charts/reduced-motion';
 import { useWebGLSupport } from './hooks';
 import { SceneLoading } from './LazyScenes';
 import type { HoverInfo } from './types';
@@ -56,6 +57,7 @@ export function TwinViewport<R extends string>({
   const [failed, setFailed] = useState(false);
   const [box, setBox] = useState<{ left: number; top: number; width: number } | null>(null);
   const lastX = useRef<number | null>(null);
+  const reduced = usePrefersReducedMotion();
   const use3D = support === 'yes' && !failed;
 
   useEffect(() => {
@@ -74,6 +76,7 @@ export function TwinViewport<R extends string>({
         aria-label={label}
         aria-describedby={describedBy}
         data-twin-mode={support === 'pending' ? 'pending' : use3D ? '3d' : '2d'}
+        data-holo-animated={use3D && !reduced}
         className={`relative w-full cursor-grab touch-pan-y overflow-hidden rounded-lg border border-border bg-surface select-none active:cursor-grabbing ${className}`}
         onPointerEnter={(e) => {
           const r = e.currentTarget.getBoundingClientRect();

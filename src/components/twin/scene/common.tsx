@@ -3,12 +3,13 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { Group } from 'three';
-import { useTokenColor } from '../hooks';
 import type { SceneCommon } from '../types';
+import { HoloClock } from './Hologram';
 
 /**
- * Canvas do twin (ADR-0026): renderiza só quando algo muda (`frameloop="demand"`), resolução limitada
- * no celular, sem mapa de ambiente nem asset externo, fundo transparente. A perda do contexto WebGL
+ * Canvas do twin (ADR-0026, ADR-0028): renderiza só quando algo muda (`frameloop="demand"`, mais a
+ * varredura do holograma quando há movimento), resolução limitada no celular, sem luz nem mapa de
+ * ambiente (o material holográfico não usa iluminação), fundo transparente. A perda do contexto WebGL
  * chama `onFail` (a interface troca para 2D).
  */
 export function TwinCanvas({
@@ -38,9 +39,7 @@ export function TwinCanvas({
         });
       }}
     >
-      <ambientLight intensity={1.4} />
-      <directionalLight position={[2, 3, 4]} intensity={1.6} />
-      <directionalLight position={[-3, 1, -2]} intensity={0.6} />
+      <HoloClock />
       {children}
     </Canvas>
   );
@@ -74,18 +73,6 @@ export function Turntable({
     invalidate();
   });
   return <group ref={ref}>{children}</group>;
-}
-
-/**
- * Cores do modelo a partir dos tokens: neutras (duas, só para separar regiões vizinhas) e de destaque só
- * na região escolhida. Nenhuma cor depende dos registros da pessoa (ADR-0026).
- */
-export function useModelColors() {
-  return {
-    base: useTokenColor('--hm-neutral-400', '#8f9ba2'),
-    alt: useTokenColor('--hm-neutral-300', '#bcc5ca'),
-    selected: useTokenColor('--hm-primary', '#0b5c6e'),
-  };
 }
 
 /** Clique só sem arrasto (o arrasto gira o modelo). */
