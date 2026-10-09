@@ -35,14 +35,7 @@ let deps: HealthDeps;
 const TZ = 'America/Sao_Paulo';
 
 /** Tabelas de saúde conhecidas. Tabela nova com `user_id` precisa ser classificada aqui ou em NON_HEALTH. */
-const HEALTH_TABLES = [
-  'body_measurements',
-  'habit_checks',
-  'habits',
-  'journal_entries',
-  'mood_entries',
-  'sleep_entries',
-];
+const HEALTH_TABLES = ['body_measurements', 'habit_checks', 'habits', 'sleep_entries'];
 /** Tabelas com `user_id` que NÃO são dado de saúde (auth, provas, logs). */
 const NON_HEALTH = new Set([
   'sessions',
@@ -87,19 +80,6 @@ async function seedAll(userId: string) {
     awakenings: 1,
     note: SECRET_NOTE,
   });
-  // Humor saiu do app (ADR-0027); a tabela some na migração da reorientação. Até lá, linha direta.
-  const mood = await withConsentOn(db, userId, 'health_data', (tx) =>
-    tx.moodEntry.create({
-      data: {
-        userId,
-        loggedAt: new Date('2026-10-06T12:00:00Z'),
-        mood: 4,
-        energy: 3,
-        stress: 2,
-        emotions: ['calm'],
-      },
-    }),
-  );
   const habitId = await s.habits.create(userId, {
     name: SECRET_HABIT,
     frequency: 'daily',
@@ -107,20 +87,9 @@ async function seedAll(userId: string) {
     timesPerWeek: null,
   });
   expect(await s.habits.setCheck(userId, habitId, '2026-10-06', true)).toBe('ok');
-  // Diário saiu do app (ADR-0027); a tabela some na migração da reorientação. Até lá, linha direta.
-  const journal = await withConsentOn(db, userId, 'health_data', (tx) =>
-    tx.journalEntry.create({
-      data: {
-        userId,
-        entryDate: new Date('2026-10-06T00:00:00Z'),
-        contentEnc: new Uint8Array([1]),
-        tags: ['work'],
-      },
-    }),
-  );
   const body = await s.body.create(userId, { measuredAt: '2026-10-06T08:00', weightKg: 70 });
   if (!sleep.ok || !body.ok) throw new Error('seed');
-  return { sleepId: sleep.id, moodId: mood.id, habitId, journalId: journal.id, bodyId: body.id };
+  return { sleepId: sleep.id, habitId, bodyId: body.id };
 }
 
 async function countsFor(userId: string): Promise<Record<string, number>> {
@@ -400,17 +369,6 @@ describe('validações do banco', () => {
   it('recusa valores fora de faixa mesmo vindos do runtime', async () => {
     const a = await onboarded(['health_data']);
     const bad: Array<(tx: Tx) => Promise<unknown>> = [
-      async (tx: Tx) =>
-        tx.moodEntry.create({
-          data: {
-            userId: a.userId,
-            loggedAt: new Date(),
-            mood: 9,
-            energy: 3,
-            stress: 3,
-            emotions: [],
-          },
-        }),
       async (tx: Tx) =>
         tx.sleepEntry.create({
           data: {

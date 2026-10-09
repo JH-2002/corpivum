@@ -56,10 +56,8 @@ model User {
   reauthProofs  ReauthProof[]
 
   sleepEntries     SleepEntry[]
-  moodEntries      MoodEntry[]
   habits           Habit[]
   habitChecks      HabitCheck[]
-  journalEntries   JournalEntry[]
   bodyMeasurements BodyMeasurement[]
 
   @@map("users")
@@ -404,42 +402,6 @@ model SleepEntry {
   @@map("sleep_entries")
 }
 
-/// Etiquetas fixas de emoção (§21). Lista fechada, sem texto livre.
-enum MoodEmotion {
-  calm
-  joy
-  gratitude
-  motivation
-  focus
-  tiredness
-  worry
-  irritation
-  sadness
-  boredom
-
-  @@map("mood_emotion")
-}
-
-/// Humor, energia e estresse autorrelatados, 1–5 (§21).
-model MoodEntry {
-  id        String        @id @default(uuid(7)) @db.Uuid
-  userId    String        @map("user_id") @db.Uuid
-  loggedAt  DateTime      @map("logged_at") @db.Timestamptz(3)
-  mood      Int           @db.SmallInt
-  energy    Int           @db.SmallInt
-  stress    Int           @db.SmallInt
-  emotions  MoodEmotion[]
-  /// Nota livre cifrada (contexto mood_entries.note_enc).
-  noteEnc   Bytes?        @map("note_enc")
-  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, loggedAt])
-  @@map("mood_entries")
-}
-
 enum HabitFrequency {
   daily
   weekdays
@@ -485,39 +447,6 @@ model HabitCheck {
   @@unique([habitId, day])
   @@index([userId, day])
   @@map("habit_checks")
-}
-
-/// Etiquetas fixas e não sensíveis do diário (filtro permitido, SPEC_ADDENDUM §19).
-enum JournalTag {
-  work
-  study
-  family
-  friends
-  rest
-  movement
-  leisure
-  nature
-  routine
-  other
-
-  @@map("journal_tag")
-}
-
-/// Diário (§19). Conteúdo cifrado (contexto journal_entries.content_enc), SEM busca textual (LEG-S02).
-model JournalEntry {
-  id         String       @id @default(uuid(7)) @db.Uuid
-  userId     String       @map("user_id") @db.Uuid
-  entryDate  DateTime     @map("entry_date") @db.Date
-  contentEnc Bytes        @map("content_enc")
-  mood       Int?         @db.SmallInt
-  tags       JournalTag[]
-  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, entryDate])
-  @@map("journal_entries")
 }
 
 /// Peso e medidas informados (§23). IMC é calculado na leitura (ESTIMADO).

@@ -1,7 +1,5 @@
 import { eraseBodyData } from '@/modules/body/eraser';
 import { eraseHabitsData } from '@/modules/habits/eraser';
-import { eraseJournalData } from '@/modules/journal/eraser';
-import { eraseMoodData } from '@/modules/mood/eraser';
 import type { HealthDataErasers } from '@/modules/privacy/health-data';
 import { eraseSleepData } from '@/modules/sleep/eraser';
 
@@ -12,8 +10,6 @@ import { eraseSleepData } from '@/modules/sleep/eraser';
  */
 export const HEALTH_DATA_ERASERS: HealthDataErasers = {
   sleep: eraseSleepData,
-  mood: eraseMoodData,
   habits: eraseHabitsData,
-  journal: eraseJournalData,
   body: eraseBodyData,
 };
