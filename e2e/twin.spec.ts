@@ -114,13 +114,13 @@ test.describe('demo público', () => {
       await expectNoAxeViolations(page);
     });
 
-    test('modelo do corpo: os três .glb sempre, só no twin; a escolha fica no navegador (ADR-0028, OI-24)', async ({
+    test('modelo do corpo: pergunta na primeira vez; depois, os dois .glb sempre (ADR-0028, OI-24)', async ({
       page,
     }) => {
       const all = Object.values(BODY_ASSETS)
         .map((a) => a.file)
         .sort();
-      expect(all).toHaveLength(3);
+      expect(all).toHaveLength(2);
       const models = collectModelRequests(page);
       await page.goto('/demo');
       await page.waitForLoadState('networkidle');
@@ -129,27 +129,39 @@ test.describe('demo público', () => {
       await page.goto('/demo/twin');
       const canvas = viewer(page).locator('canvas');
       await expect(viewer(page)).toHaveAttribute('data-holo-animated', 'true');
-      const picker = page.getByRole('group', { name: 'Modelo do corpo' });
-      await expect(picker.getByRole('radio', { name: 'Neutro' })).toBeChecked();
-      await expect(canvas).toHaveAttribute('data-twin-model', 'neutral');
-      // Os três arquivos, qualquer que seja a escolha: pelos pedidos, o servidor não sabe qual corpo a pessoa vê.
+      // Sem padrão: pergunta e mostra o corpo em código; nenhum modelo é pedido antes da escolha.
+      const prompt = page.getByRole('region', { name: 'Qual modelo você prefere ver?' });
+      await expect(prompt).toContainText('Só muda a aparência; fica salvo neste navegador.');
+      await expect(canvas).toHaveAttribute('data-twin-model', 'geometry');
+      await page.waitForLoadState('networkidle');
+      expect(models).toEqual([]);
+      await expectNoAxeViolations(page);
+
+      await prompt.getByRole('button', { name: 'Feminino' }).click();
+      await expect(prompt).toHaveCount(0);
+      await expect(canvas).toHaveAttribute('data-twin-model', 'feminine');
+      // Os dois arquivos, qualquer que seja a escolha: pelos pedidos, o servidor não sabe qual corpo a pessoa vê.
       await expect.poll(() => [...new Set(models)].sort()).toEqual(all);
       const response = await page.request.get(all[0] ?? '');
       expect(response.headers()['cache-control']).toContain('immutable');
       expect(response.headers()['content-security-policy']).toBeUndefined();
 
       const before = models.length;
-      await picker.getByRole('radio', { name: 'Feminino' }).check();
-      await expect(canvas).toHaveAttribute('data-twin-model', 'feminine');
+      const picker = page.getByRole('group', { name: 'Modelo do corpo' });
+      await picker.getByRole('radio', { name: 'Masculino' }).check();
+      await expect(canvas).toHaveAttribute('data-twin-model', 'masculine');
       expect(models).toHaveLength(before);
 
       await page.reload();
       await expect(
         page
           .getByRole('group', { name: 'Modelo do corpo' })
-          .getByRole('radio', { name: 'Feminino' }),
+          .getByRole('radio', { name: 'Masculino' }),
       ).toBeChecked();
-      await expect(viewer(page).locator('canvas')).toHaveAttribute('data-twin-model', 'feminine');
+      await expect(page.getByRole('region', { name: 'Qual modelo você prefere ver?' })).toHaveCount(
+        0,
+      );
+      await expect(viewer(page).locator('canvas')).toHaveAttribute('data-twin-model', 'masculine');
       await expectNoAxeViolations(page);
     });
     test('reduced motion: vistas aplicadas sem transição, sem erro', async ({ page }) => {

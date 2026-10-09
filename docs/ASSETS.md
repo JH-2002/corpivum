@@ -31,7 +31,7 @@ Também vale:
 
 ## Inventário atual
 
-Assets externos: os três modelos do corpo da Fase 3b (ADR-0028), gerados pelo pipeline
+Assets externos: os dois modelos do corpo da Fase 3b (ADR-0028), gerados pelo pipeline
 (`scripts/assets/`), na tabela "Modelos do corpo" abaixo.
 
 | Item | Como é feito | Licença |
@@ -44,9 +44,8 @@ Assets externos: os três modelos do corpo da Fase 3b (ADR-0028), gerados pelo p
 
 | Asset | Origem | Autor | Licença | Atribuição | Uso comercial / modificação | SHA-256 | Revisão |
 |---|---|---|---|---|---|---|---|
-| `public/models/body-neutral.3f2b5e82.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-09 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante neutra: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), silhueta própria da variante (macros e targets do MakeHuman), morphs de circunferência (cintura radial própria) e de tamanho, meshopt | `3f2b5e82ff6abdb86e48f8d668d065643e7305b27683ee921a6c4cbde78273c0` | PR da Fase 3b, 2026-10-09 |
-| `public/models/body-feminine.4a6fbc27.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-09 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante feminina: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), silhueta própria da variante (macros e targets do MakeHuman), morphs de circunferência (cintura radial própria) e de tamanho, meshopt | `4a6fbc272a0254466c5997f6c76113d83d7b3889acf97644e742b64654f4ed04` | PR da Fase 3b, 2026-10-09 |
-| `public/models/body-masculine.b5903269.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-09 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante masculina: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), silhueta própria da variante (macros e targets do MakeHuman), morphs de circunferência (cintura radial própria) e de tamanho, meshopt | `b59032693d8d0d8639d0fbae6590c97d4bac33c33d716c6dd54bbc776c58a250` | PR da Fase 3b, 2026-10-09 |
+| `public/models/body-feminine.bcf0114d.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-09 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante feminina: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), silhueta própria da variante (macros e targets do MakeHuman), morphs de circunferência (cintura radial própria) e de tamanho, meshopt | `bcf0114de0e6ab5d35b72b5fba7be2a16898f72eb9034c4eb32c66a12b2b27ad` | PR da Fase 3b, 2026-10-09 |
+| `public/models/body-masculine.ef062a00.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-09 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante masculina: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), silhueta própria da variante (macros e targets do MakeHuman), morphs de circunferência (cintura radial própria) e de tamanho, meshopt | `ef062a000f954fae4572b1c5853bed8e77a799dafae7dc35a73a6547d73bb412` | PR da Fase 3b, 2026-10-09 |
 
 Bibliotecas e ferramentas (código, não assets) seguem a política de dependências da ADR-0009: `three`
 (MIT), `@react-three/fiber` (MIT) e, só no pipeline, `gltfpack` (MIT). O MPFB2 (código GPL) roda só no

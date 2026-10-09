@@ -63,7 +63,7 @@ export function loadBodyParts(asset: BodyAsset): Promise<BodyPart[]> {
 }
 
 /**
- * Pede os três modelos de uma vez, qualquer que seja a variante escolhida (OI-24(e)): pelos pedidos, o
+ * Pede todos os modelos de uma vez, qualquer que seja a variante escolhida (OI-24(e)): pelos pedidos, o
  * servidor nunca sabe qual corpo a pessoa vê. A escolha fica só no navegador.
  */
 export function preloadAllBodyModels(): void {

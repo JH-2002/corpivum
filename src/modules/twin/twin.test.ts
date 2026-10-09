@@ -64,7 +64,7 @@ describe('forma do corpo 3D (ADR-0026)', () => {
 });
 
 describe('morph targets do corpo .glb (ADR-0028)', () => {
-  // Valores da variante neutra gerada pelo pipeline (arredondados).
+  // Calibração de exemplo (valores de uma variante gerada pelo pipeline, arredondados).
   const calibration: BodyCalibration = {
     baseHeightM: 1.66,
     girthCm: {
@@ -158,10 +158,13 @@ describe('perfis do demo por variante (ADR-0028)', () => {
 });
 
 describe('modelo de visualização (ADR-0028)', () => {
-  it('padrão neutro; valor inválido vira neutro', () => {
-    expect(parseBodyModel(null)).toBe('neutral');
-    expect(parseBodyModel('outro')).toBe('neutral');
+  it('sem padrão: ausente, inválido ou o antigo "neutral" = sem escolha', () => {
+    expect(parseBodyModel(null)).toBeNull();
+    expect(parseBodyModel(undefined)).toBeNull();
+    expect(parseBodyModel('outro')).toBeNull();
+    expect(parseBodyModel('neutral')).toBeNull();
     expect(parseBodyModel('feminine')).toBe('feminine');
+    expect(parseBodyModel('masculine')).toBe('masculine');
   });
 });
 

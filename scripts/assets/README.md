@@ -21,13 +21,13 @@ temporária fora do repositório.
 
 Depois:
 1. Cole as linhas impressas pelo `pack-models.mjs` em `docs/ASSETS.md`, com a versão do MPFB2, a data e o PR.
-2. Confira as três variantes no `/demo/twin` (frente e perfil, temas claro e escuro) e leve as capturas para a
+2. Confira as duas variantes no `/demo/twin` (frente e perfil, temas claro e escuro) e leve as capturas para a
    revisão antes do PR: superfície lisa, sem mamilos, sem detalhe genital, rosto de manequim (revisão manual,
    ADR-0028).
 
 ## Ajustes
 Constantes no topo de `build_body.py`: triângulos por variante (`TARGET_TRIANGLES`; orçamento de 150 KiB por
-variante e 400 KiB nas três, que o app baixa juntas), tamanho do voxel do remesh, iterações de suavização, targets
+variante e 300 KiB nas duas, que o app baixa juntas), tamanho do voxel do remesh, iterações de suavização, targets
 de circunferência por região e a macro de massa usada no morph de tamanho. Se mudar os morphs, confira de novo
 os renders até onde eles podem ser extrapolados sem deformar o corpo (`MORPH_LIMITS` em
 `src/modules/twin/morph.ts`).

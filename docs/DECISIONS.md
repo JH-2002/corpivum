@@ -630,14 +630,14 @@ nova ADR, nova versão do consentimento e revisão do RIPD.
 
 ## ADR-0028 — Twin holográfico do corpo com modelos .glb (Fase 3b)
 **Contexto.** A Fase 3b troca a geometria gerada em código do corpo (ADR-0026) por um corpo humano realista na
-forma, em três variantes (feminino, masculino e neutro), em estilo de holograma azul semitransparente. Ela foi
+forma, em duas variantes (feminino e masculino), em estilo de holograma azul semitransparente. Ela foi
 interrompida pela reorientação (ADR-0027) e refeita só com o corpo; o cérebro e o BodyParts3D saíram. Isso
 diverge do PRODUCT_SPEC §5 ("nunca imagens anatômicas realistas") e §15 ("neutro, sem traços realistas") e da
 regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_ADDENDUM e em OI-24.
 **Decisão.**
 - **Realismo restrito à forma (LEG-M06):** sem pele, textura nem cor de pele. Superfície lisa, sem mamilos e
   sem detalhe genital, rosto de manequim (sem olhos, nariz nem boca). Nenhum modelo identifica pessoa real. Não
-  há teste automático para isso: cada troca de modelo traz capturas das três variantes (frente e perfil, temas
+  há teste automático para isso: cada troca de modelo traz capturas das duas variantes (frente e perfil, temas
   claro e escuro) para revisão antes do PR.
 - **Fonte:** malha base e targets do MakeHuman que vêm dentro da extensão MPFB2 (CC0, `LICENSE.ASSETS.md`; o
   código do add-on é GPL e não entra no modelo). O asset pack "system assets" não é usado. Pipeline versionado em
@@ -645,9 +645,12 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   autor, licença, SHA-256).
 - **Silhueta por variante** (o feminino lia como um corpo masculino com mais gordura): macros e targets do
   MakeHuman aplicados à base e aos corpos de tamanho (`VARIANTS` em `build_body.py`). Feminino: gênero 0,
-  ombros mais estreitos que o quadril, cintura marcada (cintura/quadril 0,67 na base), quadril e coxas mais cheios,
-  peito de volume moderado, pescoço e braços mais finos. Masculino: gênero 1, ombros largos, tronco em V, quadril
-  estreito, peito plano, volume da pelve reduzido. Neutro: gênero 0,5, sem volume de peito, intermediário.
+  ombros mais estreitos que o quadril, cintura marcada (cintura/quadril da base entre 0,63 e 0,65, nunca abaixo:
+  LEG-M06; hoje 0,64), quadril e coxas mais cheios, peito de volume moderado e liso, pescoço e braços mais finos.
+  Masculino: gênero 1, com as circunferências do antigo modelo neutro (peito 84, braço 26,5, cintura 70, quadril 94
+  e coxa 53 cm, via massa corporal menor na base e ajuste fino pelos targets de circunferência), ombros mais largos
+  que o quadril, peito plano, volume da pelve reduzido. A variante neutra saiu (decisão do responsável pelo
+  produto, 2026-10-09).
 - **Pipeline:** por variante:
   1. só a pele do corpo (olhos, dentes, língua e geometria genital são auxiliares e saem); mamilos achatados
      (targets `nipple-*-decr`) e suavizados, região genital suavizada;
@@ -668,22 +671,24 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   cada uma pede do morph `size_*`; o resto vai para os morphs regionais. Limites conferidos nos renders do
   pipeline (`MORPH_LIMITS`: tamanho até 3× para cima e 2× para baixo, regionais até 1,5× e 1×); extrapolar mais
   deforma o corpo (caricatura). Acima disso a forma fica no limite e o número exibido continua o informado
-  (ADR-0026); na variante neutra, a forma acompanha até cerca de 110 cm de cintura e 140 cm de quadril. Região
+  (ADR-0026); a forma acompanha cintura de 48 a 100 cm no feminino e de 51 a 138 cm no masculino, e quadril de
+  74 a 149 cm (feminino) e 77 a 149 cm (masculino). Região
   sem medida fica na circunferência base da variante enquanto os limites permitem compensar o tamanho global;
   além disso, acompanha parte dele, esmaecida e com "sem medida informada". Sem nenhuma medida, a forma base.
   Altura = escala uniforme. Continua sem IMC, sem juízo e sem cor por dado.
 - **Demo por variante:** no demo (e só nele), a série fictícia é deslocada no navegador para terminar em medidas
   coerentes com a variante escolhida (`DEMO_TWIN_PROFILES`: feminino com cintura 70 e quadril 98 cm), com as
   mesmas datas e variações. Com dados da pessoa, a variante nunca muda medida nenhuma.
-- **Os três modelos, sempre (OI-24(e), decisão do responsável pelo produto, 2026-10-09):** a tela do twin pede
-  as três variantes juntas, qualquer que seja a escolha, então os pedidos não revelam ao servidor qual corpo a
+- **Os dois modelos, sempre (OI-24(e), decisão do responsável pelo produto, 2026-10-09):** depois da escolha, a
+  tela do twin pede as duas variantes juntas, qualquer que seja ela, então os pedidos não revelam ao servidor qual corpo a
   pessoa vê. Os pedidos saem sem cookie (`credentials: 'omit'`). Trocar a variante não gera pedido novo.
-- **Modelo do corpo é preferência de visualização:** `neutral` (padrão), `feminine` ou `masculine`, só no
+- **Modelo do corpo é preferência de visualização, sem padrão assumido:** `feminine` ou `masculine`, só no
   navegador (`localStorage`, `hm.twin.bodyModel`, ADR-0006), validada com Zod. Não vai ao servidor, não entra em
-  cálculo e não é tratada nem inferida como dado de sexo ou gênero. Texto: "A escolha fica salva neste navegador,
-  não na sua conta."
-- **Orçamento testado no CI:** ≤ 150 KiB por variante e ≤ 400 KiB somando as três (são baixadas juntas). Hoje:
-  122,2 + 125,9 + 121,2 = 369,3 KiB. O teste de conteúdo também exige as três variantes e confere hash ×
+  cálculo e não é tratada nem inferida como dado de sexo ou gênero. Na primeira vez (sem escolha guardada, ou com o antigo `neutral`), o twin pergunta "Qual
+  modelo você prefere ver?" ("Só muda a aparência; fica salvo neste navegador.") e, até a escolha, mostra o corpo
+  gerado em código, sem pedir nenhum `.glb`. A troca fica no seletor abaixo dos controles.
+- **Orçamento testado no CI:** ≤ 150 KiB por variante e ≤ 300 KiB somando as duas (são baixadas juntas). Hoje:
+  124,5 + 122,4 = 246,9 KiB. O teste de conteúdo também exige as duas variantes e confere hash ×
   manifesto × nome × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, os nomes das regiões e dos
   morph targets e a coerência da calibração.
 - **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e

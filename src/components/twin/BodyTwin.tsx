@@ -16,7 +16,7 @@ import {
   type TwinRow,
 } from '@/modules/twin';
 import { BodyCompare } from './BodyCompare';
-import { BodyModelPicker, useBodyModel } from './BodyModelPicker';
+import { BodyModelPicker, BodyModelPrompt, useBodyModel } from './BodyModelPicker';
 import { BodySilhouette2D } from './fallback/BodySilhouette2D';
 import { useTwinFormat } from './format';
 import { useCompact } from './hooks';
@@ -46,10 +46,11 @@ export function BodyTwin({
 }) {
   const t = useTranslations('twin.body');
   const [model] = useBodyModel();
-  // No demo, medidas fictícias coerentes com a variante escolhida (só no navegador, ADR-0028).
+  // No demo, medidas fictícias coerentes com a variante escolhida (só no navegador, ADR-0028); sem escolha,
+  // a série original.
   const { rows, latestHeightCm } = useMemo(
     () =>
-      demo
+      demo && model
         ? demoTwinRows(inputRows, inputHeightCm, model)
         : { rows: inputRows, latestHeightCm: inputHeightCm },
     [demo, inputRows, inputHeightCm, model],
@@ -93,6 +94,7 @@ export function BodyTwin({
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="flex flex-col gap-3">
+            {model ? null : <BodyModelPrompt />}
             <TwinViewport<BodyRegion>
               label={t('title')}
               describedBy={describedBy}
@@ -138,7 +140,7 @@ export function BodyTwin({
               hideValues={hideValues}
               onHideValues={setHideValues}
             />
-            <BodyModelPicker />
+            {model ? <BodyModelPicker /> : null}
             {days.length > 1 && day ? (
               <div className="flex flex-col gap-1">
                 <label htmlFor={sliderId} className="text-sm font-semibold">

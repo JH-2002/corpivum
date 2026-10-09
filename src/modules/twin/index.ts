@@ -7,7 +7,6 @@
 export {
   BODY_MODEL_STORAGE_KEY,
   BODY_MODELS,
-  DEFAULT_BODY_MODEL,
   parseBodyModel,
   type BodyAsset,
   type BodyModel,

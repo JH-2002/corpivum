@@ -23,6 +23,6 @@ export interface SceneCommon<R extends string> {
 
 export interface BodySceneProps extends SceneCommon<BodyRegion> {
   shape: BodyShape;
-  /** Variante de visualização (preferência do navegador, ADR-0028); não muda a forma. */
-  model: BodyModel;
+  /** Variante de visualização (preferência do navegador, ADR-0028); `null` = ainda sem escolha. */
+  model: BodyModel | null;
 }

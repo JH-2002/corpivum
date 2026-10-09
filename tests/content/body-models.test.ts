@@ -12,9 +12,9 @@ import { BODY_MODELS, BODY_REGIONS, MORPH_NAMES } from '@/modules/twin';
 const ROOT = path.resolve(__dirname, '../..');
 const MODELS_DIR = path.join(ROOT, 'public', 'models');
 const ASSETS_DOC = readFileSync(path.join(ROOT, 'docs', 'ASSETS.md'), 'utf8');
-/** As três variantes são sempre baixadas juntas (OI-24(e)): orçamento por arquivo e da soma. */
+/** As variantes são sempre baixadas juntas (OI-24(e)): orçamento por arquivo e da soma das duas. */
 const BUDGET_BYTES = 150 * 1024;
-const TOTAL_BUDGET_BYTES = 400 * 1024;
+const TOTAL_BUDGET_BYTES = 300 * 1024;
 const ALLOWED_EXTENSIONS = ['EXT_meshopt_compression', 'KHR_mesh_quantization'];
 const MATERIALS = [...BODY_REGIONS, 'rest'].map((r) => `region_${r}`);
 
@@ -51,7 +51,7 @@ function readGlb(bytes: Buffer): Gltf {
 const entries = Object.entries(BODY_ASSETS);
 
 describe('modelos do corpo (ADR-0028)', () => {
-  it('as três variantes têm modelo e a soma cabe no orçamento (baixadas sempre juntas)', () => {
+  it('as duas variantes têm modelo e a soma cabe no orçamento (baixadas sempre juntas)', () => {
     expect(Object.keys(BODY_ASSETS).sort()).toEqual([...BODY_MODELS].sort());
     const total = entries.reduce(
       (sum, [, a]) => sum + readFileSync(path.join(ROOT, 'public', a.file)).length,

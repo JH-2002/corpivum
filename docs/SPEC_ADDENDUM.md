@@ -10,9 +10,9 @@ neuroquímicos e medicamentos removidos.
 - §8 Header: atalho para a Central de Privacidade e indicador discreto "DEMO" quando em modo demonstração.
 - §14 Índice de Bem-Estar: versão 2, sem humor e energia (ADR-0027, `docs/WELLBEING_SCORE.md`).
 - §5 e §15 (identidade visual e corpo 3D), só para o modelo 3D do twin: corpo realista na forma, em estilo
-  holográfico (sem pele, sem textura, superfície lisa, sem mamilos nem detalhe genital, rosto estilizado). Três
-  variantes de visualização (neutro, padrão; feminino; masculino), escolhidas como preferência de interface
-  guardada no navegador, nunca como dado de sexo. A forma continua só pelas medidas informadas, nunca pelo
+  holográfico (sem pele, sem textura, superfície lisa, sem mamilos nem detalhe genital, rosto estilizado). Duas
+  variantes de visualização (feminino e masculino), sem padrão: o twin pergunta na primeira vez, e a escolha é
+  uma preferência de interface guardada no navegador, nunca dado de sexo. A forma continua só pelas medidas informadas, nunca pelo
   peso, sem IMC e sem cor por dado (ADR-0028, LEG-M06, OI-24). O restante do §5 (ilustrações abstratas, nada
   chocante) continua valendo.
 - §17, §18, §19, §21 e §24 (cérebro, neuroquímicos, diário, humor e energia, medicamentos): **removidos**

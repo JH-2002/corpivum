@@ -27,15 +27,17 @@ class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode
 
 /**
  * Corpo 3D (§15, ADR-0026, ADR-0028): o modelo `.glb` da variante escolhida, com morphs calibrados pelas
- * medidas informadas. Enquanto ele carrega, se falhar ou se a variante não tiver arquivo, o manequim
+ * medidas informadas. Enquanto ele carrega, se falhar, sem variante escolhida ou sem arquivo, o manequim
  * gerado em código com o mesmo material holográfico. Nenhuma cor vem de dado.
  */
 export function BodyScene(props: BodySceneProps) {
   const { model, angle, instant, compact, onFail } = props;
-  const asset = BODY_ASSETS[model];
+  const asset = model ? BODY_ASSETS[model] : undefined;
   const code = <CodeBody {...props} />;
-  // Os três modelos, sempre (OI-24(e)); o cache faz cada arquivo ser pedido uma vez só.
-  useEffect(() => preloadAllBodyModels(), []);
+  // Depois da escolha, todos os modelos juntos (OI-24(e)); antes dela, nenhum. O cache pede cada arquivo uma vez.
+  useEffect(() => {
+    if (model) preloadAllBodyModels();
+  }, [model]);
   return (
     <TwinCanvas compact={compact} cameraZ={3.6} onFail={onFail}>
       <Turntable angle={angle} instant={instant}>

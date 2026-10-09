@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 
-const VARIANTS = ['neutral', 'feminine', 'masculine'];
+const VARIANTS = ['feminine', 'masculine'];
 const ROOT = resolve(import.meta.dirname, '../..');
 const MODELS_DIR = join(ROOT, 'public', 'models');
 const MANIFEST = join(ROOT, 'src', 'modules', 'twin', 'bodyAssets.ts');
@@ -32,7 +32,7 @@ for (const variant of VARIANTS) {
   const info = calibration.variants[variant];
   if (!existsSync(source) || !info) {
     console.error(
-      `Falta body-${variant}.glb ou sua calibração em ${input} (gere as três variantes).`,
+      `Falta body-${variant}.glb ou sua calibração em ${input} (gere as duas variantes).`,
     );
     process.exit(1);
   }

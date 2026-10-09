@@ -19,22 +19,14 @@ export const DEMO_TWIN_PROFILES: Readonly<Record<BodyModel, Profile>> = Object.f
     hipCm: 98,
     thighCm: 57,
   },
-  neutral: {
+  // Medidas do antigo perfil neutro, com traços masculinos no modelo.
+  masculine: {
     heightCm: 170,
     weightKg: 68,
     chestCm: 92,
     armCm: 28.5,
     waistCm: 77,
     hipCm: 96,
-    thighCm: 55,
-  },
-  masculine: {
-    heightCm: 177,
-    weightKg: 77,
-    chestCm: 100,
-    armCm: 32,
-    waistCm: 84,
-    hipCm: 95,
     thighCm: 55,
   },
 });

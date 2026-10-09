@@ -3,7 +3,7 @@ Gera os corpos do twin (ADR-0028) a partir da malha base do MakeHuman que vem no
 
 Roda dentro do Blender, com o MPFB2 instalado e ativo:
 
-    blender -b -P scripts/assets/build_body.py -- --out <pasta-temporária> [--variant neutral]
+    blender -b -P scripts/assets/build_body.py -- --out <pasta-temporária> [--variant feminine]
 
 Para cada variante grava `body-<variante>.glb` (sem compressão) e, ao final, `calibration.json`.
 Depois, `node scripts/assets/pack-models.mjs <pasta-temporária>` comprime, nomeia por hash e gera o manifesto.
@@ -34,10 +34,10 @@ from mathutils import Vector
 # Forma de cada variante: macros do MakeHuman e targets (peso) aplicados à base e aos corpos de tamanho, para
 # os sexos se distinguirem à primeira vista. MakeHuman: gênero 0 = feminino, 1 = masculino.
 VARIANTS = {
-    # Ombros mais estreitos que o quadril, cintura marcada (cintura/quadril ~0,7), quadril e coxas cheios, peito de
-    # volume moderado e forma suave, pescoço e braços mais finos.
+    # Ombros mais estreitos que o quadril, cintura marcada (cintura/quadril da base entre 0,63 e 0,65, não menos:
+    # LEG-M06), quadril e coxas cheios, peito de volume moderado e forma lisa, pescoço e braços mais finos.
     "feminine": {
-        "macros": {"gender": 0.0, "proportions": 1.0, "cupsize": 0.55, "firmness": 0.7},
+        "macros": {"gender": 0.0, "proportions": 1.0, "cupsize": 0.62, "firmness": 0.7},
         "targets": {
             "measure-shoulder-dist-decr": 0.6,
             "torso-vshape-decr": 0.5,
@@ -45,6 +45,7 @@ VARIANTS = {
             "buttocks-volume-incr": 0.3,
             "l-upperleg-fat-incr": 0.15,
             "r-upperleg-fat-incr": 0.15,
+            "measure-waist-circ-decr": 0.25,
             "stomach-pregnant-decr": 0.6,
             "neck-scale-horiz-decr": 0.5,
             "measure-neck-circ-decr": 0.5,
@@ -52,21 +53,23 @@ VARIANTS = {
             "r-upperarm-fat-decr": 0.5,
         },
     },
-    # Intermediário: sem volume de peito, sem tronco em V e sem quadril largo.
-    "neutral": {
-        "macros": {"gender": 0.5, "proportions": 0.5, "cupsize": 0.0, "firmness": 0.5},
-        "targets": {"bulge-decr": 1.0, "stomach-pregnant-decr": 0.4},
-    },
-    # Ombros claramente mais largos que o quadril, tronco em V, quadril estreito, peito plano.
+    # Circunferências do antigo modelo neutro (peito 84, braço 26,5, cintura 69, quadril 94, coxa 53 cm) com traços
+    # masculinos: ombros mais largos que o quadril, peito plano, volume da pelve reduzido.
     "masculine": {
-        "macros": {"gender": 1.0, "proportions": 1.0, "muscle": 0.5},
+        # Massa corporal menor na forma base (a macro emagrece o corpo inteiro de forma natural); os targets de
+        # circunferência fazem só o ajuste fino (pesos altos deixam relevos no tronco).
+        "mass": 0.3,
+        "macros": {"gender": 1.0, "proportions": 1.0, "muscle": 0.45},
         "targets": {
             "measure-shoulder-dist-incr": 0.35,
-            "torso-vshape-incr": 0.45,
-            "hip-scale-horiz-decr": 0.35,
-            "buttocks-volume-decr": 0.2,
-            "torso-muscle-pectoral-decr": 0.4,
-            "stomach-pregnant-decr": 0.6,
+            "torso-vshape-incr": 0.3,
+            "torso-muscle-pectoral-decr": 0.6,
+            "torso-muscle-dorsi-decr": 0.5,
+            "measure-bust-circ-decr": 1.0,
+            "measure-upperarm-circ-decr": 0.37,
+            "measure-hips-circ-incr": 0.15,
+            "measure-waist-circ-decr": 0.3,
+            "stomach-pregnant-decr": 0.8,
             "bulge-decr": 1.0,
         },
     },
@@ -97,13 +100,15 @@ VOXEL_SIZE_M = 0.008
 FACE_SMOOTH_ITERATIONS = 30
 SURFACE_SMOOTH_ITERATIONS = 4
 LOW_SMOOTH_ITERATIONS = 5
+# Face cuja normal se afasta mais que ~72° da média das vizinhas é dobra (vinco sob o peito, esterno): colapsa.
+FOLD_MIN_DOT = 0.3
 # Meia largura do rosto suavizado (as orelhas ficam de fora).
 FACE_HALF_WIDTH_M = 0.06
 DETAIL_SMOOTH_ITERATIONS = 12
 MAX_HOLE_EDGES = 160
 # Início do braço ao longo do eixo ombro → mão (fração).
 ARM_START_T = 0.05
-# Morph global de tamanho: macro `weight` do MakeHuman em 0 e 1 (a variante usa 0,5).
+# Morph global de tamanho: macro `weight` do MakeHuman em 0 e 1 (a base usa `mass` da variante, 0,5 por padrão).
 SIZE_MORPHS = {"size_min": 0.0, "size_max": 1.0}
 # Raio suavizado em volta de cada mamilo (o grupo `nipple` cobre só a aréola; a borda ficaria marcada).
 NIPPLE_RADIUS_M = 0.035
@@ -405,7 +410,7 @@ def build_variant(name, config, out_dir):
         # Os mamilos mudam de lugar com o tamanho: cada corpo é suavizado nos próprios.
         size_detail[key_name] = detail_vertices(obj)
         bpy.data.objects.remove(obj, do_unlink=True)
-    human = baked_human(0.5)
+    human = baked_human(config.get("mass", 0.5))
 
     lm = Landmarks(human)
     detail = detail_vertices(human)
@@ -526,7 +531,7 @@ def remove_folds(bm, passes=4):
         for face in bm.faces:
             ring = [g for e in face.edges for g in e.link_faces if g is not face]
             avg = sum((g.normal for g in ring), Vector())
-            if avg.length > 1e-9 and face.normal.dot(avg.normalized()) < -0.2:
+            if avg.length > 1e-9 and face.normal.dot(avg.normalized()) < FOLD_MIN_DOT:
                 folded.append(face)
         if not folded:
             return

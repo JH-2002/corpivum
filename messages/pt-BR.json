@@ -1094,10 +1094,10 @@
     },
     "bodyModel": {
       "legend": "Modelo do corpo",
-      "neutral": "Neutro",
+      "promptTitle": "Qual modelo você prefere ver?",
       "feminine": "Feminino",
       "masculine": "Masculino",
-      "hint": "Só muda a aparência do modelo. A escolha fica salva neste navegador, não na sua conta."
+      "hint": "Só muda a aparência; fica salvo neste navegador."
     },
     "body": {
       "title": "Seu corpo em 3D",

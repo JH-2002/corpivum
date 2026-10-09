@@ -23,7 +23,7 @@ export function BodyModelMesh(props: BodySceneProps & { asset: BodyAsset }) {
 
   useLayoutEffect(() => {
     const { gl, invalidate } = get();
-    gl.domElement.dataset.twinModel = model;
+    gl.domElement.dataset.twinModel = model ?? 'geometry';
     invalidate();
   }, [get, model]);
 

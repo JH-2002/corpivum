@@ -68,24 +68,50 @@ describe('corpo 3D (§15, §16)', () => {
     expect(screen.getByText('Circunferência: 80 cm')).toBeInTheDocument();
   });
 
-  it('modelo do corpo: neutro por padrão, escolha só no navegador (ADR-0028)', async () => {
+  it('modelo do corpo: sem padrão, pergunta na primeira vez; escolha só no navegador (ADR-0028)', async () => {
     window.localStorage.clear();
     const user = userEvent.setup();
     renderWithIntl(
       <BodyTwin rows={toTwinRows(records)} latestHeightCm={null} demo={false} describedBy="x" />,
     );
-    const group = screen.getByRole('group', { name: 'Modelo do corpo' });
-    expect(within(group).getByRole('radio', { name: 'Neutro' })).toBeChecked();
-    await user.click(within(group).getByRole('radio', { name: 'Feminino' }));
-    expect(within(group).getByRole('radio', { name: 'Feminino' })).toBeChecked();
+    const prompt = screen.getByRole('region', { name: 'Qual modelo você prefere ver?' });
+    expect(prompt).toHaveTextContent('Só muda a aparência; fica salvo neste navegador.');
+    expect(screen.queryByRole('group', { name: 'Modelo do corpo' })).not.toBeInTheDocument();
+    expectClean(prompt.textContent ?? '');
+
+    await user.click(within(prompt).getByRole('button', { name: 'Feminino' }));
     expect(window.localStorage.getItem(BODY_MODEL_STORAGE_KEY)).toBe('feminine');
-    expectClean(group.textContent ?? '');
-    window.localStorage.setItem(BODY_MODEL_STORAGE_KEY, 'outro');
+    expect(
+      screen.queryByRole('region', { name: 'Qual modelo você prefere ver?' }),
+    ).not.toBeInTheDocument();
+    const group = screen.getByRole('group', { name: 'Modelo do corpo' });
+    expect(within(group).getByRole('radio', { name: 'Feminino' })).toBeChecked();
+    expect(within(group).queryByRole('radio', { name: /Neutro/ })).not.toBeInTheDocument();
+    await user.click(within(group).getByRole('radio', { name: 'Masculino' }));
+    expect(window.localStorage.getItem(BODY_MODEL_STORAGE_KEY)).toBe('masculine');
+
+    // Escolha antiga ("neutral") ou inválida: volta a perguntar.
+    window.localStorage.setItem(BODY_MODEL_STORAGE_KEY, 'neutral');
     window.dispatchEvent(new Event('storage'));
-    expect(await within(group).findByRole('radio', { name: 'Neutro' })).toBeChecked();
+    expect(
+      await screen.findByRole('region', { name: 'Qual modelo você prefere ver?' }),
+    ).toBeInTheDocument();
     window.localStorage.clear();
   });
 
+  it('demo: medidas do perfil da variante escolhida; sem escolha, a série original', async () => {
+    window.localStorage.clear();
+    const user = userEvent.setup();
+    renderWithIntl(
+      <BodyTwin rows={toTwinRows(records)} latestHeightCm={null} demo describedBy="x" />,
+    );
+    const body = screen.getByRole('region', { name: /corpo em 3D/ });
+    await user.click(within(body).getByRole('button', { name: 'Cintura' }));
+    expect(body).toHaveTextContent('81,5 cm');
+    await user.click(screen.getByRole('button', { name: 'Feminino' }));
+    expect(body).toHaveTextContent('70 cm');
+    window.localStorage.clear();
+  });
   it('vistas e restaurar pelo teclado', async () => {
     const user = userEvent.setup();
     renderWithIntl(

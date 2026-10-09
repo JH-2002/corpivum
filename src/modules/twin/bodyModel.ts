@@ -3,19 +3,19 @@ import type { BodyCalibration } from './morph';
 
 /**
  * Modelo de visualização do corpo 3D (ADR-0028): preferência de interface guardada só no navegador.
- * Muda apenas a aparência da malha; não entra em cálculo e não é dado de sexo ou gênero (ROPA T1).
+ * Muda apenas a aparência da malha; não entra em cálculo e não é dado de sexo ou gênero (ROPA T1). Sem padrão
+ * assumido: até a pessoa escolher, não há modelo (o twin pergunta e mostra o corpo gerado em código).
  */
-export const BODY_MODELS = ['neutral', 'feminine', 'masculine'] as const;
+export const BODY_MODELS = ['feminine', 'masculine'] as const;
 export type BodyModel = (typeof BODY_MODELS)[number];
 
-export const DEFAULT_BODY_MODEL: BodyModel = 'neutral';
 export const BODY_MODEL_STORAGE_KEY = 'hm.twin.bodyModel';
 
-const bodyModelSchema = z.enum(BODY_MODELS).catch(DEFAULT_BODY_MODEL);
+const bodyModelSchema = z.enum(BODY_MODELS).nullable().catch(null);
 
-/** Valor do storage → modelo válido; ausente ou inválido = neutro. */
-export function parseBodyModel(raw: unknown): BodyModel {
-  return bodyModelSchema.parse(raw);
+/** Valor do storage → modelo escolhido; ausente, inválido ou de versão antiga ("neutral") = sem escolha. */
+export function parseBodyModel(raw: unknown): BodyModel | null {
+  return bodyModelSchema.parse(raw ?? null);
 }
 
 /**
