@@ -66,6 +66,7 @@
     "eslint-config-next": "16.3.8",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "gltfpack": "1.2.0",
     "jsdom": "^30.1.2",
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
