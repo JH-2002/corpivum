@@ -9,12 +9,14 @@ import {
   bodySnapshotAt,
   demoTwinRows,
   firstMeasure,
+  outOfDrawingRange,
   measurementDays,
   REGION_FIELD,
   type BodyRegion,
   type BodySnapshot,
   type TwinRow,
 } from '@/modules/twin';
+import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
 import { BodyCompare } from './BodyCompare';
 import { BodyModelPicker, BodyModelPrompt, useBodyModel } from './BodyModelPicker';
 import { BodySilhouette2D } from './fallback/BodySilhouette2D';
@@ -73,6 +75,11 @@ export function BodyTwin({
     [rows, day, latestHeightCm],
   );
   const shape = useMemo(() => bodyShape(snapshot), [snapshot]);
+  const asset = model ? BODY_ASSETS[model] : undefined;
+  const outside = useMemo(
+    () => (asset ? outOfDrawingRange(shape, asset.calibration) : []),
+    [asset, shape],
+  );
   const clearHover = useCallback(() => setHover(null), []);
   const select = (region: BodyRegion) => setSelected(region);
 
@@ -204,6 +211,7 @@ export function BodyTwin({
                   name={regionName(selected)}
                   hideValues={hideValues}
                   level={level}
+                  outOfRange={outside.includes(selected)}
                 />
               ) : (
                 <p className="text-fg-muted">{t('pick')}</p>
@@ -248,6 +256,7 @@ function RegionPanel({
   name,
   hideValues,
   level,
+  outOfRange,
 }: {
   region: BodyRegion;
   snapshot: BodySnapshot;
@@ -255,6 +264,8 @@ function RegionPanel({
   name: string;
   hideValues: boolean;
   level: (l: ConfidenceLevel) => ConfidenceLevel;
+  /** A medida informada está além do que o desenho alcança (texto, sem número; ADR-0028). */
+  outOfRange: boolean;
 }) {
   const t = useTranslations('twin.body');
   const fmt = useTwinFormat(hideValues);
@@ -283,6 +294,7 @@ function RegionPanel({
               <ConfidenceBadge level={level('ESTIMADO')} />
             </div>
           ) : null}
+          {outOfRange ? <p className="text-fg-muted">{t('outOfRange')}</p> : null}
         </>
       ) : (
         <p>{t('notInformed')}</p>

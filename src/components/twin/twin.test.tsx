@@ -109,9 +109,23 @@ describe('corpo 3D (§15, §16)', () => {
     await user.click(within(body).getByRole('button', { name: 'Cintura' }));
     expect(body).toHaveTextContent('81,5 cm');
     await user.click(screen.getByRole('button', { name: 'Feminino' }));
-    expect(body).toHaveTextContent('70 cm');
+    expect(body).toHaveTextContent('68 cm');
     window.localStorage.clear();
   });
+  it('medida além da faixa do desenho: o painel avisa, sem número do modelo (ADR-0028)', async () => {
+    window.localStorage.setItem(BODY_MODEL_STORAGE_KEY, 'masculine');
+    const user = userEvent.setup();
+    const rows = toTwinRows([bodyEntry(day(0), { heightCm: 175, waistCm: 170, hipCm: 98 })]);
+    renderWithIntl(<BodyTwin rows={rows} latestHeightCm={null} demo={false} describedBy="x" />);
+    const body = screen.getByRole('region', { name: /corpo em 3D/ });
+    await user.click(within(body).getByRole('button', { name: 'Cintura' }));
+    expect(body).toHaveTextContent('Fora da faixa do desenho');
+    await user.click(within(body).getByRole('button', { name: 'Quadril' }));
+    expect(body).not.toHaveTextContent('Fora da faixa do desenho');
+    expectClean(body.textContent ?? '');
+    window.localStorage.clear();
+  });
+
   it('vistas e restaurar pelo teclado', async () => {
     const user = userEvent.setup();
     renderWithIntl(
