@@ -1,31 +1,30 @@
 import { eachDay, rangeLength } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
-import { clamp, mean } from '@/lib/stats';
+import { clamp } from '@/lib/stats';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
 import { completionRate, expectedOccurrences } from '@/modules/habits';
-import type { MoodRecord } from '@/modules/mood';
 import { scheduleSpreadMinutes, type SleepRecord } from '@/modules/sleep';
 
 /**
  * Índice de Bem-Estar (§14, LEG-D08). Indicador de 0 a 100 que resume os registros da própria pessoa
- * (regularidade do sono, humor/energia informados, hábitos e constância de registro). Não é avaliação de saúde, não usa referência populacional e não classifica.
+ * (regularidade do sono, hábitos, atividade e constância de registro). Não é avaliação de saúde, não usa
+ * referência populacional e não classifica. Peso e medidas nunca entram. v2 (ADR-0027): sem humor e energia.
  *
  * Versionado: mudar pesos, limiares ou fórmulas = nova versão (novo objeto `SCORE_Vn` e `SCORE_VERSION`),
  * documentada em docs/WELLBEING_SCORE.md. Componentes sem dados suficientes ficam fora do cálculo e os
  * pesos são renormalizados entre os incluídos ("dados parciais").
  */
-export const SCORE_V1 = Object.freeze({
-  version: 1,
+export const SCORE_V2 = Object.freeze({
+  version: 2,
+  /** Pesos da v1 sem humor e energia, renormalizados na mesma proporção (0,25 : 0,2 : 0,15 : 0,15). */
   weights: Object.freeze({
-    sleepRegularity: 0.25,
-    moodEnergy: 0.25,
-    habits: 0.2,
-    activity: 0.15,
-    logging: 0.15,
+    sleepRegularity: 0.33,
+    habits: 0.27,
+    activity: 0.2,
+    logging: 0.2,
   }),
   /** Mínimo de registros no período para o componente entrar. */
   minSleepRecords: 3,
-  minMoodRecords: 3,
   minExpectedHabitChecks: 3,
   /** Variação média de horário (min) em que a regularidade do sono chega a 0. */
   sleepSpreadZeroAt: 120,
@@ -33,15 +32,9 @@ export const SCORE_V1 = Object.freeze({
   minIncluded: 2,
 });
 
-export const SCORE_VERSION = SCORE_V1.version;
+export const SCORE_VERSION = SCORE_V2.version;
 
-export const SCORE_COMPONENTS = [
-  'sleepRegularity',
-  'moodEnergy',
-  'habits',
-  'activity',
-  'logging',
-] as const;
+export const SCORE_COMPONENTS = ['sleepRegularity', 'habits', 'activity', 'logging'] as const;
 export type ScoreComponentId = (typeof SCORE_COMPONENTS)[number];
 
 /** Por que um componente ficou fora do cálculo. */
@@ -74,10 +67,9 @@ export interface WellbeingScore {
 export interface ScoreInput {
   range: DateRange;
   sleep: SleepRecord[];
-  mood: MoodRecord[];
   habits: HabitRecord[];
   checks: HabitCheckRecord[];
-  /** Dias com qualquer registro (sono, humor, check, diário, corpo) no período. */
+  /** Dias com qualquer registro (sono, check, diário, corpo) no período. */
   loggedDays: ReadonlySet<string>;
 }
 
@@ -85,7 +77,7 @@ type Partial0 = Omit<ScoreComponent, 'weight' | 'effectiveWeight'>;
 
 function sleepRegularity(input: ScoreInput): Partial0 {
   const sample = input.sleep.length;
-  const spread = sample >= SCORE_V1.minSleepRecords ? scheduleSpreadMinutes(input.sleep) : null;
+  const spread = sample >= SCORE_V2.minSleepRecords ? scheduleSpreadMinutes(input.sleep) : null;
   if (spread === null) {
     return {
       id: 'sleepRegularity',
@@ -95,24 +87,8 @@ function sleepRegularity(input: ScoreInput): Partial0 {
       reason: 'insufficient_data',
     };
   }
-  const value = Math.round(clamp(100 * (1 - spread / SCORE_V1.sleepSpreadZeroAt), 0, 100));
+  const value = Math.round(clamp(100 * (1 - spread / SCORE_V2.sleepSpreadZeroAt), 0, 100));
   return { id: 'sleepRegularity', included: true, value, sample, reason: null };
-}
-
-function moodEnergy(input: ScoreInput): Partial0 {
-  const sample = input.mood.length;
-  if (sample < SCORE_V1.minMoodRecords) {
-    return { id: 'moodEnergy', included: false, value: null, sample, reason: 'insufficient_data' };
-  }
-  // Média de humor e energia autorrelatados (1–5) levada a 0–100.
-  const avg = mean(input.mood.map((r) => (r.mood + r.energy) / 2)) ?? 1;
-  return {
-    id: 'moodEnergy',
-    included: true,
-    value: Math.round(((avg - 1) / 4) * 100),
-    sample,
-    reason: null,
-  };
 }
 
 function habits(input: ScoreInput): Partial0 {
@@ -123,13 +99,13 @@ function habits(input: ScoreInput): Partial0 {
   }
   const expected = active.reduce((acc, h) => acc + expectedOccurrences(h, input.range), 0);
   const rate = completionRate(active, input.checks, input.range);
-  if (expected < SCORE_V1.minExpectedHabitChecks || rate === null) {
+  if (expected < SCORE_V2.minExpectedHabitChecks || rate === null) {
     return { id: 'habits', included: false, value: null, sample, reason: 'insufficient_data' };
   }
   return { id: 'habits', included: true, value: Math.round(rate * 100), sample, reason: null };
 }
 
-/** Atividade física ainda não tem módulo (Fase 4): fica fora na v1, sempre. */
+/** Atividade física ainda não tem módulo (Fase 4): fica fora, sempre, até lá. */
 function activity(): Partial0 {
   return { id: 'activity', included: false, value: null, sample: 0, reason: 'not_available' };
 }
@@ -154,31 +130,25 @@ function logging(input: ScoreInput): Partial0 {
   };
 }
 
-/** Calcula o Índice v1. Determinístico: mesmos registros e período → mesmo resultado. */
+/** Calcula o Índice v2. Determinístico: mesmos registros e período → mesmo resultado. */
 export function computeWellbeingScore(input: ScoreInput): WellbeingScore {
-  const raw = [
-    sleepRegularity(input),
-    moodEnergy(input),
-    habits(input),
-    activity(),
-    logging(input),
-  ];
+  const raw = [sleepRegularity(input), habits(input), activity(), logging(input)];
   const includedWeight = raw
     .filter((c) => c.included)
-    .reduce((acc, c) => acc + SCORE_V1.weights[c.id], 0);
+    .reduce((acc, c) => acc + SCORE_V2.weights[c.id], 0);
   const components: ScoreComponent[] = raw.map((c) => ({
     ...c,
-    weight: SCORE_V1.weights[c.id],
+    weight: SCORE_V2.weights[c.id],
     effectiveWeight:
-      c.included && includedWeight > 0 ? SCORE_V1.weights[c.id] / includedWeight : null,
+      c.included && includedWeight > 0 ? SCORE_V2.weights[c.id] / includedWeight : null,
   }));
   const included = components.filter((c) => c.included);
   const value =
-    included.length >= SCORE_V1.minIncluded
+    included.length >= SCORE_V2.minIncluded
       ? Math.round(included.reduce((acc, c) => acc + (c.value ?? 0) * (c.effectiveWeight ?? 0), 0))
       : null;
   return {
-    version: SCORE_V1.version,
+    version: SCORE_V2.version,
     range: input.range,
     value,
     partial: included.length < components.length,

@@ -14,7 +14,6 @@ describe('nav-config', () => {
     expect(SIDEBAR_ITEMS.map((i) => i.key)).toEqual([
       'home',
       'sleep',
-      'mood',
       'habits',
       'journal',
       'body',

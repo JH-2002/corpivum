@@ -3,13 +3,11 @@ import { round } from '@/lib/stats';
 import type { BodyRecord } from '@/modules/body';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
 import type { JournalRecord, JournalTag } from '@/modules/journal';
-import type { MoodEmotion, MoodRecord } from '@/modules/mood';
 import type { SleepRecord } from '@/modules/sleep';
 
 /**
  * Dados de demonstração 100% FICTÍCIOS (LEG-X02, CLAUDE.md regra 6, §40). Gerador determinístico (PRNG
- * com semente fixa), com datas relativas a `today`: 90 dias coerentes (noites mais curtas tendem a vir
- * antes de dias com humor/energia mais baixos). Não lê nem grava nada: tudo em memória.
+ * com semente fixa), com datas relativas a `today`: 90 dias coerentes. Não lê nem grava nada: tudo em memória.
  * Nenhum nome, e-mail ou texto de pessoa real; as frases são escritas para a demo.
  */
 export const DEMO_DAYS = 90;
@@ -18,7 +16,6 @@ export const DEMO_SEED = 360;
 export interface DemoDataset {
   today: string;
   sleep: SleepRecord[];
-  mood: MoodRecord[];
   habits: HabitRecord[];
   checks: HabitCheckRecord[];
   journal: JournalRecord[];
@@ -52,13 +49,6 @@ const SLEEP_NOTES = [
   'Fui dormir mais tarde: fiquei vendo uma série.',
 ];
 
-const MOOD_NOTES = [
-  'Dia produtivo no trabalho.',
-  'Caminhada no fim da tarde ajudou a desligar.',
-  'Semana corrida.',
-  'Almoço com amigos.',
-];
-
 const JOURNAL_TEXTS: Array<{ text: string; tags: JournalTag[] }> = [
   {
     text: 'Hoje organizei a semana e consegui terminar as tarefas pendentes. Quero manter o ritmo.',
@@ -90,13 +80,16 @@ const JOURNAL_TEXTS: Array<{ text: string; tags: JournalTag[] }> = [
   },
 ];
 
-const EMOTIONS_BY_MOOD: Record<number, MoodEmotion[]> = {
-  1: ['tiredness', 'sadness'],
-  2: ['tiredness', 'worry'],
-  3: ['focus', 'boredom'],
-  4: ['calm', 'motivation'],
-  5: ['joy', 'gratitude'],
-};
+/**
+ * Sorteios que o humor (removido, ADR-0027) consumia por dia, na mesma ordem: presença, humor, energia,
+ * estresse, horário, duas emoções e nota. Consumir os mesmos sorteios mantém a sequência dos demais dados
+ * do demo (sono, hábitos, corpo) igual à de antes da remoção.
+ */
+function skipRemovedMood(rand: () => number): void {
+  if (rand() >= 0.85) return;
+  for (let k = 0; k < 6; k++) rand();
+  if (rand() < 0.1) rand();
+}
 
 /** Gera o conjunto de demonstração terminando em `today` (inclusive). */
 export function generateDemoData(today: string, timeZone: string): DemoDataset {
@@ -105,7 +98,6 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
   const days = eachDay({ from: start, to: today });
 
   const sleep: SleepRecord[] = [];
-  const mood: MoodRecord[] = [];
   const checks: HabitCheckRecord[] = [];
   const journal: JournalRecord[] = [];
   const body: BodyRecord[] = [];
@@ -169,26 +161,7 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
       });
     }
 
-    // Humor/energia: ~85% dos dias, associados à noite anterior.
-    if (rand() < 0.85) {
-      const sleepEffect = lastNightHours === null ? 0 : (lastNightHours - 7) * 0.6;
-      const m = clampInt(3.3 + sleepEffect + progress * 0.5 + (rand() - 0.5) * 1.6, 1, 5);
-      const e = clampInt(3.1 + sleepEffect * 1.2 + (rand() - 0.5) * 1.6, 1, 5);
-      const s = clampInt(2.8 + (weekend ? -0.8 : 0.4) + (rand() - 0.5) * 1.6, 1, 5);
-      mood.push({
-        id: `demo-mood-${i}`,
-        loggedAt: fromLocalDateTime(
-          `${day}T${hhmm(19 * 60 + rand() * 120)}`,
-          timeZone,
-        ).toISOString(),
-        day,
-        mood: m,
-        energy: e,
-        stress: s,
-        emotions: (EMOTIONS_BY_MOOD[m] ?? []).filter(() => rand() < 0.7),
-        note: rand() < 0.1 ? (MOOD_NOTES[Math.floor(rand() * MOOD_NOTES.length)] ?? null) : null,
-      });
-    }
+    skipRemovedMood(rand);
 
     // Hábitos.
     if (rand() < 0.6 + 0.25 * progress) checks.push({ habitId: 'demo-habit-1', day });
@@ -202,7 +175,7 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
         journal.push({
           id: `demo-journal-${i}`,
           day,
-          mood: mood.at(-1)?.day === day ? (mood.at(-1)?.mood ?? null) : null,
+          mood: null,
           tags: entry.tags,
           content: entry.text,
         });
@@ -231,5 +204,5 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
   });
 
   journal.reverse();
-  return { today, sleep, mood, habits, checks, journal, body };
+  return { today, sleep, habits, checks, journal, body };
 }

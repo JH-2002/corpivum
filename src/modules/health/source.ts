@@ -3,7 +3,6 @@ import type { BodyRecord } from '@/modules/body';
 import type { DemoDataset } from '@/modules/demo/generator';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
 import type { JournalFilter, JournalRecord } from '@/modules/journal';
-import type { MoodRecord } from '@/modules/mood';
 import type { SleepRecord } from '@/modules/sleep';
 
 /**
@@ -14,7 +13,6 @@ import type { SleepRecord } from '@/modules/sleep';
 export interface HealthDataSource {
   kind: 'own' | 'demo';
   sleep(range: DateRange, opts?: { withText?: boolean }): Promise<SleepRecord[]>;
-  mood(range: DateRange, opts?: { withText?: boolean }): Promise<MoodRecord[]>;
   habits(opts?: { includeArchived?: boolean }): Promise<HabitRecord[]>;
   checks(range: DateRange): Promise<HabitCheckRecord[]>;
   journal(
@@ -41,10 +39,6 @@ export function createDemoSource(data: DemoDataset): HealthDataSource {
     kind: 'demo',
     sleep: async (range, opts) =>
       data.sleep
-        .filter((r) => inRange(r.day, range))
-        .map((r) => (opts?.withText ? r : { ...r, note: null })),
-    mood: async (range, opts) =>
-      data.mood
         .filter((r) => inRange(r.day, range))
         .map((r) => (opts?.withText ? r : { ...r, note: null })),
     habits: async () => data.habits,

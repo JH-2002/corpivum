@@ -58,9 +58,7 @@ function DemoBottomNav() {
           <BottomLink
             key={item.key}
             href={item.href}
-            label={t(
-              item.key === 'mood' ? 'moodShort' : item.key === 'twin' ? 'twinShort' : item.key,
-            )}
+            label={t(item.key === 'twin' ? 'twinShort' : item.key)}
             icon={item.icon}
             active={isItemActive(pathname, item)}
           />

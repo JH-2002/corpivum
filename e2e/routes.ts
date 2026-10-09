@@ -2,7 +2,6 @@
 export const ROUTES = [
   { path: '/inicio', title: 'Início' },
   { path: '/sono', title: 'Sono' },
-  { path: '/humor', title: 'Humor e energia' },
   { path: '/habitos', title: 'Hábitos' },
   { path: '/diario', title: 'Diário' },
   { path: '/corpo', title: 'Corpo' },
@@ -24,7 +23,6 @@ export const ROUTES = [
 export const DEMO_ROUTES = [
   { path: '/demo', title: 'Início' },
   { path: '/demo/sono', title: 'Sono' },
-  { path: '/demo/humor', title: 'Humor e energia' },
   { path: '/demo/habitos', title: 'Hábitos' },
   { path: '/demo/diario', title: 'Diário' },
   { path: '/demo/diario?vista=calendario', title: 'Diário' },

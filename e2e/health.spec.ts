@@ -10,7 +10,7 @@ import {
 } from './fixtures';
 
 /**
- * Fase 2 (ADR-0021): passo 5 do onboarding (§52.5), registros de sono, humor, hábitos, diário e corpo
+ * Fase 2 (ADR-0021): passo 5 do onboarding (§52.5), registros de sono, hábitos, diário e corpo
  * (criar, editar, excluir), dashboard com período global, pedido de revisão do Índice (LEG-D08) e
  * bloqueio após revogar (LEG-C04). Cada teste usa uma pessoa sintética própria.
  */
@@ -51,7 +51,6 @@ test('passo 5: demonstração sem gravar nada e depois "começar com meus dados"
     withAdmin((db) =>
       db.query<{ n: number }>(
         `SELECT (SELECT count(*) FROM sleep_entries WHERE user_id = $1)
-              + (SELECT count(*) FROM mood_entries WHERE user_id = $1)
               + (SELECT count(*) FROM habits WHERE user_id = $1)
               + (SELECT count(*) FROM journal_entries WHERE user_id = $1)
               + (SELECT count(*) FROM body_measurements WHERE user_id = $1) AS n`,
@@ -104,27 +103,6 @@ test('sono: registrar, editar e excluir', async ({ page }) => {
   await page.getByRole('button', { name: /^Excluir registro:/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Excluir registro' }).click();
   await expect(page.getByText(/acordou às 07:35/)).toHaveCount(0);
-});
-
-test('humor: validação, registro e apoio CVV/SAMU no ponto mais baixo da escala', async ({
-  page,
-}) => {
-  await newPerson(page, 'humor');
-  await page.goto('/humor');
-  await page.getByRole('button', { name: 'Salvar registro' }).click();
-  await expect(
-    page.getByRole('alert').filter({ hasText: 'Confira os campos destacados.' }),
-  ).toBeVisible();
-
-  await page.getByRole('group', { name: 'Humor' }).getByLabel('1', { exact: true }).check();
-  await page.getByRole('group', { name: 'Energia' }).getByLabel('2', { exact: true }).check();
-  await page.getByRole('group', { name: 'Estresse' }).getByLabel('4', { exact: true }).check();
-  await page.getByLabel('Cansaço').check();
-  await page.getByRole('button', { name: 'Salvar registro' }).click();
-  await expect(page.getByRole('status').getByText('Registro salvo.')).toBeVisible();
-  await expect(page.getByText(/CVV atende 24 horas pelo telefone 188/).first()).toBeVisible();
-  await expect(page.getByText('Humor 1 · Energia 2 · Estresse 4 (de 5)')).toBeVisible();
-  await expectNoAxeViolations(page);
 });
 
 test('hábitos: criar, marcar no dashboard e ocultar sequências', async ({ page }) => {
@@ -247,7 +225,7 @@ test('após revogar os dados de bem-estar, nenhuma tela de saúde mostra dados',
   await page.getByRole('button', { name: 'Revogar: Dados de bem-estar' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Revogar agora' }).click();
   await expect(page.getByText(/Revogado: eliminação em/)).toBeVisible();
-  for (const path of ['/inicio', '/sono', '/humor', '/habitos', '/diario', '/corpo']) {
+  for (const path of ['/inicio', '/sono', '/habitos', '/diario', '/corpo']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: 'Autorização revogada' })).toBeVisible();
     await expect(page.locator('.recharts-wrapper')).toHaveCount(0);

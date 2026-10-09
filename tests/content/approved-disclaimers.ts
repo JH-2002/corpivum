@@ -19,9 +19,10 @@ export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
   'disclaimer.riskSupport':
     'Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).',
   'disclaimer.draftLegal': 'RASCUNHO — revisão jurídica obrigatória.',
-  // Fase 2 (ADR-0021): aviso do Índice de Bem-Estar (§14, LEG-D08) e do demo (LEG-X02). LEGAL-REVIEW, OI-09.
+  // Fase 2 (ADR-0021): aviso do Índice de Bem-Estar (§14, LEG-D08) e do demo (LEG-X02). Índice v2 sem
+  // humor e energia (ADR-0027). LEGAL-REVIEW, OI-09.
   'disclaimer.wellbeingScore':
-    'O Índice de Bem-Estar resume seus registros de sono, humor e energia, hábitos e a constância dos registros. Não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
+    'O Índice de Bem-Estar resume seus registros de sono, hábitos e a constância dos registros. Não usa peso nem medidas, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
   'disclaimer.demoData':
     'Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.',
   // Fase 3 (ADR-0026): aviso do corpo 3D (§15, LEG-M04). LEGAL-REVIEW, OI-09.

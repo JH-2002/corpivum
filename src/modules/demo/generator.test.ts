@@ -17,7 +17,6 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     const first = addDays(TODAY, -(DEMO_DAYS - 1));
     const days = [
       ...data.sleep.map((r) => r.day),
-      ...data.mood.map((r) => r.day),
       ...data.checks.map((r) => r.day),
       ...data.journal.map((r) => r.day),
       ...data.body.map((r) => r.day),
@@ -25,7 +24,6 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     expect(Math.min(...days.map((d) => Date.parse(d)))).toBeGreaterThanOrEqual(Date.parse(first));
     expect(days.every((d) => d <= TODAY)).toBe(true);
     expect(data.sleep.length).toBeGreaterThan(70);
-    expect(data.mood.length).toBeGreaterThan(60);
     expect(data.journal.length).toBeGreaterThan(20);
     expect(data.body.length).toBeGreaterThanOrEqual(12);
   });
@@ -37,12 +35,6 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
       expect(h).toBeLessThanOrEqual(24);
       expect(r.quality).toBeGreaterThanOrEqual(1);
       expect(r.quality).toBeLessThanOrEqual(5);
-    }
-    for (const r of data.mood) {
-      for (const v of [r.mood, r.energy, r.stress]) {
-        expect(v).toBeGreaterThanOrEqual(1);
-        expect(v).toBeLessThanOrEqual(5);
-      }
     }
     for (const r of data.body) {
       if (r.weightKg !== null) expect(r.weightKg).toBeGreaterThan(20);
@@ -60,7 +52,7 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     expect(d.source).toBe('demo');
     expect(d.state).toBe('ok');
     expect(d.score.value).not.toBeNull();
-    for (const card of [d.cards.sleep, d.cards.mood, d.cards.habits, d.cards.body]) {
+    for (const card of [d.cards.sleep, d.cards.habits, d.cards.body]) {
       expect(card.state).toBe('ok');
       expect(card.spark.some((p) => p.value !== null)).toBe(true);
     }
@@ -83,7 +75,6 @@ describe('textos fictícios da demo (LEG-M03)', () => {
     const data = generateDemoData(TODAY, TZ);
     const texts = [
       ...data.sleep.map((r) => r.note),
-      ...data.mood.map((r) => r.note),
       ...data.journal.map((r) => r.content),
       ...data.habits.map((h) => h.name),
     ].filter((t): t is string => Boolean(t));

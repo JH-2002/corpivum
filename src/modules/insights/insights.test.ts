@@ -7,7 +7,6 @@ import {
   day,
   habit,
   journalOn,
-  moodWeek,
   PREV_WEEK,
   sleepNight,
   sleepWeek,
@@ -16,7 +15,6 @@ import {
 } from './fixtures';
 import { habitsInsights } from './habits';
 import { journalInsights } from './journal';
-import { moodInsights, moodSupportSignal } from './mood';
 import { extremeDays, INSIGHT_RULES, periodArgs } from './rules';
 import { sleepInsights } from './sleep';
 import type { ModuleInsights } from './types';
@@ -127,91 +125,6 @@ describe('resumo de sono', () => {
     const i = sleepInsights({ records, previous: [], range, today: TODAY });
     const extremes = i.sentences.find((s) => s.key === 'extremes');
     expect(extremes?.args.shortest).toMatchObject({ style: 'date' });
-  });
-});
-
-describe('resumo de humor e sinal de apoio (§48)', () => {
-  const steady = moodWeek(PREV_WEEK, [4, 4, 4, 4, 4, 4, 4]);
-
-  it('dados completos sem sinal: média, comparação e dias extremos', () => {
-    const i = moodInsights({
-      records: moodWeek(WEEK, [4, 5, 4, 3, 4, 4, 4]),
-      previous: steady,
-      range: WEEK,
-      today: TODAY,
-    });
-    expect(i.state).toBe('ok');
-    expect(i.supportSignal).toBe(false);
-    expect(keys(i)).toEqual(['average', 'compareSame', 'extremes']);
-    expect(i.highlights.map((h) => h.key)).toEqual(['highest', 'lowest', 'change']);
-    expectSentenceBounds(i);
-  });
-
-  it('queda relevante (≥ 0,5): texto acolhedor e apoio, sem período baixo', () => {
-    const i = moodInsights({
-      records: moodWeek(WEEK, [3, 4, 3, 4, 3, 4, 3]),
-      previous: steady,
-      range: WEEK,
-      today: TODAY,
-    });
-    expect(i.supportSignal).toBe(true);
-    expect(keys(i)).toEqual(['average', 'dropGentle', 'supportPointer', 'extremes']);
-    expectSentenceBounds(i);
-  });
-
-  it('queda pequena (0,3): texto neutro, sem apoio extra', () => {
-    const i = moodInsights({
-      records: moodWeek(WEEK, [4, 4, 3, 4, 4, 3, 4]),
-      previous: steady,
-      range: WEEK,
-      today: TODAY,
-    });
-    expect(keys(i)).toContain('compareDown');
-    expect(i.supportSignal).toBe(false);
-  });
-
-  it('média baixa (≤ 2): frase descritiva e apoio, mesmo sem período anterior', () => {
-    const i = moodInsights({
-      records: moodWeek(WEEK, [2, 2, 2, 3, 2, 2, 1]),
-      previous: [],
-      range: WEEK,
-      today: TODAY,
-    });
-    expect(i.supportSignal).toBe(true);
-    expect(keys(i)).toEqual(['average', 'lowPeriod', 'supportPointer', 'extremes']);
-  });
-
-  it('cada gatilho liga o sinal sozinho, nos limiares exatos', () => {
-    const at = (now: Array<number | undefined>, prev: Array<number | undefined> = []) =>
-      moodSupportSignal(moodWeek(WEEK, now), moodWeek(PREV_WEEK, prev));
-    // Média 2,0 liga; 2,1 não.
-    expect(at([2, 2, 2]).low).toBe(true);
-    expect(at([2, 2, 3, 2, 2, 2, 2]).low).toBe(false);
-    // Queda de 0,5 liga; 0,4 não (amostra mínima nos dois períodos).
-    expect(at([3.5, 3.5, 3.5], [4, 4, 4]).drop).toBe(true);
-    expect(at([3.6, 3.6, 3.6], [4, 4, 4]).drop).toBe(false);
-    expect(at([3, 3, 3], [4, 4]).drop).toBe(false);
-    // Um registro no ponto mais baixo da escala liga.
-    expect(at([4, 1, 4]).lowest).toBe(true);
-    expect(at([4, 2, 4]).lowest).toBe(false);
-  });
-
-  it('dados parciais: média e aviso; o apoio aparece se houver registro no ponto mais baixo', () => {
-    const i = moodInsights({
-      records: moodWeek(WEEK, [1]),
-      previous: steady,
-      range: WEEK,
-      today: TODAY,
-    });
-    expect(i.state).toBe('partial');
-    expect(keys(i)).toEqual(['average', 'partial', 'supportPointer']);
-    expect(i.supportSignal).toBe(true);
-  });
-
-  it('vazio: sem sinal', () => {
-    const i = moodInsights({ records: [], previous: steady, range: WEEK, today: TODAY });
-    expect(i.state).toBe('empty');
-    expect(i.supportSignal).toBe(false);
   });
 });
 
@@ -380,7 +293,6 @@ describe('resumo do dashboard', () => {
     over: Partial<PeriodRecords> & { range: PeriodRecords['range'] },
   ): PeriodRecords => ({
     sleep: [],
-    mood: [],
     habits: [],
     checks: [],
     loggedDays: new Set(),
@@ -392,7 +304,6 @@ describe('resumo do dashboard', () => {
     const now = period({
       range: WEEK,
       sleep: sleepWeek(WEEK, Array(7).fill(480)),
-      mood: moodWeek(WEEK, Array(7).fill(4)),
       habits: [habit()],
       checks: checksOn('h1', eachDay(WEEK).slice(0, 5)),
       loggedDays: days,
@@ -400,25 +311,15 @@ describe('resumo do dashboard', () => {
     const before = period({
       range: PREV_WEEK,
       sleep: sleepWeek(PREV_WEEK, Array(7).fill(420)),
-      mood: moodWeek(PREV_WEEK, Array(7).fill(3.5)),
       habits: [habit()],
       checks: checksOn('h1', eachDay(PREV_WEEK).slice(0, 5)),
     });
     const i = dashboardInsights(now, before, TODAY);
     expect(i.state).toBe('ok');
-    // Sono +60 min (3× o limiar) vem antes de humor +0,5 (1,7×).
-    expect(keys(i)).toEqual(['coverage', 'sleepUp', 'moodUp', 'habits']);
+    expect(keys(i)).toEqual(['coverage', 'sleepUp', 'habits']);
     expect(i.highlights[0]?.key).toBe('largest.sleep');
     expect(i.supportSignal).toBe(false);
     expectSentenceBounds(i);
-  });
-
-  it('humor em queda relevante: frase acolhedora e apoio junto do resumo', () => {
-    const now = period({ range: WEEK, mood: moodWeek(WEEK, Array(7).fill(3)), loggedDays: days });
-    const before = period({ range: PREV_WEEK, mood: moodWeek(PREV_WEEK, Array(7).fill(4)) });
-    const i = dashboardInsights(now, before, TODAY);
-    expect(i.supportSignal).toBe(true);
-    expect(keys(i)).toEqual(['coverage', 'moodDropGentle', 'supportPointer']);
   });
 
   it('sem mudança relevante: diz que ficou parecido', () => {

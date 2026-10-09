@@ -28,17 +28,6 @@ export async function seedSyntheticData(deps: {
       noteEnc: r.note ? await seal('sleep_entries', 'note_enc', r.note) : null,
     })),
   );
-  const mood = await Promise.all(
-    data.mood.map(async (r) => ({
-      userId,
-      loggedAt: new Date(r.loggedAt),
-      mood: r.mood,
-      energy: r.energy,
-      stress: r.stress,
-      emotions: r.emotions,
-      noteEnc: r.note ? await seal('mood_entries', 'note_enc', r.note) : null,
-    })),
-  );
   const journal = await Promise.all(
     data.journal.map(async (r) => ({
       userId,
@@ -53,7 +42,6 @@ export async function seedSyntheticData(deps: {
   return run(userId, async (tx) => {
     let rows = 0;
     rows += (await tx.sleepEntry.createMany({ data: sleep })).count;
-    rows += (await tx.moodEntry.createMany({ data: mood })).count;
     rows += (await tx.journalEntry.createMany({ data: journal })).count;
     rows += (
       await tx.bodyMeasurement.createMany({

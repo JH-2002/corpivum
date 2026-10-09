@@ -14,7 +14,6 @@ import {
   Pill,
   Settings,
   ShieldCheck,
-  Smile,
   Target,
 } from 'lucide-react';
 import type { Route } from 'next';
@@ -22,7 +21,6 @@ import type { Route } from 'next';
 export type NavKey =
   | 'home'
   | 'sleep'
-  | 'mood'
   | 'habits'
   | 'journal'
   | 'body'
@@ -49,7 +47,6 @@ export interface NavItem {
 export const SIDEBAR_ITEMS: readonly NavItem[] = [
   { key: 'home', href: '/inicio', icon: House },
   { key: 'sleep', href: '/sono', icon: Moon },
-  { key: 'mood', href: '/humor', icon: Smile },
   { key: 'habits', href: '/habitos', icon: ListChecks },
   { key: 'journal', href: '/diario', icon: NotebookPen },
   { key: 'body', href: '/corpo', icon: PersonStanding },
@@ -84,7 +81,6 @@ export const MORE_ITEMS: readonly NavItem[] = ALL_NAV_ITEMS.filter(
 export const DEMO_ITEMS: readonly NavItem[] = [
   { key: 'home', href: '/demo', icon: House, exact: true },
   { key: 'sleep', href: '/demo/sono', icon: Moon },
-  { key: 'mood', href: '/demo/humor', icon: Smile },
   { key: 'habits', href: '/demo/habitos', icon: ListChecks },
   { key: 'journal', href: '/demo/diario', icon: NotebookPen },
   { key: 'body', href: '/demo/corpo', icon: PersonStanding },

@@ -12,12 +12,6 @@ export const INSIGHT_RULES = Object.freeze({
   minRecords: 3,
   /** Diferença de sono médio (min) a partir da qual o texto fala em "a mais / a menos". */
   sleepMinutes: 20,
-  /** Diferença de humor médio (pontos na escala 1–5). */
-  moodPoints: 0.3,
-  /** Queda de humor médio considerada relevante: mostra a orientação de apoio junto do resumo. */
-  moodDropRelevant: 0.5,
-  /** Média de humor no período (escala 1–5) a partir da qual o resumo mostra a orientação de apoio. */
-  lowMoodAverage: 2,
   /** Diferença de cumprimento de hábitos (fração, 0,1 = 10 pontos percentuais). */
   habitPoints: 0.1,
   /** Variação média de horário de sono (min) abaixo da qual o texto diz "horários parecidos". */

@@ -11,7 +11,6 @@ import { createHabitsService } from '@/modules/habits/service';
 import { createFieldCipher, type HealthDeps } from '@/modules/health/core';
 import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
 import { createJournalService } from '@/modules/journal/service';
-import { createMoodService } from '@/modules/mood/service';
 import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import { createSleepService } from '@/modules/sleep/service';
 import { createTestConsent } from './consent-helpers';
@@ -63,7 +62,6 @@ const ALL = { acceptTerms: true, acceptPrivacy: true } as const;
 function services() {
   return {
     sleep: createSleepService(deps),
-    mood: createMoodService(deps),
     habits: createHabitsService(deps),
     journal: createJournalService(deps),
     body: createBodyService(deps),
@@ -92,14 +90,19 @@ async function seedAll(userId: string) {
     awakenings: 1,
     note: SECRET_NOTE,
   });
-  const mood = await s.mood.create(userId, {
-    loggedAt: '2026-10-06T09:00',
-    mood: 4,
-    energy: 3,
-    stress: 2,
-    emotions: ['calm'],
-    note: 'nota-humor',
-  });
+  // Humor saiu do app (ADR-0027); a tabela some na migração da reorientação. Até lá, linha direta.
+  const mood = await withConsentOn(db, userId, 'health_data', (tx) =>
+    tx.moodEntry.create({
+      data: {
+        userId,
+        loggedAt: new Date('2026-10-06T12:00:00Z'),
+        mood: 4,
+        energy: 3,
+        stress: 2,
+        emotions: ['calm'],
+      },
+    }),
+  );
   const habitId = await s.habits.create(userId, {
     name: SECRET_HABIT,
     frequency: 'daily',
@@ -114,7 +117,7 @@ async function seedAll(userId: string) {
     tags: ['work'],
   });
   const body = await s.body.create(userId, { measuredAt: '2026-10-06T08:00', weightKg: 70 });
-  if (!sleep.ok || !mood.ok || !journal.ok || !body.ok) throw new Error('seed');
+  if (!sleep.ok || !journal.ok || !body.ok) throw new Error('seed');
   return { sleepId: sleep.id, moodId: mood.id, habitId, journalId: journal.id, bodyId: body.id };
 }
 
@@ -265,7 +268,6 @@ describe('isolamento entre pessoas (LEG-S03)', () => {
     const ids = await seedAll(a.userId);
 
     expect(await s.sleep.list(b.userId, RANGE)).toEqual([]);
-    expect(await s.mood.list(b.userId, RANGE)).toEqual([]);
     expect(await s.habits.listHabits(b.userId)).toEqual([]);
     expect(await s.habits.listChecks(b.userId, RANGE)).toEqual([]);
     expect(await s.journal.list(b.userId, RANGE)).toEqual([]);
@@ -279,7 +281,6 @@ describe('isolamento entre pessoas (LEG-S03)', () => {
       }),
     ).toBeNull();
     expect(await s.sleep.remove(b.userId, ids.sleepId)).toBe(false);
-    expect(await s.mood.remove(b.userId, ids.moodId)).toBe(false);
     expect(await s.habits.remove(b.userId, ids.habitId)).toBe(false);
     expect(await s.habits.setCheck(b.userId, ids.habitId, '2026-10-06', false)).toBe('not_found');
     expect(await s.journal.remove(b.userId, ids.journalId)).toBe(false);
@@ -319,13 +320,7 @@ describe('consentimento no banco, não só na aplicação (LEG-C04)', () => {
 
     await expect(s.sleep.list(a.userId, RANGE)).rejects.toBeInstanceOf(ConsentRequiredError);
     await expect(
-      s.mood.create(a.userId, {
-        loggedAt: '2026-10-06T10:00',
-        mood: 3,
-        energy: 3,
-        stress: 3,
-        emotions: [],
-      }),
+      s.body.create(a.userId, { measuredAt: '2026-10-06T10:00', weightKg: 70 }),
     ).rejects.toBeInstanceOf(ConsentRequiredError);
 
     // Sem o guard da aplicação: só `app.user_id`.

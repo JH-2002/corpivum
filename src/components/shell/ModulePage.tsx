@@ -10,7 +10,6 @@ import type { HealthConsentState } from '@/modules/consent';
 export type PageKey =
   | 'home'
   | 'sleep'
-  | 'mood'
   | 'habits'
   | 'journal'
   | 'body'
