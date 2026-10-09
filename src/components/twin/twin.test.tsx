@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { generateDemoData } from '@/modules/demo/generator';
 import { bodyEntry, day, TODAY } from '@/modules/insights/fixtures';
-import { toTwinRows } from '@/modules/twin';
+import { BODY_MODEL_STORAGE_KEY, toTwinRows } from '@/modules/twin';
 import { findForbiddenTerms } from '../../../tests/content/forbidden-terms';
 import { renderWithIntl } from '../../../tests/render';
 import { BodyTwin } from './BodyTwin';
@@ -66,6 +66,24 @@ describe('corpo 3D (§15, §16)', () => {
     expect(slider).toHaveAttribute('aria-valuetext', '1 de outubro de 2026');
     await userEvent.setup().click(screen.getAllByRole('button', { name: 'Cintura' })[0]!);
     expect(screen.getByText('Circunferência: 80 cm')).toBeInTheDocument();
+  });
+
+  it('modelo do corpo: neutro por padrão, escolha só no navegador (ADR-0028)', async () => {
+    window.localStorage.clear();
+    const user = userEvent.setup();
+    renderWithIntl(
+      <BodyTwin rows={toTwinRows(records)} latestHeightCm={null} demo={false} describedBy="x" />,
+    );
+    const group = screen.getByRole('group', { name: 'Modelo do corpo' });
+    expect(within(group).getByRole('radio', { name: 'Neutro' })).toBeChecked();
+    await user.click(within(group).getByRole('radio', { name: 'Feminino' }));
+    expect(within(group).getByRole('radio', { name: 'Feminino' })).toBeChecked();
+    expect(window.localStorage.getItem(BODY_MODEL_STORAGE_KEY)).toBe('feminine');
+    expectClean(group.textContent ?? '');
+    window.localStorage.setItem(BODY_MODEL_STORAGE_KEY, 'outro');
+    window.dispatchEvent(new Event('storage'));
+    expect(await within(group).findByRole('radio', { name: 'Neutro' })).toBeChecked();
+    window.localStorage.clear();
   });
 
   it('vistas e restaurar pelo teclado', async () => {

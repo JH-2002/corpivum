@@ -15,6 +15,7 @@ import {
   type TwinRow,
 } from '@/modules/twin';
 import { BodyCompare } from './BodyCompare';
+import { BodyModelPicker, useBodyModel } from './BodyModelPicker';
 import { BodySilhouette2D } from './fallback/BodySilhouette2D';
 import { useTwinFormat } from './format';
 import { useCompact } from './hooks';
@@ -48,6 +49,7 @@ export function BodyTwin({
   const [selected, setSelected] = useState<BodyRegion | null>(null);
   const [hover, setHover] = useState<HoverInfo<BodyRegion> | null>(null);
   const [hideValues, setHideValues] = useState(false);
+  const [model] = useBodyModel();
   const turntable = useTurntable(VIEW_ANGLE.front);
   const compact = useCompact();
   const fmt = useTwinFormat(hideValues);
@@ -97,6 +99,7 @@ export function BodyTwin({
               scene={(onFail) => (
                 <LazyBodyScene
                   shape={shape}
+                  model={model}
                   angle={turntable.angle}
                   instant={turntable.instant}
                   selected={selected}
@@ -126,6 +129,7 @@ export function BodyTwin({
               hideValues={hideValues}
               onHideValues={setHideValues}
             />
+            <BodyModelPicker />
             {days.length > 1 && day ? (
               <div className="flex flex-col gap-1">
                 <label htmlFor={sliderId} className="text-sm font-semibold">

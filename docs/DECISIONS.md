@@ -650,7 +650,9 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   A calibração (circunferência em cm em min, base e max e a altura da base) é medida na própria malha e
   gravada em `src/modules/twin/bodyAssets.ts` (arquivo gerado).
 - **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e
-  `Cache-Control: immutable`. Nada é buscado fora do domínio (LEG-S10). Teste de fronteira: o único loader
+  `Cache-Control: immutable`. Nada é buscado fora do domínio (LEG-S10). `/models/` fica fora do matcher do
+  proxy (como `_next/static`): são arquivos CC0 sem dado pessoal, o demo público os carrega sem sessão e o
+  `no-store` do proxy anularia o cache. Teste de fronteira: o único loader
   fica em `src/components/twin/scene/assets.ts`, com caminho relativo `/models/`; nenhuma URL absoluta nas
   cenas.
 - **Compressão meshopt** (`EXT_meshopt_compression` + `KHR_mesh_quantization`), não Draco: o decodificador
@@ -673,7 +675,9 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   `prefers-reduced-motion`, fica parada e não há quadro extra.
 - **Sob demanda e fallbacks em cascata:** o `.glb` só é pedido quando o 3D aparece, e só a variante escolhida.
   Enquanto carrega ou se falhar, a geometria gerada em código da Fase 3 com o mesmo material; sem WebGL, o
-  SVG 2D (sem variante), e o `.glb` nem é buscado.
+  SVG 2D (sem variante), e o `.glb` nem é buscado. A escolha de variante fica abaixo dos controles de vista
+  (`BodyModelPicker`), vale para o corpo e para o Antes × Agora. Build: chunk 3D ≈ 237 → 257 KiB gzip
+  (GLTFLoader + meshopt), ainda fora da entrada de todas as rotas (`scripts/route-js.mjs`).
 **Consequências.** Trocar um modelo exige rodar o pipeline, que regrava o manifesto e o nome por hash, e
 atualizar `docs/ASSETS.md` (o teste falha se divergirem). Textos novos (`twin.bodyModel.*`) são RASCUNHO
 (`LEGAL-REVIEW`, OI-24).

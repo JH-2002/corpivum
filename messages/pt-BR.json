@@ -1092,6 +1092,13 @@
       "hideValues": "Ocultar valores",
       "hidden": "oculto"
     },
+    "bodyModel": {
+      "legend": "Modelo do corpo",
+      "neutral": "Neutro",
+      "feminine": "Feminino",
+      "masculine": "Masculino",
+      "hint": "Só muda a aparência do modelo. A escolha fica neste navegador e não é guardada como dado sobre você."
+    },
     "body": {
       "title": "Seu corpo em 3D",
       "dateLabel": "Data das medidas",

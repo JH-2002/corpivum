@@ -11,6 +11,8 @@ export function buildCsp(nonce: string, opts: { dev: boolean; https?: boolean })
       "'self'",
       `'nonce-${nonce}'`,
       "'strict-dynamic'",
+      // Só compilar WebAssembly (decodificador meshopt dos modelos 3D, ADR-0028); eval de JS segue bloqueado.
+      "'wasm-unsafe-eval'",
       ...(opts.dev ? ["'unsafe-eval'"] : []),
     ],
     'style-src': ["'self'", "'unsafe-inline'"],

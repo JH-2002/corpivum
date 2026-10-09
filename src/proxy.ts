@@ -36,10 +36,12 @@ export function proxy(request: NextRequest) {
   return res;
 }
 
+// `models/`: modelos 3D estáticos com hash no nome, sem dado pessoal (ADR-0028). Ficam fora do proxy para
+// o demo público carregá-los sem sessão e para o cache imutável não virar `no-store`.
 export const config = {
   matcher: [
     {
-      source: '/((?!_next/static|_next/image|favicon.ico|robots.txt).*)',
+      source: '/((?!_next/static|_next/image|models/|favicon.ico|robots.txt).*)',
       missing: [
         { type: 'header', key: 'next-router-prefetch' },
         { type: 'header', key: 'purpose', value: 'prefetch' },

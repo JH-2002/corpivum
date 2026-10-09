@@ -40,7 +40,14 @@ const REMOVED_ROUTES = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      // Modelos 3D com hash no nome (ADR-0028): o conteúdo de um nome nunca muda.
+      {
+        source: '/models/:file*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+    ];
   },
   async redirects() {
     return REMOVED_ROUTES.map((route) => ({ ...route, permanent: false }));

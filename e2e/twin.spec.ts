@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { BODY_ASSETS } from '../src/modules/twin/bodyAssets';
 import {
   createVerifiedUser,
   DEMO_TOUR_SEEN_STATE,
@@ -49,6 +50,16 @@ function collectThreeScripts(page: Page): string[] {
 }
 
 const viewer = (page: Page) => page.locator('[data-twin-mode]').first();
+
+/** Pedidos de modelos 3D (/models/*.glb) feitos pela página. */
+function collectModelRequests(page: Page): string[] {
+  const found: string[] = [];
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname.startsWith('/models/')) found.push(pathname);
+  });
+  return found;
+}
 
 test.describe('demo público', () => {
   test.use({ storageState: DEMO_TOUR_SEEN_STATE });
@@ -103,12 +114,54 @@ test.describe('demo público', () => {
       await expectNoAxeViolations(page);
     });
 
+    test('modelo do corpo: .glb só no twin, só a variante escolhida, preferência no navegador (ADR-0028)', async ({
+      page,
+    }) => {
+      const models = collectModelRequests(page);
+      await page.goto('/demo');
+      await page.waitForLoadState('networkidle');
+      expect(models).toEqual([]);
+
+      await page.goto('/demo/twin');
+      const canvas = viewer(page).locator('canvas');
+      await expect(viewer(page)).toHaveAttribute('data-holo-animated', 'true');
+      const picker = page.getByRole('group', { name: 'Modelo do corpo' });
+      await expect(picker.getByRole('radio', { name: 'Neutro' })).toBeChecked();
+      const neutral = BODY_ASSETS.neutral;
+      if (neutral) {
+        await expect(canvas).toHaveAttribute('data-twin-model', 'neutral');
+        expect(models).toEqual([neutral.file]);
+        const response = await page.request.get(neutral.file);
+        expect(response.headers()['cache-control']).toContain('immutable');
+      } else {
+        await expect(canvas).toHaveAttribute('data-twin-model', 'geometry');
+        expect(models).toEqual([]);
+      }
+
+      await picker.getByRole('radio', { name: 'Feminino' }).check();
+      const feminine = BODY_ASSETS.feminine;
+      if (feminine) {
+        await expect(canvas.first()).toHaveAttribute('data-twin-model', 'feminine');
+        expect(models).toContain(feminine.file);
+        expect(models.filter((m) => m.includes('masculine'))).toEqual([]);
+      }
+      await page.reload();
+      await expect(
+        page
+          .getByRole('group', { name: 'Modelo do corpo' })
+          .getByRole('radio', { name: 'Feminino' }),
+      ).toBeChecked();
+      await expectNoAxeViolations(page);
+    });
+
     test('reduced motion: vistas aplicadas sem transição, sem erro', async ({ page }) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(String(e)));
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto('/demo/twin');
       await expect(viewer(page)).toHaveAttribute('data-twin-mode', '3d');
+      // Varredura do holograma parada (ADR-0028).
+      await expect(viewer(page)).toHaveAttribute('data-holo-animated', 'false');
       const body = page.getByRole('region', { name: 'Seu corpo em 3D' });
       await body.getByRole('button', { name: 'Costas' }).click();
       await expect(body.getByRole('button', { name: 'Costas' })).toHaveAttribute(

@@ -14,6 +14,7 @@ import {
   type Direction,
   type TwinRow,
 } from '@/modules/twin';
+import { useBodyModel } from './BodyModelPicker';
 import { BodySilhouette2D } from './fallback/BodySilhouette2D';
 import { useTwinFormat } from './format';
 import { useCompact } from './hooks';
@@ -55,6 +56,7 @@ export function BodyCompare({
   const [selected, setSelected] = useState<BodyRegion | null>(null);
   const [hover, setHover] = useState<{ side: Side; info: HoverInfo<BodyRegion> } | null>(null);
   const turntable = useTurntable(VIEW_ANGLE.front);
+  const [model] = useBodyModel();
   const compact = useCompact();
   const fmt = useTwinFormat(hideValues);
   const level = (l: ConfidenceLevel): ConfidenceLevel => (demo ? 'DEMO' : l);
@@ -115,6 +117,7 @@ export function BodyCompare({
         scene={(onFail) => (
           <LazyBodyScene
             shape={shapes[side]}
+            model={model}
             angle={turntable.angle}
             instant={turntable.instant}
             selected={selected}

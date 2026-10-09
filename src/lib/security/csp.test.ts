@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { buildCsp, createNonce } from './csp';
 import { isPublicPath } from '@/modules/auth/constants';
+import { config as proxyConfig } from '@/proxy';
 
 describe('CSP (LEG-S05)', () => {
   const prod = buildCsp('abc123', { dev: false, https: true });
@@ -10,7 +11,12 @@ describe('CSP (LEG-S05)', () => {
     expect(script).toContain("'nonce-abc123'");
     expect(script).toContain("'strict-dynamic'");
     expect(script).not.toContain('unsafe-inline');
-    expect(script).not.toContain('unsafe-eval');
+    expect(script).not.toContain("'unsafe-eval'");
+  });
+
+  it('libera só a compilação de WebAssembly (meshopt, ADR-0028), não o eval de JS', () => {
+    const script = prod.split('; ').find((d) => d.startsWith('script-src')) ?? '';
+    expect(script).toContain("'wasm-unsafe-eval'");
   });
 
   it('bloqueia frames, objetos, base e envio de formulário para fora', () => {
@@ -43,6 +49,17 @@ describe('CSP (LEG-S05)', () => {
     const a = createNonce();
     expect(Buffer.from(a, 'base64')).toHaveLength(16);
     expect(createNonce()).not.toBe(a);
+  });
+});
+
+describe('proxy', () => {
+  it('pula só arquivos estáticos: _next, modelos 3D (ADR-0028), favicon e robots', () => {
+    const source = proxyConfig.matcher[0]?.source ?? '';
+    const re = new RegExp(`^${source}$`);
+    expect(re.test('/models/body-neutral.0123abcd.glb')).toBe(false);
+    expect(re.test('/twin')).toBe(true);
+    expect(re.test('/modelos')).toBe(true);
+    expect(re.test('/demo/twin')).toBe(true);
   });
 });
 

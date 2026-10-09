@@ -9,6 +9,7 @@ export {
   BODY_MODELS,
   DEFAULT_BODY_MODEL,
   parseBodyModel,
+  type BodyAsset,
   type BodyModel,
 } from './bodyModel';
 export {

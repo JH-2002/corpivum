@@ -159,3 +159,14 @@ export function HoloClock() {
   });
   return null;
 }
+
+/** Estado de interface de uma região: escolhida, sem medida informada (esmaecida) ou base. */
+export function regionHoloState<R extends string>(
+  region: R | null,
+  selected: R | null,
+  missing: readonly R[],
+): HoloState {
+  if (region !== null && region === selected) return 'selected';
+  if (region !== null && missing.includes(region)) return 'dimmed';
+  return 'base';
+}
