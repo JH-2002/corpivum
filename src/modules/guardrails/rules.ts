@@ -75,7 +75,11 @@ export interface WeightGoalInput {
   targetDay: string;
 }
 
-/** Meta de peso (§30, LEG-M04): nunca abaixo do IMC mínimo nem com perda mais rápida que o limite. */
+/**
+ * Meta de peso (§30, LEG-M04). Só metas de PERDA são limitadas: bloqueadas se levam a IMC abaixo do mínimo,
+ * se a pessoa já parte de abaixo dele ou se o ritmo passa do limite. Metas de ganho ou de manutenção são
+ * sempre permitidas (decisão de produto, OI-23(f)).
+ */
 export function checkWeightGoal(input: WeightGoalInput): GuardrailResult {
   if (
     !positive(input.currentWeightKg) ||
@@ -84,21 +88,25 @@ export function checkWeightGoal(input: WeightGoalInput): GuardrailResult {
   ) {
     return result(['invalid_input']);
   }
-  const reasons: GuardrailReason[] = [];
   const loss = input.currentWeightKg - input.targetWeightKg;
+  if (loss <= 0) return result([]);
+  const reasons: GuardrailReason[] = [];
+  const currentBmi = bmi(input.currentWeightKg, input.heightCm);
   const targetBmi = bmi(input.targetWeightKg, input.heightCm);
-  if (targetBmi !== null && targetBmi < GUARDRAIL_RULES.minTargetBmi) {
+  if (input.heightCm === null) {
+    reasons.push('height_required');
+  } else if (
+    (targetBmi !== null && targetBmi < GUARDRAIL_RULES.minTargetBmi) ||
+    (currentBmi !== null && currentBmi < GUARDRAIL_RULES.minTargetBmi)
+  ) {
     reasons.push('target_below_safe_range');
   }
-  if (loss > 0) {
-    if (input.heightCm === null) reasons.push('height_required');
-    const days = daysBetween(input.today, input.targetDay);
-    if (days <= 0) {
-      reasons.push('invalid_date');
-    } else {
-      const weeklyPercent = (loss / input.currentWeightKg / (days / 7)) * 100;
-      if (weeklyPercent > GUARDRAIL_RULES.maxWeeklyLossPercent) reasons.push('pace_too_fast');
-    }
+  const days = daysBetween(input.today, input.targetDay);
+  if (days <= 0) {
+    reasons.push('invalid_date');
+  } else {
+    const weeklyPercent = (loss / input.currentWeightKg / (days / 7)) * 100;
+    if (weeklyPercent > GUARDRAIL_RULES.maxWeeklyLossPercent) reasons.push('pace_too_fast');
   }
   return result(reasons);
 }

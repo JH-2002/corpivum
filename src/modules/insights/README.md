@@ -9,7 +9,7 @@ Camada explicativa por regras (sem IA): resumo em texto de 2 a 4 frases e destaq
 - Compara a pessoa só com o próprio histórico (período anterior de mesmo tamanho) e com a frequência
   prevista dos hábitos. Nunca com "normal", média populacional ou faixa clínica.
 - Descreve e associa; nunca atribui causa.
-- Corpo: sem juízo, sem IMC no twin, o peso aparece só como número (LEG-M06).
+- Corpo: sem juízo, sem IMC no twin nem no painel, o peso aparece só como número (LEG-M06).
 - Argumentos nunca carregam conteúdo livre (notas, nomes de hábitos).
 
 ## Pontos de entrada

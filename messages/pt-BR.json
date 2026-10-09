@@ -701,8 +701,7 @@
     "origins": {
       "sleep": "Média da duração das {count, plural, one {# noite registrada} other {# noites registradas}} por você no período (do horário de deitar ao de acordar).",
       "habits": "Checks feitos ÷ dias previstos dos seus {count, plural, one {# hábito ativo} other {# hábitos ativos}} no período.",
-      "body": "Último peso que você informou no período.",
-      "bodyWithBmi": "Último peso que você informou no período. IMC estimado a partir do peso e da altura informados: {bmi} (cálculo direto, sem classificação)."
+      "body": "Último peso que você informou no período."
     },
     "combined": {
       "title": "Sono no período",
@@ -1161,7 +1160,7 @@
     "title": "O app não acompanha esta meta",
     "titleValidation": "Confira os dados da meta",
     "reasons": {
-      "target_below_safe_range": "O alvo fica fora do que o app aceita para metas de peso.",
+      "target_below_safe_range": "O app não acompanha esta meta de perda de peso.",
       "pace_too_fast": "O ritmo de mudança de peso é mais rápido do que o app acompanha.",
       "height_required": "Para metas de perda de peso, o app precisa da sua altura.",
       "invalid_date": "A data escolhida para a meta já passou ou é hoje.",

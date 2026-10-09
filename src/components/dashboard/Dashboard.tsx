@@ -277,11 +277,7 @@ export function Dashboard({
                   })}`
                 : null
             }
-            origin={
-              cards.body.bmi !== null
-                ? t('origins.bodyWithBmi', { bmi: formatDecimal(cards.body.bmi) })
-                : t('origins.body')
-            }
+            origin={t('origins.body')}
             spark={<Sparkline data={cards.body.spark} color="var(--hm-domain-body)" />}
           />
         </div>

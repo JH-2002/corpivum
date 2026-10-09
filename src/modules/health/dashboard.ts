@@ -1,7 +1,7 @@
 import { addDays, previousRange } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { delta } from '@/lib/stats';
-import { bmi, change, latest, series, type BodyRecord } from '@/modules/body';
+import { change, latest, series, type BodyRecord } from '@/modules/body';
 import {
   completionRate,
   currentStreak,
@@ -50,7 +50,6 @@ export interface BodyCard {
   weightKg: number | null;
   weightDay: string | null;
   changeKg: number | null;
-  bmi: number | null;
   spark: SparkPoint[];
 }
 
@@ -153,14 +152,13 @@ function habitsCard(
   };
 }
 
-function bodyCard(now: BodyRecord[], heightCm: number | null): BodyCard {
+function bodyCard(now: BodyRecord[]): BodyCard {
   const w = latest(now, 'weightKg');
   return {
     state: w ? 'ok' : 'no-data',
     weightKg: w?.value ?? null,
     weightDay: w?.day ?? null,
     changeKg: change(now, 'weightKg'),
-    bmi: bmi(w?.value ?? null, latest(now, 'heightCm')?.value ?? heightCm),
     spark: series(now, 'weightKg').map((p) => ({ day: p.day, value: p.value })),
   };
 }
@@ -173,10 +171,9 @@ export async function buildDashboard(
 ): Promise<DashboardData> {
   const prev = previousRange(range);
   const habits = await source.habits();
-  const [now, before, heightCm, streaksEnabled, hasAny] = await Promise.all([
+  const [now, before, streaksEnabled, hasAny] = await Promise.all([
     load(source, range, habits),
     load(source, prev, habits),
-    source.latestHeightCm(),
     source.streaksEnabled(),
     source.hasAnyRecord(),
   ]);
@@ -187,7 +184,7 @@ export async function buildDashboard(
   const cards = {
     sleep: sleepCard(now.sleep, before.sleep, range),
     habits: habitsCard(habits, now.checks, before.checks, range, prev),
-    body: bodyCard(now.body, heightCm),
+    body: bodyCard(now.body),
   };
 
   const combined = dailyHours(now.sleep, range).map((d) => ({

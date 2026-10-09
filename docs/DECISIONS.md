@@ -615,7 +615,8 @@ com os corpos.
   "Precisa de ajuda?" no menu de ajuda, quando um guardrail de segurança disparar e no modo de risco da IA
   (LEG-I07). Orientação profissional, SAMU 192 e CVV 188.
 - **Entregue na reorientação:** guardrails (`checkWeightGoal`, `checkCalorieTarget`,
-  `checkRecommendationTopic`; IMC mínimo 18,5, perda de até 1% do peso por semana, piso de 1.500 kcal,
+  `checkRecommendationTopic`; só metas de perda são limitadas: IMC mínimo 18,5 no alvo e no ponto de
+  partida, perda de até 1% do peso por semana; ganho e manutenção sempre permitidos; piso de 1.500 kcal;
   rascunho clínico), `GuardrailNotice` com orientação profissional e apoio, "Precisa de ajuda?" no menu de
   ajuda e glossário ampliado (corpo ideal, juízo sobre o corpo, queima de gordura, rótulo de comida,
   restrição e jejum, culpa, prescrição de dieta ou treino). O resumo por regras deixou de ter sinal de apoio

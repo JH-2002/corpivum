@@ -22,16 +22,28 @@ describe('meta de peso (LEG-M04)', () => {
     expect(goal()).toEqual({ ok: true });
   });
 
-  it('alvo abaixo do IMC mínimo é bloqueado, mesmo com prazo longo ou como ganho', () => {
+  it('perda que leva a IMC abaixo do mínimo é bloqueada, mesmo com prazo longo', () => {
     // 175 cm: IMC 18,5 ≈ 56,7 kg.
-    expect(goal({ targetWeightKg: 55, targetDay: '2028-10-08' })).toEqual({
+    expect(goal({ currentWeightKg: 60, targetWeightKg: 55, targetDay: '2028-10-08' })).toEqual({
       ok: false,
       reasons: ['target_below_safe_range'],
     });
-    expect(goal({ currentWeightKg: 50, targetWeightKg: 54 })).toEqual({
+  });
+
+  it('perda de quem já está abaixo do IMC mínimo é bloqueada', () => {
+    expect(goal({ currentWeightKg: 55, targetWeightKg: 54.5, targetDay: '2027-10-08' })).toEqual({
       ok: false,
       reasons: ['target_below_safe_range'],
     });
+  });
+
+  it('ganho e manutenção são sempre permitidos, inclusive abaixo do IMC mínimo e sem altura', () => {
+    expect(goal({ currentWeightKg: 50, targetWeightKg: 54 })).toEqual({ ok: true });
+    expect(goal({ currentWeightKg: 50, targetWeightKg: 50 })).toEqual({ ok: true });
+    expect(goal({ currentWeightKg: 50, targetWeightKg: 70, targetDay: TODAY })).toEqual({
+      ok: true,
+    });
+    expect(goal({ heightCm: null, targetWeightKg: 82 })).toEqual({ ok: true });
   });
 
   it('perda mais rápida que o limite semanal é bloqueada', () => {
