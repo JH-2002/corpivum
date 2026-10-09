@@ -52,12 +52,11 @@
 
   /* Domínios */
   --hm-domain-sleep: #4338ca;
-  --hm-domain-mood: #9a4a06;
+  --hm-series-amber: #9a4a06;
   --hm-domain-activity: #166534;
   --hm-domain-nutrition: #b2400b;
   --hm-domain-body: #1d4ed8;
-  --hm-domain-journal: #6d28d9;
-  --hm-domain-medications: #475569;
+  --hm-series-violet: #6d28d9;
 }
 
 .dark {
@@ -103,10 +102,9 @@
   --hm-info-soft: #13263d;
 
   --hm-domain-sleep: #a5b4fc;
-  --hm-domain-mood: #fcd34d;
+  --hm-series-amber: #fcd34d;
   --hm-domain-activity: #86efac;
   --hm-domain-nutrition: #fdba74;
   --hm-domain-body: #93c5fd;
-  --hm-domain-journal: #c4b5fd;
-  --hm-domain-medications: #cbd5e1;
+  --hm-series-violet: #c4b5fd;
 }

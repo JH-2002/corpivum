@@ -3,7 +3,7 @@ import type { BodyField } from '@/modules/body';
 /**
  * Camada explicativa por regras (ADR-0025). As funções deste módulo devolvem CHAVES do i18n
  * (`insights.<módulo>.*`) e argumentos tipados; o texto final é montado na interface. Nenhum argumento
- * carrega conteúdo livre (nota, texto do diário, nome de hábito): só números, dias, etiquetas fixas e
+ * carrega conteúdo livre (nota, nome de hábito): só números, dias, etiquetas fixas e
  * campos fixos.
  */
 export type InsightModule = 'dashboard' | 'sleep' | 'habits' | 'body' | 'twin';

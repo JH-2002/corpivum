@@ -18,9 +18,9 @@ import { BodyForm } from './BodyForm';
 const GIRTHS: BodyField[] = ['waistCm', 'hipCm', 'armCm', 'thighCm', 'chestCm'];
 const GIRTH_STYLE: Record<string, { color: string; dash?: string }> = {
   waistCm: { color: 'var(--hm-domain-body)' },
-  hipCm: { color: 'var(--hm-domain-journal)', dash: '6 4' },
+  hipCm: { color: 'var(--hm-series-violet)', dash: '6 4' },
   armCm: { color: 'var(--hm-domain-activity)', dash: '2 3' },
-  thighCm: { color: 'var(--hm-domain-mood)', dash: '8 3 2 3' },
+  thighCm: { color: 'var(--hm-series-amber)', dash: '8 3 2 3' },
   chestCm: { color: 'var(--hm-domain-sleep)', dash: '1 4' },
 };
 

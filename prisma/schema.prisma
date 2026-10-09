@@ -1,6 +1,7 @@
 // Fase 1a: conta, sessões em banco, MFA, tokens e limites de tentativa (LEG-S03, LEG-S04).
 // Fase 1b: consentimento, versões de política, provas, AuditLog/AccessLog e fila de jobs (ADR-0019).
-// Fase 2: dados de saúde (sono, humor, hábitos, diário, corpo) com RLS por dono E consentimento (ADR-0021).
+// Fase 2: dados de saúde (sono, hábitos, corpo) com RLS por dono E consentimento (ADR-0021). Humor e diário
+// saíram na reorientação (ADR-0027).
 // As políticas RLS e as funções SECURITY DEFINER ficam no SQL das migrações (ADR-0015).
 //
 // REGRA (PR1a-R3-B8, LEG-R03): tabelas de PROVA (consent_records, policy_acceptances, privacy_requests,

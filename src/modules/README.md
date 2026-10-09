@@ -1,6 +1,7 @@
 # Módulos de domínio
 
-Um diretório por domínio (`src/modules/<dominio>`, CLAUDE.md). Cada módulo expõe sua API por `index.ts`
+Um diretório por domínio (`src/modules/<dominio>`, CLAUDE.md). Humor, diário, medicamentos e cérebro 3D
+saíram na reorientação (ADR-0027). Cada módulo expõe sua API por `index.ts`
 e acessa infraestrutura apenas pelos adaptadores em `src/adapters`.
 
 | Módulo | Responsabilidade | Spec | Requisitos | Fase |
@@ -11,16 +12,14 @@ e acessa infraestrutura apenas pelos adaptadores em `src/adapters`.
 | `health` | Núcleo dos módulos de saúde: transação com consentimento, cifra, fonte única, dashboard, eliminadores | §11–§12 | LEG-C04, LEG-S02, LEG-S03, LEG-D04 | 2 |
 | `demo` | Gerador de dados fictícios (demo público e modo demo) e seed de desenvolvimento | §40 | LEG-X02 | 2 |
 | `sleep` | Registro e métricas de sono | §20 | LEG-C02 | 2 |
-| `mood` | Humor, energia e estresse | §21 | LEG-C02, LEG-S02 (nota livre) | 2 |
 | `habits` | Hábitos, checks e streaks desativáveis | §22 | LEG-F05 | 2 |
-| `journal` | Diário com conteúdo criptografado; sem busca textual no MVP | §19 | LEG-S02, LEG-I02 | 2 |
 | `body` | Peso, altura e medidas; IMC como ESTIMADO | §23 | LEG-M04 | 2 |
-| `nutrition` | Refeições e água, sem metas restritivas | §25 | LEG-M04 | 4 |
-| `activity` | Atividades, treinos de força e progressão | §26 | LEG-C02 | 4 |
-| `medications` | Medicamentos informados pela pessoa e lembretes; sem doses ou interações | §24 | LEG-M02, LEG-S02 | 4 |
-| `goals` | Metas com limites de segurança e tom neutro | §30 | LEG-M04, LEG-F05 | 4 |
+| `nutrition` | Refeições e água, sem juízo nem metas restritivas | §25 | LEG-M04, LEG-M07 | 4 |
+| `activity` | Atividades, treinos de força e progressão, sem prescrição | §26 | LEG-C02, LEG-M08 | 4 |
+| `guardrails` | Regras puras de imagem corporal e alimentação (metas, recomendações, IA) | §28, §30, §55 | LEG-M04, LEG-M06–M08 | Reorientação |
+| `goals` | Metas com limites de segurança (`guardrails`) e tom neutro | §30 | LEG-M04, LEG-F05 | 4 |
 | `timeline` | Linha do tempo pessoal e marcos | §31 | LEG-C02 | 4 |
-| `twin` | Health Digital Twin: corpo 3D e cérebro 3D educacional | §15–§18 | LEG-M05 | 3 |
+| `twin` | Health Digital Twin: corpo 3D moldado só pelas medidas informadas | §15–§16 | LEG-M04, LEG-M06 | 3 |
 | `ai` | HealthMind AI: gate de consentimento, minimização, camada de saída, modo de risco | §27, §48 | LEG-I01–I08 | 5 |
 | `recommendations` | Recomendações por regras, com motivo e pedido de revisão | §28 | LEG-D08, LEG-M04 | 5 |
 | `reports` | Relatórios PDF/CSV/JSON com link expirando | §29 | LEG-D03 | 6 |

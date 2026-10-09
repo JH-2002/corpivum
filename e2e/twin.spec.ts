@@ -10,8 +10,8 @@ import {
 } from './fixtures';
 
 /**
- * Fase 3 (ADR-0026): Health Digital Twin. Corpo 3D (datas, regiões, vistas, Antes × Agora), cérebro 3D
- * educativo com os avisos obrigatórios (LEG-M05), carregamento sob demanda (o dashboard não baixa o
+ * Fase 3 (ADR-0026): Health Digital Twin. Corpo 3D (datas, regiões, vistas, Antes × Agora; o cérebro 3D
+ * saiu na reorientação, ADR-0027), carregamento sob demanda (o dashboard não baixa o
  * three.js), versão 2D sem WebGL, reduced motion, 320px (LEG-X01) e consentimento (LEG-C04).
  */
 // WebGL por software (SwiftShader) no navegador headless; os testes "sem WebGL" desligam por script.

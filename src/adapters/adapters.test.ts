@@ -68,7 +68,7 @@ describe('FakeLlmProvider', () => {
 });
 
 describe('LocalKmsProvider', () => {
-  const ctx = { userId: 'u1', table: 'journal_entry', column: 'content' };
+  const ctx = { userId: 'u1', table: 'sleep_entries', column: 'content' };
 
   it('cifra e decifra a chave de dados (envelope)', async () => {
     const kms = new LocalKmsProvider(masterKey);
@@ -100,7 +100,7 @@ describe('LocalKmsProvider', () => {
       kms.decryptDataKey(encrypted, keyId, { ...ctx, userId: 'u2' }),
     ).rejects.toBeInstanceOf(AdapterError);
     // A ordem das chaves do contexto não importa.
-    const reordered = { column: 'content', userId: 'u1', table: 'journal_entry' };
+    const reordered = { column: 'content', userId: 'u1', table: 'sleep_entries' };
     await expect(kms.decryptDataKey(encrypted, keyId, reordered)).resolves.toHaveLength(32);
   });
 

@@ -49,9 +49,14 @@ const PAIRS: Array<[string, string, number]> = [
     ['info', s, 4.5],
     ['border-strong', s, 3],
     ['focus', s, 3],
-    ...['sleep', 'mood', 'activity', 'nutrition', 'body', 'journal', 'medications'].map(
-      (d): [string, string, number] => [`domain-${d}`, s, 4.5],
-    ),
+    ...['sleep', 'activity', 'nutrition', 'body'].map((d): [string, string, number] => [
+      `domain-${d}`,
+      s,
+      4.5,
+    ]),
+    // Tons de série dos gráficos (antes cores de humor e diário, ADR-0027).
+    ['series-amber', s, 4.5],
+    ['series-violet', s, 4.5],
   ]),
   ['primary-fg', 'primary', 4.5],
   ['primary-fg', 'primary-hover', 4.5],
