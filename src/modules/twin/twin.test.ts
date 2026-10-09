@@ -1,4 +1,6 @@
 import { bodyEntry, day } from '@/modules/insights/fixtures';
+import { parseBodyModel } from './bodyModel';
+import { bodyMorphWeights, MORPH_NAMES, type BodyCalibration } from './morph';
 import { BODY_REGIONS, COMPARE_FIELDS } from './regions';
 import { bodyShape } from './shape';
 import { bodySnapshotAt, compareSnapshots, measurementDays } from './snapshot';
@@ -51,6 +53,57 @@ describe('forma do corpo 3D (ADR-0026)', () => {
     expect(at(10)).toBe(at(45));
     const tall = bodyShape(bodySnapshotAt([bodyEntry(day(0), { heightCm: 260 })], day(0)));
     expect(tall.heightM).toBe(2.2);
+  });
+});
+
+describe('morph targets do corpo .glb (ADR-0028)', () => {
+  const calibration: BodyCalibration = {
+    baseHeightM: 1.7,
+    girthCm: {
+      chest: { min: 75, base: 94, max: 130 },
+      arm: { min: 22, base: 29, max: 45 },
+      waist: { min: 62, base: 82, max: 130 },
+      hip: { min: 80, base: 98, max: 140 },
+      thigh: { min: 42, base: 55, max: 80 },
+    },
+  };
+  const morphOf = (values: Parameters<typeof bodyEntry>[1]) =>
+    bodyMorphWeights(bodyShape(bodySnapshotAt([bodyEntry(day(0), values)], day(0))), calibration);
+
+  it('o peso não muda os morphs nem a escala', () => {
+    expect(morphOf({ weightKg: 50, waistCm: 90 })).toEqual(morphOf({ weightKg: 150, waistCm: 90 }));
+  });
+
+  it('medida ausente fica na forma base da variante', () => {
+    const { weights, scale } = morphOf({});
+    for (const name of MORPH_NAMES) expect(weights[name]).toBe(0);
+    expect(scale).toBeCloseTo(1);
+  });
+
+  it('interpola pela calibração em cm, só um lado por região e sempre entre 0 e 1', () => {
+    expect(morphOf({ waistCm: 82 }).weights).toMatchObject({ waist_min: 0, waist_max: 0 });
+    expect(morphOf({ waistCm: 106 }).weights.waist_max).toBeCloseTo(0.5);
+    expect(morphOf({ waistCm: 72 }).weights).toMatchObject({ waist_min: 0.5, waist_max: 0 });
+    expect(morphOf({ waistCm: 180 }).weights.waist_max).toBe(1);
+    expect(morphOf({ waistCm: 45 }).weights.waist_min).toBe(1);
+    expect(morphOf({ waistCm: 100 }).weights.waist_max).toBeGreaterThan(
+      morphOf({ waistCm: 90 }).weights.waist_max,
+    );
+  });
+
+  it('altura informada vira escala uniforme; sem altura, a da variante', () => {
+    expect(morphOf({ heightCm: 187 }).scale).toBeCloseTo(1.1);
+    const tall = { ...calibration, baseHeightM: 1.8 };
+    const shape = bodyShape(bodySnapshotAt([bodyEntry(day(0), { waistCm: 80 })], day(0)));
+    expect(bodyMorphWeights(shape, tall).scale).toBe(1);
+  });
+});
+
+describe('modelo de visualização (ADR-0028)', () => {
+  it('padrão neutro; valor inválido vira neutro', () => {
+    expect(parseBodyModel(null)).toBe('neutral');
+    expect(parseBodyModel('outro')).toBe('neutral');
+    expect(parseBodyModel('feminine')).toBe('feminine');
   });
 });
 
