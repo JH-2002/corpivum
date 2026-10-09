@@ -83,6 +83,6 @@ for (const [variant, a] of Object.entries(assets)) {
   console.log(
     `| \`public${a.file}\` | MPFB2 (malha base e targets do MakeHuman), Blender ${calibration.blender} | ` +
       `MakeHuman Community | CC0 1.0 | Não exigida | Sim; ${variant}, ${a.triangles} triângulos, ` +
-      `sem auxiliares, mamilos e rosto suavizados, morphs de circunferência, meshopt | \`${a.sha256}\` | |`,
+      `sem auxiliares, mamilos achatados, rosto estilizado (remesh), morphs de circunferência e de tamanho, meshopt | \`${a.sha256}\` | |`,
   );
 }
