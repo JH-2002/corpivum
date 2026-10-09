@@ -65,7 +65,7 @@ export function dashboardInsights(
   today: string,
 ): ModuleInsights {
   const period = periodArgs(now.range, today);
-  const base = { module: 'dashboard' as const, highlights: [], supportSignal: false };
+  const base = { module: 'dashboard' as const, highlights: [] };
   const logged = now.loggedDays.size;
   if (logged === 0) return { ...base, state: 'empty', sentences: [sentence('empty')] };
 

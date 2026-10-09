@@ -19,7 +19,7 @@ export interface BodyInsightsInput {
  */
 export function bodyInsights({ records, range, today }: BodyInsightsInput): ModuleInsights {
   const period = periodArgs(range, today);
-  const base = { module: 'body' as const, highlights: [], supportSignal: false };
+  const base = { module: 'body' as const, highlights: [] };
   if (records.length === 0) return { ...base, state: 'empty', sentences: [sentence('empty')] };
 
   const weight = latest(records, 'weightKg');

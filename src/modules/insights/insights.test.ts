@@ -64,7 +64,6 @@ describe('resumo de sono', () => {
       longest: { kind: 'days', value: ['2026-10-03'] },
     });
     expect(i.highlights.map((h) => h.key)).toEqual(['longest', 'shortest', 'change']);
-    expect(i.supportSignal).toBe(false);
     expectSentenceBounds(i);
   });
 
@@ -280,7 +279,6 @@ describe('resumo do dashboard', () => {
     expect(i.state).toBe('ok');
     expect(keys(i)).toEqual(['coverage', 'sleepUp', 'habits']);
     expect(i.highlights[0]?.key).toBe('largest.sleep');
-    expect(i.supportSignal).toBe(false);
     expectSentenceBounds(i);
   });
 

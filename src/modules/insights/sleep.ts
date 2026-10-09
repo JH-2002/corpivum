@@ -36,7 +36,7 @@ export function sleepInsights({
   today,
 }: SleepInsightsInput): ModuleInsights {
   const period = periodArgs(range, today);
-  const base = { module: 'sleep' as const, highlights: [], supportSignal: false };
+  const base = { module: 'sleep' as const, highlights: [] };
   if (records.length === 0) return { ...base, state: 'empty', sentences: [sentence('empty')] };
 
   const avg = averageDurationMinutes(records) ?? 0;

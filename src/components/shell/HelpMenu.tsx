@@ -4,12 +4,14 @@ import { CircleHelp, Compass } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { useTranslations } from 'next-intl';
+import { SupportNotice } from '@/components/health/SupportNotice';
 import { CONFIDENCE_LEVELS } from '@/components/ui/ConfidenceBadge';
 import { Disclosure } from './Disclosure';
 
 /**
- * Menu de ajuda (ADR-0025): reabre o tour do painel em qualquer tela e explica os selos de origem do
- * dado (§39). Mesmo padrão "disclosure" do menu da conta (ADR-0011).
+ * Menu de ajuda (ADR-0025): reabre o tour do painel em qualquer tela, explica os selos de origem do
+ * dado (§39) e dá acesso permanente ao apoio, "Precisa de ajuda?" (§48, ADR-0027). Mesmo padrão
+ * "disclosure" do menu da conta (ADR-0011).
  */
 export function HelpMenu({ tourHref }: { tourHref: '/inicio?tour=1' | '/demo?tour=1' }) {
   const t = useTranslations('help');
@@ -44,6 +46,17 @@ export function HelpMenu({ tourHref }: { tourHref: '/inicio?tour=1' | '/demo?tou
             </div>
           ))}
         </dl>
+      </section>
+      <section
+        aria-labelledby="help-support"
+        className="mt-2 flex flex-col gap-2 border-t border-border px-3 pt-2 text-sm"
+        data-testid="help-support"
+      >
+        <h2 id="help-support" className="font-semibold">
+          {t('supportTitle')}
+        </h2>
+        <p className="text-fg-muted">{t('supportIntro')}</p>
+        <SupportNotice />
       </section>
     </Disclosure>
   );

@@ -613,7 +613,15 @@ com os corpos.
 - **Apoio de crise:** sai junto com humor e diário. Fica contextual onde ainda faz sentido: quando um
   guardrail de imagem corporal ou alimentação disparar, no modo de risco da IA (LEG-I07) e num acesso
   permanente "Precisa de ajuda?" no menu de ajuda (orientação profissional, SAMU 192, CVV 188).
+- **Entregue na reorientação:** guardrails (`checkWeightGoal`, `checkCalorieTarget`,
+  `checkRecommendationTopic`; IMC mínimo 18,5, perda de até 1% do peso por semana, piso de 1.500 kcal,
+  rascunho clínico), `GuardrailNotice` com orientação profissional e apoio, "Precisa de ajuda?" no menu de
+  ajuda e glossário ampliado (corpo ideal, juízo sobre o corpo, queima de gordura, rótulo de comida,
+  restrição e jejum, culpa, prescrição de dieta ou treino). O resumo por regras deixou de ter sinal de apoio
+  (vinha do humor).
 **Consequências.** O ADR-0026 continua valendo para o corpo; as partes sobre o cérebro deixam de existir.
+A opção de ocultar peso e medidas em todas as telas (LEG-M06) é o modo privacidade global da Fase 6; até lá,
+só o twin tem "Ocultar valores". Metas (Fase 4) e IA (Fase 5) precisam usar `src/modules/guardrails`.
 OI-19 e as partes de OI-21 e OI-22 sobre humor e cérebro são fechadas por escopo removido. As fases futuras
 (`docs/prompts/`) perdem medicamentos (Fase 4) e o diário (Fase 5). Reintroduzir qualquer módulo removido exige
 nova ADR, nova versão do consentimento e revisão do RIPD.

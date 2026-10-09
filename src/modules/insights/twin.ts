@@ -28,7 +28,7 @@ export function twinBodyInsights({
   today,
 }: TwinBodyInsightsInput): ModuleInsights {
   const period = periodArgs(range, today);
-  const base = { module: 'twin' as const, highlights: [], supportSignal: false };
+  const base = { module: 'twin' as const, highlights: [] };
   if (records.length === 0) return { ...base, state: 'empty', sentences: [sentence('empty')] };
 
   const dates = measurementDays(records);

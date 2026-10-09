@@ -50,9 +50,4 @@ export interface ModuleInsights {
   /** Frases do resumo, na ordem de leitura. 2 a 4 quando `ok`; `MAX_SENTENCES` no máximo. */
   sentences: InsightSentence[];
   highlights: Highlight[];
-  /**
-   * Humor baixo, queda relevante ou registro no ponto mais baixo da escala: a interface mostra a
-   * orientação de apoio (CVV 188 / SAMU 192, §48) junto do resumo. Não é avaliação de risco.
-   */
-  supportSignal: boolean;
 }

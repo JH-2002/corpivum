@@ -71,19 +71,19 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     pattern: new RegExp(
       `\\b(nivel|niveis|taxas?|quantidade|concentracao)\\s+(de\\s+|da\\s+|do\\s+)?(sua\\s+|seu\\s+)?${NEUROCHEMICALS}`,
     ),
-    reason: 'Nunca afirmar nível de neurotransmissor (regra 8, LEG-M05).',
+    reason: 'Nunca afirmar nível de neurotransmissor (regra 8, regra 8).',
   },
   {
     id: 'neurochemical-release',
     pattern: new RegExp(
       `\\b(libera\\w*|produz\\w*|aument\\w*|reduz\\w*|diminu\\w*|dispar\\w*|eleva\\w*)\\s+(\\w+\\s+){0,3}${NEUROCHEMICALS}|\\b${NEUROCHEMICALS}\\s+(\\w+\\s+){0,2}(liberad|produzid|aumentad|elevad|baix|alt)\\w*`,
     ),
-    reason: 'Nunca afirmar liberação ou alteração de substância (regra 8, LEG-M05).',
+    reason: 'Nunca afirmar liberação ou alteração de substância (regra 8, regra 8).',
   },
   {
     id: 'brain-state',
     pattern: /\b(estado|atividade|funcionamento|saude)\s+(do\s+seu\s+|do\s+)?cerebr\w*/,
-    reason: 'Nunca afirmar estado cerebral (regra 8, LEG-M05).',
+    reason: 'Nunca afirmar estado cerebral (regra 8).',
   },
   {
     id: 'dose-advice',
@@ -135,7 +135,7 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
   {
     id: 'brain-assertion',
     pattern: /\b(seu\s+)?cerebro\s+(esta|fica|anda|ficou|estava)\b/,
-    reason: 'Nunca afirmar estado cerebral (regra 8, LEG-M05).',
+    reason: 'Nunca afirmar estado cerebral (regra 8, regra 8).',
   },
   {
     id: 'you-are-condition',
@@ -155,6 +155,47 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     pattern:
       /\b(causou|causam?|causad[oa]s?|causaram)\b|\bpor\s+causa\s+d|\bdevido\s+(a|ao|aos|as)\b|\bgracas\s+(a|ao|aos|as)\b|\bresult(ou|a|aram)\s+(em|n[oa]s?)\b|\bfez\s+(voce|seu|sua)\b|\bporque\s+voce\b|\b(melhor|pior)(a|ou|aram)\s+(o\s+|a\s+)?(seu|sua)\s+(humor|sono|energia|estresse|bem-estar)/,
     reason: 'Descrever e associar, nunca atribuir causa (§32, LEG-I04, ADR-0025).',
+  },
+  {
+    id: 'ideal-body',
+    pattern:
+      /\b(corpo|shape|forma|silhueta|barriga)\s+(ideal|perfeit\w*|dos\s+sonhos|sarad\w*|definid\w*)\b|\bcorpo\s+de\s+(verao|praia)\b|\bprojeto\s+verao\b/,
+    reason: 'Nada de corpo ideal ou meta de aparência (LEG-M06).',
+  },
+  {
+    id: 'body-shaming',
+    pattern:
+      /\b(secar|sequinh\w*|barriga\s+negativa|gordurinhas?|pneuzinhos?|flacidez|celulite|imperfeic\w*|defeitos?\s+(do|no)\s+corpo)\b/,
+    reason: 'Nenhum juízo sobre o corpo (LEG-M06).',
+  },
+  {
+    id: 'fat-burning',
+    pattern:
+      /\b(queim\w*|derret\w*|elimin\w*|perder|perca)\s+(\w+\s+){0,2}gordura\b|\bdetox\b|\bemagre\w*\s+(rapid\w*|ja|em\s+\d+)|\bperca\s+\d+\s*(kg|quilos)\b/,
+    reason: 'Sem promessa de emagrecimento ou de queima de gordura (LEG-M04, LEG-M06).',
+  },
+  {
+    id: 'food-judgment',
+    pattern:
+      /\b(comidas?|alimentos?|refeic(ao|oes))\s+(proibid\w*|lixo|ruins?|toxic\w*|errad\w*|sujas?|limpas?|boas?)\b|\bjunk\s*food\b|\bcomer\s+(errado|certo|mal)\b/,
+    reason: 'Alimentação sem rótulo de bom ou ruim (LEG-M07).',
+  },
+  {
+    id: 'restriction',
+    pattern:
+      /\b(jejum|jejuar|jejue)\b|\bpul(ar|e)\s+(\w+\s+)?refeic\w*|\bcort(ar|e)\s+(o\s+|os\s+|a\s+)?(carboidrat\w*|acucar|doces?|refeic\w*)|\bdeficit\s+calorico\b|\bdieta\s+restritiva\b|\bcompens\w*\s+(\w+\s+){0,3}(comeu|comida|refeic\w*|calorias|exagero|doces?)\b/,
+    reason: 'Sem incentivo a restrição, jejum ou compensação (LEG-M04, LEG-M07).',
+  },
+  {
+    id: 'guilt-language',
+    pattern: /\b(culpad\w*|pecad\w*|deslizes?|furou\s+a\s+dieta|jacad\w*|enfiou\s+o\s+pe)\b/,
+    reason: 'Sem culpa ou punição ligada a comida ou corpo (LEG-F05, LEG-M07).',
+  },
+  {
+    id: 'diet-or-training-prescription',
+    pattern:
+      /\b(seu|sua|um|uma)\s+(plano\s+alimentar|cardapio\s+personalizad\w*|dieta\s+personalizad\w*|treino\s+personalizad\w*|ficha\s+de\s+treino)\b|\bprescrev\w*\s+(\w+\s+){0,2}(dieta|treino|cardapio)/,
+    reason: 'O app não prescreve dieta nem treino (LEG-M08).',
   },
   {
     id: 'clinical-report',

@@ -97,6 +97,13 @@ describe('detector de alegações proibidas', () => {
     'clinical-report': 'Laudo do seu sono',
     'population-norm': 'Seu sono está abaixo do recomendado para a sua idade',
     'causal-claim': 'Seu humor caiu por causa das noites curtas',
+    'ideal-body': 'Chegue ao corpo ideal até o verão',
+    'body-shaming': 'Hora de secar a barriga',
+    'fat-burning': 'Treino para queimar gordura',
+    'food-judgment': 'Evite comidas proibidas',
+    restriction: 'Experimente o jejum intermitente',
+    'guilt-language': 'Exagerou no fim de semana? Sem deslizes desta vez',
+    'diet-or-training-prescription': 'Receba seu plano alimentar em minutos',
   };
 
   /** Variações relatadas na revisão de privacidade: todas precisam ser detectadas. */
@@ -139,6 +146,11 @@ describe('detector de alegações proibidas', () => {
     'Aparecer junto não quer dizer que um explique o outro',
     'A média ficou parecida com a da semana anterior',
     'O app não define meta nem classifica valores',
+    'Registre o que você comeu, quando quiser',
+    'Sua refeição foi registrada',
+    'Você pode registrar a sua atividade do dia',
+    'O app não acompanha esta meta',
+    'Converse com um nutricionista ou um profissional de educação física',
   ];
 
   it('tem um exemplo positivo para cada termo do glossário', () => {
