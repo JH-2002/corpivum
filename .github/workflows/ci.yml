@@ -42,6 +42,8 @@ jobs:
       # Inclui o teste de strings proibidas (LEG-M03) e o de contraste dos tokens (LEG-X01).
       - run: pnpm test
       - run: pnpm build
+      # JS de entrada por rota; falha se o three.js entrar no dashboard (3D sob demanda, ADR-0026).
+      - run: node scripts/route-js.mjs "(app)/inicio" demo "(app)/twin" demo/twin
 
   e2e:
     name: E2E e acessibilidade (Playwright + axe)

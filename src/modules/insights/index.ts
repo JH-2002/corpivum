@@ -10,6 +10,16 @@ export { journalInsights, type JournalInsightsInput, type JournalMeta } from './
 export { moodInsights, moodSupportSignal, type MoodInsightsInput } from './mood';
 export { INSIGHT_RULES } from './rules';
 export { sleepInsights, type SleepInsightsInput } from './sleep';
+export {
+  brainInsights,
+  brainThemes,
+  twinBodyInsights,
+  type BrainThemeData,
+  type BrainThemes,
+  type BrainThemesInput,
+  type ThemeIndicator,
+  type TwinBodyInsightsInput,
+} from './twin';
 export type {
   DayStyle,
   Highlight,

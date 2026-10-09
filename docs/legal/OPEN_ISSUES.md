@@ -14,7 +14,7 @@
 | OI-06 | Marco Civil | Definir o controlador (PF ou PJ). Se o art. 15 não se aplicar, reduzir `ACCESS_LOG_RETENTION_DAYS` (hoje 180) ao mínimo para segurança. | LEG-R02, §C.6 | Fase 1b | Aberta |
 | OI-07 | ANVISA | Enquadramento (SaMD, RDC 657/2022) de medicamentos, metas e recomendações. Revisar `docs/INTENDED_USE.md`. | LEG-M01, §C.5 | Todas | Aberta |
 | OI-08 | Textos | Política de Privacidade, Termos, consentimentos por finalidade, Aviso de IA, Cookies: textos finais. Fase 1b: rascunhos v1 de Política, Termos e consentimentos (saúde, marketing, métricas) em `messages/pt-BR.json` (`legal.*`, `consent.purposes.*`), versionados em `policy_versions` com hash; páginas públicas `/legal/*` com rótulo de rascunho. Texto final = nova versão (ADR-0019). | LEG-G04, §C.7 | Fase 1b | Aberta (rascunhos v1 publicados) |
-| OI-09 | Avisos de interface | Revisão jurídica **e clínica** das chaves `disclaimer.*` em `messages/pt-BR.json` (texto de bem-estar, medicamentos, cérebro/neuroquímica, IA, rodapé de relatório, apoio CVV/SAMU, rótulo de rascunho). | LEG-M01–M05, LEG-I07 | Fase 0 em diante | Aberta |
+| OI-09 | Avisos de interface | Revisão jurídica **e clínica** das chaves `disclaimer.*` em `messages/pt-BR.json` (texto de bem-estar, medicamentos, cérebro/neuroquímica, IA, rodapé de relatório, apoio CVV/SAMU, rótulo de rascunho). Fase 3: novo `disclaimer.bodyModel` (corpo 3D, ADR-0026). | LEG-M01–M05, LEG-I07 | Fase 0 em diante | Aberta |
 | OI-10 | Glossário | Validar o glossário de termos proibidos (`tests/content/forbidden-terms.ts`) com revisão jurídica/clínica. | LEG-M03 | Fase 0 em diante | Aberta |
 | OI-11 | Subprocessadores | Escolher hospedagem, banco, storage, filas, e-mail e monitoramento com região no Brasil; assinar DPAs; preencher `docs/privacy/SUBPROCESSORS.md`. | LEG-S10, LEG-D06 | Fase 7 | Aberta |
 | OI-12 | Encarregado | Nomear o encarregado e publicar o canal de contato (`{{ENCARREGADO}}`). | LEG-G03 | Fase 1b | Aberta |
@@ -27,6 +27,7 @@
 | OI-20 | Correção com histórico | LEG-D02 pede "todo dado editável, com histórico". A Fase 2 edita e exclui sem guardar versões anteriores (menos dado sensível guardado). Confirmar se o histórico é exigível e, se for, como fica na exportação e na eliminação (Fase 6). | LEG-D02, ADR-0021 | Fase 6 | Aberta |
 | OI-17 | Registros de acesso | `access_logs` guarda IP (sem porta de origem) e data/hora, no login e a cada 5 min de uso, por `ACCESS_LOG_RETENTION_DAYS` (180), sem leitura pelo runtime. Confirmar: (a) se a granularidade atende o art. 15 do Marco Civil; (b) se a porta lógica de origem é exigível (CGNAT); (c) o procedimento de fornecimento mediante ordem judicial. Depende do OI-06. | LEG-R02, ADR-0019 | Fases 1b, 7 | Aberta |
 | OI-21 | Camada explicativa | `LEGAL-REVIEW` Textos gerados por regras (`insights.*`), guias dos gráficos (`charts.guide.*`) e tour (`tour.*`, `help.*`) são RASCUNHO. Revisão jurídica **e clínica** de: (a) a redação acolhedora para humor baixo ou em queda e os limiares que mostram a orientação CVV 188 / SAMU 192 junto do resumo (média ≤ 2, queda ≥ 0,5 ponto, registro no ponto mais baixo; `INSIGHT_RULES`); (b) os novos termos proibidos `population-norm` e `causal-claim` (ver OI-10); (c) se o "o que fazer com isso" dos gráficos pode ser lido como orientação de saúde. | LEG-M01, LEG-M03, LEG-I07, §48, ADR-0025 | Camada explicativa | Aberta |
+| OI-22 | Health Twin | `LEGAL-REVIEW` Textos do corpo e do cérebro 3D (`twin.*`, `insights.twin.*`, `insights.brain.*`) são RASCUNHO. Revisão jurídica **e clínica** de: (a) as funções gerais das regiões do cérebro e as associações "na literatura geral" entre temas (sono, humor, rotina) e regiões; (b) se o nível de confiança (suficiência dos registros) ou "seus registros" ao lado de uma região podem ser lidos como medição cerebral, apesar dos avisos (LEG-M05); (c) se o corpo 3D ajustado por medidas pode ser lido como avaliação corporal, e se manter o peso fora da forma e usar uma forma neutra padrão é adequado (LEG-M04); (d) o texto novo de `disclaimer.brainModel` (PR3-M1), aprovado pelo responsável pelo produto em 2026-10-08, ainda sem revisão jurídica e clínica. | LEG-M04, LEG-M05, LEG-M03, ADR-0026 | Fase 3 | Aberta |
 
 ## Achados de severidade baixa do `privacy-reviewer` (Fase 1a)
 
@@ -132,6 +133,19 @@ teste); as demais notas ficam registradas aqui.
 | PR2-N4 | Nota | Textos fictícios da demo fora da varredura de termos proibidos. | LEG-M03 | Resolvido: teste varre os textos gerados |
 | PR2-N5 | Nota | `datetime-local` só validado por formato (31/02 virava outra data). | — | Resolvido: validação de data e hora reais (teste) |
 | PR2-N6 | Nota | A Central de Privacidade ainda não lista as categorias novas (sono, humor, hábitos, diário, corpo). | LEG-D01 | Aberto (Fase 6, com a exportação) |
+
+### Revisão da Fase 3 (ADR-0026)
+
+Nenhum achado crítico ou alto. Os médios e dois baixos foram corrigidos na própria fase (com teste); o
+terceiro baixo fica registrado aqui.
+
+| ID | Sev. | Achado | Referência | Status |
+|---|---|---|---|---|
+| PR3-M1 | Média | `disclaimer.brainModel` dizia que o modelo "é uma estimativa a partir do que você relatou", mas o cérebro 3D é igual para todas as pessoas e não usa dado. Junto do painel com os registros, sugeria que o app estimou algo sobre o cérebro da pessoa. | LEG-M05 | Resolvido: aviso reescrito (modelo igual para todos, não usa os dados; só os números do painel vêm do relato, não é medição cerebral), aprovado em `approved-disclaimers.ts` (`LEGAL-REVIEW`, OI-09/OI-22) |
+| PR3-M2 | Média | No painel, números pessoais ao lado do nome do lobo, com a ressalva só no fim e esmaecida, e "Nível de confiança" sem dizer de quê, pareciam indicador da região. | LEG-M05 | Resolvido: ressalva antes dos números e em destaque; títulos "Seus registros nos temas ligados (não são sobre a região)" e "Nível de confiança dos seus registros". Separar os números do painel da região fica para a revisão de OI-22 |
+| PR3-B1 | Baixa | O resumo vazio do corpo dizia que o modelo aparece na forma neutra, mas a tela mostra "sem dados" e nenhum modelo. | Art. 6º VI | Resolvido: texto ajustado |
+| PR3-B2 | Baixa | O sinal de apoio do cérebro ignorava a queda de humor em relação ao período anterior (a tela de humor considera). | §48, LEG-I07 | Resolvido: lê o humor do período anterior (teste) |
+| PR3-B3 | Baixa | "Ocultar valores" oculta os números de medidas e indicadores, mas não as datas de medição nem a quantidade de dias com registro. | §44/§45 | Aceito: são metadados; o modo privacidade global (Fase 6) define o alcance final |
 
 ## Resolvidas
 

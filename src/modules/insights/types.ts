@@ -7,7 +7,8 @@ import type { JournalTag } from '@/modules/journal';
  * carrega conteúdo livre (nota, texto do diário, nome de hábito): só números, dias, etiquetas fixas e
  * campos fixos.
  */
-export type InsightModule = 'dashboard' | 'sleep' | 'mood' | 'habits' | 'journal' | 'body';
+export type InsightModule =
+  'dashboard' | 'sleep' | 'mood' | 'habits' | 'journal' | 'body' | 'twin' | 'brain';
 
 /** Argumento de uma frase, com o formato que a interface deve aplicar. */
 export type InsightArg =

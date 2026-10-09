@@ -201,14 +201,15 @@
     "notMedicalDevice": "Este aplicativo não é um dispositivo médico e não faz recomendações de diagnóstico ou tratamento.",
     "medications": "Siga a orientação do seu prescritor.",
     "medicationsScope": "O app não sugere doses, não verifica interações e não altera nada automaticamente.",
-    "brainModel": "Modelo aproximado e educacional. É uma estimativa a partir do que você relatou, não uma medição cerebral.",
+    "brainModel": "Modelo aproximado e educacional, igual para todas as pessoas: não usa nem representa os seus dados. Os números do painel são estimativas a partir do que você relatou, não uma medição cerebral.",
     "neurochemistry": "Conteúdo educativo. Não é medição laboratorial e não indica níveis de neurotransmissores no seu corpo.",
     "aiGenerated": "Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.",
     "reportFooter": "Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.",
     "riskSupport": "Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).",
     "draftLegal": "RASCUNHO — revisão jurídica obrigatória.",
     "wellbeingScore": "O Índice de Bem-Estar resume seus registros de sono, humor e energia, hábitos e a constância dos registros. Não é avaliação de saúde, não indica condição e não substitui profissional de saúde.",
-    "demoData": "Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma."
+    "demoData": "Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.",
+    "bodyModel": "Representação aproximada a partir das medidas que você informou. Não é avaliação corporal nem de saúde."
   },
   "auth": {
     "layoutTagline": "Seu espaço de bem-estar e autoacompanhamento.",
@@ -931,6 +932,27 @@
         "girthChange": "Medida que mais variou (cm)",
         "girthField": "Circunferência: {field}"
       }
+    },
+    "twin": {
+      "empty": "Nenhuma medida registrada neste período.",
+      "shapeFrom": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, o modelo usa {count, plural, =0 {nenhuma das {total} medidas} one {# das {total} medidas} other {# das {total} medidas}} que dão forma ao corpo: altura e circunferências de peito, braço, cintura, quadril e coxa.",
+      "neutral": "{count, plural, one {Uma medida sem registro fica} other {# medidas sem registro ficam}} na forma neutra padrão do modelo.",
+      "dates": "O controle de datas percorre {count, plural, one {# data de medição} other {# datas de medição}}: a primeira {first} e a última {last}.",
+      "weightNote": "O peso aparece só em número: ele não muda o formato do modelo.",
+      "partial": "Com uma data de medição só, ainda não há como percorrer nem comparar datas."
+    },
+    "brain": {
+      "empty": "Ainda não há registros de sono, humor ou hábitos neste período.",
+      "educational": "O cérebro 3D é um modelo educativo, igual para todas as pessoas: cores e formas não mudam com os seus registros.",
+      "themesUsed": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, há {sleep, plural, one {# dia} other {# dias}} com sono, {mood, plural, one {# dia} other {# dias}} com humor e {habits, plural, one {# dia} other {# dias}} com hábitos registrados.",
+      "pickRegion": "Escolha uma região para ler sobre ela e ver os seus registros dos temas que o conteúdo educativo associa a ela.",
+      "indicators": {
+        "sleepAverage": "Sono médio por noite",
+        "sleepSpread": "Variação dos horários de deitar e acordar",
+        "moodAverage": "Humor médio (escala de 1 a 5)",
+        "energyAverage": "Energia média (escala de 1 a 5)",
+        "habitsCompletion": "Hábitos marcados em relação ao previsto (%)"
+      }
     }
   },
   "tour": {
@@ -1259,6 +1281,157 @@
       "range": "De {min} a {max}",
       "save": "Salvar medição",
       "update": "Salvar alterações"
+    }
+  },
+  "twin": {
+    "sectionsLabel": "Seções do Health Twin",
+    "sections": {
+      "body": "Corpo 3D",
+      "brain": "Cérebro 3D"
+    },
+    "viewer": {
+      "loading": "Carregando o modelo 3D…",
+      "fallback": "Este navegador não exibe 3D aqui. Você está vendo uma versão 2D com as mesmas informações.",
+      "dragHint": "Arraste o modelo para girar, ou use os botões."
+    },
+    "controls": {
+      "label": "Controles do modelo",
+      "views": "Vista",
+      "front": "Frente",
+      "back": "Costas",
+      "side": "Lado",
+      "rotateLeft": "Girar para a esquerda",
+      "rotateRight": "Girar para a direita",
+      "reset": "Restaurar visão",
+      "hideValues": "Ocultar valores",
+      "hidden": "oculto"
+    },
+    "body": {
+      "title": "Seu corpo em 3D",
+      "dateLabel": "Data das medidas",
+      "dateHelp": "Para cada região, o modelo usa o último valor informado até esta data.",
+      "regionsTitle": "Regiões",
+      "regions": {
+        "chest": "Peito",
+        "arm": "Braço",
+        "waist": "Cintura",
+        "hip": "Quadril",
+        "thigh": "Coxa"
+      },
+      "pick": "Escolha uma região na lista ou no modelo para ver a medida.",
+      "measure": "Circunferência: {value}",
+      "recordedOn": "Registrada em {date}.",
+      "beforePeriod": "Registrada antes do período escolhido.",
+      "change": "Variação no período: {delta}.",
+      "notInformed": "Sem medida informada até esta data. A região aparece na forma neutra padrão.",
+      "height": "Altura",
+      "weight": "Peso",
+      "weightHint": "Não muda o formato do modelo.",
+      "notInformedShort": "não informado"
+    },
+    "compare": {
+      "title": "Antes × Agora",
+      "description": "Os dois modelos giram juntos. A tabela mostra a diferença de cada medida em número e com seta.",
+      "before": "Antes",
+      "after": "Agora",
+      "pickBefore": "Data de antes",
+      "pickAfter": "Data de agora",
+      "showing": "Modelo exibido",
+      "needTwo": "Para comparar, é preciso ter medições em pelo menos duas datas no período.",
+      "caption": "Medidas nas duas datas e diferença",
+      "field": "Medida",
+      "difference": "Diferença",
+      "direction": {
+        "up": "subiu",
+        "down": "desceu",
+        "same": "igual"
+      },
+      "noValue": "sem registro"
+    },
+    "guide": {
+      "title": "Como ler este modelo",
+      "whatToDoTitle": "O que fazer com isso",
+      "badges": "Selos: “{informed}” é o que você registrou; “{estimated}” é um cálculo direto a partir disso, como a variação; “{inferred}” é uma associação feita pelo app.",
+      "body": {
+        "points": {
+          "p1": "O modelo é uma representação aproximada, neutra e sem traços realistas, ajustada só pelas medidas que você informou: altura e circunferências.",
+          "p2": "Regiões sem medida ficam na forma neutra padrão. O peso aparece em número e não muda o formato.",
+          "p3": "O controle de datas mostra as medidas vigentes em cada data de medição. Escolha uma região na lista ou no modelo para ver o valor, a data do registro e a variação no período.",
+          "p4": "A cor não diz nada sobre o corpo: o destaque só marca a região escolhida."
+        },
+        "whatToDo": "Use para acompanhar as suas próprias medidas ao longo do tempo. O app não define meta, não classifica valores e não compara você com outras pessoas."
+      },
+      "compare": {
+        "points": {
+          "p1": "Escolha duas datas de medição. Os dois modelos giram juntos para facilitar a comparação.",
+          "p2": "A tabela mostra cada medida nas duas datas, a diferença em número e uma seta: ↑ subiu, ↓ desceu, = igual."
+        },
+        "whatToDo": "Compare cada medida com ela mesma. Mudanças pequenas entre duas datas são comuns e podem vir da própria forma de medir."
+      },
+      "brain": {
+        "points": {
+          "p1": "O cérebro 3D é estilizado e educativo, igual para todas as pessoas. As regiões não mudam de cor nem de forma com os seus registros: o destaque só marca a região escolhida.",
+          "p2": "No painel, “Seus registros” mostra números do que você registrou nos temas que o conteúdo associa à região (sono, humor e energia, hábitos). Eles não dizem nada sobre a região.",
+          "p3": "O nível de confiança indica se há dias suficientes com registro nesses temas no período."
+        },
+        "whatToDo": "Use como conteúdo educativo e para pensar na sua rotina. Se algo no seu sono, humor ou bem-estar preocupar você, converse com um profissional de saúde."
+      }
+    },
+    "brain": {
+      "title": "Cérebro 3D educativo",
+      "regionsTitle": "Regiões",
+      "pick": "Escolha uma região na lista ou no modelo para ler sobre ela.",
+      "educational": "Conteúdo educativo",
+      "functionTitle": "Função geral",
+      "themesTitle": "Seus registros nos temas ligados (não são sobre a região)",
+      "noThemes": "O app não tem registros ligados a esta região. O conteúdo aqui é só educativo.",
+      "notAboutRegion": "Estes números são os seus registros sobre cada tema, no período. Eles não indicam nada sobre esta região.",
+      "noRecords": "Sem registro no período.",
+      "dataUsedTitle": "Dados usados",
+      "dataUsed": "{theme}: {days, plural, =0 {nenhum dia} one {# dia} other {# dias}} com registro no período.",
+      "dataUsedNone": "Nenhum dado seu: só conteúdo educativo.",
+      "confidenceTitle": "Nível de confiança dos seus registros",
+      "confidence": {
+        "none": "Não se aplica",
+        "low": "Baixo",
+        "medium": "Médio",
+        "high": "Alto"
+      },
+      "confidenceHint": "Diz se há dias suficientes com registro nos temas ligados à região. Não diz nada sobre a região.",
+      "themes": {
+        "sleep": "Sono",
+        "mood": "Humor e energia",
+        "habits": "Hábitos"
+      },
+      "regions": {
+        "frontal": {
+          "name": "Lobo frontal",
+          "function": "Fica na parte da frente. Em linhas gerais, é associado a planejamento, atenção, tomada de decisões e movimentos voluntários.",
+          "themes": "Na literatura geral, sono, humor e rotina costumam ser associados à atenção e ao planejamento no dia a dia."
+        },
+        "parietal": {
+          "name": "Lobo parietal",
+          "function": "Fica no alto, atrás do frontal. Em linhas gerais, é associado à percepção do toque e à noção de posição do corpo no espaço."
+        },
+        "temporal": {
+          "name": "Lobo temporal",
+          "function": "Fica nas laterais, perto das orelhas. Em linhas gerais, é associado à audição, à linguagem e à memória.",
+          "themes": "Na literatura geral, o sono costuma ser associado à memória, e as emoções, a áreas próximas desta região."
+        },
+        "occipital": {
+          "name": "Lobo occipital",
+          "function": "Fica na parte de trás. Em linhas gerais, é associado à visão."
+        },
+        "cerebellum": {
+          "name": "Cerebelo",
+          "function": "Fica embaixo e atrás. Em linhas gerais, é associado ao equilíbrio e à coordenação dos movimentos."
+        },
+        "brainstem": {
+          "name": "Tronco encefálico",
+          "function": "Liga o cérebro à medula espinhal. Em linhas gerais, é associado a funções automáticas, como a respiração e o ciclo de sono e vigília.",
+          "themes": "Na literatura geral, o ciclo de sono e vigília é um dos temas ligados a esta região."
+        }
+      }
     }
   }
 }
