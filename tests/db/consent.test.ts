@@ -124,7 +124,7 @@ describe('onboarding e escolhas por finalidade (LEG-C01–C03, C05)', () => {
       {
         purpose: 'health_data',
         text_hash: CURRENT_VERSIONS.consent_health_data.textHash,
-        version: 1,
+        version: CURRENT_VERSIONS.consent_health_data.version,
         revoked_at: null,
       },
     ]);
@@ -293,14 +293,58 @@ describe('revogação dos dados de saúde: eliminação agendada (ADR-0019)', ()
 });
 
 describe('reconsentimento após versão substancial nova (LEG-C06)', () => {
+  it('reorientação (ADR-0027): quem autorizou a v1 da saúde fica pendente até escolher de novo', async () => {
+    const u = await onboarded([]);
+    const { rows } = await admin.query<{ id: string; text_hash: string }>(
+      `SELECT id, text_hash FROM policy_versions WHERE document = 'consent_health_data' AND version = 1`,
+    );
+    const v1 = rows[0];
+    if (!v1) throw new Error('v1 não publicada');
+    // Conta de antes da v2: o gatilho só aceita a versão vigente, então a prova antiga entra com os
+    // gatilhos desligados numa transação (banco descartável de teste; o dono da tabela pode).
+    await admin.query('BEGIN');
+    try {
+      await admin.query('ALTER TABLE consent_records DISABLE TRIGGER USER');
+      await admin.query(
+        `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at, updated_at)
+         VALUES (gen_random_uuid(), $1, 'health_data', $2, $3, now() - interval '1 day', now())`,
+        [u.userId, v1.id, v1.text_hash],
+      );
+      await admin.query('ALTER TABLE consent_records ENABLE TRIGGER USER');
+      await admin.query('COMMIT');
+    } catch (error) {
+      await admin.query('ROLLBACK');
+      throw error;
+    }
+    expect(CURRENT_VERSIONS.consent_health_data).toMatchObject({
+      version: 2,
+      requiresReconsent: true,
+    });
+    await expect(writeFixture(u.userId)).rejects.toBeInstanceOf(ConsentRequiredError);
+    const state = await u.service.getState(u.userId);
+    expect(state.updatePending).toBe(true);
+    expect(state.purposes.find((p) => p.purpose === 'health_data')).toMatchObject({
+      active: false,
+      needsReconsent: true,
+    });
+    expect(
+      await u.service.resolveUpdate(u.userId, {
+        acceptDocuments: [],
+        decisions: { health_data: 'keep' },
+      }),
+    ).toEqual({ ok: true });
+    await writeFixture(u.userId);
+  });
+
   it('versão substancial nova suspende o consentimento até a pessoa escolher de novo', async () => {
     const a = await onboarded(['health_data']);
     const b = await onboarded(['health_data']);
     const hash = 'a'.repeat(64);
-    const v2 = await publishVersion(admin, 'consent_health_data', 2, hash, true);
+    const next = CURRENT_VERSIONS.consent_health_data.version + 1;
+    const v2 = await publishVersion(admin, 'consent_health_data', next, hash, true);
     const catalog = {
       ...CURRENT_VERSIONS,
-      consent_health_data: { version: 2, textHash: hash, requiresReconsent: true },
+      consent_health_data: { version: next, textHash: hash, requiresReconsent: true },
     };
     try {
       for (const u of [a, b]) {

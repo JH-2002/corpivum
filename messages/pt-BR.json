@@ -372,8 +372,8 @@
     "purposes": {
       "health_data": {
         "title": "Dados de bem-estar",
-        "collected": "O que você registrar sobre sono, humor, hábitos, diário, peso e medidas, alimentação, atividade e medicamentos que você informar.",
-        "purpose": "Guardar seus registros, mostrar seus dados e tendências e calcular indicadores de bem-estar só para você.",
+        "collected": "O que você registrar sobre peso e medidas, sono, hábitos, alimentação e atividade física.",
+        "purpose": "Guardar seus registros, mostrar seus dados, tendências e o modelo 3D do seu corpo, e calcular indicadores de bem-estar só para você. Nada disso avalia, classifica ou julga o seu corpo.",
         "processors": "A equipe do HealthMind 360 ('{{CONTROLADOR}}') e os provedores de infraestrutura listados em Subprocessadores, com dados armazenados no Brasil. Nunca vendemos nem compartilhamos esses dados para publicidade.",
         "refusal": "Você continua com acesso à conta e à Central de Privacidade, mas não consegue registrar nem ver dados de bem-estar.",
         "revoke": "Na Central de Privacidade. O uso para na hora e os dados já registrados são eliminados depois de 30 dias, a menos que você autorize de novo antes."
