@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
-import { BODY_REGIONS, MORPH_NAMES } from '@/modules/twin';
+import { BODY_MODELS, BODY_REGIONS, MORPH_NAMES } from '@/modules/twin';
 
 /**
  * Modelos `.glb` do corpo (ADR-0028): orçamento de tamanho, hash conferido com o manifesto e com
@@ -12,7 +12,9 @@ import { BODY_REGIONS, MORPH_NAMES } from '@/modules/twin';
 const ROOT = path.resolve(__dirname, '../..');
 const MODELS_DIR = path.join(ROOT, 'public', 'models');
 const ASSETS_DOC = readFileSync(path.join(ROOT, 'docs', 'ASSETS.md'), 'utf8');
-const BUDGET_BYTES = 300 * 1024;
+/** As três variantes são sempre baixadas juntas (OI-24(e)): orçamento por arquivo e da soma. */
+const BUDGET_BYTES = 150 * 1024;
+const TOTAL_BUDGET_BYTES = 400 * 1024;
 const ALLOWED_EXTENSIONS = ['EXT_meshopt_compression', 'KHR_mesh_quantization'];
 const MATERIALS = [...BODY_REGIONS, 'rest'].map((r) => `region_${r}`);
 
@@ -49,6 +51,15 @@ function readGlb(bytes: Buffer): Gltf {
 const entries = Object.entries(BODY_ASSETS);
 
 describe('modelos do corpo (ADR-0028)', () => {
+  it('as três variantes têm modelo e a soma cabe no orçamento (baixadas sempre juntas)', () => {
+    expect(Object.keys(BODY_ASSETS).sort()).toEqual([...BODY_MODELS].sort());
+    const total = entries.reduce(
+      (sum, [, a]) => sum + readFileSync(path.join(ROOT, 'public', a.file)).length,
+      0,
+    );
+    expect(total).toBeLessThanOrEqual(TOTAL_BUDGET_BYTES);
+  });
+
   it('public/models só tem .glb do manifesto, com nome por hash (fora do proxy, ADR-0028)', () => {
     const files = existsSync(MODELS_DIR) ? readdirSync(MODELS_DIR) : [];
     for (const f of files) expect(f).toMatch(/^[a-z0-9-]+\.[0-9a-f]{8}\.glb$/);
@@ -103,14 +114,16 @@ describe('modelos do corpo (ADR-0028)', () => {
       for (const p of mesh!.primitives) expect(p.targets).toHaveLength(MORPH_NAMES.length);
     });
 
-    it('calibração coerente: min < base < max em cada região e altura plausível', () => {
+    it('calibração coerente: min < base < max (regional e tamanho) e altura plausível', () => {
       const { baseHeightM, girthCm } = asset.calibration;
       expect(baseHeightM).toBeGreaterThan(1.4);
       expect(baseHeightM).toBeLessThan(2.1);
       for (const region of BODY_REGIONS) {
-        const { min, base, max } = girthCm[region];
+        const { min, base, max, sizeMin, sizeMax } = girthCm[region];
         expect(min).toBeLessThan(base);
         expect(base).toBeLessThan(max);
+        expect(sizeMin).toBeLessThan(base);
+        expect(base).toBeLessThan(sizeMax);
       }
     });
   });

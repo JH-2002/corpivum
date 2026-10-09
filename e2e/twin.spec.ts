@@ -114,9 +114,13 @@ test.describe('demo público', () => {
       await expectNoAxeViolations(page);
     });
 
-    test('modelo do corpo: .glb só no twin, só a variante escolhida, preferência no navegador (ADR-0028)', async ({
+    test('modelo do corpo: os três .glb sempre, só no twin; a escolha fica no navegador (ADR-0028, OI-24)', async ({
       page,
     }) => {
+      const all = Object.values(BODY_ASSETS)
+        .map((a) => a.file)
+        .sort();
+      expect(all).toHaveLength(3);
       const models = collectModelRequests(page);
       await page.goto('/demo');
       await page.waitForLoadState('networkidle');
@@ -127,33 +131,27 @@ test.describe('demo público', () => {
       await expect(viewer(page)).toHaveAttribute('data-holo-animated', 'true');
       const picker = page.getByRole('group', { name: 'Modelo do corpo' });
       await expect(picker.getByRole('radio', { name: 'Neutro' })).toBeChecked();
-      const neutral = BODY_ASSETS.neutral;
-      if (neutral) {
-        await expect(canvas).toHaveAttribute('data-twin-model', 'neutral');
-        expect(models).toEqual([neutral.file]);
-        const response = await page.request.get(neutral.file);
-        expect(response.headers()['cache-control']).toContain('immutable');
-      } else {
-        await expect(canvas).toHaveAttribute('data-twin-model', 'geometry');
-        expect(models).toEqual([]);
-      }
+      await expect(canvas).toHaveAttribute('data-twin-model', 'neutral');
+      // Os três arquivos, qualquer que seja a escolha: pelos pedidos, o servidor não sabe qual corpo a pessoa vê.
+      await expect.poll(() => [...new Set(models)].sort()).toEqual(all);
+      const response = await page.request.get(all[0] ?? '');
+      expect(response.headers()['cache-control']).toContain('immutable');
+      expect(response.headers()['content-security-policy']).toBeUndefined();
 
+      const before = models.length;
       await picker.getByRole('radio', { name: 'Feminino' }).check();
-      const feminine = BODY_ASSETS.feminine;
-      if (feminine) {
-        await expect(canvas.first()).toHaveAttribute('data-twin-model', 'feminine');
-        expect(models).toContain(feminine.file);
-        expect(models.filter((m) => m.includes('masculine'))).toEqual([]);
-      }
+      await expect(canvas).toHaveAttribute('data-twin-model', 'feminine');
+      expect(models).toHaveLength(before);
+
       await page.reload();
       await expect(
         page
           .getByRole('group', { name: 'Modelo do corpo' })
           .getByRole('radio', { name: 'Feminino' }),
       ).toBeChecked();
+      await expect(viewer(page).locator('canvas')).toHaveAttribute('data-twin-model', 'feminine');
       await expectNoAxeViolations(page);
     });
-
     test('reduced motion: vistas aplicadas sem transição, sem erro', async ({ page }) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(String(e)));

@@ -31,8 +31,8 @@ Também vale:
 
 ## Inventário atual
 
-**Nenhum asset externo ainda.** Os modelos do corpo da Fase 3b (ADR-0028) entram na tabela abaixo quando
-forem gerados pelo pipeline (`scripts/assets/`).
+Assets externos: os três modelos do corpo da Fase 3b (ADR-0028), gerados pelo pipeline
+(`scripts/assets/`), na tabela "Modelos do corpo" abaixo.
 
 | Item | Como é feito | Licença |
 |---|---|---|
@@ -44,6 +44,9 @@ forem gerados pelo pipeline (`scripts/assets/`).
 
 | Asset | Origem | Autor | Licença | Atribuição | Uso comercial / modificação | SHA-256 | Revisão |
 |---|---|---|---|---|---|---|---|
+| `public/models/body-neutral.81510673.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-09 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante neutra: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), morphs de circunferência e de tamanho, meshopt | `815106738f2576471babb6e527889c0f34dc959d39992c07f2e9afef83e07de6` | PR da Fase 3b, 2026-10-09 |
+| `public/models/body-feminine.b9939640.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-09 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante feminina: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), morphs de circunferência e de tamanho, meshopt | `b9939640d8aaeefd56cea920f750f03d1c79e5045b3131cfd855e160daf6df06` | PR da Fase 3b, 2026-10-09 |
+| `public/models/body-masculine.de79ddb3.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-09 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante masculina: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), morphs de circunferência e de tamanho, meshopt | `de79ddb3422e9c58791de58fea3a23623808ccf48b27bea6a36e3460d6b29ae7` | PR da Fase 3b, 2026-10-09 |
 
 Bibliotecas e ferramentas (código, não assets) seguem a política de dependências da ADR-0009: `three`
 (MIT), `@react-three/fiber` (MIT) e, só no pipeline, `gltfpack` (MIT). O MPFB2 (código GPL) roda só no
