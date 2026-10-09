@@ -84,6 +84,24 @@ test.describe('avisos obrigatórios', () => {
   });
 });
 
+test.describe('rotas removidas na reorientação (ADR-0027)', () => {
+  for (const [from, to] of [
+    ['/humor', '/inicio'],
+    ['/diario', '/inicio'],
+    ['/medicamentos', '/inicio'],
+    ['/twin/cerebro', '/twin'],
+    ['/demo/humor', '/demo'],
+    ['/demo/diario', '/demo'],
+    ['/demo/twin/cerebro', '/demo/twin'],
+  ] as const) {
+    test(`${from} leva a ${to}`, async ({ page }) => {
+      await page.goto(from);
+      await page.waitForURL((url) => url.pathname === to);
+      expect(new URL(page.url()).pathname).toBe(to);
+    });
+  }
+});
+
 test.describe('tema', () => {
   test('escolha de tema escuro aplica e persiste', async ({ page }) => {
     await page.goto('/configuracoes');
