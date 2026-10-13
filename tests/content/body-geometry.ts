@@ -8,9 +8,12 @@ import type { BodyAsset, MeasurePlane, MorphName } from '@/modules/twin';
 /**
  * Geometria real dos modelos `.glb` para os testes (ADR-0028, seção 8 da especificação do twin): aplica os pesos
  * dos morphs como o three faz (base + Σ peso × delta, depois a matriz do nó) e mede a circunferência pelo
- * protocolo do pipeline: corte pelo plano, laço mais próximo do ponto de referência, perímetro do fecho convexo.
+ * protocolo do pipeline (scripts/assets/README.md): fita do plano (só o braço ou tudo menos ele), corte pelo plano,
+ * laço mais próximo do ponto de referência ou, no peito e na cintura, o corte inteiro (a axila pode partir o corte
+ * do tronco), perímetro do fecho convexo.
  */
-interface Part {
+export interface Part {
+  material: string;
   base: BufferAttribute;
   deltas: { name: string; attr: BufferAttribute }[];
   index: ArrayLike<number> | null;
@@ -31,7 +34,9 @@ export async function loadBody(asset: BodyAsset): Promise<Part[]> {
     const geometry = node.geometry;
     const names = Object.entries(node.morphTargetDictionary ?? {});
     const morphs = (geometry.morphAttributes.position ?? []) as BufferAttribute[];
+    const material = Array.isArray(node.material) ? node.material[0] : node.material;
     parts.push({
+      material: material?.name ?? '',
       base: geometry.getAttribute('position') as BufferAttribute,
       deltas: names.map(([name, i]) => ({ name, attr: morphs[i]! })),
       index: geometry.index ? geometry.index.array : null,
@@ -41,8 +46,8 @@ export async function loadBody(asset: BodyAsset): Promise<Part[]> {
   return parts;
 }
 
-/** Posições finais de cada parte (metros), com os pesos e a escala uniforme da altura. */
-function positions(parts: Part[], weights: Record<MorphName, number>, scale: Vector3): Vector3[][] {
+/** Posições finais de cada parte (metros), com os pesos e a escala da altura. */
+export function positions(parts: Part[], weights: Record<MorphName, number>, scale: Vector3): Vector3[][] {
   return parts.map((part) => {
     const out: Vector3[] = [];
     const v = new Vector3();
@@ -99,7 +104,9 @@ export function measureGirth(
   const point = new Vector3(...plane.point).multiply(s);
   const near = new Vector3(...plane.near).multiply(s);
   const normal = new Vector3(...plane.normal).multiply(s).normalize();
-  const all = positions(parts, weights, s);
+  // Fita: só a primitiva do braço, ou todas menos ela (a fita do tronco passa por baixo dos braços).
+  const taped = parts.filter((part) => (part.material === 'region_arm') === (plane.tape === 'arm'));
+  const all = positions(taped, weights, s);
 
   // Pontos de corte nas arestas; arestas iguais (também entre primitivas, na costura) ligam os segmentos.
   const key = (p: Vector3) =>
@@ -120,7 +127,7 @@ export function measureGirth(
     }
     return k;
   };
-  parts.forEach((part, pi) => {
+  taped.forEach((part, pi) => {
     const pos = all[pi]!;
     const count = part.index ? part.index.length : pos.length;
     for (let t = 0; t < count; t += 3) {
@@ -148,14 +155,19 @@ export function measureGirth(
     if (!loops.has(root)) loops.set(root, []);
     loops.get(root)!.push(coords.get(k)!);
   }
+  const real = [...loops.values()].filter((loop) => loop.length >= 3);
   let best: Vector3[] = [];
-  let bestDist = Infinity;
-  for (const loop of loops.values()) {
-    const c = loop.reduce((s, p) => s.add(p), new Vector3()).divideScalar(loop.length);
-    const d = c.distanceTo(near);
-    if (d < bestDist) {
-      bestDist = d;
-      best = loop;
+  if (plane.loop === 'whole') {
+    best = real.flat();
+  } else {
+    let bestDist = Infinity;
+    for (const loop of real) {
+      const c = loop.reduce((sum, p) => sum.add(p), new Vector3()).divideScalar(loop.length);
+      const d = c.distanceTo(near);
+      if (d < bestDist) {
+        bestDist = d;
+        best = loop;
+      }
     }
   }
   const u = new Vector3(1, 0, 0);

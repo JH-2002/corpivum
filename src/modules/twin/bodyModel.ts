@@ -22,7 +22,7 @@ export function parseBodyModel(raw: unknown): BodyModel | null {
 /**
  * Arquivo `.glb` de uma variante, gerado por `scripts/assets/pack-models.mjs` (ADR-0028). `file` é o
  * caminho público relativo (`/models/...`), servido pelo próprio app. `measure`: planos do protocolo de medição em
- * coordenadas do `.glb` (ponto, normal e um ponto de referência do laço), para o teste de geometria no CI.
+ * coordenadas do `.glb`, para o teste de geometria no CI (`scripts/assets/README.md`).
  */
 export interface BodyAsset {
   file: `/models/${string}.glb`;
@@ -33,8 +33,16 @@ export interface BodyAsset {
   measure: Record<BodyRegion, MeasurePlane>;
 }
 
+/**
+ * Plano de uma circunferência: ponto, normal e ponto de referência do laço. `tape`: o que a fita enxerga (`arm`:
+ * só a primitiva do braço; `body`: tudo menos ela, a fita passa por baixo dos braços). `loop`: `whole` abraça o
+ * corte inteiro (peito e cintura, onde a axila pode partir o corte do tronco); `nearest`, o laço mais próximo de
+ * `near`.
+ */
 export interface MeasurePlane {
   point: [number, number, number];
   normal: [number, number, number];
   near: [number, number, number];
+  tape: 'arm' | 'body';
+  loop: 'whole' | 'nearest';
 }
