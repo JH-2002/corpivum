@@ -654,8 +654,23 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   cintura, quadril, coxa e altura). Largura de ombro, profundidade do tórax, projeção do busto, glúteos e abdômen
   ficam fixos por modelo (`VARIANTS` em `build_body.py`: macros e targets do MakeHuman) e servem só para a forma e a
   calibração. Feminino: ombros mais estreitos que o quadril, quadril e glúteos mais cheios, peito liso. Masculino:
-  ombros mais largos que o quadril, peito plano, volume da pelve reduzido. A interface não ganha sliders.
-- **Protocolo de medição** (README do pipeline): perímetro do fecho convexo do corte, como uma fita. Peito na
+  ombros mais largos que o quadril (conferido no pipeline e no CI), mas com caimento suave do pescoço e sem a
+  linha reta e larga de antes; peito pela profundidade do tórax, não pela largura; volume da pelve reduzido. A
+  interface não ganha sliders.
+- **Pose natural (revisão de 2026-10-13, pedido do responsável pelo produto):** braços próximos ao corpo, com o
+  úmero a 12,5° (masculino) e 14,5° (feminino) da vertical em vez da pose A (~40°), cotovelo quase estendido e
+  mãos ao lado das coxas, sem encostar. A pose sai do rig `default` do MPFB2 (pesos do MakeHuman), usado só para
+  posar e removido antes da exportação; o masculino também baixa a clavícula (trapézio inclinado). Braço e tronco
+  não podem se atravessar abaixo da dobra da axila (15 cm sob a junta do ombro), na base e com os morphs que
+  engrossam o corpo no limite de extrapolação do app (o tamanho sozinho e cada morph regional sozinho e somado ao
+  tamanho): nesses morphs o braço abre junto o mínimo necessário, como num corpo maior de verdade (no maior corpo
+  testado, ~30°). Remesh, cortes e regiões continuam na pose A, onde braço e tronco estão separados (com o braço
+  caído, o voxel de 8 mm os fundiria); a pose entra como forma, com cada vértice da malha final preso ao
+  triângulo mais próximo da malha completa (o Surface Deform deixava vértices sem ligação com o braço girando
+  ~30°). A região do braço passa a ser o que se move com o braço nos pesos do rig.
+- **Protocolo de medição** (README do pipeline): perímetro do fecho convexo do corte, como uma fita, que passa por
+  baixo dos braços (tronco e coxa sem a primitiva do braço; braço só nela; no peito e na cintura, o corte
+  inteiro, porque com o braço caído a axila pode partir o corte do tronco). Peito na
   altura dos mamilos; cintura na menor circunferência entre 30% e 55% da altura entreperna→pescoço; quadril na
   maior entre 5% e 35%; coxa a 10% de entreperna→joelho; braço perpendicular ao úmero a 55% de ombro→cotovelo. O
   formulário de medidas ganha uma dica curta de como medir em cada circunferência, alinhada a isso (RASCUNHO,
@@ -671,8 +686,8 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   3. ajuste automático da base (`fit_base`) com os próprios morphs até a referência, conferido na malha final em até
      três passadas (o remesh e a decimação encolhem um pouco: o peito saía até 3 cm menor);
   4. malha final: remesh por voxels de 8 mm (fecha boca, narinas e olhos), rosto suavizado, decimação para ~8.500
-     triângulos, remoção de dobras e corte nos planos entre regiões (borda reta); morphs da malha completa por
-     Surface Deform;
+     triângulos, remoção de dobras e corte nos planos entre regiões (borda reta), tudo na pose A; a pose e os
+     morphs vêm da malha completa (cada vértice preso ao triângulo mais próximo);
   5. calibração na malha final: cada região na base, com cada morph em 1 e com o morph de cada OUTRA região em 1
      (`cross`); os planos de medida vão para o manifesto (`measure`).
 - **Forma só pelas medidas informadas:** `bodyMorphWeights` recebe só a `BodyShape`, nunca o peso. Tamanho global
@@ -689,7 +704,10 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   meshopt), aplica os pesos do app e mede a malha final pelo protocolo: base × referência em máx(0,5 cm; 1%);
   valores baixo, intermediário e alto de cada região em 150, 170 e 190 cm dentro de máx(1,0 cm; 2%); mudar uma
   medida em 10 cm muda as outras até 1,0 cm; fora da faixa, só nos extremos de estatura, com o aviso do painel e o
-  desenho na direção pedida (hoje um caso: peito feminino −8% a 1,90 m).
+  desenho na direção pedida (no máximo dois casos por modelo, só a 150 ou 190 cm).
+  `tests/content/body-pose.test.ts` confere a pose: úmero entre 10° e 15°, mãos abaixo da entreperna com folga
+  de 1 cm das coxas, ombro masculino mais largo que o quadril e nenhum braço ou mão atravessando tronco ou coxa
+  (base, cada morph no limite e um corpo grande resolvido pelo app).
 - **Demo por modelo:** no demo (e só nele), a série fictícia é deslocada no navegador para terminar nos valores de
   referência do modelo escolhido, com as mesmas datas e variações. Com dados da pessoa, o modelo nunca muda medida
   nenhuma.
@@ -702,7 +720,7 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   modelo você prefere ver?" ("Só muda a aparência; fica salvo neste navegador.") e, até a escolha, mostra o corpo
   gerado em código, sem pedir nenhum `.glb`. A troca fica no seletor abaixo dos controles.
 - **Orçamento testado no CI:** ≤ 150 KiB por variante e ≤ 300 KiB somando as duas (são baixadas juntas). Hoje:
-  125,9 + 122,1 = 248,0 KiB. O teste de conteúdo também exige as duas variantes e confere hash ×
+  126,9 + 125,4 = 252,3 KiB. O teste de conteúdo também exige as duas variantes e confere hash ×
   manifesto × nome × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, os nomes das regiões e dos
   morph targets e a coerência da calibração.
 - **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e
