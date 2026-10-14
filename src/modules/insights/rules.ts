@@ -16,6 +16,8 @@ export const INSIGHT_RULES = Object.freeze({
   habitPoints: 0.1,
   /** Variação média de horário de sono (min) abaixo da qual o texto diz "horários parecidos". */
   scheduleSteadyMinutes: 15,
+  /** Diferença de minutos ativos no período abaixo da qual o texto diz "parecido". */
+  activityMinutes: 30,
   /** Variação de peso (kg) abaixo da qual o texto diz "ficou estável". */
   weightKg: 0.5,
   /** Máximo de frases no resumo. */
