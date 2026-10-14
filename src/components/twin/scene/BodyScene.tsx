@@ -1,102 +1,131 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useThree } from '@react-three/fiber';
+import { Component, Suspense, useEffect, useLayoutEffect, useMemo, type ReactNode } from 'react';
 import { Vector2 } from 'three';
+import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
 import type { BodyRegion } from '@/modules/twin';
 import { bodyLayout, type ProfilePoint } from '../layout';
 import type { BodySceneProps } from '../types';
-import { regionHandlers, TwinCanvas, Turntable, useModelColors } from './common';
+import { preloadAllBodyModels } from './assets';
+import { BodyModelMesh } from './BodyModelMesh';
+import { regionHandlers, TwinCanvas, Turntable } from './common';
+import { HologramMaterial, regionHoloState, useHoloTheme } from './Hologram';
 
 const toVectors = (points: readonly ProfilePoint[]) => points.map(([r, y]) => new Vector2(r, y));
 
+/** `.glb` que falhou (rede, decodificação): fica a geometria gerada em código, ainda em 3D. */
+class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode }> {
+  override state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  override render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
 /**
- * Corpo 3D paramétrico (§15, ADR-0026): manequim neutro, sem traços realistas, gerado em código (sem
- * modelo externo, docs/ASSETS.md). A forma vem só das medidas informadas; regiões sem medida ficam na
- * forma neutra, semitransparentes. Cor única; o destaque marca só a região escolhida.
+ * Corpo 3D (§15, ADR-0026, ADR-0028): o modelo `.glb` da variante escolhida, com morphs calibrados pelas
+ * medidas informadas. Enquanto ele carrega, se falhar, sem variante escolhida ou sem arquivo, o manequim
+ * gerado em código com o mesmo material holográfico. Nenhuma cor vem de dado.
  */
 export function BodyScene(props: BodySceneProps) {
-  const { shape, angle, instant, selected, compact, onFail } = props;
-  const layout = useMemo(() => bodyLayout(shape), [shape]);
-  const colors = useModelColors();
-  const segments = compact ? 24 : 48;
-  const missing = new Set(shape.missing);
+  const { model, angle, instant, compact, onFail } = props;
+  const asset = model ? BODY_ASSETS[model] : undefined;
+  const code = <CodeBody {...props} />;
+  // Depois da escolha, todos os modelos juntos (OI-24(e)); antes dela, nenhum. O cache pede cada arquivo uma vez.
+  useEffect(() => {
+    if (model) preloadAllBodyModels();
+  }, [model]);
+  return (
+    <TwinCanvas compact={compact} cameraZ={3.6} onFail={onFail}>
+      <Turntable angle={angle} instant={instant}>
+        {asset ? (
+          <ModelBoundary key={asset.file} fallback={code}>
+            <Suspense fallback={code}>
+              <BodyModelMesh {...props} asset={asset} />
+            </Suspense>
+          </ModelBoundary>
+        ) : (
+          code
+        )}
+      </Turntable>
+    </TwinCanvas>
+  );
+}
 
-  const material = (region: BodyRegion | null) => {
-    const isSelected = region !== null && region === selected;
-    const isMissing = region !== null && missing.has(region);
-    return (
-      <meshStandardMaterial
-        color={isSelected ? colors.selected : colors.base}
-        roughness={0.75}
-        metalness={0.05}
-        transparent={isMissing && !isSelected}
-        opacity={isMissing && !isSelected ? 0.55 : 1}
-      />
-    );
-  };
+/**
+ * Manequim paramétrico gerado em código (Fase 3): a forma vem só das medidas informadas; regiões sem
+ * medida ficam na forma neutra, mais transparentes; o destaque marca só a região escolhida.
+ */
+function CodeBody(props: BodySceneProps) {
+  const { shape, selected, compact } = props;
+  const layout = useMemo(() => bodyLayout(shape), [shape]);
+  const theme = useHoloTheme();
+  const segments = compact ? 24 : 48;
+  const get = useThree((s) => s.get);
+  useLayoutEffect(() => {
+    // Marca para o e2e saber o que está desenhado (sem dado da pessoa).
+    get().gl.domElement.dataset.twinModel = 'geometry';
+  }, [get]);
+
+  const material = (region: BodyRegion | null) => (
+    <HologramMaterial theme={theme} state={regionHoloState(region, selected, shape.missing)} />
+  );
   const handlers = (region: BodyRegion) => regionHandlers(region, props);
   const legHeight = layout.leg.top - layout.leg.bottom;
   const legY = (layout.leg.top + layout.leg.bottom) / 2;
 
   return (
-    <TwinCanvas compact={compact} cameraZ={3.6} onFail={onFail}>
-      <Turntable angle={angle} instant={instant}>
-        <group position={[0, -layout.height / 2, 0]}>
-          {(['hip', 'waist', 'chest'] as const).map((band) => (
-            <mesh key={band} scale={[1, 1, layout.depth]} {...handlers(band)}>
-              <latheGeometry args={[toVectors(layout.torso[band]), segments]} />
-              {material(band)}
-            </mesh>
-          ))}
-          {[-1, 1].map((side) => (
-            <mesh
-              key={`leg${side}`}
-              position={[side * layout.leg.x, legY, 0]}
-              {...handlers('thigh')}
-            >
-              <cylinderGeometry
-                args={[layout.leg.rTop, layout.leg.rBottom, legHeight, segments / 2]}
-              />
-              {material('thigh')}
-            </mesh>
-          ))}
-          {[-1, 1].map((side) => (
-            <mesh
-              key={`arm${side}`}
-              position={[
-                side * (layout.arm.x + Math.sin(layout.arm.tilt) * (layout.arm.length / 2)),
-                layout.arm.top - layout.arm.length / 2,
-                0,
-              ]}
-              rotation={[0, 0, side * layout.arm.tilt]}
-              {...handlers('arm')}
-            >
-              <capsuleGeometry args={[layout.arm.r, layout.arm.length, 6, segments / 2]} />
-              {material('arm')}
-            </mesh>
-          ))}
-          <mesh position={[0, (layout.neck.bottom + layout.neck.top) / 2, 0]}>
-            <cylinderGeometry
-              args={[layout.neck.r, layout.neck.r, layout.neck.top - layout.neck.bottom, 16]}
-            />
-            {material(null)}
-          </mesh>
-          <mesh position={[0, layout.head.y, 0]} scale={[0.85, 1, 0.95]}>
-            <sphereGeometry args={[layout.head.r, segments / 2, segments / 2]} />
-            {material(null)}
-          </mesh>
-          {[-1, 1].map((side) => (
-            <mesh
-              key={`foot${side}`}
-              position={[side * layout.leg.x, layout.leg.bottom * 0.6, layout.leg.rBottom]}
-              scale={[1, 0.6, 2]}
-            >
-              <sphereGeometry args={[layout.leg.rBottom * 1.1, 12, 12]} />
-              {material(null)}
-            </mesh>
-          ))}
-        </group>
-      </Turntable>
-    </TwinCanvas>
+    <group position={[0, -layout.height / 2, 0]}>
+      {(['hip', 'waist', 'chest'] as const).map((band) => (
+        <mesh key={band} scale={[1, 1, layout.depth]} {...handlers(band)}>
+          <latheGeometry args={[toVectors(layout.torso[band]), segments]} />
+          {material(band)}
+        </mesh>
+      ))}
+      {[-1, 1].map((side) => (
+        <mesh key={`leg${side}`} position={[side * layout.leg.x, legY, 0]} {...handlers('thigh')}>
+          <cylinderGeometry args={[layout.leg.rTop, layout.leg.rBottom, legHeight, segments / 2]} />
+          {material('thigh')}
+        </mesh>
+      ))}
+      {[-1, 1].map((side) => (
+        <mesh
+          key={`arm${side}`}
+          position={[
+            side * (layout.arm.x + Math.sin(layout.arm.tilt) * (layout.arm.length / 2)),
+            layout.arm.top - layout.arm.length / 2,
+            0,
+          ]}
+          rotation={[0, 0, side * layout.arm.tilt]}
+          {...handlers('arm')}
+        >
+          <capsuleGeometry args={[layout.arm.r, layout.arm.length, 6, segments / 2]} />
+          {material('arm')}
+        </mesh>
+      ))}
+      <mesh position={[0, (layout.neck.bottom + layout.neck.top) / 2, 0]}>
+        <cylinderGeometry
+          args={[layout.neck.r, layout.neck.r, layout.neck.top - layout.neck.bottom, 16]}
+        />
+        {material(null)}
+      </mesh>
+      <mesh position={[0, layout.head.y, 0]} scale={[0.85, 1, 0.95]}>
+        <sphereGeometry args={[layout.head.r, segments / 2, segments / 2]} />
+        {material(null)}
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh
+          key={`foot${side}`}
+          position={[side * layout.leg.x, layout.leg.bottom * 0.6, layout.leg.rBottom]}
+          scale={[1, 0.6, 2]}
+        >
+          <sphereGeometry args={[layout.leg.rBottom * 1.1, 12, 12]} />
+          {material(null)}
+        </mesh>
+      ))}
+    </group>
   );
 }

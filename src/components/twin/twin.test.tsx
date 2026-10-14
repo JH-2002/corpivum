@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { generateDemoData } from '@/modules/demo/generator';
 import { bodyEntry, day, TODAY } from '@/modules/insights/fixtures';
-import { toTwinRows } from '@/modules/twin';
+import { BODY_MODEL_STORAGE_KEY, toTwinRows } from '@/modules/twin';
 import { findForbiddenTerms } from '../../../tests/content/forbidden-terms';
 import { renderWithIntl } from '../../../tests/render';
 import { BodyTwin } from './BodyTwin';
@@ -66,6 +66,64 @@ describe('corpo 3D (§15, §16)', () => {
     expect(slider).toHaveAttribute('aria-valuetext', '1 de outubro de 2026');
     await userEvent.setup().click(screen.getAllByRole('button', { name: 'Cintura' })[0]!);
     expect(screen.getByText('Circunferência: 80 cm')).toBeInTheDocument();
+  });
+
+  it('modelo do corpo: sem padrão, pergunta na primeira vez; escolha só no navegador (ADR-0028)', async () => {
+    window.localStorage.clear();
+    const user = userEvent.setup();
+    renderWithIntl(
+      <BodyTwin rows={toTwinRows(records)} latestHeightCm={null} demo={false} describedBy="x" />,
+    );
+    const prompt = screen.getByRole('region', { name: 'Qual modelo você prefere ver?' });
+    expect(prompt).toHaveTextContent('Só muda a aparência; fica salvo neste navegador.');
+    expect(screen.queryByRole('group', { name: 'Modelo do corpo' })).not.toBeInTheDocument();
+    expectClean(prompt.textContent ?? '');
+
+    await user.click(within(prompt).getByRole('button', { name: 'Feminino' }));
+    expect(window.localStorage.getItem(BODY_MODEL_STORAGE_KEY)).toBe('feminine');
+    expect(
+      screen.queryByRole('region', { name: 'Qual modelo você prefere ver?' }),
+    ).not.toBeInTheDocument();
+    const group = screen.getByRole('group', { name: 'Modelo do corpo' });
+    expect(within(group).getByRole('radio', { name: 'Feminino' })).toBeChecked();
+    expect(within(group).queryByRole('radio', { name: /Neutro/ })).not.toBeInTheDocument();
+    await user.click(within(group).getByRole('radio', { name: 'Masculino' }));
+    expect(window.localStorage.getItem(BODY_MODEL_STORAGE_KEY)).toBe('masculine');
+
+    // Escolha antiga ("neutral") ou inválida: volta a perguntar.
+    window.localStorage.setItem(BODY_MODEL_STORAGE_KEY, 'neutral');
+    window.dispatchEvent(new Event('storage'));
+    expect(
+      await screen.findByRole('region', { name: 'Qual modelo você prefere ver?' }),
+    ).toBeInTheDocument();
+    window.localStorage.clear();
+  });
+
+  it('demo: medidas do perfil da variante escolhida; sem escolha, a série original', async () => {
+    window.localStorage.clear();
+    const user = userEvent.setup();
+    renderWithIntl(
+      <BodyTwin rows={toTwinRows(records)} latestHeightCm={null} demo describedBy="x" />,
+    );
+    const body = screen.getByRole('region', { name: /corpo em 3D/ });
+    await user.click(within(body).getByRole('button', { name: 'Cintura' }));
+    expect(body).toHaveTextContent('81,5 cm');
+    await user.click(screen.getByRole('button', { name: 'Feminino' }));
+    expect(body).toHaveTextContent('68 cm');
+    window.localStorage.clear();
+  });
+  it('medida além da faixa do desenho: o painel avisa, sem número do modelo (ADR-0028)', async () => {
+    window.localStorage.setItem(BODY_MODEL_STORAGE_KEY, 'masculine');
+    const user = userEvent.setup();
+    const rows = toTwinRows([bodyEntry(day(0), { heightCm: 175, waistCm: 170, hipCm: 98 })]);
+    renderWithIntl(<BodyTwin rows={rows} latestHeightCm={null} demo={false} describedBy="x" />);
+    const body = screen.getByRole('region', { name: /corpo em 3D/ });
+    await user.click(within(body).getByRole('button', { name: 'Cintura' }));
+    expect(body).toHaveTextContent('Fora da faixa do desenho');
+    await user.click(within(body).getByRole('button', { name: 'Quadril' }));
+    expect(body).not.toHaveTextContent('Fora da faixa do desenho');
+    expectClean(body.textContent ?? '');
+    window.localStorage.clear();
   });
 
   it('vistas e restaurar pelo teclado', async () => {

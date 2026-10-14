@@ -1,4 +1,4 @@
-import type { BodyRegion, BodyShape } from '@/modules/twin';
+import type { BodyModel, BodyRegion, BodyShape } from '@/modules/twin';
 
 /** Ponteiro sobre uma região: posição na tela para o tooltip. */
 export interface HoverInfo<R extends string> {
@@ -23,4 +23,6 @@ export interface SceneCommon<R extends string> {
 
 export interface BodySceneProps extends SceneCommon<BodyRegion> {
   shape: BodyShape;
+  /** Variante de visualização (preferência do navegador, ADR-0028); `null` = ainda sem escolha. */
+  model: BodyModel | null;
 }

@@ -57,6 +57,13 @@
   --hm-domain-nutrition: #b2400b;
   --hm-domain-body: #1d4ed8;
   --hm-series-violet: #6d28d9;
+
+  /* Holograma do twin (ADR-0028): borda ≥ 3:1 contra --hm-surface; mistura normal no tema claro. */
+  --hm-holo-fill: #3b82c4;
+  --hm-holo-rim: #0a4f8a;
+  --hm-holo-scan: #1d6fb8;
+  --hm-holo-highlight: #062f5c;
+  --hm-holo-blend: normal;
 }
 
 .dark {
@@ -107,4 +114,10 @@
   --hm-domain-nutrition: #fdba74;
   --hm-domain-body: #93c5fd;
   --hm-series-violet: #c4b5fd;
+
+  --hm-holo-fill: #38bdf8;
+  --hm-holo-rim: #a5e8ff;
+  --hm-holo-scan: #7dd3fc;
+  --hm-holo-highlight: #ffffff;
+  --hm-holo-blend: additive;
 }

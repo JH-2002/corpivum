@@ -61,6 +61,11 @@ function subscribeTheme(callback: () => void) {
  * tema claro/escuro. Devolve `fallback` no servidor.
  */
 export function useTokenColor(token: `--hm-${string}`, fallback: string): string {
+  return useThemeToken(token, fallback);
+}
+
+/** Valor bruto de um token do tema (ex.: `--hm-holo-blend`), acompanhando a troca de tema. */
+export function useThemeToken(token: `--hm-${string}`, fallback: string): string {
   return useSyncExternalStore(
     subscribeTheme,
     () => getComputedStyle(document.documentElement).getPropertyValue(token).trim() || fallback,

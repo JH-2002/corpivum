@@ -3,7 +3,10 @@
  * fontes, scripts, imagens ou conexões externas (ADR-0005; QR do TOTP é gerado localmente, ADR-0014).
  * `style-src 'unsafe-inline'`: estilos inline do React/Next; não executam código.
  */
-export function buildCsp(nonce: string, opts: { dev: boolean; https?: boolean }): string {
+export function buildCsp(
+  nonce: string,
+  opts: { dev: boolean; https?: boolean; wasm?: boolean },
+): string {
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
     // 'unsafe-eval' só em desenvolvimento (React Refresh/Turbopack).
@@ -11,6 +14,9 @@ export function buildCsp(nonce: string, opts: { dev: boolean; https?: boolean })
       "'self'",
       `'nonce-${nonce}'`,
       "'strict-dynamic'",
+      // Só compilar WebAssembly (meshopt dos modelos 3D, ADR-0028), e só quando há modelo. Não dá para limitar
+      // ao twin: na navegação client-side vale a CSP do documento inicial. eval de JS segue bloqueado.
+      ...(opts.wasm ? ["'wasm-unsafe-eval'"] : []),
       ...(opts.dev ? ["'unsafe-eval'"] : []),
     ],
     'style-src': ["'self'", "'unsafe-inline'"],

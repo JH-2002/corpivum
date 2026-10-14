@@ -20,6 +20,19 @@ const UNITS: Record<BodyField, string> = {
   bodyFatPct: '%',
 };
 
+/**
+ * Circunferências com dica curta de como medir, alinhada ao protocolo do modelo 3D (scripts/assets/README.md):
+ * o que a pessoa mede é o que a malha mede. Texto RASCUNHO (`LEGAL-REVIEW`, OI-24).
+ */
+const HOW_TO_MEASURE = {
+  chestCm: true,
+  waistCm: true,
+  hipCm: true,
+  thighCm: true,
+  armCm: true,
+} as const;
+type GirthField = keyof typeof HOW_TO_MEASURE;
+
 /** Medição (§23): todos os campos opcionais, pelo menos um preenchido. Vírgula decimal aceita. */
 export function BodyForm({ values, maxDateTime }: { values: BodyFormValues; maxDateTime: string }) {
   const t = useTranslations('body');
@@ -47,7 +60,15 @@ export function BodyForm({ values, maxDateTime }: { values: BodyFormValues; maxD
             type="text"
             inputMode="decimal"
             label={`${t(`fields.${field}`)} (${UNITS[field]})`}
-            hint={t('form.range', { min: BODY_RANGES[field][0], max: BODY_RANGES[field][1] })}
+            hint={
+              field in HOW_TO_MEASURE
+                ? t('form.rangeWithHow', {
+                    how: t(`howToMeasure.${field as GirthField}`),
+                    min: BODY_RANGES[field][0],
+                    max: BODY_RANGES[field][1],
+                  })
+                : t('form.range', { min: BODY_RANGES[field][0], max: BODY_RANGES[field][1] })
+            }
             defaultValue={values[field]?.toString().replace('.', ',') ?? ''}
             error={err[field]}
           />

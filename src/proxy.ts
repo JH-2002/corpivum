@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { buildCsp, createNonce } from '@/lib/security/csp';
 import { isPublicPath, SESSION_COOKIE } from '@/modules/auth/constants';
+import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
+
+/** WebAssembly (meshopt) só quando existe modelo 3D para decodificar (ADR-0028). */
+const HAS_3D_MODELS = Object.keys(BODY_ASSETS).length > 0;
 
 /**
  * Proxy (Next 16): CSP com nonce por requisição (LEG-S05) e redirecionamento "barato" para /entrar quando
@@ -12,6 +16,7 @@ export function proxy(request: NextRequest) {
   const csp = buildCsp(nonce, {
     dev: process.env.NODE_ENV === 'development',
     https: process.env.APP_ENV === 'production',
+    wasm: HAS_3D_MODELS,
   });
 
   const { pathname } = request.nextUrl;
@@ -36,10 +41,14 @@ export function proxy(request: NextRequest) {
   return res;
 }
 
+// Só `models/<nome>.<hash>.glb`: modelos 3D estáticos, sem dado pessoal (ADR-0028). Ficam fora do proxy para
+// o demo público carregá-los sem sessão e o cache imutável não virar `no-store`. Qualquer outro caminho em
+// `/models/` (404, arquivo de outro tipo) passa pelo proxy e recebe CSP.
 export const config = {
   matcher: [
     {
-      source: '/((?!_next/static|_next/image|favicon.ico|robots.txt).*)',
+      source:
+        '/((?!_next/static|_next/image|models/[a-z0-9-]+\\.[0-9a-f]+\\.glb$|favicon.ico|robots.txt).*)',
       missing: [
         { type: 'header', key: 'next-router-prefetch' },
         { type: 'header', key: 'purpose', value: 'prefetch' },

@@ -7,14 +7,18 @@ import { cn } from '@/lib/cn';
 import {
   bodyShape,
   bodySnapshotAt,
+  demoTwinRows,
   firstMeasure,
+  outOfDrawingRange,
   measurementDays,
   REGION_FIELD,
   type BodyRegion,
   type BodySnapshot,
   type TwinRow,
 } from '@/modules/twin';
+import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
 import { BodyCompare } from './BodyCompare';
+import { BodyModelPicker, BodyModelPrompt, useBodyModel } from './BodyModelPicker';
 import { BodySilhouette2D } from './fallback/BodySilhouette2D';
 import { useTwinFormat } from './format';
 import { useCompact } from './hooks';
@@ -32,8 +36,8 @@ import { ViewControls } from './ViewControls';
  * (`TwinRow`). Selos INFORMADO/ESTIMADO, ou DEMO na demonstração (CLAUDE.md regra 7).
  */
 export function BodyTwin({
-  rows,
-  latestHeightCm,
+  rows: inputRows,
+  latestHeightCm: inputHeightCm,
   demo,
   describedBy,
 }: {
@@ -43,6 +47,16 @@ export function BodyTwin({
   describedBy: string;
 }) {
   const t = useTranslations('twin.body');
+  const [model] = useBodyModel();
+  // No demo, medidas fictícias coerentes com a variante escolhida (só no navegador, ADR-0028); sem escolha,
+  // a série original.
+  const { rows, latestHeightCm } = useMemo(
+    () =>
+      demo && model
+        ? demoTwinRows(inputRows, inputHeightCm, model)
+        : { rows: inputRows, latestHeightCm: inputHeightCm },
+    [demo, inputRows, inputHeightCm, model],
+  );
   const days = useMemo(() => measurementDays(rows), [rows]);
   const [index, setIndex] = useState(Math.max(0, days.length - 1));
   const [selected, setSelected] = useState<BodyRegion | null>(null);
@@ -61,6 +75,11 @@ export function BodyTwin({
     [rows, day, latestHeightCm],
   );
   const shape = useMemo(() => bodyShape(snapshot), [snapshot]);
+  const asset = model ? BODY_ASSETS[model] : undefined;
+  const outside = useMemo(
+    () => (asset ? outOfDrawingRange(shape, asset.calibration) : []),
+    [asset, shape],
+  );
   const clearHover = useCallback(() => setHover(null), []);
   const select = (region: BodyRegion) => setSelected(region);
 
@@ -82,6 +101,7 @@ export function BodyTwin({
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="flex flex-col gap-3">
+            {model ? null : <BodyModelPrompt />}
             <TwinViewport<BodyRegion>
               label={t('title')}
               describedBy={describedBy}
@@ -97,6 +117,7 @@ export function BodyTwin({
               scene={(onFail) => (
                 <LazyBodyScene
                   shape={shape}
+                  model={model}
                   angle={turntable.angle}
                   instant={turntable.instant}
                   selected={selected}
@@ -126,6 +147,7 @@ export function BodyTwin({
               hideValues={hideValues}
               onHideValues={setHideValues}
             />
+            {model ? <BodyModelPicker /> : null}
             {days.length > 1 && day ? (
               <div className="flex flex-col gap-1">
                 <label htmlFor={sliderId} className="text-sm font-semibold">
@@ -189,6 +211,7 @@ export function BodyTwin({
                   name={regionName(selected)}
                   hideValues={hideValues}
                   level={level}
+                  outOfRange={outside.includes(selected)}
                 />
               ) : (
                 <p className="text-fg-muted">{t('pick')}</p>
@@ -233,6 +256,7 @@ function RegionPanel({
   name,
   hideValues,
   level,
+  outOfRange,
 }: {
   region: BodyRegion;
   snapshot: BodySnapshot;
@@ -240,6 +264,8 @@ function RegionPanel({
   name: string;
   hideValues: boolean;
   level: (l: ConfidenceLevel) => ConfidenceLevel;
+  /** A medida informada está além do que o desenho alcança (texto, sem número; ADR-0028). */
+  outOfRange: boolean;
 }) {
   const t = useTranslations('twin.body');
   const fmt = useTwinFormat(hideValues);
@@ -268,6 +294,7 @@ function RegionPanel({
               <ConfidenceBadge level={level('ESTIMADO')} />
             </div>
           ) : null}
+          {outOfRange ? <p className="text-fg-muted">{t('outOfRange')}</p> : null}
         </>
       ) : (
         <p>{t('notInformed')}</p>

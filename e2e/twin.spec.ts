@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { BODY_ASSETS } from '../src/modules/twin/bodyAssets';
 import {
   createVerifiedUser,
   DEMO_TOUR_SEEN_STATE,
@@ -49,6 +50,16 @@ function collectThreeScripts(page: Page): string[] {
 }
 
 const viewer = (page: Page) => page.locator('[data-twin-mode]').first();
+
+/** Pedidos de modelos 3D (/models/*.glb) feitos pela página. */
+function collectModelRequests(page: Page): string[] {
+  const found: string[] = [];
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname.startsWith('/models/')) found.push(pathname);
+  });
+  return found;
+}
 
 test.describe('demo público', () => {
   test.use({ storageState: DEMO_TOUR_SEEN_STATE });
@@ -103,12 +114,64 @@ test.describe('demo público', () => {
       await expectNoAxeViolations(page);
     });
 
+    test('modelo do corpo: pergunta na primeira vez; depois, os dois .glb sempre (ADR-0028, OI-24)', async ({
+      page,
+    }) => {
+      const all = Object.values(BODY_ASSETS)
+        .map((a) => a.file)
+        .sort();
+      expect(all).toHaveLength(2);
+      const models = collectModelRequests(page);
+      await page.goto('/demo');
+      await page.waitForLoadState('networkidle');
+      expect(models).toEqual([]);
+
+      await page.goto('/demo/twin');
+      const canvas = viewer(page).locator('canvas');
+      await expect(viewer(page)).toHaveAttribute('data-holo-animated', 'true');
+      // Sem padrão: pergunta e mostra o corpo em código; nenhum modelo é pedido antes da escolha.
+      const prompt = page.getByRole('region', { name: 'Qual modelo você prefere ver?' });
+      await expect(prompt).toContainText('Só muda a aparência; fica salvo neste navegador.');
+      await expect(canvas).toHaveAttribute('data-twin-model', 'geometry');
+      await page.waitForLoadState('networkidle');
+      expect(models).toEqual([]);
+      await expectNoAxeViolations(page);
+
+      await prompt.getByRole('button', { name: 'Feminino' }).click();
+      await expect(prompt).toHaveCount(0);
+      await expect(canvas).toHaveAttribute('data-twin-model', 'feminine');
+      // Os dois arquivos, qualquer que seja a escolha: pelos pedidos, o servidor não sabe qual corpo a pessoa vê.
+      await expect.poll(() => [...new Set(models)].sort()).toEqual(all);
+      const response = await page.request.get(all[0] ?? '');
+      expect(response.headers()['cache-control']).toContain('immutable');
+      expect(response.headers()['content-security-policy']).toBeUndefined();
+
+      const before = models.length;
+      const picker = page.getByRole('group', { name: 'Modelo do corpo' });
+      await picker.getByRole('radio', { name: 'Masculino' }).check();
+      await expect(canvas).toHaveAttribute('data-twin-model', 'masculine');
+      expect(models).toHaveLength(before);
+
+      await page.reload();
+      await expect(
+        page
+          .getByRole('group', { name: 'Modelo do corpo' })
+          .getByRole('radio', { name: 'Masculino' }),
+      ).toBeChecked();
+      await expect(page.getByRole('region', { name: 'Qual modelo você prefere ver?' })).toHaveCount(
+        0,
+      );
+      await expect(viewer(page).locator('canvas')).toHaveAttribute('data-twin-model', 'masculine');
+      await expectNoAxeViolations(page);
+    });
     test('reduced motion: vistas aplicadas sem transição, sem erro', async ({ page }) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(String(e)));
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto('/demo/twin');
       await expect(viewer(page)).toHaveAttribute('data-twin-mode', '3d');
+      // Varredura do holograma parada (ADR-0028).
+      await expect(viewer(page)).toHaveAttribute('data-holo-animated', 'false');
       const body = page.getByRole('region', { name: 'Seu corpo em 3D' });
       await body.getByRole('button', { name: 'Costas' }).click();
       await expect(body.getByRole('button', { name: 'Costas' })).toHaveAttribute(

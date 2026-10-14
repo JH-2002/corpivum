@@ -37,6 +37,8 @@ export interface BodyShape {
    * `TORSO_DEPTH_RATIO`; braço e coxa: seção circular.
    */
   radius: Record<BodyRegion, number>;
+  /** Circunferência desenhada de cada região, em cm (informada ou neutra, limitada ao desenho). */
+  girthCm: Record<BodyRegion, number>;
   /** Regiões desenhadas na forma neutra por falta de medida informada. */
   missing: BodyRegion[];
   heightMissing: boolean;
@@ -46,7 +48,7 @@ const clamp = (v: number, [min, max]: readonly [number, number]) => Math.min(max
 
 /** Raio (m) a partir da circunferência (cm): elipse no tronco, círculo nos membros. */
 function radiusFor(region: BodyRegion, girthCm: number): number {
-  const meters = clamp(girthCm, GIRTH_CM[region]) / 100;
+  const meters = girthCm / 100;
   return region === 'arm' || region === 'thigh'
     ? meters / (2 * Math.PI)
     : meters / (2 * Math.PI * ELLIPSE_PERIMETER_FACTOR);
@@ -60,14 +62,17 @@ export function bodyShape(snapshot: BodySnapshot): BodyShape {
   const height = snapshot.values.heightCm?.value;
   const missing: BodyRegion[] = [];
   const radius = {} as Record<BodyRegion, number>;
+  const girthCm = {} as Record<BodyRegion, number>;
   for (const region of BODY_REGIONS) {
     const informed = snapshot.values[REGION_FIELD[region]]?.value;
     if (informed === undefined) missing.push(region);
-    radius[region] = radiusFor(region, informed ?? NEUTRAL_CM[region]);
+    girthCm[region] = clamp(informed ?? NEUTRAL_CM[region], GIRTH_CM[region]);
+    radius[region] = radiusFor(region, girthCm[region]);
   }
   return {
     heightM: clamp((height ?? NEUTRAL_CM.heightCm) / 100, HEIGHT_M),
     radius,
+    girthCm,
     missing,
     heightMissing: height === undefined,
   };

@@ -21,19 +21,33 @@ Também vale:
 - Asset servido pelo próprio app (`'self'`). A CSP (`src/lib/security/csp.ts`) não libera CDN de terceiros
   e nada é buscado fora do domínio (LEG-S10). Isso exclui HDRI/ambientes, fontes 3D e decodificadores
   (Draco/KTX2) remotos.
-- Modelo humano, quando houver, segue o §15: neutro, sem traços realistas, sem identificar pessoa real.
+- Modelo humano segue a ADR-0028 (substitui a regra do §15 para o twin): forma anatômica em estilo
+  holográfico, sem pele nem textura, superfície lisa, sem mamilos nem detalhe genital, rosto estilizado, sem
+  identificar pessoa real.
+- Modelos 3D ficam em `public/models/<nome>.<sha8>.glb`, gerados pelo pipeline versionado em `scripts/assets/`
+  a partir de downloads feitos fora do repositório.
 - Licenças com cláusula "não comercial", "sem derivados" ou de uso restrito a saúde/medicina exigem
   `LEGAL-REVIEW` antes de entrar (registrar em docs/legal/OPEN_ISSUES.md).
 
 ## Inventário atual
 
-**Nenhum asset externo.** Fase 3 (ADR-0026):
+Assets externos: os dois modelos do corpo da Fase 3b (ADR-0028), gerados pelo pipeline
+(`scripts/assets/`), na tabela "Modelos do corpo" abaixo.
 
 | Item | Como é feito | Licença |
 |---|---|---|
-| Corpo 3D (`src/components/twin/scene/BodyScene.tsx`) | Geometria gerada em código (perfis de revolução, cápsulas e esferas do three.js) | Código do projeto |
+| Corpo 3D de reserva (`src/components/twin/scene/BodyScene.tsx`) | Geometria gerada em código (perfis de revolução, cápsulas e esferas do three.js), usada enquanto o `.glb` carrega, se ele falhar ou faltar | Código do projeto |
 | Versões 2D (`src/components/twin/fallback/`) | SVG desenhado em código | Código do projeto |
-| Iluminação | Luz ambiente e direcional do three.js, sem mapa de ambiente | — |
+| Material holográfico (`src/components/twin/scene/Hologram.tsx`) | Shader próprio, sem luz, textura nem mapa de ambiente | Código do projeto |
 
-Bibliotecas (código, não assets) seguem a política de dependências da ADR-0009: `three` (MIT) e
-`@react-three/fiber` (MIT).
+### Modelos do corpo (ADR-0028)
+
+| Asset | Origem | Autor | Licença | Atribuição | Uso comercial / modificação | SHA-256 | Revisão |
+|---|---|---|---|---|---|---|---|
+| `public/models/body-feminine.00e6a01a.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-13 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante feminina: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), pose natural pelo rig `default` do MPFB2 (braços a 12–15° da vertical; rig removido), forma fixa do modelo (macros e targets do MakeHuman) ajustada às circunferências de referência, morphs regionais localizados e de tamanho, calibração medida na malha final, meshopt | `00e6a01a2394d976c8f23052a301da307186f6624e453e0cf450cd318051679d` | PR #11, 2026-10-13 (ajuste de ombros e pose) |
+| `public/models/body-masculine.a82ae25d.glb` | MPFB2 2.0.17 (extensions.blender.org/add-ons/mpfb), malha base e targets do MakeHuman embutidos na extensão; gerado com Blender 5.2.2 LTS em 2026-10-13 | MakeHuman Community | CC0 1.0 (LICENSE.ASSETS.md do MPFB2) | Não exigida | Sim. Variante masculina: só a pele do corpo (sem olhos, dentes, língua nem geometria genital), mamilos achatados, rosto estilizado (remesh por voxels e suavização), pose natural pelo rig `default` do MPFB2 (braços a 12–15° da vertical; rig removido), forma fixa do modelo (macros e targets do MakeHuman) ajustada às circunferências de referência, morphs regionais localizados e de tamanho, calibração medida na malha final, meshopt | `a82ae25d2b144b0c2269e3c12fd6a450a1e16f973d792476403b6994524b187c` | PR #11, 2026-10-13 (ajuste de ombros e pose) |
+
+Bibliotecas e ferramentas (código, não assets) seguem a política de dependências da ADR-0009: `three`
+(MIT), `@react-three/fiber` (MIT) e, só no pipeline, `gltfpack` (MIT). O MPFB2 (código GPL) roda só no
+Blender da pessoa responsável e não entra no repositório; os assets dele usados aqui (malha base e targets do
+MakeHuman) são CC0 1.0.

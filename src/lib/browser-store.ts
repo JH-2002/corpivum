@@ -12,6 +12,8 @@ type StorageKind = 'local' | 'session';
 const CHANGE_EVENT = 'hm:storage';
 /** Fallback quando o storage do navegador está indisponível. */
 const memory = new Map<string, string>();
+/** Chaves cuja gravação no storage falhou (cota, modo privado): valem pela memória. */
+const memoryOnly = new Set<string>();
 
 function storageOf(kind: StorageKind): Storage | null {
   try {
@@ -38,8 +40,11 @@ export function useStoredValue(
   const value = useSyncExternalStore(
     subscribe,
     () => {
+      // A memória só substitui o storage indisponível; com storage, vale o que está nele (inclusive vazio).
+      const storage = storageOf(kind);
+      if (!storage || memoryOnly.has(key)) return memory.get(key) ?? null;
       try {
-        return storageOf(kind)?.getItem(key) ?? memory.get(key) ?? null;
+        return storage.getItem(key);
       } catch {
         return memory.get(key) ?? null;
       }
@@ -52,8 +57,10 @@ export function useStoredValue(
       memory.set(key, next);
       try {
         storageOf(kind)?.setItem(key, next);
+        memoryOnly.delete(key);
       } catch {
         // Sem storage: a preferência vale só até recarregar a página.
+        memoryOnly.add(key);
       }
       window.dispatchEvent(new Event(CHANGE_EVENT));
     },

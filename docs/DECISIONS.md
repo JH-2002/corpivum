@@ -627,3 +627,124 @@ só o twin tem "Ocultar valores". Metas (Fase 4) e IA (Fase 5) precisam usar `sr
 OI-19 e as partes de OI-21 e OI-22 sobre humor e cérebro são fechadas por escopo removido. As fases futuras
 (`docs/prompts/`) perdem medicamentos (Fase 4) e o diário (Fase 5). Reintroduzir qualquer módulo removido exige
 nova ADR, nova versão do consentimento e revisão do RIPD.
+
+## ADR-0028 — Twin holográfico do corpo com modelos .glb (Fase 3b)
+**Contexto.** A Fase 3b troca a geometria gerada em código do corpo (ADR-0026) por um corpo humano realista na
+forma, em duas variantes (feminino e masculino), em estilo de holograma azul semitransparente. Ela foi
+interrompida pela reorientação (ADR-0027) e refeita só com o corpo; o cérebro e o BodyParts3D saíram. Isso
+diverge do PRODUCT_SPEC §5 ("nunca imagens anatômicas realistas") e §15 ("neutro, sem traços realistas") e da
+regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_ADDENDUM e em OI-24.
+**Decisão.**
+- **Realismo restrito à forma (LEG-M06):** sem pele, textura nem cor de pele. Superfície lisa, sem mamilos e
+  sem detalhe genital, rosto de manequim (sem olhos, nariz nem boca). Nenhum modelo identifica pessoa real. Não
+  há teste automático para isso: cada troca de modelo traz capturas das duas variantes (frente e perfil, temas
+  claro e escuro) para revisão antes do PR.
+- **Fonte:** malha base e targets do MakeHuman que vêm dentro da extensão MPFB2 (CC0, `LICENSE.ASSETS.md`; o
+  código do add-on é GPL e não entra no modelo). O asset pack "system assets" não é usado. Pipeline versionado em
+  `scripts/assets/` (Blender headless + `gltfpack`); cada arquivo tem linha em `docs/ASSETS.md` (fonte, versões,
+  autor, licença, SHA-256).
+- **Dois modelos e valores de referência** (docs/specs/twin-ajustes-corporais.md, que substitui os pedidos
+  anteriores de cintura, busto e medidas do masculino): feminino e masculino; a variante neutra saiu (decisão do
+  responsável pelo produto, 2026-10-09). A base de cada modelo reproduz as circunferências de referência da seção 4
+  da especificação (feminino 86/25/68/96/54, masculino 96/31/80/98/57 cm em peito/braço/cintura/quadril/coxa)
+  dentro de máx(0,5 cm; 1%), medidas na malha final. São valores de calibração, não padrão de saúde nem de beleza;
+  nenhum texto os apresenta como ideal, normal ou meta, e a relação cintura/quadril é só interna (calibração e
+  testes), nunca exibida, como o IMC (LEG-M06).
+- **Forma fixa por modelo, sem controles livres:** o corpo é moldado só pelas medidas registradas (peito, braço,
+  cintura, quadril, coxa e altura). Largura de ombro, profundidade do tórax, projeção do busto, glúteos e abdômen
+  ficam fixos por modelo (`VARIANTS` em `build_body.py`: macros e targets do MakeHuman) e servem só para a forma e a
+  calibração. Feminino: ombros mais estreitos que o quadril, quadril e glúteos mais cheios, peito liso. Masculino:
+  ombros mais largos que o quadril (conferido no pipeline e no CI), mas com caimento suave do pescoço e sem a
+  linha reta e larga de antes; peito pela profundidade do tórax, não pela largura; volume da pelve reduzido. A
+  interface não ganha sliders.
+- **Pose natural (revisão de 2026-10-13, pedido do responsável pelo produto):** braços próximos ao corpo, com o
+  úmero a 12,5° (masculino) e 14,5° (feminino) da vertical em vez da pose A (~40°), cotovelo quase estendido e
+  mãos ao lado das coxas, sem encostar. A pose sai do rig `default` do MPFB2 (pesos do MakeHuman), usado só para
+  posar e removido antes da exportação; o masculino também baixa a clavícula (trapézio inclinado). Braço e tronco
+  não podem se atravessar abaixo da dobra da axila (15 cm sob a junta do ombro), na base e com os morphs que
+  engrossam o corpo no limite de extrapolação do app (o tamanho sozinho e cada morph regional sozinho e somado ao
+  tamanho): nesses morphs o braço abre junto o mínimo necessário, como num corpo maior de verdade (no maior corpo
+  testado, ~30°). Remesh, cortes e regiões continuam na pose A, onde braço e tronco estão separados (com o braço
+  caído, o voxel de 8 mm os fundiria); a pose entra como forma, com cada vértice da malha final preso ao
+  triângulo mais próximo da malha completa (o Surface Deform deixava vértices sem ligação com o braço girando
+  ~30°). A região do braço passa a ser o que se move com o braço nos pesos do rig.
+- **Protocolo de medição** (README do pipeline): perímetro do fecho convexo do corte, como uma fita, que passa por
+  baixo dos braços (tronco e coxa sem a primitiva do braço; braço só nela; no peito e na cintura, o corte
+  inteiro, porque com o braço caído a axila pode partir o corte do tronco). Peito na
+  altura dos mamilos; cintura na menor circunferência entre 30% e 55% da altura entreperna→pescoço; quadril na
+  maior entre 5% e 35%; coxa a 10% de entreperna→joelho; braço perpendicular ao úmero a 55% de ombro→cotovelo. O
+  formulário de medidas ganha uma dica curta de como medir em cada circunferência, alinhada a isso (RASCUNHO,
+  `LEGAL-REVIEW`, OI-24).
+- **Pipeline:** por modelo:
+  1. só a pele do corpo (olhos, dentes, língua e geometria genital são auxiliares e saem antes de medir); mamilos
+     achatados (targets `nipple-*-decr`) e suavizados, região genital suavizada;
+  2. morphs regionais próprios e localizados: no tronco, faixas radiais com queda suave em altura, sem braços (o
+     peito não sobe até ombros e pescoço; a cintura cresce em volta do tronco com metade do deslocamento para a
+     frente; o quadril desce coxa abaixo, sem vinco na entreperna); no braço e na coxa, expansão em volta do eixo do
+     osso que some antes de ombro, cotovelo, virilha e joelho. Morph global `size_min`/`size_max` da macro de massa
+     do MakeHuman para corpos bem maiores ou menores sem caricatura. Nada disso usa o peso da pessoa;
+  3. ajuste automático da base (`fit_base`) com os próprios morphs até a referência, conferido na malha final em até
+     três passadas (o remesh e a decimação encolhem um pouco: o peito saía até 3 cm menor);
+  4. malha final: remesh por voxels de 8 mm (fecha boca, narinas e olhos), rosto suavizado, decimação para ~8.500
+     triângulos, remoção de dobras e corte nos planos entre regiões (borda reta), tudo na pose A; a pose e os
+     morphs vêm da malha completa (cada vértice preso ao triângulo mais próximo);
+  5. calibração na malha final: cada região na base, com cada morph em 1 e com o morph de cada OUTRA região em 1
+     (`cross`); os planos de medida vão para o manifesto (`measure`).
+- **Forma só pelas medidas informadas:** `bodyMorphWeights` recebe só a `BodyShape`, nunca o peso. Tamanho global
+  por mínimos quadrados nas regiões medidas (um braço maior não infla o tronco), com busca do tamanho que minimiza o
+  maior erro quando algum ajuste regional chega ao limite; ajuste regional resolvido junto com o efeito cruzado
+  (Gauss-Seidel). Altura: escala vertical cheia e, na horizontal, só a raiz dela (uma pessoa mais alta não é
+  proporcionalmente mais larga); a meta de cada região é a medida dividida pelo quanto a escala a multiplica (no
+  braço, pela direção do úmero). Antes, a escala uniforme fazia uma pessoa de 1,80 m no modelo feminino ter todas as
+  circunferências desenhadas ~12% maiores. Limites conferidos nos renders (`MORPH_LIMITS`); além deles, a forma fica
+  no limite, o número exibido continua o informado e o painel da região diz "Fora da faixa do desenho: o modelo
+  mostra o limite; o número é o informado." (texto, sem número do modelo; RASCUNHO, `LEGAL-REVIEW`). Região sem
+  medida mira a circunferência base enquanto os limites permitem. Continua sem IMC, sem juízo e sem cor por dado.
+- **Validação na geometria real (CI):** `tests/content/body-measures.test.ts` abre os `.glb` no Node (three +
+  meshopt), aplica os pesos do app e mede a malha final pelo protocolo: base × referência em máx(0,5 cm; 1%);
+  valores baixo, intermediário e alto de cada região em 150, 170 e 190 cm dentro de máx(1,0 cm; 2%); mudar uma
+  medida em 10 cm muda as outras até 1,0 cm; fora da faixa, só nos extremos de estatura, com o aviso do painel e o
+  desenho na direção pedida (no máximo dois casos por modelo, só a 150 ou 190 cm).
+  `tests/content/body-pose.test.ts` confere a pose: úmero entre 10° e 15°, mãos abaixo da entreperna com folga
+  de 1 cm das coxas, ombro masculino mais largo que o quadril e nenhum braço ou mão atravessando tronco ou coxa
+  (base, cada morph no limite e um corpo grande resolvido pelo app).
+- **Demo por modelo:** no demo (e só nele), a série fictícia é deslocada no navegador para terminar nos valores de
+  referência do modelo escolhido, com as mesmas datas e variações. Com dados da pessoa, o modelo nunca muda medida
+  nenhuma.
+- **Os dois modelos, sempre (OI-24(e), decisão do responsável pelo produto, 2026-10-09):** depois da escolha, a
+  tela do twin pede as duas variantes juntas, qualquer que seja ela, então os pedidos não revelam ao servidor qual corpo a
+  pessoa vê. Os pedidos saem sem cookie (`credentials: 'omit'`). Trocar a variante não gera pedido novo.
+- **Modelo do corpo é preferência de visualização, sem padrão assumido:** `feminine` ou `masculine`, só no
+  navegador (`localStorage`, `hm.twin.bodyModel`, ADR-0006), validada com Zod. Não vai ao servidor, não entra em
+  cálculo e não é tratada nem inferida como dado de sexo ou gênero. Na primeira vez (sem escolha guardada, ou com o antigo `neutral`), o twin pergunta "Qual
+  modelo você prefere ver?" ("Só muda a aparência; fica salvo neste navegador.") e, até a escolha, mostra o corpo
+  gerado em código, sem pedir nenhum `.glb`. A troca fica no seletor abaixo dos controles.
+- **Orçamento testado no CI:** ≤ 150 KiB por variante e ≤ 300 KiB somando as duas (são baixadas juntas). Hoje:
+  126,9 + 125,4 = 252,3 KiB. O teste de conteúdo também exige as duas variantes e confere hash ×
+  manifesto × nome × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, os nomes das regiões e dos
+  morph targets e a coerência da calibração.
+- **Servidos pelo próprio app:** `public/models/body-<variante>.<sha8>.glb`, nome por hash e
+  `Cache-Control: immutable`. Nada é buscado fora do domínio (LEG-S10). Só o padrão exato
+  `/models/<nome>.<hash>.glb` fica fora do matcher do proxy (como `_next/static`): são arquivos CC0 sem dado
+  pessoal, o demo público os carrega sem sessão e o `no-store` do proxy anularia o cache. O resto de `/models/`
+  (um 404, outro tipo de arquivo) passa pelo proxy e recebe CSP, e o teste barra qualquer outro arquivo na pasta
+  (PR3b-B2). Teste de fronteira: o único loader fica em `src/components/twin/scene/assets.ts`, com caminho
+  relativo `/models/`; nenhuma URL absoluta nas cenas.
+- **Compressão meshopt** (`EXT_meshopt_compression` + `KHR_mesh_quantization`), não Draco: o decodificador vem
+  com o `three` (`three/addons/libs/meshopt_decoder.module.js`), importado só junto do primeiro modelo, sem
+  arquivos em `public/`. Ele compila WASM, então a CSP ganha `'wasm-unsafe-eval'` (permite só compilar
+  WebAssembly; `eval` de JS continua bloqueado), só quando o manifesto tem modelo. Limitar ao twin não funciona:
+  na navegação client-side vale a CSP do documento inicial (PR3b-B1). `gltfpack` entra como devDependency de
+  versão fixa, sem dependências transitivas (ADR-0009).
+- **Material holográfico próprio** (`ShaderMaterial` com os chunks de morph do three): fresnel nas bordas,
+  preenchimento translúcido e varredura sutil. Cores por tokens `--hm-holo-*` nos temas claro e escuro (no claro,
+  mistura normal e azul mais escuro). A varredura só anda com a aba visível e o canvas na tela; com
+  `prefers-reduced-motion`, fica parada e não há quadro extra.
+- **Sob demanda e fallbacks em cascata:** os `.glb` só são pedidos quando o 3D aparece. Enquanto carregam ou se
+  falharem, a geometria gerada em código da Fase 3 com o mesmo material; sem WebGL, o SVG 2D (sem variante), e
+  nenhum `.glb` é buscado. A escolha de variante fica abaixo dos controles de vista (`BodyModelPicker`) e vale
+  para o corpo e para o Antes × Agora. Build: chunk 3D ≈ 237 → 257 KiB gzip (GLTFLoader + meshopt), ainda fora
+  da entrada de todas as rotas (`scripts/route-js.mjs`).
+**Consequências.** Trocar um modelo exige rodar o pipeline, que regrava o manifesto e o nome por hash, e
+atualizar `docs/ASSETS.md` (o teste falha se divergirem). Textos novos (`twin.bodyModel.*`) são RASCUNHO
+(`LEGAL-REVIEW`, OI-24).

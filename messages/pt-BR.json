@@ -1069,8 +1069,16 @@
       "measuredAt": "Data da medição",
       "hint": "Preencha só o que você mediu. Use vírgula para decimais.",
       "range": "De {min} a {max}",
+      "rangeWithHow": "{how} Faixa aceita: de {min} a {max}.",
       "save": "Salvar medição",
       "update": "Salvar alterações"
+    },
+    "howToMeasure": {
+      "chestCm": "Como medir: fita na horizontal, passando pelos mamilos, sem apertar.",
+      "waistCm": "Como medir: fita na horizontal, na parte mais estreita entre as costelas e o quadril, depois de soltar o ar.",
+      "hipCm": "Como medir: fita na horizontal, na parte mais larga dos glúteos, com os pés juntos.",
+      "thighCm": "Como medir: fita na horizontal, logo abaixo da virilha, na parte mais alta da coxa.",
+      "armCm": "Como medir: no meio do braço, entre o ombro e o cotovelo, com o braço relaxado ao lado do corpo."
     }
   },
   "twin": {
@@ -1092,6 +1100,13 @@
       "hideValues": "Ocultar valores",
       "hidden": "oculto"
     },
+    "bodyModel": {
+      "legend": "Modelo do corpo",
+      "promptTitle": "Qual modelo você prefere ver?",
+      "feminine": "Feminino",
+      "masculine": "Masculino",
+      "hint": "Só muda a aparência; fica salvo neste navegador."
+    },
     "body": {
       "title": "Seu corpo em 3D",
       "dateLabel": "Data das medidas",
@@ -1109,7 +1124,8 @@
       "recordedOn": "Registrada em {date}.",
       "beforePeriod": "Registrada antes do período escolhido.",
       "change": "Variação no período: {delta}.",
-      "notInformed": "Sem medida informada até esta data. A região aparece na forma neutra padrão.",
+      "outOfRange": "Fora da faixa do desenho: o modelo mostra o limite; o número é o informado.",
+      "notInformed": "Sem medida informada até esta data. A região aparece na forma base do modelo.",
       "height": "Altura",
       "weight": "Peso",
       "weightHint": "Não muda o formato do modelo.",

@@ -1,7 +1,16 @@
 import { bodyEntry, day } from '@/modules/insights/fixtures';
-import { BODY_REGIONS, COMPARE_FIELDS } from './regions';
+import { parseBodyModel } from './bodyModel';
+import { DEMO_TWIN_PROFILES, demoTwinRows } from './demoProfiles';
+import {
+  bodyMorphWeights,
+  modelGirthCm,
+  MORPH_LIMITS,
+  MORPH_NAMES,
+  type BodyCalibration,
+} from './morph';
+import { BODY_REGIONS, COMPARE_FIELDS, type BodyRegion } from './regions';
 import { bodyShape } from './shape';
-import { bodySnapshotAt, compareSnapshots, measurementDays } from './snapshot';
+import { bodySnapshotAt, compareSnapshots, measurementDays, toTwinRows } from './snapshot';
 
 /** Dados sintéticos (CLAUDE.md regra 6). */
 const records = [
@@ -51,6 +60,114 @@ describe('forma do corpo 3D (ADR-0026)', () => {
     expect(at(10)).toBe(at(45));
     const tall = bodyShape(bodySnapshotAt([bodyEntry(day(0), { heightCm: 260 })], day(0)));
     expect(tall.heightM).toBe(2.2);
+  });
+});
+
+describe('morph targets do corpo .glb (ADR-0028)', () => {
+  // Calibração de exemplo (valores de uma variante gerada pelo pipeline, arredondados).
+  const calibration: BodyCalibration = {
+    baseHeightM: 1.66,
+    girthCm: {
+      chest: { min: 72.6, base: 87.8, max: 105.1, sizeMin: 85.9, sizeMax: 92.6 },
+      arm: { min: 17.1, base: 26.5, max: 36, sizeMin: 23.3, sizeMax: 29.5 },
+      waist: { min: 59.5, base: 69.5, max: 79.9, sizeMin: 64.8, sizeMax: 77.7 },
+      hip: { min: 85.5, base: 93.8, max: 110.6, sizeMin: 87.7, sizeMax: 100.8 },
+      thigh: { min: 48.6, base: 53.1, max: 60.1, sizeMin: 47.6, sizeMax: 57.3 },
+    },
+  };
+  const shapeOf = (values: Parameters<typeof bodyEntry>[1]) =>
+    bodyShape(bodySnapshotAt([bodyEntry(day(0), values)], day(0)));
+  const morphOf = (values: Parameters<typeof bodyEntry>[1]) =>
+    bodyMorphWeights(shapeOf(values), calibration);
+  const drawn = (values: Parameters<typeof bodyEntry>[1], region: BodyRegion) =>
+    modelGirthCm(morphOf(values).weights, calibration, region);
+
+  it('o peso não muda os morphs nem a escala', () => {
+    expect(morphOf({ weightKg: 50, waistCm: 90 })).toEqual(morphOf({ weightKg: 150, waistCm: 90 }));
+  });
+
+  it('sem nenhuma medida: forma base da variante', () => {
+    const { weights, scale } = morphOf({});
+    for (const name of MORPH_NAMES) expect(weights[name]).toBe(0);
+    expect(scale).toEqual([1, 1, 1]);
+  });
+
+  it('desenha a circunferência informada dentro da faixa do modelo', () => {
+    const values = { chestCm: 100, waistCm: 92, hipCm: 108, thighCm: 60, armCm: 30 };
+    expect(drawn(values, 'chest')).toBeCloseTo(100, 1);
+    expect(drawn(values, 'waist')).toBeCloseTo(92, 1);
+    expect(drawn(values, 'hip')).toBeCloseTo(108, 1);
+    expect(drawn(values, 'thigh')).toBeCloseTo(60, 1);
+    expect(drawn(values, 'arm')).toBeCloseTo(30, 1);
+    expect(drawn({ waistCm: 62 }, 'waist')).toBeCloseTo(62, 1);
+  });
+
+  it('região sem medida fica na circunferência base enquanto os limites dos morphs permitem', () => {
+    const values = { waistCm: 85, hipCm: 100 };
+    expect(morphOf(values).weights.size_max).toBeGreaterThan(0);
+    expect(drawn(values, 'arm')).toBeCloseTo(calibration.girthCm.arm.base, 1);
+    expect(drawn(values, 'chest')).toBeCloseTo(calibration.girthCm.chest.base, 1);
+    // Além do limite, a compensação para no máximo e a região acompanha parte do tamanho global.
+    const big = morphOf({ waistCm: 100, hipCm: 120 }).weights;
+    expect(big.thigh_min).toBe(MORPH_LIMITS.regionDown);
+    const uncompensated = modelGirthCm({ ...big, thigh_min: 0 }, calibration, 'thigh');
+    expect(drawn({ waistCm: 100, hipCm: 120 }, 'thigh')).toBeLessThan(uncompensated);
+  });
+
+  it('fora da faixa, a forma fica no limite (sem deformar) e cresce com a medida até lá', () => {
+    const huge = morphOf({ waistCm: 180 }).weights;
+    expect(huge.size_max).toBe(MORPH_LIMITS.sizeUp);
+    expect(huge.waist_max).toBe(MORPH_LIMITS.regionUp);
+    const tiny = morphOf({ waistCm: 45 }).weights;
+    expect(tiny.size_min).toBe(MORPH_LIMITS.sizeDown);
+    expect(tiny.waist_min).toBe(MORPH_LIMITS.regionDown);
+    for (const w of [huge, tiny]) {
+      for (const name of MORPH_NAMES) expect(w[name]).toBeGreaterThanOrEqual(0);
+    }
+    expect(drawn({ waistCm: 100 }, 'waist')).toBeGreaterThan(drawn({ waistCm: 90 }, 'waist'));
+  });
+
+  it('altura informada vira escala uniforme; sem altura, a da variante', () => {
+    const [x, y, z] = morphOf({ heightCm: 182.6 }).scale;
+    expect(y).toBeCloseTo(1.1);
+    expect(x).toBeCloseTo(Math.sqrt(1.1));
+    expect(z).toBe(x);
+    expect(morphOf({ waistCm: 80 }).scale).toEqual([1, 1, 1]);
+  });
+});
+
+describe('perfis do demo por variante (ADR-0028)', () => {
+  const rows = toTwinRows([
+    bodyEntry(day(0), { weightKg: 70, waistCm: 82, hipCm: 97 }),
+    bodyEntry(day(6), { weightKg: 71, waistCm: 83.6, hipCm: 97.7 }),
+  ]);
+
+  it('termina nas medidas do perfil e preserva a variação entre os dias', () => {
+    const { rows: shown, latestHeightCm } = demoTwinRows(rows, 172, 'feminine');
+    const last = shown[shown.length - 1]!;
+    expect(last.waistCm).toBe(DEMO_TWIN_PROFILES.feminine.waistCm);
+    expect(last.hipCm).toBe(DEMO_TWIN_PROFILES.feminine.hipCm);
+    expect(latestHeightCm).toBe(DEMO_TWIN_PROFILES.feminine.heightCm);
+    expect(last.waistCm! - shown[0]!.waistCm!).toBeCloseTo(1.6);
+    expect(last.weightKg! - shown[0]!.weightKg!).toBeCloseTo(1);
+  });
+
+  it('feminino com cintura/quadril perto de 0,7; não cria medida que não existia', () => {
+    const f = DEMO_TWIN_PROFILES.feminine;
+    expect(f.waistCm! / f.hipCm!).toBeCloseTo(0.71, 1);
+    const { rows: shown } = demoTwinRows(rows, null, 'masculine');
+    expect(shown.every((r) => r.chestCm == null)).toBe(true);
+  });
+});
+
+describe('modelo de visualização (ADR-0028)', () => {
+  it('sem padrão: ausente, inválido ou o antigo "neutral" = sem escolha', () => {
+    expect(parseBodyModel(null)).toBeNull();
+    expect(parseBodyModel(undefined)).toBeNull();
+    expect(parseBodyModel('outro')).toBeNull();
+    expect(parseBodyModel('neutral')).toBeNull();
+    expect(parseBodyModel('feminine')).toBe('feminine');
+    expect(parseBodyModel('masculine')).toBe('masculine');
   });
 });
 
