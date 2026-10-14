@@ -3,13 +3,11 @@
  * alimentação. Sem React e sem servidor; seguro para componentes cliente.
  */
 export {
-  ALLOWED_RECOMMENDATION_TOPICS,
   allowsMilestone,
   allowsStreak,
   checkCalorieEstimate,
   checkCalorieTarget,
   checkGoal,
-  checkRecommendationTopic,
   checkWeightGoal,
   GUARDRAIL_REASONS,
   GUARDRAIL_RULES,
@@ -18,6 +16,5 @@ export {
   type GoalGuardInput,
   type GuardrailReason,
   type GuardrailResult,
-  type RecommendationTopic,
   type WeightGoalInput,
 } from './rules';

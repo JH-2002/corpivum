@@ -9,8 +9,12 @@ function capture() {
 describe('logger', () => {
   it('grava apenas metadados tipados', () => {
     const { records, logger } = capture();
-    logger.info('llm.completion', { model: 'fake', inputTokens: 10, durationMs: 5 });
-    expect(records[0]).toMatchObject({ level: 'info', event: 'llm.completion', model: 'fake' });
+    logger.info('job.completed', { jobName: 'reminder.dispatch', count: 1, durationMs: 5 });
+    expect(records[0]).toMatchObject({
+      level: 'info',
+      event: 'job.completed',
+      jobName: 'reminder.dispatch',
+    });
   });
 
   it('substitui nomes de evento fora do padrão (evita conteúdo livre no nome)', () => {

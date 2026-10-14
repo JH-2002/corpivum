@@ -1,19 +1,12 @@
 'use client';
 
-import { BadgeCheck, Calculator, FlaskConical, Lightbulb, Pencil, Sparkles } from 'lucide-react';
+import { BadgeCheck, Calculator, FlaskConical, Lightbulb, Pencil } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useState, type ComponentType } from 'react';
 import { cn } from '@/lib/cn';
 
 /** Níveis de confiabilidade obrigatórios em todo dado exibido (§39, CLAUDE.md regra 7). */
-export const CONFIDENCE_LEVELS = [
-  'MEDIDO',
-  'INFORMADO',
-  'ESTIMADO',
-  'INFERIDO',
-  'RECOMENDADO',
-  'DEMO',
-] as const;
+export const CONFIDENCE_LEVELS = ['MEDIDO', 'INFORMADO', 'ESTIMADO', 'INFERIDO', 'DEMO'] as const;
 export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number];
 
 const STYLES: Record<
@@ -24,7 +17,6 @@ const STYLES: Record<
   INFORMADO: { icon: Pencil, className: 'bg-primary-soft text-primary-soft-fg' },
   ESTIMADO: { icon: Calculator, className: 'bg-secondary-soft text-secondary-soft-fg' },
   INFERIDO: { icon: Lightbulb, className: 'bg-warning-soft text-warning' },
-  RECOMENDADO: { icon: Sparkles, className: 'bg-success-soft text-success' },
   DEMO: { icon: FlaskConical, className: 'bg-surface-muted text-fg' },
 };
 

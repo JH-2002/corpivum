@@ -1,8 +1,8 @@
 # Módulos de domínio
 
 Um diretório por domínio (`src/modules/<dominio>`, CLAUDE.md). Humor, diário, medicamentos e cérebro 3D
-saíram na reorientação (ADR-0027). Cada módulo expõe sua API por `index.ts`
-e acessa infraestrutura apenas pelos adaptadores em `src/adapters`.
+saíram na reorientação (ADR-0027); o assistente de IA e as recomendações automáticas, na ADR-0030. Cada
+módulo expõe sua API por `index.ts` e acessa infraestrutura apenas pelos adaptadores em `src/adapters`.
 
 | Módulo | Responsabilidade | Spec | Requisitos | Fase |
 |---|---|---|---|---|
@@ -16,12 +16,10 @@ e acessa infraestrutura apenas pelos adaptadores em `src/adapters`.
 | `body` | Peso, altura e medidas; IMC como ESTIMADO | §23 | LEG-M04 | 2 |
 | `nutrition` | Refeições e água, sem juízo nem metas restritivas | §25 | LEG-M04, LEG-M07 | 4 |
 | `activity` | Atividades, treinos de força e progressão, sem prescrição | §26 | LEG-C02, LEG-M08 | 4 |
-| `guardrails` | Regras puras de imagem corporal e alimentação (metas, recomendações, IA) | §28, §30, §55 | LEG-M04, LEG-M06–M08 | Reorientação |
+| `guardrails` | Regras puras de imagem corporal e alimentação (metas, alimentação, timeline) | §30, §55 | LEG-M04, LEG-M06–M08 | Reorientação |
 | `goals` | Metas com limites de segurança (`guardrails`) e tom neutro | §30 | LEG-M04, LEG-F05 | 4 |
 | `timeline` | Linha do tempo pessoal e marcos | §31 | LEG-C02 | 4 |
 | `twin` | Health Digital Twin: corpo 3D moldado só pelas medidas informadas | §15–§16 | LEG-M04, LEG-M06 | 3 |
-| `ai` | HealthMind AI: gate de consentimento, minimização, camada de saída, modo de risco | §27, §48 | LEG-I01–I08 | 5 |
-| `recommendations` | Recomendações por regras, com motivo e pedido de revisão | §28 | LEG-D08, LEG-M04 | 5 |
 | `reports` | Relatórios PDF/CSV/JSON com link expirando | §29 | LEG-D03 | 6 |
 | `notifications` | Lembretes e notificações via JobQueue, sem insistência | §33 | LEG-F05 | 4 |
 | `wellbeing` | Índice de Bem-Estar versionado (score_version) e explicável | §14 | LEG-D08 | 2 |
