@@ -717,8 +717,8 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
 - **Modelo do corpo é preferência de visualização, sem padrão assumido:** `feminine` ou `masculine`, só no
   navegador (`localStorage`, `hm.twin.bodyModel`, ADR-0006), validada com Zod. Não vai ao servidor, não entra em
   cálculo e não é tratada nem inferida como dado de sexo ou gênero. Na primeira vez (sem escolha guardada, ou com o antigo `neutral`), o twin pergunta "Qual
-  modelo você prefere ver?" ("Só muda a aparência; fica salvo neste navegador.") e, até a escolha, mostra o corpo
-  gerado em código, sem pedir nenhum `.glb`. A troca fica no seletor abaixo dos controles.
+  modelo você prefere ver?" ("Só muda a aparência; fica salvo neste navegador.") e, até a escolha, mostra só o
+  estado de espera em holograma (revisão de carregamento, abaixo). A troca fica no seletor abaixo dos controles.
 - **Orçamento testado no CI:** ≤ 150 KiB por variante e ≤ 300 KiB somando as duas (são baixadas juntas). Hoje:
   126,9 + 125,4 = 252,3 KiB. O teste de conteúdo também exige as duas variantes e confere hash ×
   manifesto × nome × `ASSETS.md`, a ausência de imagens, texturas e URIs externas, os nomes das regiões e dos
@@ -745,6 +745,24 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
   nenhum `.glb` é buscado. A escolha de variante fica abaixo dos controles de vista (`BodyModelPicker`) e vale
   para o corpo e para o Antes × Agora. Build: chunk 3D ≈ 237 → 257 KiB gzip (GLTFLoader + meshopt), ainda fora
   da entrada de todas as rotas (`scripts/route-js.mjs`).
+- **Revisão de carregamento (2026-10-14, pedido do responsável pelo produto):** o corpo em código aparecia por
+  um instante antes do `.glb`. Agora:
+  - **Espera em holograma:** enquanto o chunk 3D ou o modelo carrega (e antes da escolha da variante), a área
+    mostra `HoloLoading`: silhueta genérica com as cores `--hm-holo-*` e o texto "Carregando o modelo 3D…",
+    pulsando devagar e parada com `prefers-reduced-motion`. Não é o corpo da pessoa nem o corpo em código.
+  - **Corpo em código só como fallback real** (`BodyScene`): erro ao carregar o `.glb`; tempo limite de
+    `MODEL_LOAD_TIMEOUT_MS` = 10 s sem o modelo (se ele chegar depois, assume no lugar); contexto WebGL perdido
+    e restaurado; variante sem arquivo no manifesto. Contexto perdido e não restaurado em
+    `CONTEXT_RESTORE_TIMEOUT_MS` = 3 s: versão 2D (antes, a perda ia direto para 2D). Sem WebGL, continua o SVG
+    2D e nada do 3D é baixado.
+  - **Pré-carregamento:** assim que a tela do twin abre num navegador com WebGL, `usePreloadBodyScene`
+    (`LazyScenes.tsx`, por `import()` dinâmico, sem pôr o three.js na entrada da rota) começa a baixar o chunk
+    3D, os **dois** `.glb` e o decodificador meshopt, inclusive antes da escolha da variante. Pelos pedidos,
+    o servidor continua sem saber qual corpo a pessoa vê (OI-24(e)). Mesmo cache por arquivo, pedidos sem
+    cookie e `Cache-Control: immutable`.
+  - **Teste:** e2e registra todo valor de `data-twin-model` dos canvas e garante que, numa carga normal (mesmo
+    com rede lenta), o corpo em código nunca é desenhado; cobre erro, tempo limite (e o modelo assumindo
+    depois) e contexto perdido com e sem restauração.
 **Consequências.** Trocar um modelo exige rodar o pipeline, que regrava o manifesto e o nome por hash, e
 atualizar `docs/ASSETS.md` (o teste falha se divergirem). Textos novos (`twin.bodyModel.*`) são RASCUNHO
 (`LEGAL-REVIEW`, OI-24).

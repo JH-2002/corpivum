@@ -195,3 +195,19 @@ describe('corpo 3D (§15, §16)', () => {
     }
   });
 });
+
+describe('espera do modelo em holograma (ADR-0028, revisão de carregamento)', () => {
+  it('silhueta genérica com texto; pulsa só sem prefers-reduced-motion', async () => {
+    const { HoloLoading } = await import('./HoloLoading');
+    const { container, unmount } = renderWithIntl(<HoloLoading />);
+    expect(screen.getByText('Carregando o modelo 3D…')).toBeInTheDocument();
+    const svg = container.querySelector('svg');
+    expect(svg?.getAttribute('class')).toContain('animate-pulse');
+    expect(svg?.getAttribute('class')).toContain('motion-reduce:animate-none');
+    unmount();
+    renderWithIntl(<HoloLoading reason="choose" />);
+    expect(
+      screen.getByText('O corpo em 3D aparece depois que você escolher o modelo.'),
+    ).toBeInTheDocument();
+  });
+});

@@ -23,7 +23,7 @@ import { BodySilhouette2D } from './fallback/BodySilhouette2D';
 import { useTwinFormat } from './format';
 import { useCompact } from './hooks';
 import { BODY_REGION_ORDER, VIEW_ANGLE } from './layout';
-import { LazyBodyScene } from './LazyScenes';
+import { LazyBodyScene, usePreloadBodyScene } from './LazyScenes';
 import { TwinGuide } from './TwinGuide';
 import { TwinViewport } from './TwinViewport';
 import type { HoverInfo } from './types';
@@ -48,6 +48,8 @@ export function BodyTwin({
 }) {
   const t = useTranslations('twin.body');
   const [model] = useBodyModel();
+  // Modelos, decodificador e chunk 3D começam a baixar assim que a tela abre (com WebGL).
+  usePreloadBodyScene();
   // No demo, medidas fictícias coerentes com a variante escolhida (só no navegador, ADR-0028); sem escolha,
   // a série original.
   const { rows, latestHeightCm } = useMemo(

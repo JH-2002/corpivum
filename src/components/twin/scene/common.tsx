@@ -9,20 +9,22 @@ import { HoloClock } from './Hologram';
 /**
  * Canvas do twin (ADR-0026, ADR-0028): renderiza só quando algo muda (`frameloop="demand"`, mais a
  * varredura do holograma quando há movimento), resolução limitada no celular, sem luz nem mapa de
- * ambiente (o material holográfico não usa iluminação), fundo transparente. A perda do contexto WebGL
- * chama `onFail` (a interface troca para 2D).
+ * ambiente (o material holográfico não usa iluminação), fundo transparente. Perda e restauração do
+ * contexto WebGL são avisadas à cena (`preventDefault` permite ao navegador restaurar o contexto).
  */
 export function TwinCanvas({
   compact,
   cameraZ,
   cameraY = 0,
-  onFail,
+  onContextLost,
+  onContextRestored,
   children,
 }: {
   compact: boolean;
   cameraZ: number;
   cameraY?: number;
-  onFail: () => void;
+  onContextLost: () => void;
+  onContextRestored: () => void;
   children: ReactNode;
 }) {
   return (
@@ -35,8 +37,9 @@ export function TwinCanvas({
       onCreated={({ gl }) => {
         gl.domElement.addEventListener('webglcontextlost', (event) => {
           event.preventDefault();
-          onFail();
+          onContextLost();
         });
+        gl.domElement.addEventListener('webglcontextrestored', () => onContextRestored());
       }}
     >
       <HoloClock />
