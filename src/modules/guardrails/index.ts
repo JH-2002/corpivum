@@ -4,12 +4,18 @@
  */
 export {
   ALLOWED_RECOMMENDATION_TOPICS,
+  allowsMilestone,
+  allowsStreak,
+  checkCalorieEstimate,
   checkCalorieTarget,
+  checkGoal,
   checkRecommendationTopic,
   checkWeightGoal,
   GUARDRAIL_REASONS,
   GUARDRAIL_RULES,
+  NUTRITION_RULES,
   SAFETY_REASONS,
+  type GoalGuardInput,
   type GuardrailReason,
   type GuardrailResult,
   type RecommendationTopic,

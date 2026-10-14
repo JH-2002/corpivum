@@ -1182,7 +1182,10 @@
       "invalid_date": "A data escolhida para a meta já passou ou é hoje.",
       "calorie_target_below_floor": "O alvo de calorias fica fora do que o app aceita.",
       "topic_not_allowed": "O app não faz sugestões sobre esse tema.",
-      "invalid_input": "Algum valor da meta não é válido. Confira e tente de novo."
+      "invalid_input": "Algum valor da meta não é válido. Confira e tente de novo.",
+      "current_weight_required": "Para metas de peso, registre seu peso atual em Corpo antes.",
+      "target_day_required": "Para metas de perda de peso, escolha uma data para a meta.",
+      "estimate_disabled": "A estimativa de calorias está desligada. Ela pode ser ligada em Alimentação, se você quiser."
     },
     "professional": "Para esse tipo de objetivo, o melhor caminho é conversar com um profissional de saúde, como um nutricionista ou um médico, que conheça a sua história."
   }

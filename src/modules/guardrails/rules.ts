@@ -1,4 +1,5 @@
 import { daysBetween } from '@/lib/dates';
+import type { GoalDomain } from '@/modules/goals';
 import { bmi } from '@/modules/body';
 
 /**
@@ -37,6 +38,9 @@ export const GUARDRAIL_REASONS = [
   'pace_too_fast',
   'calorie_target_below_floor',
   'height_required',
+  'current_weight_required',
+  'target_day_required',
+  'estimate_disabled',
   'invalid_date',
   'invalid_input',
   'topic_not_allowed',
@@ -124,4 +128,99 @@ export function checkRecommendationTopic(topic: string): GuardrailResult {
       ? []
       : ['topic_not_allowed'],
   );
+}
+
+/** Uso da estimativa calórica (LEG-M07): desligada por padrão; sem ela, nenhuma caloria é aceita. */
+export const NUTRITION_RULES = Object.freeze({
+  /** A estimativa de calorias começa desligada e só a própria pessoa liga. */
+  calorieEstimateDefault: false,
+  /** Atividade nunca mostra calorias gastas: evita a lógica de compensar comida com exercício. */
+  showExerciseCalories: false,
+});
+
+/** Caloria informada numa refeição só é aceita com a estimativa ligada (LEG-M07). */
+export function checkCalorieEstimate(enabled: boolean, kcal: number | null): GuardrailResult {
+  if (kcal === null) return result([]);
+  if (!enabled) return result(['estimate_disabled']);
+  return result(positive(kcal) ? [] : ['invalid_input']);
+}
+
+/**
+ * Entrada da porta única de validação de metas. Os valores de referência (peso atual, altura) vêm do
+ * banco no servidor, nunca do formulário.
+ */
+export type GoalGuardInput =
+  | {
+      domain: 'weight';
+      currentWeightKg: number | null;
+      heightCm: number | null;
+      targetValue: number;
+      today: string;
+      targetDay: string | null;
+    }
+  | { domain: 'nutrition'; calorieEstimateEnabled: boolean; targetValue: number }
+  | { domain: Exclude<GoalDomain, 'weight' | 'nutrition'>; targetValue: number };
+
+/**
+ * Porta única das metas (§30, LEG-M04, LEG-M07). Toda meta criada ou editada passa por aqui. Peso usa
+ * `checkWeightGoal`; calorias usam `checkCalorieTarget` e só existem com a estimativa ligada. Nenhum
+ * caminho devolve um alvo alternativo: bloqueado é bloqueado.
+ */
+export function checkGoal(input: GoalGuardInput): GuardrailResult {
+  if (!positive(input.targetValue)) return result(['invalid_input']);
+  switch (input.domain) {
+    case 'weight': {
+      if (input.currentWeightKg === null) return result(['current_weight_required']);
+      const isLoss = input.targetValue < input.currentWeightKg;
+      if (!isLoss) {
+        return checkWeightGoal({
+          currentWeightKg: input.currentWeightKg,
+          heightCm: input.heightCm,
+          targetWeightKg: input.targetValue,
+          today: input.today,
+          targetDay: input.targetDay ?? input.today,
+        });
+      }
+      if (input.targetDay === null) {
+        // Sem prazo não dá para conferir o ritmo; as demais regras ainda valem.
+        const rest = checkWeightGoal({
+          currentWeightKg: input.currentWeightKg,
+          heightCm: input.heightCm,
+          targetWeightKg: input.targetValue,
+          today: input.today,
+          targetDay: input.today,
+        });
+        const reasons = rest.ok ? [] : rest.reasons.filter((r) => r !== 'invalid_date');
+        return result(['target_day_required', ...reasons]);
+      }
+      return checkWeightGoal({
+        currentWeightKg: input.currentWeightKg,
+        heightCm: input.heightCm,
+        targetWeightKg: input.targetValue,
+        today: input.today,
+        targetDay: input.targetDay,
+      });
+    }
+    case 'nutrition':
+      if (!input.calorieEstimateEnabled) return result(['estimate_disabled']);
+      return checkCalorieTarget(input.targetValue);
+    default:
+      return result([]);
+  }
+}
+
+/**
+ * Sequência (streak) permitida? Só em hábitos, e a pessoa pode desligar (LEG-F05). Nunca ligada a peso,
+ * medidas ou alimentação (LEG-M06, LEG-M07); metas não têm sequência.
+ */
+export function allowsStreak(domain: GoalDomain | 'body'): boolean {
+  return domain === 'habits';
+}
+
+/**
+ * Meta alcançada vira marco na timeline? Peso não (decisão da Fase 4, LEG-M06: sem recompensa ligada a
+ * peso): a meta só muda de status, em tom neutro.
+ */
+export function allowsMilestone(domain: GoalDomain): boolean {
+  return domain !== 'weight';
 }
