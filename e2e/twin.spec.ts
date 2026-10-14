@@ -114,7 +114,7 @@ test.describe('demo público', () => {
       await expectNoAxeViolations(page);
     });
 
-    test('modelo do corpo: pergunta na primeira vez; depois, os dois .glb sempre (ADR-0028, OI-24)', async ({
+    test('modelo do corpo: pergunta na primeira vez; os dois .glb já ao abrir a tela (ADR-0028, OI-24)', async ({
       page,
     }) => {
       const all = Object.values(BODY_ASSETS)
@@ -129,19 +129,24 @@ test.describe('demo público', () => {
       await page.goto('/demo/twin');
       const canvas = viewer(page).locator('canvas');
       await expect(viewer(page)).toHaveAttribute('data-holo-animated', 'true');
-      // Sem padrão: pergunta e mostra o corpo em código; nenhum modelo é pedido antes da escolha.
+      // Sem padrão: pergunta e mostra só o estado de espera (nunca o corpo em código). Os dois modelos já
+      // são pré-carregados ao abrir a tela: pelos pedidos, o servidor não sabe qual corpo a pessoa vê.
       const prompt = page.getByRole('region', { name: 'Qual modelo você prefere ver?' });
       await expect(prompt).toContainText('Só muda a aparência; fica salvo neste navegador.');
-      await expect(canvas).toHaveAttribute('data-twin-model', 'geometry');
-      await page.waitForLoadState('networkidle');
-      expect(models).toEqual([]);
+      await expect(viewer(page).getByTestId('twin-holo-loading')).toHaveAttribute(
+        'data-reason',
+        'choose',
+      );
+      await expect(canvas).not.toHaveAttribute('data-twin-model', /.+/);
+      await expect.poll(() => [...new Set(models)].sort()).toEqual(all);
       await expectNoAxeViolations(page);
 
+      const preloaded = models.length;
       await prompt.getByRole('button', { name: 'Feminino' }).click();
       await expect(prompt).toHaveCount(0);
       await expect(canvas).toHaveAttribute('data-twin-model', 'feminine');
-      // Os dois arquivos, qualquer que seja a escolha: pelos pedidos, o servidor não sabe qual corpo a pessoa vê.
-      await expect.poll(() => [...new Set(models)].sort()).toEqual(all);
+      // Escolher não pede nada novo: os arquivos já vieram na pré-carga (cache por arquivo).
+      expect(models).toHaveLength(preloaded);
       const response = await page.request.get(all[0] ?? '');
       expect(response.headers()['cache-control']).toContain('immutable');
       expect(response.headers()['content-security-policy']).toBeUndefined();
@@ -164,6 +169,105 @@ test.describe('demo público', () => {
       await expect(viewer(page).locator('canvas')).toHaveAttribute('data-twin-model', 'masculine');
       await expectNoAxeViolations(page);
     });
+    test.describe('carregamento do modelo (ADR-0028, revisão de carregamento)', () => {
+      /** Registra todo valor de `data-twin-model` que o canvas chegou a ter, desde o início da página. */
+      async function trackDrawnModels(page: Page) {
+        await page.addInitScript(() => {
+          const seen: string[] = [];
+          (window as unknown as { __twinModels: string[] }).__twinModels = seen;
+          new MutationObserver((records) => {
+            for (const r of records) {
+              const v = (r.target as HTMLElement).getAttribute('data-twin-model');
+              if (v) seen.push(v);
+            }
+          }).observe(document, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['data-twin-model'],
+          });
+          localStorage.setItem('hm.twin.bodyModel', 'feminine');
+        });
+      }
+      const drawn = (page: Page) =>
+        page.evaluate(() => (window as unknown as { __twinModels: string[] }).__twinModels);
+      const status = (page: Page) => page.locator('[data-twin-status]').first();
+
+      test('carga normal: espera em holograma e depois o modelo; o corpo em código nunca aparece', async ({
+        page,
+      }) => {
+        await trackDrawnModels(page);
+        // Rede lenta: o estado de espera fica visível por um tempo.
+        await page.route('**/models/*.glb', async (route) => {
+          await new Promise((r) => setTimeout(r, 1500));
+          await route.continue();
+        });
+        await page.goto('/demo/twin');
+        const loading = viewer(page).getByTestId('twin-holo-loading');
+        await expect(loading).toHaveAttribute('data-reason', 'loading');
+        await expect(loading).toContainText('Carregando o modelo 3D…');
+        const canvas = viewer(page).locator('canvas');
+        await expect(canvas).toHaveAttribute('data-twin-model', 'feminine', { timeout: 15_000 });
+        await expect(loading).toHaveCount(0);
+        await expect(status(page)).toHaveAttribute('data-twin-status', 'ready');
+        expect(await drawn(page)).not.toContain('geometry');
+        await expectNoAxeViolations(page);
+      });
+
+      test('erro ao carregar: o corpo em código entra como fallback', async ({ page }) => {
+        await trackDrawnModels(page);
+        await page.route('**/models/*.glb', (route) => route.abort());
+        await page.goto('/demo/twin');
+        await expect(viewer(page).locator('canvas')).toHaveAttribute('data-twin-model', 'geometry');
+        await expect(status(page)).toHaveAttribute('data-twin-status', 'error');
+        await expect(viewer(page).getByTestId('twin-holo-loading')).toHaveCount(0);
+      });
+
+      test('tempo limite: corpo em código depois de 10 s; o modelo assume quando chega', async ({
+        page,
+      }) => {
+        test.setTimeout(60_000);
+        await trackDrawnModels(page);
+        const held: Array<() => Promise<void>> = [];
+        await page.route('**/models/*.glb', (route) => {
+          held.push(() => route.continue());
+        });
+        await page.goto('/demo/twin');
+        const canvas = viewer(page).locator('canvas');
+        await expect(viewer(page).getByTestId('twin-holo-loading')).toBeVisible();
+        await expect(canvas).toHaveAttribute('data-twin-model', 'geometry', { timeout: 20_000 });
+        await expect(status(page)).toHaveAttribute('data-twin-status', 'timeout');
+        // O modelo chega depois do tempo limite.
+        await Promise.all(held.map((go) => go()));
+        await expect(canvas).toHaveAttribute('data-twin-model', 'feminine', { timeout: 15_000 });
+      });
+
+      test('contexto 3D perdido: restaurado vira corpo em código; sem restauração, 2D', async ({
+        page,
+      }) => {
+        await trackDrawnModels(page);
+        await page.goto('/demo/twin');
+        const canvas = viewer(page).locator('canvas');
+        await expect(canvas).toHaveAttribute('data-twin-model', 'feminine', { timeout: 15_000 });
+        const lose = (restore: boolean) =>
+          page.evaluate((restoreIt) => {
+            const el = document.querySelector('[data-twin-mode] canvas') as HTMLCanvasElement;
+            const gl = (el.getContext('webgl2') ?? el.getContext('webgl')) as WebGLRenderingContext;
+            const ext = gl.getExtension('WEBGL_lose_context');
+            ext?.loseContext();
+            if (restoreIt) setTimeout(() => ext?.restoreContext(), 300);
+          }, restore);
+        await lose(true);
+        await expect(canvas).toHaveAttribute('data-twin-model', 'geometry');
+        await expect(viewer(page)).toHaveAttribute('data-twin-mode', '3d');
+
+        await page.reload();
+        await expect(canvas).toHaveAttribute('data-twin-model', 'feminine', { timeout: 15_000 });
+        await lose(false);
+        await expect(viewer(page)).toHaveAttribute('data-twin-mode', '2d', { timeout: 10_000 });
+        await expect(page.getByTestId('twin-fallback-notice')).toBeVisible();
+      });
+    });
+
     test('reduced motion: vistas aplicadas sem transição, sem erro', async ({ page }) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(String(e)));

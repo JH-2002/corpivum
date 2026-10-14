@@ -14,8 +14,8 @@ import { HologramMaterial, regionHoloState, useHoloTheme } from './Hologram';
  * de `bodyMorphWeights` (sem peso corporal, sem IMC) e a altura informada vira escala uniforme. Região sem
  * medida fica na forma base da variante, esmaecida. Suspende enquanto o arquivo carrega.
  */
-export function BodyModelMesh(props: BodySceneProps & { asset: BodyAsset }) {
-  const { asset, shape, selected, model } = props;
+export function BodyModelMesh(props: BodySceneProps & { asset: BodyAsset; onReady: () => void }) {
+  const { asset, shape, selected, model, onReady } = props;
   const parts = use(loadBodyParts(asset));
   const morph = useMemo(() => bodyMorphWeights(shape, asset.calibration), [shape, asset]);
   const theme = useHoloTheme();
@@ -25,7 +25,8 @@ export function BodyModelMesh(props: BodySceneProps & { asset: BodyAsset }) {
     const { gl, invalidate } = get();
     gl.domElement.dataset.twinModel = model ?? 'geometry';
     invalidate();
-  }, [get, model]);
+    onReady();
+  }, [get, model, onReady]);
 
   const height = asset.calibration.baseHeightM * morph.scale[1];
   return (

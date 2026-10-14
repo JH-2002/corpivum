@@ -1,10 +1,21 @@
 'use client';
 
 import { useThree } from '@react-three/fiber';
-import { Component, Suspense, useEffect, useLayoutEffect, useMemo, type ReactNode } from 'react';
+import {
+  Component,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Vector2 } from 'three';
 import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
 import type { BodyRegion } from '@/modules/twin';
+import { HoloLoading } from '../HoloLoading';
 import { bodyLayout, type ProfilePoint } from '../layout';
 import type { BodySceneProps } from '../types';
 import { preloadAllBodyModels } from './assets';
@@ -14,44 +25,116 @@ import { HologramMaterial, regionHoloState, useHoloTheme } from './Hologram';
 
 const toVectors = (points: readonly ProfilePoint[]) => points.map(([r, y]) => new Vector2(r, y));
 
-/** `.glb` que falhou (rede, decodificação): fica a geometria gerada em código, ainda em 3D. */
-class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode }> {
+/** Tempo máximo de espera pelo modelo `.glb` antes de mostrar o corpo em código (ADR-0028). */
+export const MODEL_LOAD_TIMEOUT_MS = 10_000;
+/** Tempo para o navegador restaurar um contexto WebGL perdido; sem restauração, a tela vai para 2D. */
+export const CONTEXT_RESTORE_TIMEOUT_MS = 3_000;
+
+/** `.glb` que falhou (rede, decodificação): avisa a cena, que mostra o corpo em código. */
+class ModelBoundary extends Component<{
+  fallback: ReactNode;
+  onError: () => void;
+  children: ReactNode;
+}> {
   override state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
+  }
+  override componentDidCatch() {
+    // Sem log de conteúdo (LEG-R04): o corpo em código já é a resposta visível.
+    this.props.onError();
   }
   override render() {
     return this.state.failed ? this.props.fallback : this.props.children;
   }
 }
 
+type ModelStatus = 'loading' | 'ready' | 'error' | 'timeout';
+
 /**
  * Corpo 3D (§15, ADR-0026, ADR-0028): o modelo `.glb` da variante escolhida, com morphs calibrados pelas
- * medidas informadas. Enquanto ele carrega, se falhar, sem variante escolhida ou sem arquivo, o manequim
- * gerado em código com o mesmo material holográfico. Nenhuma cor vem de dado.
+ * medidas informadas. Nenhuma cor vem de dado.
+ * - Enquanto o modelo carrega (ou antes da escolha da variante): só o estado de espera em holograma
+ *   (`HoloLoading`), nunca o corpo gerado em código.
+ * - O corpo em código é só fallback real: erro ao carregar, `MODEL_LOAD_TIMEOUT_MS` sem resposta (se o
+ *   modelo chegar depois, ele assume), contexto WebGL perdido e restaurado, ou variante sem arquivo.
+ *   Contexto perdido e não restaurado em `CONTEXT_RESTORE_TIMEOUT_MS`: `onFail` (versão 2D).
  */
 export function BodyScene(props: BodySceneProps) {
   const { model, angle, instant, compact, onFail } = props;
   const asset = model ? BODY_ASSETS[model] : undefined;
-  const code = <CodeBody {...props} />;
-  // Depois da escolha, todos os modelos juntos (OI-24(e)); antes dela, nenhum. O cache pede cada arquivo uma vez.
+  const file = asset?.file ?? null;
+  const [state, setState] = useState<{ file: string | null; status: ModelStatus }>({
+    file,
+    status: 'loading',
+  });
+  const status: ModelStatus = state.file === file ? state.status : 'loading';
+  const [context, setContext] = useState<'ok' | 'lost' | 'restored'>('ok');
+  const restoreTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const markReady = useCallback(() => setState({ file, status: 'ready' }), [file]);
+  const markError = useCallback(() => setState({ file, status: 'error' }), [file]);
+
+  // Mesmo pedido da pré-carga da tela (cache por arquivo); garante os dois modelos também aqui.
+  useEffect(() => preloadAllBodyModels(), []);
+
   useEffect(() => {
-    if (model) preloadAllBodyModels();
-  }, [model]);
+    if (!file || status !== 'loading') return;
+    const timer = setTimeout(
+      () =>
+        setState((s) =>
+          s.file === file && s.status === 'ready' ? s : { file, status: 'timeout' },
+        ),
+      MODEL_LOAD_TIMEOUT_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [file, status]);
+
+  useEffect(
+    () => () => {
+      if (restoreTimer.current) clearTimeout(restoreTimer.current);
+    },
+    [],
+  );
+
+  const onContextLost = useCallback(() => {
+    setContext('lost');
+    restoreTimer.current = setTimeout(onFail, CONTEXT_RESTORE_TIMEOUT_MS);
+  }, [onFail]);
+  const onContextRestored = useCallback(() => {
+    if (restoreTimer.current) clearTimeout(restoreTimer.current);
+    setContext('restored');
+  }, []);
+
+  const code = <CodeBody {...props} />;
+  let content: ReactNode = null;
+  if (context === 'restored' || (model && !asset)) {
+    content = code;
+  } else if (asset && context === 'ok') {
+    content = (
+      <ModelBoundary key={asset.file} fallback={code} onError={markError}>
+        <Suspense fallback={status === 'timeout' ? code : null}>
+          <BodyModelMesh {...props} asset={asset} onReady={markReady} />
+        </Suspense>
+      </ModelBoundary>
+    );
+  }
+  const waiting = context === 'ok' && (!model || (asset !== undefined && status === 'loading'));
+
   return (
-    <TwinCanvas compact={compact} cameraZ={3.6} onFail={onFail}>
-      <Turntable angle={angle} instant={instant}>
-        {asset ? (
-          <ModelBoundary key={asset.file} fallback={code}>
-            <Suspense fallback={code}>
-              <BodyModelMesh {...props} asset={asset} />
-            </Suspense>
-          </ModelBoundary>
-        ) : (
-          code
-        )}
-      </Turntable>
-    </TwinCanvas>
+    <div className="relative h-full w-full" data-twin-status={!model ? 'choose' : status}>
+      <TwinCanvas
+        compact={compact}
+        cameraZ={3.6}
+        onContextLost={onContextLost}
+        onContextRestored={onContextRestored}
+      >
+        <Turntable angle={angle} instant={instant}>
+          {content}
+        </Turntable>
+      </TwinCanvas>
+      {waiting ? <HoloLoading reason={model ? 'loading' : 'choose'} /> : null}
+    </div>
   );
 }
 
