@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import messages from '@messages/pt-BR.json';
 import {
   AVAILABLE_PURPOSES,
+  CONSENT_PURPOSES,
   CURRENT_VERSIONS,
   DOCUMENT_MESSAGES,
   HEALTH_DATA_GRACE_DAYS_IN_TEXT,
@@ -48,8 +49,10 @@ describe('catálogo de documentos versionados', () => {
     expect(JSON.stringify(messages.consent.purposes)).not.toMatch(/\{days\}/);
   });
 
-  it('IA e transferência internacional não são oferecidas até a Fase 5', () => {
-    expect(AVAILABLE_PURPOSES).not.toContain('ai_sharing');
-    expect(AVAILABLE_PURPOSES).not.toContain('international_transfer');
+  it('finalidades revogadas (IA e transferência internacional, ADR-0030) não existem no catálogo', () => {
+    for (const revoked of ['ai_sharing', 'international_transfer']) {
+      expect(CONSENT_PURPOSES).not.toContain(revoked);
+      expect(AVAILABLE_PURPOSES).not.toContain(revoked);
+    }
   });
 });

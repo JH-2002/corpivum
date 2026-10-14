@@ -9,6 +9,8 @@ import {
   CURRENT_VERSIONS,
   HEALTH_DATA_GRACE_DAYS_IN_TEXT,
   isAvailablePurpose,
+  isPolicyDocument,
+  POLICY_DOCUMENTS,
   purposeDocument,
   REQUIRED_DOCUMENTS,
   type AvailablePurpose,
@@ -115,10 +117,12 @@ export function createConsentService(deps: ConsentDeps) {
   const withUser = <T>(userId: string, fn: (tx: Tx) => Promise<T>) => withUserOn(db, userId, fn);
 
   async function publishedVersions(tx: Tx): Promise<VersionRow[]> {
-    return tx.policyVersion.findMany({
-      where: { publishedAt: { lte: now() } },
+    const rows = await tx.policyVersion.findMany({
+      where: { publishedAt: { lte: now() }, document: { in: [...POLICY_DOCUMENTS] } },
       select: { id: true, document: true, version: true, textHash: true, requiresReconsent: true },
     });
+    // O enum do banco ainda tem os valores revogados (ADR-0030); a CHECK impede linhas com eles.
+    return rows.filter((row): row is VersionRow => isPolicyDocument(row.document));
   }
 
   /**

@@ -12,6 +12,5 @@ export const SUBPROCESSORS = [
   'kms',
   'email',
   'errors',
-  'llm',
 ] as const;
 export type SubprocessorKey = (typeof SUBPROCESSORS)[number];

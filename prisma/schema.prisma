@@ -159,10 +159,12 @@ model RateLimitBucket {
 // ---------------------------------------------------------------------------------------------------
 
 /// Finalidades de consentimento (LEG-C02). Cada uma com texto e versão próprios.
+/// `ai_sharing` e `international_transfer` foram revogadas (ADR-0030): ficam no enum porque o Postgres não
+/// remove valor de enum, e uma CHECK no banco impede usá-las.
 enum ConsentPurpose {
   health_data
-  ai_sharing
-  international_transfer
+  ai_sharing // revogado (ADR-0030): não usar; bloqueado por CHECK
+  international_transfer // revogado (ADR-0030): não usar; bloqueado por CHECK
   marketing
   product_metrics
 
@@ -174,8 +176,8 @@ enum PolicyDocument {
   privacy_policy
   terms
   consent_health_data
-  consent_ai_sharing
-  consent_international_transfer
+  consent_ai_sharing // revogado (ADR-0030): não usar; bloqueado por CHECK
+  consent_international_transfer // revogado (ADR-0030): não usar; bloqueado por CHECK
   consent_marketing
   consent_product_metrics
 

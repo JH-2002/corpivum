@@ -8,21 +8,16 @@
  * falha se o texto mudar sem isso, e o teste de banco
  * confere as versões publicadas. `requiresReconsent: true` = mudança substancial (pede nova escolha).
  */
-export const CONSENT_PURPOSES = [
-  'health_data',
-  'ai_sharing',
-  'international_transfer',
-  'marketing',
-  'product_metrics',
-] as const;
+export const CONSENT_PURPOSES = ['health_data', 'marketing', 'product_metrics'] as const;
 export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
 
 /**
- * Finalidades oferecidas hoje. IA e transferência internacional ficam modeladas (banco, guard), mas só
- * aparecem na Fase 5, quando houver provedor e região para o texto dizer quem processa e onde (LEG-C03).
+ * Finalidades oferecidas: todas as do catálogo. Compartilhamento com IA e transferência internacional foram
+ * revogadas (ADR-0030); os valores continuam no enum do banco só porque o Postgres não remove valor de enum, e
+ * um CHECK em `consent_records` e `policy_versions` impede usá-los.
  */
-export const AVAILABLE_PURPOSES = ['health_data', 'marketing', 'product_metrics'] as const;
-export type AvailablePurpose = (typeof AVAILABLE_PURPOSES)[number];
+export const AVAILABLE_PURPOSES = CONSENT_PURPOSES;
+export type AvailablePurpose = ConsentPurpose;
 
 export function isAvailablePurpose(purpose: string): purpose is AvailablePurpose {
   return (AVAILABLE_PURPOSES as readonly string[]).includes(purpose);
@@ -32,13 +27,18 @@ export function isAvailablePurpose(purpose: string): purpose is AvailablePurpose
 export const REQUIRED_DOCUMENTS = ['terms', 'privacy_policy'] as const;
 export type RequiredDocument = (typeof REQUIRED_DOCUMENTS)[number];
 
-export type PolicyDocument =
-  | RequiredDocument
-  | 'consent_health_data'
-  | 'consent_ai_sharing'
-  | 'consent_international_transfer'
-  | 'consent_marketing'
-  | 'consent_product_metrics';
+/** Documentos versionados vigentes. Os textos das finalidades revogadas (ADR-0030) não existem. */
+export const POLICY_DOCUMENTS = [
+  ...REQUIRED_DOCUMENTS,
+  'consent_health_data',
+  'consent_marketing',
+  'consent_product_metrics',
+] as const;
+export type PolicyDocument = (typeof POLICY_DOCUMENTS)[number];
+
+export function isPolicyDocument(document: string): document is PolicyDocument {
+  return (POLICY_DOCUMENTS as readonly string[]).includes(document);
+}
 
 export function purposeDocument(purpose: ConsentPurpose): PolicyDocument {
   return `consent_${purpose}`;
