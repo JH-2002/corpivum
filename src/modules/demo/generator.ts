@@ -1,7 +1,11 @@
 import { addDays, eachDay, fromLocalDateTime, weekday } from '@/lib/dates';
 import { round } from '@/lib/stats';
+import type { ActivityRecord, ActivityType } from '@/modules/activity';
 import type { BodyRecord } from '@/modules/body';
+import type { GoalRecord } from '@/modules/goals';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
+import type { ReminderRecord } from '@/modules/notifications';
+import type { MealCategory, MealRecord, WaterRecord } from '@/modules/nutrition';
 import type { SleepRecord } from '@/modules/sleep';
 
 /**
@@ -18,6 +22,11 @@ export interface DemoDataset {
   habits: HabitRecord[];
   checks: HabitCheckRecord[];
   body: BodyRecord[];
+  meals: MealRecord[];
+  water: WaterRecord[];
+  activities: ActivityRecord[];
+  goals: GoalRecord[];
+  reminders: ReminderRecord[];
 }
 
 /** mulberry32: PRNG pequeno e determinístico. */
@@ -162,5 +171,167 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
     }
   });
 
-  return { today, sleep, habits, checks, body };
+  return { today, sleep, habits, checks, body, ...generateRoutine(days, start, timeZone) };
+}
+
+/**
+ * Descrições fictícias de refeição: só dizem o que foi comido, sem rótulo de bom/ruim (LEG-M07).
+ */
+const MEAL_DESCRIPTIONS: Record<MealCategory, readonly string[]> = {
+  breakfast: ['Pão com queijo e café', 'Iogurte com fruta', 'Tapioca e café com leite'],
+  lunch: ['Arroz, feijão, frango e salada', 'Macarrão com molho de tomate', 'Peixe com legumes'],
+  dinner: ['Sopa de legumes', 'Omelete com salada', 'Sanduíche e suco'],
+  snack: ['Fruta', 'Castanhas', 'Bolo caseiro'],
+  other: ['Lanche rápido'],
+};
+
+const ACTIVITY_NOTES = ['Treino tranquilo.', 'Fui com uma amiga.', 'Parque cheio hoje.'];
+
+/** Exercícios de força fictícios, com a carga inicial (kg) e o passo da progressão. */
+const STRENGTH = [
+  { exercise: 'Agachamento', reps: 10, load: 20, step: 2.5 },
+  { exercise: 'Remada', reps: 12, load: 15, step: 1.5 },
+  { exercise: 'Flexão', reps: 8, load: null, step: 0 },
+] as const;
+
+/**
+ * Alimentação, atividade, metas e lembretes da demo (Fase 4). PRNG PRÓPRIO (outra semente): os sorteios
+ * dos dados anteriores (sono, hábitos, corpo) continuam idênticos.
+ */
+function generateRoutine(
+  days: string[],
+  start: string,
+  timeZone: string,
+): Pick<DemoDataset, 'meals' | 'water' | 'activities' | 'goals' | 'reminders'> {
+  const rand = prng(DEMO_SEED + 4);
+  const pick = <T>(list: readonly T[]): T => list[Math.floor(rand() * list.length)] as T;
+  const meals: MealRecord[] = [];
+  const water: WaterRecord[] = [];
+  const activities: ActivityRecord[] = [];
+
+  days.forEach((day, i) => {
+    const wd = weekday(day);
+    const progress = i / DEMO_DAYS;
+
+    // Refeições: o registro é mais frequente ao longo do período, sem nada de "certo" ou "errado".
+    if (rand() < 0.7 + 0.2 * progress) {
+      const slots: Array<[MealCategory, number]> = [
+        ['breakfast', 7 * 60 + 30],
+        ['lunch', 12 * 60 + 30],
+        ['dinner', 19 * 60 + 45],
+      ];
+      if (rand() < 0.5) slots.push(['snack', 16 * 60]);
+      slots.forEach(([category, minute], k) => {
+        if (rand() < 0.1) return;
+        const time = hhmm(minute + (rand() - 0.5) * 40);
+        meals.push({
+          id: `demo-meal-${i}-${k}`,
+          eatenAt: fromLocalDateTime(`${day}T${time}`, timeZone).toISOString(),
+          day,
+          time,
+          category,
+          description: rand() < 0.6 ? pick(MEAL_DESCRIPTIONS[category]) : null,
+          hunger: rand() < 0.5 ? clampInt(2 + rand() * 3, 1, 5) : null,
+          fullness: rand() < 0.5 ? clampInt(2 + rand() * 3, 1, 5) : null,
+          satisfaction: rand() < 0.5 ? clampInt(3 + rand() * 2, 1, 5) : null,
+          // Estimativa calórica desligada por padrão (LEG-M07): a demo não mostra calorias.
+          kcalEstimate: null,
+          note: null,
+        });
+      });
+    }
+
+    // Água: alguns copos por dia, em ~80% dos dias.
+    if (rand() < 0.8) {
+      const cups = 3 + Math.floor(rand() * 4);
+      for (let k = 0; k < cups; k++) {
+        water.push({ id: `demo-water-${i}-${k}`, day, ml: rand() < 0.5 ? 250 : 300 });
+      }
+    }
+
+    // Atividade: caminhadas frequentes, força às segundas e quintas, corrida leve aos sábados.
+    const push = (
+      k: number,
+      type: ActivityType,
+      minute: number,
+      durationMin: number,
+      extra: Partial<ActivityRecord> = {},
+    ) => {
+      const time = hhmm(minute);
+      activities.push({
+        id: `demo-activity-${i}-${k}`,
+        startedAt: fromLocalDateTime(`${day}T${time}`, timeZone).toISOString(),
+        day,
+        time,
+        type,
+        durationMin,
+        intensity: clampInt(4 + rand() * 4, 1, 10),
+        distanceKm: null,
+        note: rand() < 0.08 ? pick(ACTIVITY_NOTES) : null,
+        sets: [],
+        ...extra,
+      });
+    };
+    if (rand() < 0.55 + 0.15 * progress) {
+      push(0, 'walking', 18 * 60 + (rand() - 0.5) * 60, clampInt(20 + rand() * 25, 10, 60), {
+        distanceKm: round(1.5 + rand() * 2, 1),
+      });
+    }
+    if ((wd === 1 || wd === 4) && rand() < 0.85) {
+      const week = Math.floor(i / 7);
+      const sets = STRENGTH.flatMap((e, n) =>
+        [1, 2, 3].map((k) => ({
+          exercise: e.exercise,
+          setIndex: n * 3 + k,
+          reps: e.load === null ? e.reps + Math.floor(week / 3) : e.reps,
+          loadKg: e.load === null ? null : round(e.load + e.step * Math.floor(week / 2), 1),
+        })),
+      );
+      push(1, 'strength', 7 * 60, clampInt(40 + rand() * 15, 30, 70), { sets });
+    }
+    if (wd === 6 && rand() < 0.6) {
+      push(2, 'running', 8 * 60, clampInt(25 + rand() * 15, 20, 50), {
+        distanceKm: round(3 + rand() * 2, 1),
+      });
+    }
+  });
+
+  // Metas fictícias, sem meta de peso nem de calorias na demo.
+  const goals: GoalRecord[] = [
+    { metric: 'sleep_avg_minutes', domain: 'sleep', targetValue: 450 },
+    { metric: 'activity_minutes_week', domain: 'activity', targetValue: 150 },
+    { metric: 'habit_completion_pct', domain: 'habits', targetValue: 80, habitId: 'demo-habit-1' },
+    { metric: 'logging_days_week', domain: 'logging', targetValue: 5 },
+  ].map((g, n) => ({
+    id: `demo-goal-${n + 1}`,
+    domain: g.domain as GoalRecord['domain'],
+    metric: g.metric as GoalRecord['metric'],
+    targetValue: g.targetValue,
+    startValue: null,
+    habitId: g.habitId ?? null,
+    targetDay: null,
+    status: 'active',
+    createdDay: start,
+  }));
+
+  const reminders: ReminderRecord[] = [
+    {
+      id: 'demo-reminder-1',
+      kind: 'habit',
+      habitId: 'demo-habit-2',
+      timeMin: 21 * 60 + 30,
+      weekdays: [1, 2, 3, 4, 5],
+      enabled: true,
+    },
+    {
+      id: 'demo-reminder-2',
+      kind: 'daily_log',
+      habitId: null,
+      timeMin: 20 * 60,
+      weekdays: [],
+      enabled: true,
+    },
+  ];
+
+  return { meals, water, activities, goals, reminders };
 }

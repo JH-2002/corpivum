@@ -204,6 +204,25 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     reason: 'O app não prescreve dieta nem treino (LEG-M08).',
   },
   {
+    id: 'food-label',
+    pattern:
+      /\b(comidas?|alimentos?|refeic(ao|oes)|lanches?|pratos?)\s+(nao\s+)?(saudave\w*|pesad\w*|leves?|gordurent\w*|engordativ\w*|permitid\w*)\b/,
+    reason: 'Comida não ganha rótulo de saudável, pesada, leve ou permitida (LEG-M07, Fase 4).',
+  },
+  {
+    id: 'training-prescription',
+    pattern:
+      /\b(aumente|aumentar|suba|subir|diminua|reduza)\s+(a\s+|sua\s+)?carga\b|\bfa(ca|zer)\s+(\d+|mais)\s+(series|repeticoes)\b|\b(seu|sua)\s+proxim[oa]\s+(treino|serie)\b|\btreine\s+\d+\s+vezes\b/,
+    reason: 'O app registra e descreve; não sugere carga, série nem treino (LEG-M08, Fase 4).',
+  },
+  {
+    id: 'calorie-accounting',
+    pattern:
+      /\bcalorias?\s+(gastas|queimadas|restantes)\b|\b(restam|sobram)\s+\d*\s*(kcal|calorias?)\b|\bvoce\s+(excedeu|ultrapassou|estourou)\b|\bsaldo\s+(de\s+)?calori\w*/,
+    reason:
+      'Sem contabilidade de calorias, excesso ou compensação por exercício (LEG-M07, Fase 4).',
+  },
+  {
     id: 'clinical-report',
     pattern: /\blaudos?\b|\bavaliac(ao|oes)\s+clinicas?\b|\bprontuario/,
     reason: 'Relatórios não são laudo nem avaliação clínica (§29, LEG-M01).',

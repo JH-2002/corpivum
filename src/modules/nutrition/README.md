@@ -1,9 +1,9 @@
 # Módulo `nutrition`
 
-Refeições e água, sem metas restritivas.
+Refeições e água, sem juízo e sem restrição (ADR-0029).
 
-- Spec: §25 (ver docs/PRODUCT_SPEC.md e docs/SPEC_ADDENDUM.md)
-- Requisitos: LEG-M04
-- Fase prevista: 4
-
-Exponha a API pública do módulo apenas por `index.ts`. Outros módulos não importam arquivos internos.
+- Spec: §25 · Requisitos: LEG-M07, LEG-M08, LEG-S02, LEG-S03
+- `index.ts`: tipos, schemas e métricas puras (dias com registro, água, percepções, total calórico do dia).
+- `service.ts`: refeições e água com consentimento + RLS; descrição e nota cifradas; caloria só com a estimativa
+  ligada (`checkCalorieEstimate`); desligar oculta sem apagar.
+- Regras: categorias só descrevem o momento do dia; nada rotula comida, sugere cardápio ou fala de "restante".

@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl';
+import { useId } from 'react';
 import { SAFETY_REASONS, type GuardrailReason } from '@/modules/guardrails';
 import { SupportNotice } from './SupportNotice';
 
@@ -10,15 +11,16 @@ import { SupportNotice } from './SupportNotice';
  */
 export function GuardrailNotice({ reasons }: { reasons: readonly GuardrailReason[] }) {
   const t = useTranslations('guardrails');
+  const titleId = useId();
   const unique = [...new Set(reasons)];
   const safety = unique.some((r) => SAFETY_REASONS.has(r));
   return (
     <div className="flex flex-col gap-3" data-testid="guardrail-notice">
       <section
-        aria-labelledby="guardrail-title"
+        aria-labelledby={titleId}
         className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4 text-sm"
       >
-        <h2 id="guardrail-title" className="text-base font-semibold">
+        <h2 id={titleId} className="text-base font-semibold">
           {t(safety ? 'title' : 'titleValidation')}
         </h2>
         <ul className="list-disc pl-5">

@@ -52,6 +52,13 @@ const USER_FKS: Record<string, string> = {
   habits: 'CASCADE',
   habit_checks: 'CASCADE',
   body_measurements: 'CASCADE',
+  // Fase 4 (ADR-0029): alimentação, atividade, metas e lembretes.
+  meal_entries: 'CASCADE',
+  water_entries: 'CASCADE',
+  activity_entries: 'CASCADE',
+  strength_sets: 'CASCADE',
+  goals: 'CASCADE',
+  reminders: 'CASCADE',
 };
 const PROOF_TABLES = ['consent_records', 'policy_acceptances', 'privacy_requests', 'audit_logs'];
 

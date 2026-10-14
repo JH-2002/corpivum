@@ -748,3 +748,60 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
 **Consequências.** Trocar um modelo exige rodar o pipeline, que regrava o manifesto e o nome por hash, e
 atualizar `docs/ASSETS.md` (o teste falha se divergirem). Textos novos (`twin.bodyModel.*`) são RASCUNHO
 (`LEGAL-REVIEW`, OI-24).
+
+## ADR-0029 — Alimentação, atividade, metas, lembretes e timeline (Fase 4)
+**Contexto.** A Fase 4 implementa alimentação (§25), atividade (§26), metas (§30), lembretes (§33) e timeline
+(§31) no escopo da reorientação (ADR-0027: sem medicamentos, humor ou diário). Imagem corporal e alimentação são
+requisito central (LEG-M04, M06, M07, M08): o app registra e descreve, não prescreve dieta nem treino.
+**Decisão.**
+- **Tabelas de saúde** `meal_entries`, `water_entries`, `activity_entries`, `strength_sets`, `goals` e `reminders`, no
+  modelo do ADR-0021: RLS com dono + `app.has_active_consent('health_data')` (DELETE só dono), FK em cascata,
+  `REVOKE TRUNCATE`, CHECKs de faixa, eliminadores em `HEALTH_DATA_ERASERS` e classificação em
+  `tests/db/health.test.ts`. O consentimento v2 já cobre alimentação e atividade: sem nova versão (LEG-C06).
+- **Campos cifrados (LEG-S02):** descrição e nota da refeição, nota da atividade e **nome do exercício** (como o nome
+  do hábito, ADR-0021: pode revelar saúde, ex.: reabilitação). A progressão agrupa por nome depois de decifrar, em
+  memória. Metas não têm texto livre.
+- **Hábito referenciado por meta ou lembrete:** par opcional `(habit_id, habit_user_id)` com FK composta para
+  `habits(id, user_id)` e CHECK `habit_user_id = user_id` (o Prisma não aceita relação opcional sobre `user_id`
+  obrigatório). Nenhuma pessoa aponta meta ou lembrete para hábito alheio (teste).
+- **Guardrails conectados (LEG-M04, M07):** `checkGoal` é a porta única das metas. Peso → `checkWeightGoal` (só
+  perda é limitada; ganho e manutenção sempre permitidos; perda exige prazo e altura); calorias →
+  `checkCalorieTarget`. O serviço lê peso, altura e preferência **do banco** na mesma transação, nunca do
+  formulário; bloqueada = nada gravado e a tela mostra `GuardrailNotice` (orientação profissional + CVV 188 /
+  SAMU 192), sem número e sem alvo alternativo. Depois da ação o formulário volta ao estado inicial (nenhum alvo
+  inseguro fica na tela). O piso calórico também é CHECK no banco (`goals_kcal_floor`). Limiares continuam rascunho
+  (OI-23).
+- **Estimativa calórica (LEG-M07, decisão do responsável pelo produto, 2026-10-13):** opcional, desligada por padrão
+  (`users.calorie_estimate_enabled`). Desligada: o campo não aparece, o servidor recusa caloria
+  (`checkCalorieEstimate`) e os valores guardados ficam ocultos, sem serem apagados. A meta de calorias
+  ("referência diária") só existe com a estimativa ligada, nunca abaixo do piso, e fica em pausa se ela for
+  desligada. A tela mostra só o total do dia, sem "restante" nem "excedeu". Resumos nunca falam de calorias.
+- **Atividade sem prescrição (LEG-M08):** registro de tipo, duração, intensidade percebida, distância e séries.
+  Progressão por exercício só em relação às sessões anteriores da própria pessoa (número, seta e palavra). Sem
+  calorias gastas (evita compensar comida com exercício, `NUTRITION_RULES.showExerciseCalories = false`).
+- **Metas (§30, LEG-M06, F05):** métricas fechadas (sono médio, minutos e sessões de atividade, cumprimento de um
+  hábito, peso, dias com registro, referência de calorias). Barra com valor em texto. Peso: só número, seta e
+  palavra, sem barra, sem sequência e sem comemoração. "Alcançado" e "prazo encerrado" são derivados na leitura
+  (nada guardado); prazo encerrado aparece em tom neutro, com ajustar ou arquivar. Dias só com pesagem não contam
+  como dia de registro (mesma regra do Índice, LEG-M06). `allowsStreak`: sequência só em hábitos.
+- **Marcos na timeline (decisão do responsável pelo produto, 2026-10-13):** hábito novo e meta semanal atingida;
+  **nunca** meta de peso (`allowsMilestone`) nem de calorias. Medidas do corpo aparecem como registro, com a
+  mudança de peso em número, seta e palavra, não como marco.
+- **Lembretes (§33, LEG-F05):** só por e-mail; push fica para depois (exigiria adaptador e subprocessador novos,
+  LEG-S10, OI-27). Processados no servidor pela JobQueue (não dependem do navegador): `reminder.dispatch` com
+  payload só de IDs e do instante previsto, `singletonKey` por ocorrência; cada execução agenda a próxima antes de
+  enviar. Cadeia antiga (lembrete apagado, pausado ou com horário mudado) para sozinha (cancelamento de domínio,
+  ADR-0020); consentimento revogado para sem reagendar (LEG-C04). No máximo um envio por lembrete por dia
+  (`claimSend`, UPDATE condicional), nada no horário silencioso, com o tipo desligado ou com mais de 2 h de atraso;
+  até 10 lembretes por conta. O e-mail leva só um link: nem o nome do hábito (ROPA T7). Preferências (por tipo e
+  horário silencioso) em `users`, com GRANT por coluna. Limitação conhecida: depois de reconsentir, os lembretes
+  só voltam quando a pessoa salva ou retoma cada um.
+- **Resumos por regras** (`insights.nutrition|activity|goals|timeline`) no padrão do ADR-0025, comparando só com
+  o próprio período anterior e a própria meta. Timeline pura, filtrável por domínio (`?dominio=`) e período.
+- **Demo:** as quatro telas no demo público; gerador com PRNG próprio (as sequências anteriores não mudam), sem
+  calorias e sem meta de peso ou de calorias. A barra inferior da demo rola dentro dela (a página não).
+- **Glossário ampliado:** `food-label`, `training-prescription` e `calorie-accounting`.
+- **Revisão de privacidade (PR4, OPEN_ISSUES):** a meta de peso é reavaliada na leitura (`weightGoalSuspension`: suspensa mostra só o aviso); a meta de calorias aparece só em texto (total do dia e referência), sem barra nem "alcançado"; "Próximos lembretes" e o job usam a mesma regra (`willSend`); hábito arquivado pausa o lembrete sem quebrar a cadeia; limite de lembretes com trava por pessoa; conta excluída não recebe e-mail.
+**Consequências.** O Índice de Bem-Estar segue sem atividade (V3 em OI-28). ROPA T2/T7 e RIPD R15 atualizados.
+Textos novos (`nutrition.*`, `activity.*`, `goals.*`, `reminders.*`, `timeline.*`, `insights.*`) são RASCUNHO
+(`LEGAL-REVIEW`, OI-21, OI-23).

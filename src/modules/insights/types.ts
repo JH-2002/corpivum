@@ -6,7 +6,16 @@ import type { BodyField } from '@/modules/body';
  * carrega conteúdo livre (nota, nome de hábito): só números, dias, etiquetas fixas e
  * campos fixos.
  */
-export type InsightModule = 'dashboard' | 'sleep' | 'habits' | 'body' | 'twin';
+export type InsightModule =
+  | 'dashboard'
+  | 'sleep'
+  | 'habits'
+  | 'body'
+  | 'twin'
+  | 'nutrition'
+  | 'activity'
+  | 'goals'
+  | 'timeline';
 
 /** Argumento de uma frase, com o formato que a interface deve aplicar. */
 export type InsightArg =

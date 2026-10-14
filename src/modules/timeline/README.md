@@ -1,9 +1,8 @@
 # Módulo `timeline`
 
-Linha do tempo pessoal e marcos.
+Linha do tempo pessoal e marcos (ADR-0029).
 
-- Spec: §31 (ver docs/PRODUCT_SPEC.md e docs/SPEC_ADDENDUM.md)
-- Requisitos: LEG-C02
-- Fase prevista: 4
-
-Exponha a API pública do módulo apenas por `index.ts`. Outros módulos não importam arquivos internos.
+- Spec: §31 · Requisitos: LEG-M06, LEG-M07
+- `build.ts`: `buildTimeline` (por dia, sono → atividade → hábitos → corpo → alimentação; filtro por domínio) e
+  `parseTimelineDomain`.
+- Regras: marcos só de hábito novo e meta semanal atingida (`allowsMilestone`): nunca peso nem calorias.

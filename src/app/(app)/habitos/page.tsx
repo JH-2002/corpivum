@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { HealthFrame, healthView } from '@/components/health/HealthPage';
 import { HabitsView } from '@/components/modules/habits/HabitsView';
+import { RemindersSection } from '@/components/modules/reminders/RemindersSection';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
 import { addDays, previousRange } from '@/lib/dates';
 import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
 import { STREAK_LOOKBACK_DAYS } from '@/modules/habits';
+import { loadReminders } from '@/modules/health/screens';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -36,6 +38,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
         s.streaksEnabled(),
       ]),
   );
+  const reminders = await loadReminders(view.source);
   return (
     <HealthFrame page="habits" href="/habitos" session={session} view={view} preview={preview}>
       <HabitsView
@@ -48,6 +51,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
         mode={view.mode}
         streaksEnabled={streaksEnabled}
       />
+      <RemindersSection {...reminders} mode={view.mode} />
     </HealthFrame>
   );
 }

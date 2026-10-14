@@ -51,6 +51,18 @@ export function createBodyService(deps: HealthDeps) {
       return row?.heightCm ?? null;
     },
 
+    /** Peso mais recente informado, de qualquer data (metas de peso). */
+    async latestWeightKg(userId: string): Promise<number | null> {
+      const row = await deps.run(userId, (tx) =>
+        tx.bodyMeasurement.findFirst({
+          where: { weightKg: { not: null } },
+          orderBy: { measuredAt: 'desc' },
+          select: { weightKg: true },
+        }),
+      );
+      return row?.weightKg ?? null;
+    },
+
     async create(userId: string, input: BodyInput): Promise<BodyWriteResult> {
       const measuredAt = instant(input);
       if (!measuredAt) return { ok: false, error: 'future' };

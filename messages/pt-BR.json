@@ -45,7 +45,7 @@
   "quickLog": {
     "open": "Registrar",
     "title": "O que você quer registrar?",
-    "description": "Escolha o tipo de registro. Os formulários chegam nas próximas versões.",
+    "description": "Escolha o tipo de registro. Leva poucos segundos.",
     "sleep": "Sono",
     "habit": "Hábito",
     "body": "Peso e medidas",
@@ -645,6 +645,22 @@
       "girth": {
         "axes": "O eixo vertical mostra as circunferências informadas, em cm. Cada linha é uma medida, com traço próprio.",
         "whatToDo": "Compare cada medida com ela mesma ao longo do tempo. O app não define meta nem classifica valores."
+      },
+      "meals": {
+        "axes": "O eixo vertical mostra quantas refeições você registrou em cada dia.",
+        "whatToDo": "Use para ver em quais dias você registrou. O número de refeições é só o que foi anotado, não um alvo."
+      },
+      "water": {
+        "axes": "O eixo vertical mostra a água registrada em cada dia, em ml.",
+        "whatToDo": "Use para notar como foi o seu registro de água ao longo dos dias, comparando com você mesmo."
+      },
+      "activityMinutes": {
+        "axes": "O eixo vertical mostra os minutos de atividade registrados em cada dia, somando todas as sessões.",
+        "whatToDo": "Use para ver como a sua rotina de movimento variou ao longo dos dias. Se algo preocupar você, converse com um profissional de educação física ou de saúde."
+      },
+      "exercise": {
+        "axes": "Cada ponto é uma sessão do exercício. A linha mostra a maior carga registrada (kg) ou as repetições, quando não há carga.",
+        "whatToDo": "Compare cada sessão com as suas anteriores. O app não sugere carga, série nem treino."
       }
     }
   },
@@ -711,6 +727,11 @@
     "twin": {
       "title": "Health Twin",
       "body": "Veja seus registros em uma visualização 3D."
+    },
+    "upcoming": {
+      "title": "Próximos lembretes",
+      "none": "Nenhum lembrete ativo.",
+      "manage": "Gerenciar lembretes"
     }
   },
   "wellbeing": {
@@ -856,6 +877,48 @@
       "dates": "O controle de datas percorre {count, plural, one {# data de medição} other {# datas de medição}}: a primeira {first} e a última {last}.",
       "weightNote": "O peso aparece só em número: ele não muda o formato do modelo.",
       "partial": "Com uma data de medição só, ainda não há como percorrer nem comparar datas."
+    },
+    "nutrition": {
+      "empty": "Ainda não há refeições nem água registradas neste período.",
+      "logged": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você registrou {meals, plural, one {# refeição} other {# refeições}} em {mealDays, plural, one {# dia} other {# dias}}.",
+      "partial": "Com poucos dias registrados, o resumo mostra só a contagem. Com mais registros, ele passa a comparar períodos.",
+      "compareSame": "Foi o mesmo número de dias com registro {days, plural, =7 {da semana anterior} other {dos # dias anteriores}}.",
+      "compareMore": "Foram {diff, plural, one {# dia} other {# dias}} com registro a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "compareLess": "Foram {diff, plural, one {# dia} other {# dias}} com registro a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "water": "Nos dias com água registrada, a média foi de {ml} ml.",
+      "satisfaction": "A satisfação média que você informou nas refeições foi {value} de 5.",
+      "highlights": {
+        "mealDays": "Dias com refeição registrada",
+        "water": "Água por dia (ml, média)",
+        "satisfaction": "Satisfação média (de 5)"
+      }
+    },
+    "activity": {
+      "empty": "Ainda não há atividades registradas neste período.",
+      "total": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você somou {minutes} de atividade em {sessions, plural, one {# sessão} other {# sessões}}.",
+      "partial": "Com poucas sessões registradas, o resumo mostra só o total. Com mais registros, ele passa a comparar períodos.",
+      "goal": "Nesta semana, foram {current} de atividade, para a sua meta de {target}.",
+      "compareSame": "O total ficou parecido com o {days, plural, =7 {da semana anterior} other {dos # dias anteriores}} (diferença de {diff}).",
+      "compareMore": "São {diff} a mais que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "compareLess": "São {diff} a menos que {days, plural, =7 {na semana anterior} other {nos # dias anteriores}}.",
+      "topType": "O tipo mais registrado foi {type, select, walking {caminhada} running {corrida} cycling {bicicleta} swimming {natação} strength {musculação} stretching {alongamento ou ioga} dance {dança} sport {esporte} other {outra atividade}}.",
+      "progression": "Em {exercises, plural, one {# exercício com carga} other {# exercícios com carga}}, a última sessão em relação à anterior: {up} com carga maior, {same} igual e {down} menor.",
+      "highlights": {
+        "minutes": "Minutos ativos no período",
+        "sessions": "Sessões registradas",
+        "activeDays": "Dias com atividade"
+      }
+    },
+    "goals": {
+      "empty": "Você ainda não tem metas ativas.",
+      "active": "{count, plural, one {Você tem # meta ativa} other {Você tem # metas ativas}}.",
+      "reached": "Nesta semana, {reached} de {total} já {reached, plural, one {alcançou} other {alcançaram}} o alvo.",
+      "ended": "{count, plural, one {Uma meta chegou ao fim do prazo} other {# metas chegaram ao fim do prazo}}: ajuste ou arquive quando quiser."
+    },
+    "timeline": {
+      "empty": "Ainda não há registros neste período.",
+      "summary": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, foram {entries, plural, one {# registro} other {# registros}} em {activeDays, plural, one {# dia} other {# dias}}.",
+      "milestones": "{count, plural, one {Houve # marco} other {Houve # marcos}} no período."
     }
   },
   "tour": {
@@ -987,7 +1050,13 @@
       "times_required": "Informe quantas vezes por semana (de 1 a 7).",
       "at_least_one": "Preencha pelo menos uma medida.",
       "too_long": "O intervalo entre deitar e acordar precisa ser de até 24 horas.",
-      "future": "A data não pode estar no futuro."
+      "future": "A data não pode estar no futuro.",
+      "habit_required": "Escolha um hábito.",
+      "quiet_both": "Informe o início e o fim do horário silencioso, com horários diferentes.",
+      "estimate_disabled": "A estimativa de calorias está desligada. Ela pode ser ligada nesta tela, se você quiser.",
+      "out_of_window": "A data precisa ser de hoje ou dos últimos 7 dias.",
+      "habit_not_found": "Hábito não encontrado. Ele pode ter sido arquivado ou excluído.",
+      "too_many": "Você chegou ao limite de lembretes. Exclua um para criar outro."
     }
   },
   "entries": {
@@ -1182,8 +1251,278 @@
       "invalid_date": "A data escolhida para a meta já passou ou é hoje.",
       "calorie_target_below_floor": "O alvo de calorias fica fora do que o app aceita.",
       "topic_not_allowed": "O app não faz sugestões sobre esse tema.",
-      "invalid_input": "Algum valor da meta não é válido. Confira e tente de novo."
+      "invalid_input": "Algum valor da meta não é válido. Confira e tente de novo.",
+      "current_weight_required": "Para metas de peso, registre seu peso atual em Corpo antes.",
+      "target_day_required": "Para metas de perda de peso, escolha uma data para a meta.",
+      "estimate_disabled": "A estimativa de calorias está desligada. Ela pode ser ligada em Alimentação, se você quiser."
     },
     "professional": "Para esse tipo de objetivo, o melhor caminho é conversar com um profissional de saúde, como um nutricionista ou um médico, que conheça a sua história."
+  },
+  "nutrition": {
+    "intro": "O app registra o que você informa, do jeito que você quiser. Ele não avalia a comida nem sugere cardápio.",
+    "newTitle": "Registrar refeição",
+    "listTitle": "Refeições registradas",
+    "categories": {
+      "breakfast": "Café da manhã",
+      "lunch": "Almoço",
+      "dinner": "Jantar",
+      "snack": "Lanche",
+      "other": "Outra"
+    },
+    "perceptions": {
+      "hunger": "Fome antes de comer",
+      "fullness": "Saciedade depois",
+      "satisfaction": "Satisfação com a refeição",
+      "low": "pouca",
+      "high": "muita"
+    },
+    "form": {
+      "eatenAt": "Quando",
+      "category": "Refeição",
+      "description": "O que você comeu (opcional)",
+      "descriptionHint": "Do jeito que preferir. Guardado cifrado no servidor.",
+      "more": "Mais detalhes (opcional)",
+      "kcal": "Estimativa de calorias (opcional)",
+      "kcalHint": "Só se você quiser. É uma estimativa sua, sem comparação.",
+      "note": "Nota (opcional)",
+      "noteHint": "Guardada cifrada no servidor.",
+      "save": "Registrar refeição",
+      "update": "Salvar alterações"
+    },
+    "water": {
+      "title": "Água",
+      "today": "Hoje: {ml} ml",
+      "todayNone": "Nenhuma água registrada hoje.",
+      "add": "+{ml} ml",
+      "addLabel": "Adicionar {ml} ml de água hoje",
+      "custom": "Outra quantidade (ml)",
+      "customSave": "Adicionar",
+      "listTitle": "Água registrada hoje",
+      "remove": "Remover",
+      "removeLabel": "Remover {ml} ml de água"
+    },
+    "estimate": {
+      "title": "Estimativa de calorias",
+      "on": "A estimativa de calorias está ligada. Você pode desligar quando quiser: os valores ficam ocultos, sem serem apagados.",
+      "off": "A estimativa de calorias está desligada. Ela é opcional, e o registro funciona sem ela.",
+      "enable": "Ligar estimativa",
+      "disable": "Desligar estimativa"
+    },
+    "stats": {
+      "mealDays": "Dias com refeição registrada",
+      "meals": "Refeições registradas",
+      "water": "Água por dia (média)",
+      "waterValue": "{ml} ml",
+      "satisfaction": "Satisfação média",
+      "kcalToday": "Calorias estimadas hoje"
+    },
+    "mealsChart": "Refeições registradas por dia",
+    "mealsSeries": "Refeições",
+    "waterChart": "Água por dia",
+    "waterSeries": "Água",
+    "entrySummary": "{category} às {time}",
+    "entryKcal": "{kcal} kcal (estimativa)",
+    "entryPerception": "{label}: {value}/5"
+  },
+  "activity": {
+    "intro": "O app registra e descreve as suas atividades. Ele não monta treino nem sugere carga ou série.",
+    "newTitle": "Registrar atividade",
+    "listTitle": "Atividades registradas",
+    "types": {
+      "walking": "Caminhada",
+      "running": "Corrida",
+      "cycling": "Bicicleta",
+      "swimming": "Natação",
+      "strength": "Musculação",
+      "stretching": "Alongamento ou ioga",
+      "dance": "Dança",
+      "sport": "Esporte",
+      "other": "Outra"
+    },
+    "form": {
+      "startedAt": "Início",
+      "type": "Tipo",
+      "duration": "Duração (minutos)",
+      "intensity": "Intensidade percebida (opcional)",
+      "intensityHint": "De 1 (muito leve) a 10 (máxima), do jeito que você sentiu.",
+      "distance": "Distância em km (opcional)",
+      "note": "Nota (opcional)",
+      "noteHint": "Guardada cifrada no servidor.",
+      "setsTitle": "Séries de força (opcional)",
+      "setsHint": "Uma linha por série. Linhas vazias são ignoradas. O nome do exercício é guardado cifrado.",
+      "setLegend": "Série {n}",
+      "exercise": "Exercício",
+      "reps": "Repetições",
+      "load": "Carga em kg (opcional)",
+      "save": "Registrar atividade",
+      "update": "Salvar alterações"
+    },
+    "stats": {
+      "minutes": "Minutos ativos",
+      "sessions": "Sessões",
+      "activeDays": "Dias com atividade",
+      "week": "Minutos nesta semana"
+    },
+    "minutesChart": "Minutos ativos por dia",
+    "minutesSeries": "Minutos",
+    "progression": {
+      "title": "Progressão por exercício",
+      "intro": "Cada exercício é comparado só com as suas próprias sessões anteriores.",
+      "sessions": "{count, plural, one {# sessão registrada} other {# sessões registradas}}",
+      "lastLoad": "Carga máxima na última sessão: {load} kg",
+      "lastReps": "Repetições na última sessão: {reps}",
+      "change": "{arrow} {delta} {unit} em relação à sessão anterior ({word, select, up {maior} down {menor} other {igual}})",
+      "unitKg": "kg",
+      "unitReps": "repetições",
+      "chartTitle": "{exercise}: por sessão",
+      "loadSeries": "Carga máxima",
+      "repsSeries": "Repetições"
+    },
+    "entrySummary": "{type} às {time} · {duration}",
+    "entryDistance": "{km} km",
+    "entryIntensity": "Intensidade {value}/10",
+    "entrySets": "{count, plural, one {# série} other {# séries}}",
+    "entrySet": "{exercise}: {reps} × {load}",
+    "entrySetNoLoad": "{exercise}: {reps} repetições"
+  },
+  "goals": {
+    "intro": "Metas no seu ritmo, comparadas só com você mesmo. Dá para ajustar, arquivar ou excluir quando quiser.",
+    "weightNote": "Metas de peso seguem limites de segurança: o app não acompanha metas de perda fora deles. Metas de ganho e de manutenção não têm esse limite.",
+    "newTitle": "Criar meta",
+    "listTitle": "Suas metas",
+    "archivedTitle": "Arquivadas",
+    "metrics": {
+      "sleep_avg_minutes": "Sono médio por noite na semana",
+      "activity_minutes_week": "Minutos de atividade na semana",
+      "activity_sessions_week": "Sessões de atividade na semana",
+      "habit_completion_pct": "Cumprimento de um hábito na semana",
+      "weight_kg": "Peso",
+      "logging_days_week": "Dias com registro na semana",
+      "kcal_reference_day": "Referência diária de calorias (estimativa)"
+    },
+    "units": {
+      "sleep_avg_minutes": "minutos por noite",
+      "activity_minutes_week": "minutos",
+      "activity_sessions_week": "sessões",
+      "habit_completion_pct": "%",
+      "weight_kg": "kg",
+      "logging_days_week": "dias",
+      "kcal_reference_day": "kcal"
+    },
+    "form": {
+      "metric": "O que acompanhar",
+      "target": "Alvo",
+      "targetHint": "Unidade: {unit}.",
+      "sleepHint": "Em minutos: 450 = 7 h 30 min.",
+      "habit": "Hábito",
+      "habitNone": "Escolha um hábito",
+      "targetDay": "Prazo (opcional)",
+      "targetDayHint": "Para metas de perda de peso, o prazo é obrigatório.",
+      "kcalHidden": "A referência de calorias só aparece com a estimativa de calorias ligada em Alimentação.",
+      "save": "Criar meta",
+      "update": "Salvar alterações"
+    },
+    "progress": {
+      "week": "Nesta semana: {current} de {target}",
+      "day": "Hoje: {current} de {target}",
+      "none": "Ainda sem registro no período desta meta.",
+      "reached": "Alvo alcançado",
+      "weightNow": "Peso mais recente: {current} kg · alvo: {target} kg",
+      "weightNone": "Sem peso registrado ainda.",
+      "weightChange": "{arrow} {delta} kg desde o início da meta ({word, select, up {subiu} down {desceu} other {estável}})",
+      "deadline": "Prazo: {date}",
+      "deadlinePassed": "O prazo terminou. Você pode ajustar a meta, escolher outro prazo ou arquivar, se fizer sentido.",
+      "paused": "Em pausa: a estimativa de calorias está desligada.",
+      "barLabel": "Progresso: {percent}%",
+      "kcal": "Estimativa de hoje: {current} kcal · referência: {target} kcal",
+      "kcalNone": "Nenhuma estimativa registrada hoje · referência: {target} kcal"
+    },
+    "archive": "Arquivar",
+    "archiveLabel": "Arquivar a meta: {name}",
+    "unarchive": "Reativar",
+    "unarchiveLabel": "Reativar a meta: {name}"
+  },
+  "reminders": {
+    "title": "Lembretes",
+    "intro": "Lembretes por e-mail, enviados pelo servidor no horário escolhido, mesmo com o app fechado. No máximo um por lembrete por dia. O e-mail não traz o nome do hábito nem outros dados de bem-estar.",
+    "kinds": {
+      "habit": "Hábito",
+      "daily_log": "Registro do dia"
+    },
+    "form": {
+      "newTitle": "Criar lembrete",
+      "kind": "Tipo de lembrete",
+      "habit": "Hábito",
+      "habitNone": "Escolha um hábito",
+      "time": "Horário",
+      "weekdays": "Dias da semana",
+      "weekdaysHint": "Nenhum dia marcado = todos os dias.",
+      "save": "Criar lembrete",
+      "update": "Salvar alterações"
+    },
+    "listTitle": "Seus lembretes",
+    "empty": "Nenhum lembrete criado.",
+    "entry": "{label} às {time}",
+    "everyDay": "Todos os dias",
+    "active": "Ativo",
+    "paused": "Pausado",
+    "pause": "Pausar",
+    "pauseLabel": "Pausar o lembrete: {label}",
+    "resume": "Retomar",
+    "resumeLabel": "Retomar o lembrete: {label}",
+    "prefs": {
+      "title": "Preferências de lembrete",
+      "remindHabits": "Enviar lembretes de hábitos",
+      "remindDailyLog": "Enviar lembrete de registro do dia",
+      "quietStart": "Horário silencioso: início",
+      "quietEnd": "Horário silencioso: fim",
+      "quietHint": "Nada é enviado nesse intervalo. Deixe os dois em branco para não usar.",
+      "save": "Salvar preferências",
+      "saved": "Preferências salvas."
+    },
+    "upcoming": {
+      "title": "Próximos lembretes",
+      "none": "Nenhum lembrete ativo.",
+      "when": "{label}: {when}",
+      "manage": "Gerenciar lembretes"
+    }
+  },
+  "timeline": {
+    "filterLabel": "Mostrar",
+    "all": "Tudo",
+    "domains": {
+      "sleep": "Sono",
+      "activity": "Atividade",
+      "habits": "Hábitos",
+      "body": "Corpo",
+      "nutrition": "Alimentação",
+      "goals": "Marcos"
+    },
+    "listTitle": "Linha do tempo",
+    "dayItems": "{count, plural, one {# item} other {# itens}}",
+    "items": {
+      "sleep": "Sono: {duration}",
+      "sleepQuality": "qualidade {value}/5",
+      "activity": "{type}: {duration}",
+      "activitySets": "{count, plural, one {# série} other {# séries}}",
+      "habits": "{count, plural, one {# hábito marcado} other {# hábitos marcados}}",
+      "body": "Medição do corpo",
+      "bodyWeight": "Peso: {weight} kg",
+      "bodyChange": "{arrow} {delta} kg em relação à medição anterior ({word, select, up {subiu} down {desceu} other {estável}})",
+      "bodyOther": "{count, plural, one {mais # medida} other {mais # medidas}}",
+      "meal": "{category} às {time}",
+      "water": "Água: {ml} ml",
+      "goalReached": "Meta da semana alcançada: {metric} ({value} de {target})",
+      "newHabit": "Novo hábito: {name}"
+    },
+    "kindLabels": {
+      "sleep": "Sono",
+      "activity": "Atividade",
+      "habits": "Hábitos",
+      "body": "Corpo",
+      "meal": "Alimentação",
+      "water": "Alimentação",
+      "milestone": "Marco"
+    }
   }
 }
