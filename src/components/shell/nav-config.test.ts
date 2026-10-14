@@ -21,7 +21,6 @@ describe('nav-config', () => {
       'goals',
       'timeline',
       'twin',
-      'ai',
       'reports',
       'settings',
     ]);

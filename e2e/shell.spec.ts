@@ -84,11 +84,12 @@ test.describe('avisos obrigatórios', () => {
   });
 });
 
-test.describe('rotas removidas na reorientação (ADR-0027)', () => {
+test.describe('rotas removidas (ADR-0027, ADR-0030)', () => {
   for (const [from, to] of [
     ['/humor', '/inicio'],
     ['/diario', '/inicio'],
     ['/medicamentos', '/inicio'],
+    ['/ia', '/inicio'],
     ['/twin/cerebro', '/twin'],
     ['/demo/humor', '/demo'],
     ['/demo/diario', '/demo'],

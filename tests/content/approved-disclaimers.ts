@@ -9,8 +9,6 @@ export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
     'O HealthMind 360 é uma ferramenta de bem-estar e autoacompanhamento. Não diagnostica, não trata e não monitora doenças, e não substitui profissional de saúde.',
   'disclaimer.notMedicalDevice':
     'Este aplicativo não é um dispositivo médico e não faz recomendações de diagnóstico ou tratamento.',
-  'disclaimer.aiGenerated':
-    'Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.',
   'disclaimer.reportFooter':
     'Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.',
   'disclaimer.riskSupport':
