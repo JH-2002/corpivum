@@ -22,7 +22,7 @@ interface pode contradizer isso.
 ## Regras inegociáveis
 1. Dado de saúde é dado pessoal sensível. Nunca tratar sem `ConsentRecord` ativo para a finalidade.
 2. Nunca vender ou compartilhar dados de saúde. Sem SDKs de publicidade, sem trackers de terceiros.
-3. Revogada (ADR-0030). A numeração das demais regras não muda.
+3. Sem assistente de IA, sem provedor de LLM e sem recomendações automáticas; resumos só por regras fixas (ADR-0030, LEGAL_REQUIREMENTS B6).
 4. Menores de 18 não criam conta e não têm dado persistido.
 5. Nunca logar conteúdo de saúde, notas, alimentação ou medidas. Só metadados.
 6. Nunca usar dados reais em desenvolvimento (apenas seed sintético). Nunca commitar segredos.
