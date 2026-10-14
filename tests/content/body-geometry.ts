@@ -47,7 +47,11 @@ export async function loadBody(asset: BodyAsset): Promise<Part[]> {
 }
 
 /** Posições finais de cada parte (metros), com os pesos e a escala da altura. */
-export function positions(parts: Part[], weights: Record<MorphName, number>, scale: Vector3): Vector3[][] {
+export function positions(
+  parts: Part[],
+  weights: Record<MorphName, number>,
+  scale: Vector3,
+): Vector3[][] {
   return parts.map((part) => {
     const out: Vector3[] = [];
     const v = new Vector3();

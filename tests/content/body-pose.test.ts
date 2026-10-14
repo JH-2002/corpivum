@@ -41,7 +41,12 @@ interface Mesh {
 }
 
 /** Vértices posicionados por grupo, com a normal (recalculada após os morphs) no tronco e nas coxas. */
-function split(parts: Part[], weights: Record<MorphName, number>, armY: number, thighY: number): Mesh {
+function split(
+  parts: Part[],
+  weights: Record<MorphName, number>,
+  armY: number,
+  thighY: number,
+): Mesh {
   const pos = positions(parts, weights, new Vector3(1, 1, 1));
   const out: Mesh = { arm: [], hands: [], body: [], hip: [], all: [] };
   parts.forEach((part, pi) => {
