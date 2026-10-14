@@ -1,3 +1,4 @@
+import { weightGoalSuspension } from './guard';
 import { goalInputSchema } from './schemas';
 import { goalProgress, loggedDays, weeklyResults, type GoalData } from './progress';
 import type { GoalRecord } from './types';
@@ -130,5 +131,45 @@ describe('formulário de meta', () => {
     expect(
       goalInputSchema.safeParse({ metric: 'logging_days_week', targetValue: '9' }).success,
     ).toBe(false);
+  });
+});
+
+describe('meta de peso reavaliada na leitura (LEG-M04, revisão M1)', () => {
+  const weight = goal({
+    domain: 'weight',
+    metric: 'weight_kg',
+    targetValue: 58,
+    startValue: 56,
+    targetDay: '2027-10-07',
+  });
+
+  it('"ganho" que virou perda até IMC abaixo do mínimo é suspensa', () => {
+    // Criada como ganho (56 → 58); a pessoa voltou ao peso real (60) com 1,80 m: 58 kg = IMC 17,9.
+    expect(weightGoalSuspension(weight, 60, 180, TODAY)).toEqual(['target_below_safe_range']);
+  });
+
+  it('altura corrigida depois, ritmo que ficou rápido e meta reativada também são reavaliados', () => {
+    const loss = goal({
+      domain: 'weight',
+      metric: 'weight_kg',
+      targetValue: 76,
+      targetDay: '2026-10-21',
+    });
+    expect(weightGoalSuspension(loss, 80, 175, TODAY)).toEqual(['pace_too_fast']);
+    expect(weightGoalSuspension(loss, 80, null, TODAY)).toContain('height_required');
+  });
+
+  it('ganho, manutenção, prazo vencido sem ritmo e meta arquivada seguem sem aviso', () => {
+    expect(weightGoalSuspension(weight, 56, 180, TODAY)).toEqual([]);
+    expect(weightGoalSuspension({ ...weight, targetValue: 60 }, 60, 180, TODAY)).toEqual([]);
+    const ended = goal({
+      domain: 'weight',
+      metric: 'weight_kg',
+      targetValue: 76,
+      targetDay: '2026-10-01',
+    });
+    expect(weightGoalSuspension(ended, 80, 175, TODAY)).toEqual([]);
+    expect(weightGoalSuspension({ ...weight, status: 'archived' }, 60, 180, TODAY)).toEqual([]);
+    expect(weightGoalSuspension(goal({}), 60, 180, TODAY)).toEqual([]);
   });
 });

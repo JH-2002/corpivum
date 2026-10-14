@@ -3,7 +3,7 @@ import type { JobQueue } from '@/adapters/jobs/types';
 import type { MailProvider } from '@/adapters/mail/types';
 import { localDay } from '@/lib/dates';
 import { ConsentRequiredError } from '@/lib/errors';
-import { inQuietHours, nextOccurrence } from './schedule';
+import { nextOccurrence, willSend } from './schedule';
 import type { RemindersService } from './service';
 import type { ReminderRecord } from './types';
 
@@ -76,9 +76,9 @@ export function registerReminderJobs(queue: JobQueue, deps: ReminderJobDeps): vo
     await scheduleReminder(queue, userId, ctx.reminder, new Date(due), deps.timeZone);
 
     const { prefs, reminder } = ctx;
-    const typeOn = reminder.kind === 'habit' ? prefs.remindHabits : prefs.remindDailyLog;
-    if (!typeOn) return;
-    if (inQuietHours(reminder.timeMin, prefs.quietStartMin, prefs.quietEndMin)) return;
+    // Hábito arquivado: a cadeia continua (volta a enviar se o hábito for reativado), mas não envia.
+    if (!ctx.habitActive) return;
+    if (!willSend(reminder, prefs)) return;
     if (now().getTime() - due > REMINDER_LATE_MS) return;
     if (
       !(await deps.service.claimSend(userId, reminderId, localDay(new Date(due), deps.timeZone)))

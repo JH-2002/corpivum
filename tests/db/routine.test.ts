@@ -320,6 +320,28 @@ describe('lembretes pela fila (§33, LEG-F05)', () => {
     expect(mail.outbox).toHaveLength(0);
   });
 
+  it('hábito arquivado: não envia, mas a cadeia continua e volta ao reativar (revisão B1)', async () => {
+    const { a, habitId, mail, runAt } = await setup();
+    const habits = createHabitsService(deps);
+    await habits.setArchived(a.userId, habitId, true);
+    expect(await runAt('2026-10-07T23:00:30Z')).toBe(1);
+    expect(mail.outbox).toHaveLength(0);
+    await habits.setArchived(a.userId, habitId, false);
+    expect(await runAt('2026-10-08T23:00:30Z')).toBe(1);
+    expect(mail.outbox).toHaveLength(1);
+  });
+
+  it('limite de lembretes vale mesmo com pedidos simultâneos (revisão B6)', async () => {
+    const a = await onboarded();
+    const reminders = createRemindersService(deps);
+    const input = reminderInputSchema.parse({ kind: 'daily_log', time: '08:00' });
+    const results = await Promise.all(
+      Array.from({ length: 14 }, () => reminders.create(a.userId, input)),
+    );
+    expect(results.filter((r) => r.ok)).toHaveLength(10);
+    expect(await count('reminders', a.userId)).toBe(10);
+  });
+
   it('revogar o consentimento interrompe os envios (LEG-C04)', async () => {
     const { a, mail, runAt } = await setup();
     await a.consent.revoke(a.userId, 'health_data');

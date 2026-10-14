@@ -46,6 +46,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
           />
           <UpcomingReminders
             reminders={data.reminders.reminders}
+            prefs={data.reminders.prefs}
             habits={data.reminders.habits}
             now={new Date()}
             manageHref="/habitos#lembretes"

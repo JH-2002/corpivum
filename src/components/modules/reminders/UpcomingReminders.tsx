@@ -4,17 +4,19 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { APP_TIME_ZONE } from '@/lib/dates';
 import type { HabitRecord } from '@/modules/habits';
-import { upcoming, type ReminderRecord } from '@/modules/notifications';
+import { upcoming, type ReminderPrefs, type ReminderRecord } from '@/modules/notifications';
 
 /** "Próximos lembretes" do painel (§11 item 6, pendência do ADR-0021): os próximos três, em ordem. */
 export function UpcomingReminders({
   reminders,
+  prefs,
   habits,
   now,
   manageHref,
   demo,
 }: {
   reminders: ReminderRecord[];
+  prefs: ReminderPrefs;
   habits: HabitRecord[];
   now: Date;
   manageHref: Route;
@@ -23,7 +25,8 @@ export function UpcomingReminders({
   const t = useTranslations('dashboard.upcoming');
   const tr = useTranslations('reminders');
   const format = useFormatter();
-  const next = upcoming(reminders, now, APP_TIME_ZONE);
+  const active = new Set(habits.filter((h) => !h.archived).map((h) => h.id));
+  const next = upcoming(reminders, now, APP_TIME_ZONE, prefs, active);
   const label = (r: ReminderRecord) =>
     r.kind === 'habit'
       ? (habits.find((h) => h.id === r.habitId)?.name ?? tr('kinds.habit'))

@@ -801,6 +801,7 @@ requisito central (LEG-M04, M06, M07, M08): o app registra e descreve, não pres
 - **Demo:** as quatro telas no demo público; gerador com PRNG próprio (as sequências anteriores não mudam), sem
   calorias e sem meta de peso ou de calorias. A barra inferior da demo rola dentro dela (a página não).
 - **Glossário ampliado:** `food-label`, `training-prescription` e `calorie-accounting`.
+- **Revisão de privacidade (PR4, OPEN_ISSUES):** a meta de peso é reavaliada na leitura (`weightGoalSuspension`: suspensa mostra só o aviso); a meta de calorias aparece só em texto (total do dia e referência), sem barra nem "alcançado"; "Próximos lembretes" e o job usam a mesma regra (`willSend`); hábito arquivado pausa o lembrete sem quebrar a cadeia; limite de lembretes com trava por pessoa; conta excluída não recebe e-mail.
 **Consequências.** O Índice de Bem-Estar segue sem atividade (V3 em OI-28). ROPA T2/T7 e RIPD R15 atualizados.
 Textos novos (`nutrition.*`, `activity.*`, `goals.*`, `reminders.*`, `timeline.*`, `insights.*`) são RASCUNHO
 (`LEGAL-REVIEW`, OI-21, OI-23).

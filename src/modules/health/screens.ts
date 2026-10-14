@@ -1,7 +1,13 @@
 import { previousRange, weekToDate } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { totalMinutes } from '@/modules/activity';
-import { goalProgress, type GoalData, type GoalProgress } from '@/modules/goals';
+import {
+  goalProgress,
+  weightGoalSuspension,
+  type GoalData,
+  type GoalProgress,
+} from '@/modules/goals';
+import type { GuardrailReason } from '@/modules/guardrails';
 import type { HealthDataSource } from './source';
 
 /**
@@ -59,15 +65,22 @@ export async function goalDataFor(s: HealthDataSource, range: DateRange): Promis
 
 export function loadGoals(source: HealthDataSource, today: string) {
   return source.session(async (s) => {
-    const [goals, habits, estimateEnabled] = await Promise.all([
+    const [goals, habits, estimateEnabled, heightCm] = await Promise.all([
       s.goals({ includeArchived: true }),
       s.habits(),
       s.calorieEstimateEnabled(),
+      s.latestHeightCm(),
     ]);
     // Metas medem a semana corrente (segunda → hoje) ou o dia de hoje.
     const data = await goalDataFor(s, weekToDate(today));
     const progress: GoalProgress[] = goals.map((g) => goalProgress(g, data, today));
-    return { goals, habits, progress, estimateEnabled };
+    // Meta de peso que hoje seria bloqueada não é acompanhada (LEG-M04, revisão M1).
+    const suspended: Record<string, GuardrailReason[]> = {};
+    for (const g of goals) {
+      const reasons = weightGoalSuspension(g, data.latestWeightKg, heightCm, today);
+      if (reasons.length > 0) suspended[g.id] = reasons;
+    }
+    return { goals, habits, progress, suspended, estimateEnabled };
   });
 }
 

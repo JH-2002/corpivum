@@ -33,8 +33,9 @@ const SELECT = {
 } as const;
 
 function readPrefs(tx: Tx, userId: string): Promise<(ReminderPrefs & { email: string }) | null> {
-  return tx.user.findUnique({
-    where: { id: userId },
+  // Conta excluída (exclusão lógica, Fase 6) não recebe nada (LEG-D04, revisão B7).
+  return tx.user.findFirst({
+    where: { id: userId, deletedAt: null },
     select: {
       email: true,
       remindHabits: true,
@@ -82,6 +83,8 @@ export function createRemindersService(deps: HealthDeps) {
 
     async create(userId: string, input: ReminderInput): Promise<ReminderWriteResult> {
       return deps.run(userId, async (tx) => {
+        // Serializa por pessoa: duas requisições simultâneas não passam do limite (revisão B6).
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('reminders:' || ${userId}, 0))`;
         if ((await tx.reminder.count()) >= MAX_REMINDERS) {
           return { ok: false, error: 'too_many' } as const;
         }
@@ -143,15 +146,20 @@ export function createRemindersService(deps: HealthDeps) {
     async dispatchContext(
       userId: string,
       id: string,
-    ): Promise<{ reminder: ReminderRecord; prefs: ReminderPrefs; email: string } | null> {
+    ): Promise<{
+      reminder: ReminderRecord;
+      prefs: ReminderPrefs;
+      email: string;
+      /** Hábito ativo (lembrete de registro: sempre). Arquivado = a cadeia continua, sem enviar. */
+      habitActive: boolean;
+    } | null> {
       return deps.run(userId, async (tx) => {
         const row = await tx.reminder.findFirst({ where: { id }, select: SELECT });
         const user = await readPrefs(tx, userId);
         if (!row || !user) return null;
-        // Hábito arquivado: o lembrete fica guardado, mas não envia.
-        const enabled = row.enabled && (await habitOk(tx, row.habitId));
+        const habitActive = await habitOk(tx, row.habitId);
         const { email, ...prefs } = user;
-        return { reminder: { ...toRecord(row), enabled }, prefs, email };
+        return { reminder: toRecord(row), prefs, email, habitActive };
       });
     },
 

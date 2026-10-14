@@ -17,6 +17,7 @@ export default async function DemoGoalsPage() {
       goals={data.goals}
       habits={data.habits}
       progress={data.progress}
+      suspended={data.suspended}
       estimateEnabled={data.estimateEnabled}
       today={today}
       mode="publicDemo"

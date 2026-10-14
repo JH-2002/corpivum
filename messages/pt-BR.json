@@ -1433,7 +1433,9 @@
       "deadline": "Prazo: {date}",
       "deadlinePassed": "O prazo terminou. Você pode ajustar a meta, escolher outro prazo ou arquivar, se fizer sentido.",
       "paused": "Em pausa: a estimativa de calorias está desligada.",
-      "barLabel": "Progresso: {percent}%"
+      "barLabel": "Progresso: {percent}%",
+      "kcal": "Estimativa de hoje: {current} kcal · referência: {target} kcal",
+      "kcalNone": "Nenhuma estimativa registrada hoje · referência: {target} kcal"
     },
     "archive": "Arquivar",
     "archiveLabel": "Arquivar a meta: {name}",

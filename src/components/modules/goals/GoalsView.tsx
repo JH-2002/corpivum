@@ -3,6 +3,7 @@ import { archiveGoalAction, deleteGoalAction } from '@/app/(app)/metas/actions';
 import { SubmitButton } from '@/components/forms/FormFields';
 import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
 import { EntryActions } from '@/components/health/EntryActions';
+import { GuardrailNotice } from '@/components/health/GuardrailNotice';
 import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodSummary } from '@/components/insights/PeriodInsights';
@@ -10,6 +11,7 @@ import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { addDays } from '@/lib/dates';
 import type { GoalMetric, GoalProgress, GoalRecord } from '@/modules/goals';
+import type { GuardrailReason } from '@/modules/guardrails';
 import type { HabitRecord } from '@/modules/habits';
 import { goalsInsights } from '@/modules/insights';
 import { GoalForm } from './GoalForm';
@@ -23,6 +25,7 @@ export function GoalsView({
   goals,
   habits,
   progress,
+  suspended,
   estimateEnabled,
   today,
   mode,
@@ -30,6 +33,8 @@ export function GoalsView({
   goals: GoalRecord[];
   habits: HabitRecord[];
   progress: GoalProgress[];
+  /** Metas de peso que hoje seriam bloqueadas: sem acompanhamento, só o aviso (LEG-M04). */
+  suspended: Readonly<Record<string, readonly GuardrailReason[]>>;
   estimateEnabled: boolean;
   today: string;
   mode: HealthMode;
@@ -63,8 +68,20 @@ export function GoalsView({
   function Progress({ goal }: { goal: GoalRecord }) {
     const p = byId.get(goal.id);
     if (!p) return null;
-    if (goal.metric === 'kcal_reference_day' && !estimateEnabled) {
-      return <p className="text-sm text-fg-muted">{t('progress.paused')}</p>;
+    if (goal.metric === 'kcal_reference_day') {
+      // Calorias: só o total do dia e a referência, em texto. Sem barra, porcentagem nem "alcançado"
+      // (comer uma quantidade não é conquista nem teto, LEG-M07, revisão M2).
+      if (!estimateEnabled) return <p className="text-sm text-fg-muted">{t('progress.paused')}</p>;
+      return (
+        <p className="tabular text-sm">
+          {p.current === null
+            ? t('progress.kcalNone', { target: formatDecimal(goal.targetValue) })
+            : t('progress.kcal', {
+                current: formatDecimal(p.current),
+                target: formatDecimal(goal.targetValue),
+              })}
+        </p>
+      );
     }
     if (goal.metric === 'weight_kg') {
       const trend = trendOf(p.weightChangeKg, 0.05);
@@ -87,7 +104,6 @@ export function GoalsView({
               })}
             </p>
           ) : null}
-          {p.reached ? <p>{t('progress.reached')}</p> : null}
         </div>
       );
     }
@@ -123,13 +139,24 @@ export function GoalsView({
   function GoalItem({ goal }: { goal: GoalRecord }) {
     const p = byId.get(goal.id);
     const archivedGoal = goal.status === 'archived';
+    const blocked = suspended[goal.id] ?? [];
     return (
       <li className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h3 className="font-semibold">{title(goal)}</h3>
-          <ConfidenceBadge level={level('ESTIMADO')} />
+          <ConfidenceBadge
+            level={level(
+              goal.metric === 'weight_kg' || goal.metric === 'kcal_reference_day'
+                ? 'INFORMADO'
+                : 'ESTIMADO',
+            )}
+          />
         </div>
-        {archivedGoal ? null : <Progress goal={goal} />}
+        {archivedGoal ? null : blocked.length > 0 ? (
+          <GuardrailNotice reasons={blocked} />
+        ) : (
+          <Progress goal={goal} />
+        )}
         {goal.targetDay ? (
           <p className="text-sm text-fg-muted">
             {t('progress.deadline', { date: shortDate(goal.targetDay) })}

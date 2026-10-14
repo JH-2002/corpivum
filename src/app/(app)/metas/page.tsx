@@ -26,6 +26,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
           goals={data.goals}
           habits={data.habits}
           progress={data.progress}
+          suspended={data.suspended}
           estimateEnabled={data.estimateEnabled}
           today={today}
           mode={view.mode}

@@ -165,3 +165,86 @@ describe('formulários (LEG-M07)', () => {
     ).toBeNull();
   });
 });
+
+describe('metas: calorias e peso (LEG-M06, LEG-M07, revisão M1/M2/B3)', () => {
+  const base = {
+    habitId: null,
+    targetDay: null,
+    status: 'active' as const,
+    createdDay: '2026-09-01',
+  };
+  const kcal = {
+    ...base,
+    id: 'k',
+    domain: 'nutrition' as const,
+    metric: 'kcal_reference_day' as const,
+    targetValue: 1800,
+    startValue: null,
+  };
+  const weight = {
+    ...base,
+    id: 'w',
+    domain: 'weight' as const,
+    metric: 'weight_kg' as const,
+    targetValue: 64,
+    startValue: 60,
+  };
+  const progress = (goalId: string, current: number) => ({
+    goalId,
+    window: 'day' as const,
+    current,
+    target: 1,
+    ratio: 1,
+    reached: true,
+    deadlinePassed: false,
+    weightChangeKg: 4,
+  });
+
+  it('calorias: só total e referência em texto, sem barra, porcentagem nem "alcançado"', () => {
+    const { container } = renderWithIntl(
+      <GoalsView
+        goals={[kcal]}
+        habits={[]}
+        progress={[progress('k', 1900)]}
+        suspended={{}}
+        estimateEnabled
+        today={TODAY}
+        mode="own"
+      />,
+    );
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    const text = container.textContent ?? '';
+    expect(text).toContain('Estimativa de hoje: 1.900 kcal · referência: 1.800 kcal');
+    expect(text).not.toMatch(/Alvo alcançado|Progresso:/);
+  });
+
+  it('peso: sem "Alvo alcançado"; meta que hoje seria bloqueada mostra só o aviso', () => {
+    const ok = renderWithIntl(
+      <GoalsView
+        goals={[weight]}
+        habits={[]}
+        progress={[progress('w', 64)]}
+        suspended={{}}
+        estimateEnabled={false}
+        today={TODAY}
+        mode="own"
+      />,
+    );
+    expect(ok.container.textContent).not.toContain('Alvo alcançado');
+    ok.unmount();
+    renderWithIntl(
+      <GoalsView
+        goals={[weight]}
+        habits={[]}
+        progress={[progress('w', 64)]}
+        suspended={{ w: ['target_below_safe_range'] }}
+        estimateEnabled={false}
+        today={TODAY}
+        mode="own"
+      />,
+    );
+    const notice = screen.getAllByTestId('guardrail-notice')[0];
+    expect(notice).toHaveTextContent('188');
+    expect(screen.queryByText(/Peso mais recente/)).toBeNull();
+  });
+});

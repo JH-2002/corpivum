@@ -1,6 +1,6 @@
 import { reminderInputSchema, reminderPrefsSchema } from './schemas';
 import { formatTime, inQuietHours, nextOccurrence, parseTime, upcoming } from './schedule';
-import type { ReminderRecord } from './types';
+import { DEFAULT_REMINDER_PREFS, type ReminderRecord } from './types';
 
 const TZ = 'America/Sao_Paulo';
 const r = (over: Partial<ReminderRecord> = {}): ReminderRecord => ({
@@ -50,8 +50,26 @@ describe('agenda dos lembretes (§33)', () => {
       ],
       new Date('2026-10-07T15:00:00Z'),
       TZ,
+      DEFAULT_REMINDER_PREFS,
+      new Set(),
     );
     expect(list.map((x) => x.reminder.id)).toEqual(['b', 'a']);
+    // Mesmas regras do envio: horário silencioso, tipo desligado e hábito arquivado ficam de fora.
+    const prefs = { ...DEFAULT_REMINDER_PREFS, quietStartMin: 20 * 60 + 30, quietEndMin: 7 * 60 };
+    const now = new Date('2026-10-07T15:00:00Z');
+    expect(upcoming([r({ timeMin: 21 * 60 })], now, TZ, prefs, new Set())).toEqual([]);
+    expect(
+      upcoming([r()], now, TZ, { ...DEFAULT_REMINDER_PREFS, remindDailyLog: false }, new Set()),
+    ).toEqual([]);
+    expect(
+      upcoming(
+        [r({ kind: 'habit', habitId: 'h-arquivado' })],
+        now,
+        TZ,
+        DEFAULT_REMINDER_PREFS,
+        new Set(),
+      ),
+    ).toEqual([]);
   });
 });
 

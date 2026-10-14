@@ -1,5 +1,5 @@
 import { addDays, fromLocalDateTime, localDay, weekday } from '@/lib/dates';
-import type { ReminderRecord } from './types';
+import type { ReminderPrefs, ReminderRecord } from './types';
 
 /**
  * Agenda dos lembretes, funções puras (§33). Horários no fuso da pessoa; o instante é calculado em UTC.
@@ -41,15 +41,27 @@ export function inQuietHours(timeMin: number, start: number | null, end: number 
   return start < end ? timeMin >= start && timeMin < end : timeMin >= start || timeMin < end;
 }
 
-/** Próximos lembretes ativos, em ordem (dashboard "Próximos lembretes"). */
+/** O lembrete chega a ser enviado? Ativo, tipo ligado e fora do horário silencioso (mesma regra do job). */
+export function willSend(reminder: ReminderRecord, prefs: ReminderPrefs): boolean {
+  if (!reminder.enabled) return false;
+  const typeOn = reminder.kind === 'habit' ? prefs.remindHabits : prefs.remindDailyLog;
+  return typeOn && !inQuietHours(reminder.timeMin, prefs.quietStartMin, prefs.quietEndMin);
+}
+
+/**
+ * Próximos lembretes que serão enviados, em ordem (dashboard "Próximos lembretes"). Mesmas regras do job:
+ * tipo ligado, fora do horário silencioso e hábito ativo (revisão B2).
+ */
 export function upcoming(
   reminders: ReminderRecord[],
   now: Date,
   timeZone: string,
+  prefs: ReminderPrefs,
+  activeHabitIds: ReadonlySet<string>,
   limit = 3,
 ): Array<{ reminder: ReminderRecord; at: Date }> {
   return reminders
-    .filter((r) => r.enabled)
+    .filter((r) => willSend(r, prefs) && (r.habitId === null || activeHabitIds.has(r.habitId)))
     .map((reminder) => ({ reminder, at: nextOccurrence(reminder, now, timeZone) }))
     .sort((a, b) => a.at.getTime() - b.at.getTime())
     .slice(0, limit);

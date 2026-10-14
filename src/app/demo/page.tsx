@@ -34,6 +34,7 @@ export default async function DemoHomePage() {
       <Dashboard data={data} mode="publicDemo" />
       <UpcomingReminders
         reminders={reminders.reminders}
+        prefs={reminders.prefs}
         habits={reminders.habits}
         now={new Date()}
         manageHref="/demo/habitos"
