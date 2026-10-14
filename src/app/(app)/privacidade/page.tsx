@@ -178,6 +178,15 @@ export default async function PrivacyCenterPage() {
                   })}
                 </span>
               ) : null}
+              {d.acknowledgedVersion !== null && d.acknowledgedAt ? (
+                <span className="text-fg-muted">
+                  {' · '}
+                  {t('documentsAcknowledged', {
+                    version: d.acknowledgedVersion,
+                    date: date(d.acknowledgedAt),
+                  })}
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>

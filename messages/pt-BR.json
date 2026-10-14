@@ -469,7 +469,8 @@
     "closedTitle": "Conta encerrada",
     "closedBody": "Sua conta e o que foi registrado nela foram apagados. Ficam só os registros mínimos informados antes da confirmação (prova do encerramento e registros de acesso, sem seu e-mail), pelos prazos indicados.",
     "closedSupport": "Se quiser conversar com alguém, o CVV atende 24 horas pelo telefone 188, de graça.",
-    "minorUnavailable": "Não foi possível encerrar a conta agora. Tente de novo em alguns minutos ou fale com o encarregado pelo contato em Documentos › Encarregado e contato."
+    "minorUnavailable": "Não foi possível encerrar a conta agora. Tente de novo em alguns minutos ou fale com o encarregado pelo contato em Documentos › Encarregado e contato.",
+    "documentsAcknowledged": "Ciência da versão {version} em {date}"
   },
   "subprocessors": {
     "columns": {
@@ -1509,16 +1510,18 @@
     }
   },
   "policyNotice": {
-    "title": "Atualizamos um documento",
+    "title": "{count, plural, one {Atualizamos um documento} other {Atualizamos documentos}}",
     "changes": {
-      "terms": "Os Termos de Uso estão na versão {version}: saiu a seção \"Sugestões do app\", porque o app não faz sugestões automáticas. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo.",
-      "privacy_policy": "A Política de Privacidade está na versão {version}. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo."
+      "terms": {
+        "v2": "Os Termos de Uso estão na versão 2: saiu a seção \"Sugestões do app\", porque o app não faz sugestões automáticas. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo."
+      },
+      "generic": "O documento está na versão {version}. Você não precisa aceitar de novo."
     },
     "read": {
       "terms": "Ler os Termos de Uso",
       "privacy_policy": "Ler a Política de Privacidade"
     },
     "acknowledge": "Entendi",
-    "acknowledgeHint": "Ao tocar em Entendi, registramos que você viu este aviso, e ele não aparece mais."
+    "acknowledgeHint": "Ao escolher Entendi, registramos que você viu este aviso, e ele não aparece mais."
   }
 }

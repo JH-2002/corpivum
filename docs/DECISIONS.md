@@ -877,13 +877,16 @@ não exigir novo aceite; mostrar um aviso informativo único e registrar a ciên
   ter a própria data de publicação (`PUBLISHED_AT`).
 - **Aceite × ciência:** `policy_acceptances` ganha `kind` (`accepted` | `acknowledged`). O aceite continua sendo o da
   última versão aceita; a ciência não conta como aceite. O gatilho `app.policy_acceptances_guard` só aceita ciência de
-  versão vigente **não substancial** e de quem já registrou uma versão anterior do mesmo documento. Nova ação de
-  auditoria `policy_acknowledged`.
+  versão vigente **não substancial** e de quem tem **aceite em dia** (aceite de uma versão anterior que não esteja
+  abaixo da última substancial); o serviço aplica a mesma regra, e o aceite ignora ciências da mesma versão. Assim
+  uma ciência nunca substitui um aceite exigido. Índice único: uma ciência por pessoa e versão. Nova ação de
+  auditoria `policy_acknowledged`. A Central de Privacidade mostra a ciência ao lado do aceite.
 - **Aviso:** `ConsentState.documentNotices` lista os documentos com versão nova não substancial ainda sem registro da
   pessoa. O shell do app mostra `PolicyUpdateNotice` (o que mudou, link para o texto e "Entendi") em todas as telas,
   sem bloquear nada, até a pessoa registrar a ciência (`acknowledgeDocuments`, idempotente). Conta nova aceita a
   versão vigente no onboarding e não vê aviso. O mecanismo vale também para uma futura versão não substancial da
-  Política.
+  Política. O texto do aviso é por versão (`policyNotice.changes.<documento>.v<n>`, cobrado por teste); sem ele, um
+  texto genérico que não afirma nada sobre a mudança.
 **Consequências.** Versão nova de documento passa a exigir escolher entre substancial (reconsentimento, LEG-C06) e não
-substancial (aviso e ciência) e escrever o texto de `policyNotice.changes.<documento>`. A decisão é `LEGAL-REVIEW`
+substancial (aviso e ciência) e escrever o texto de `policyNotice.changes.<documento>.v<n>`. A decisão é `LEGAL-REVIEW`
 (OI-30). OI-29 fechada.

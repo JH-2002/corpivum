@@ -69,6 +69,9 @@ export interface DocumentState {
    * bloqueia o app. Some quando ela registra a ciência.
    */
   noticePending: boolean;
+  /** Última ciência registrada acima do aceite (ADR-0031), para a Central de Privacidade mostrar a prova. */
+  acknowledgedVersion: number | null;
+  acknowledgedAt: Date | null;
 }
 
 /** Escolha do passo 5 do onboarding (§52.5, ADR-0021). `null` = ainda não escolheu. */
@@ -221,7 +224,10 @@ export function createConsentService(deps: ConsentDeps) {
     const rows = await publishedVersions(tx);
     for (const document of documents) {
       const version = currentVersion(rows, document);
-      const already = await tx.policyAcceptance.count({ where: { policyVersionId: version.id } });
+      // Só um aceite conta: uma ciência da mesma versão não dispensa o aceite exigido (ADR-0031).
+      const already = await tx.policyAcceptance.count({
+        where: { policyVersionId: version.id, kind: 'accepted' },
+      });
       if (already > 0) continue;
       await tx.policyAcceptance.create({
         data: { userId, policyVersionId: version.id, acceptedAt: now() },
@@ -297,6 +303,9 @@ export function createConsentService(deps: ConsentDeps) {
           .reduce((max, r) => Math.max(max, r.version), 0);
         const needsAcceptance = acceptedVersion === null || acceptedVersion < floor;
         const seenVersion = ofDocument[0]?.policyVersion.version ?? 0;
+        const acknowledged = ofDocument.find(
+          (a) => a.kind === 'acknowledged' && a.policyVersion.version > (acceptedVersion ?? 0),
+        );
         return {
           document,
           acceptedVersion,
@@ -304,6 +313,8 @@ export function createConsentService(deps: ConsentDeps) {
           currentVersion,
           needsAcceptance,
           noticePending: !needsAcceptance && seenVersion < currentVersion,
+          acknowledgedVersion: acknowledged?.policyVersion.version ?? null,
+          acknowledgedAt: acknowledged?.acceptedAt ?? null,
         };
       });
 
@@ -436,7 +447,8 @@ export function createConsentService(deps: ConsentDeps) {
 
     /**
      * Ciência de versão não substancial (ADR-0031): registra, para os documentos com aviso pendente, a prova
-     * `kind = acknowledged` da versão vigente e o AuditLog. Idempotente; documento sem aviso é ignorado.
+     * `kind = acknowledged` da versão vigente e o AuditLog. Idempotente; documento sem aviso é ignorado. Só vale
+     * para quem tem aceite em dia (versão >= a última substancial): nunca substitui um aceite exigido.
      */
     async acknowledgeDocuments(
       userId: string,
@@ -453,7 +465,13 @@ export function createConsentService(deps: ConsentDeps) {
             where: { policyVersion: { document, version: { gte: version.version } } },
           });
           const previous = await tx.policyAcceptance.count({
-            where: { policyVersion: { document, version: { lt: version.version } } },
+            where: {
+              kind: 'accepted',
+              policyVersion: {
+                document,
+                version: { gte: substantialFloor(rows, document), lt: version.version },
+              },
+            },
           });
           if (seen > 0 || previous === 0) continue;
           await tx.policyAcceptance.create({

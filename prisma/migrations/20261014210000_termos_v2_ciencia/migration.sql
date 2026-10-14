@@ -11,8 +11,8 @@ ALTER TABLE public.policy_acceptances
 ALTER TYPE public.audit_action ADD VALUE 'policy_acknowledged';
 
 -- Guarda: além das regras anteriores (só Termos e Política, só a versão vigente), a ciência só vale para versão
--- não substancial e para quem já registrou uma versão anterior do mesmo documento. Ninguém "dá ciência" no lugar
--- de um aceite exigido.
+-- não substancial e para quem tem ACEITE (kind = accepted) de uma versão anterior que não esteja abaixo da última
+-- versão substancial publicada. Assim ninguém "dá ciência" no lugar de um aceite exigido.
 CREATE OR REPLACE FUNCTION app.policy_acceptances_guard() RETURNS trigger
   LANGUAGE plpgsql
   SET search_path = pg_catalog, pg_temp
@@ -22,6 +22,7 @@ DECLARE
   v_version integer;
   v_latest integer;
   v_substantial boolean;
+  v_floor integer;
 BEGIN
   SELECT v.document::text, v.version, v.requires_reconsent INTO v_doc, v_version, v_substantial
     FROM public.policy_versions v WHERE v.id = NEW.policy_version_id;
@@ -30,19 +31,27 @@ BEGIN
   IF v_doc IS NULL OR v_doc NOT IN ('terms', 'privacy_policy') OR v_version IS DISTINCT FROM v_latest THEN
     RAISE EXCEPTION 'invalid policy acceptance' USING ERRCODE = '23514';
   END IF;
-  IF NEW.kind = 'acknowledged' AND (
-       v_substantial
-       OR NOT EXISTS (
+  IF NEW.kind = 'acknowledged' THEN
+    SELECT coalesce(max(s.version), 0) INTO v_floor
+      FROM public.policy_versions s
+     WHERE s.document::text = v_doc AND s.requires_reconsent AND s.published_at <= now();
+    IF v_substantial OR NOT EXISTS (
          SELECT 1 FROM public.policy_acceptances a
            JOIN public.policy_versions p ON p.id = a.policy_version_id
-          WHERE a.user_id = NEW.user_id AND p.document::text = v_doc AND p.version < v_version)) THEN
-    RAISE EXCEPTION 'invalid policy acknowledgement' USING ERRCODE = '23514';
+          WHERE a.user_id = NEW.user_id AND a.kind = 'accepted' AND p.document::text = v_doc
+            AND p.version >= v_floor AND p.version < v_version) THEN
+      RAISE EXCEPTION 'invalid policy acknowledgement' USING ERRCODE = '23514';
+    END IF;
   END IF;
   NEW.accepted_at := now();
   NEW.created_at := now();
   RETURN NEW;
 END;
 $$;
+
+-- Uma ciência por pessoa e versão: dois cliques simultâneos não gravam duas provas.
+CREATE UNIQUE INDEX policy_acceptances_acknowledged_once
+  ON public.policy_acceptances (user_id, policy_version_id) WHERE kind = 'acknowledged';
 
 -- Nova versão = INSERT, nunca UPDATE: as provas da v1 continuam apontando para a v1 (texto em legal/archive/).
 INSERT INTO public.policy_versions (id, document, version, text_hash, requires_reconsent, published_at, updated_at)

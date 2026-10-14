@@ -2,10 +2,11 @@ import { FileText } from 'lucide-react';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import type { Route } from 'next';
-import { buttonClasses } from '@/components/ui/Button';
 import { CURRENT_VERSIONS, type RequiredDocument } from '@/modules/consent';
+import { AcknowledgeForm } from './AcknowledgeForm';
+import { noticeChangeKey } from './policy-notice';
 
-const TITLE_ID = 'policy-update-notice-title';
+const LABEL_ID = 'policy-update-notice-label';
 
 const DOCUMENT_HREF: Record<RequiredDocument, Route> = {
   terms: '/legal/termos',
@@ -14,7 +15,8 @@ const DOCUMENT_HREF: Record<RequiredDocument, Route> = {
 
 /**
  * Aviso informativo único de versão nova não substancial (ADR-0031): diz o que mudou, leva ao texto e registra a
- * ciência em "Entendi". Não bloqueia o app. Texto RASCUNHO, `LEGAL-REVIEW` (OI-30).
+ * ciência em "Entendi". Não bloqueia o app. O rótulo é um parágrafo (não um título): o aviso vem antes do `h1`
+ * da página. Texto RASCUNHO, `LEGAL-REVIEW` (OI-30).
  */
 export async function PolicyUpdateNotice({
   documents,
@@ -27,32 +29,33 @@ export async function PolicyUpdateNotice({
   const t = await getTranslations('policyNotice');
   return (
     <section
-      aria-labelledby={TITLE_ID}
+      aria-labelledby={LABEL_ID}
       className="mb-6 flex flex-col gap-3 rounded-lg border border-info bg-info-soft p-4"
     >
-      <h2 id={TITLE_ID} className="flex items-center gap-2 text-base font-semibold">
+      <p id={LABEL_ID} className="flex items-center gap-2 text-base font-semibold">
         <FileText aria-hidden className="size-5" />
-        {t('title')}
-      </h2>
+        {t('title', { count: documents.length })}
+      </p>
       <ul className="flex flex-col gap-2 text-sm">
-        {documents.map((document) => (
-          <li key={document}>
-            {t(`changes.${document}`, { version: CURRENT_VERSIONS[document].version })}{' '}
-            <Link href={DOCUMENT_HREF[document]} className="font-semibold underline">
-              {t(`read.${document}`)}
-            </Link>
-          </li>
-        ))}
+        {documents.map((document) => {
+          const version = CURRENT_VERSIONS[document].version;
+          const key = noticeChangeKey(document, version);
+          return (
+            <li key={document}>
+              {key ? t(key as Parameters<typeof t>[0]) : t('changes.generic', { version })}{' '}
+              <Link href={DOCUMENT_HREF[document]} className="font-semibold underline">
+                {t(`read.${document}`)}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
-      <form action={action} className="flex flex-wrap items-center gap-3">
-        {documents.map((document) => (
-          <input key={document} type="hidden" name="document" value={document} />
-        ))}
-        <button type="submit" className={buttonClasses('secondary')}>
-          {t('acknowledge')}
-        </button>
-        <p className="text-xs text-fg-muted">{t('acknowledgeHint')}</p>
-      </form>
+      <AcknowledgeForm
+        documents={documents}
+        action={action}
+        label={t('acknowledge')}
+        hint={t('acknowledgeHint')}
+      />
     </section>
   );
 }

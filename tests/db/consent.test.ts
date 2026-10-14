@@ -552,6 +552,68 @@ describe('Termos v2 não substancial: aviso único e ciência (ADR-0031)', () =>
   });
 });
 
+describe('ciência nunca substitui um aceite exigido (ADR-0031, revisão A1)', () => {
+  it('com versão substancial pendente, a ciência de uma versão não substancial posterior é recusada', async () => {
+    const u = await onboarded([]);
+    const v3 = await publishVersion(admin, 'terms', 3, 'c'.repeat(64), true);
+    const v4 = await publishVersion(admin, 'terms', 4, 'd'.repeat(64), false);
+    const catalog = {
+      ...CURRENT_VERSIONS,
+      terms: { version: 4, textHash: 'd'.repeat(64), requiresReconsent: false },
+    };
+    try {
+      const c = createTestConsent(db, t.clock, catalog);
+      const state = await c.service.getState(u.userId);
+      expect(state.updatePending).toBe(true);
+      expect(state.documentNotices).toEqual([]);
+      // Serviço e banco recusam a ciência no lugar do aceite da v3.
+      expect(await c.service.acknowledgeDocuments(u.userId, ['terms'])).toBe(0);
+      await expect(
+        withUserOn(db, u.userId, (tx) =>
+          tx.policyAcceptance.create({
+            data: {
+              userId: u.userId,
+              policyVersionId: v4,
+              kind: 'acknowledged',
+              acceptedAt: new Date(),
+            },
+          }),
+        ),
+      ).rejects.toThrow();
+      // O aceite exigido continua possível e resolve a pendência.
+      expect(
+        await c.service.resolveUpdate(u.userId, { acceptDocuments: ['terms'], decisions: {} }),
+      ).toEqual({ ok: true });
+      const after = await c.service.getState(u.userId);
+      expect(after.updatePending).toBe(false);
+      expect(after.documents.find((d) => d.document === 'terms')?.acceptedVersion).toBe(4);
+    } finally {
+      await unpublishVersion(admin, v4);
+      await unpublishVersion(admin, v3);
+    }
+  });
+
+  it('ninguém registra ciência em nome de outra pessoa (RLS)', async () => {
+    const a = await onboarded([]);
+    const b = await onboarded([]);
+    const { rows } = await admin.query<{ id: string }>(
+      `SELECT id FROM policy_versions WHERE document = 'terms' ORDER BY version DESC LIMIT 1`,
+    );
+    await expect(
+      withUserOn(db, a.userId, (tx) =>
+        tx.policyAcceptance.create({
+          data: {
+            userId: b.userId,
+            policyVersionId: rows[0]?.id ?? '',
+            kind: 'acknowledged',
+            acceptedAt: new Date(),
+          },
+        }),
+      ),
+    ).rejects.toThrow();
+  });
+});
+
 describe('integridade das provas (LEG-R03, LEG-S06)', () => {
   it('as datas das provas vêm do relógio do banco, não do cliente (revisão B1)', async () => {
     const u = await onboarded([]);
