@@ -105,6 +105,9 @@ describe('detector de alegações proibidas', () => {
     restriction: 'Experimente o jejum intermitente',
     'guilt-language': 'Exagerou no fim de semana? Sem deslizes desta vez',
     'diet-or-training-prescription': 'Receba seu plano alimentar em minutos',
+    'food-label': 'Prefira alimentos saudáveis no jantar',
+    'training-prescription': 'Aumente a carga no seu próximo treino',
+    'calorie-accounting': 'Hoje restam 300 kcal: você excedeu ontem',
   };
 
   /** Variações relatadas na revisão de privacidade: todas precisam ser detectadas. */
@@ -127,6 +130,13 @@ describe('detector de alegações proibidas', () => {
     'O exercício fez você dormir melhor',
     'Seu humor ficou baixo porque você dormiu pouco',
     'Isso resultou em noites mais curtas',
+    // Alimentação e atividade (Fase 4, LEG-M07, LEG-M08).
+    'Escolha uma refeição leve à noite',
+    'Faça 3 séries de agachamento',
+    'Sua próxima série deve ter mais peso',
+    'Você queimou 400 calorias gastas na corrida',
+    'Calorias restantes para hoje',
+    'Compense o doce com uma caminhada',
   ];
 
   it.each(MORE_FORBIDDEN)('detecta variação: %s', (text) => {
@@ -153,6 +163,12 @@ describe('detector de alegações proibidas', () => {
     'Você pode registrar a sua atividade do dia',
     'O app não acompanha esta meta',
     'Converse com um nutricionista ou um profissional de educação física',
+    'Carga máxima na última sessão: 22,5 kg',
+    '▲ 2,5 kg em relação à sessão anterior (maior)',
+    'Estimativa de calorias (opcional)',
+    'O app registra e descreve as suas atividades. Ele não monta treino nem sugere carga ou série.',
+    'Almoço às 12:30',
+    'Satisfação com a refeição',
   ];
 
   it('tem um exemplo positivo para cada termo do glossário', () => {
