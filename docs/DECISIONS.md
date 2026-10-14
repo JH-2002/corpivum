@@ -865,3 +865,25 @@ ainda citam "Sugestões do app" e serão versionados (OI-29); as partes de IA
 de OI-07, OI-08, OI-09, OI-21 e OI-23 foram fechadas por escopo removido. Reintroduzir IA ou recomendações exige nova
 ADR, nova finalidade e texto de consentimento, revisão do RIPD, do ROPA e de SUBPROCESSORS e requisitos com IDs
 novos.
+
+## ADR-0031 — Termos de Uso v2 não substancial, com aviso único e registro de ciência
+**Contexto.** Os Termos v1 tinham a seção "Sugestões do app", que deixou de existir com o ADR-0030 (OI-29). Decisão do
+responsável pelo produto (2026-10-14): como a mudança só remove funcionalidade e não amplia o tratamento de dados,
+não exigir novo aceite; mostrar um aviso informativo único e registrar a ciência.
+**Decisão.**
+- **Texto:** Termos v2 sem a seção (as seções seguintes passam a 5 e 6), hash novo no catálogo, `requiresReconsent:
+  false` e linha nova em `policy_versions` (migração `termos_v2_ciencia`, INSERT, nunca UPDATE). O texto da v1 fica
+  em `legal/archive/terms.v1.json`, com o hash conferido pelo teste do arquivo. Cada documento obrigatório passa a
+  ter a própria data de publicação (`PUBLISHED_AT`).
+- **Aceite × ciência:** `policy_acceptances` ganha `kind` (`accepted` | `acknowledged`). O aceite continua sendo o da
+  última versão aceita; a ciência não conta como aceite. O gatilho `app.policy_acceptances_guard` só aceita ciência de
+  versão vigente **não substancial** e de quem já registrou uma versão anterior do mesmo documento. Nova ação de
+  auditoria `policy_acknowledged`.
+- **Aviso:** `ConsentState.documentNotices` lista os documentos com versão nova não substancial ainda sem registro da
+  pessoa. O shell do app mostra `PolicyUpdateNotice` (o que mudou, link para o texto e "Entendi") em todas as telas,
+  sem bloquear nada, até a pessoa registrar a ciência (`acknowledgeDocuments`, idempotente). Conta nova aceita a
+  versão vigente no onboarding e não vê aviso. O mecanismo vale também para uma futura versão não substancial da
+  Política.
+**Consequências.** Versão nova de documento passa a exigir escolher entre substancial (reconsentimento, LEG-C06) e não
+substancial (aviso e ciência) e escrever o texto de `policyNotice.changes.<documento>`. A decisão é `LEGAL-REVIEW`
+(OI-30). OI-29 fechada.
