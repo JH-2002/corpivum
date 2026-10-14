@@ -33,7 +33,7 @@ Reorientação (ADR-0027): nenhum subprocessador novo nem removido; menos catego
 
 Remoção da IA (ADR-0030): sai o provedor de LLM. Nenhum dado é enviado a modelo de linguagem, dentro ou fora
 do Brasil. Os únicos serviços com provável tratamento fora do Brasil são e-mail transacional e monitoramento de
-erros, sem dado de saúde (OPEN_ISSUES OI-03).
+erros, sem conteúdo de saúde; o envio de um lembrete pode indicar rotina (ROPA T7, OPEN_ISSUES OI-03).
 
 Não usados: SDKs de publicidade, analytics de terceiros, fontes remotas (Google Fonts), telemetria do Next.js
 (`NEXT_TELEMETRY_DISABLED=1`) e telemetria da CLI do Prisma (`CHECKPOINT_DISABLE=1`, no `.env` e na CI).

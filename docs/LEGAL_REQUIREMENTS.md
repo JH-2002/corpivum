@@ -47,8 +47,8 @@ econômica (art. 11, §4º). Sem venda, sem publicidade, sem data brokers.
 - LEG-D06 Informação sobre compartilhamento: página pública e na conta com subprocessadores e finalidades.
 - LEG-D07 Registro de cada pedido (`PrivacyRequest`) com status e prazos: confirmação imediata em formato
   simplificado; declaração completa em até 15 dias (art. 19, II).
-- LEG-D08 Revisão de decisões automatizadas (art. 20): o Índice de Bem-Estar (Health Score) e os resumos por
-  regras têm explicação de critérios e canal "pedir revisão". Não há recomendações automáticas (ADR-0030).
+- LEG-D08 Revisão de decisões automatizadas (art. 20): o Índice de Bem-Estar (Health Score) tem explicação de
+  critérios e canal "pedir revisão". Não há recomendações automáticas (ADR-0030).
 
 ### B3. Crianças e adolescentes
 Contexto: o ECA Digital (Lei 15.211/2025), fiscalizado pela ANPD, alcança serviços digitais com acesso provável

@@ -166,6 +166,25 @@ describe('onboarding e escolhas por finalidade (LEG-C01–C03, C05)', () => {
     }
   });
 
+  it('consent_records recusa finalidade revogada mesmo sem o gatilho (CHECK, ADR-0030)', async () => {
+    const { rows: versions } = await admin.query<{ id: string }>(
+      `SELECT id FROM policy_versions WHERE document = 'consent_marketing' LIMIT 1`,
+    );
+    await admin.query('BEGIN');
+    try {
+      await admin.query('ALTER TABLE consent_records DISABLE TRIGGER consent_records_guard');
+      await expect(
+        admin.query(
+          `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at, updated_at)
+           VALUES (gen_random_uuid(), gen_random_uuid(), 'ai_sharing', $1, 'x', now(), now())`,
+          [versions[0]?.id],
+        ),
+      ).rejects.toMatchObject({ code: '23514', constraint: 'consent_records_purpose_ativo' });
+    } finally {
+      await admin.query('ROLLBACK');
+    }
+  });
+
   it('consent_records tem a CHECK das finalidades revogadas (ADR-0030)', async () => {
     const { rows } = await admin.query<{ def: string }>(
       `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint

@@ -10,7 +10,8 @@ subprocessador.
 - Natureza, escopo e contexto: ver `docs/INTENDED_USE.md` e `docs/privacy/ROPA.md`.
 - Dados pessoais sensíveis de saúde e bem-estar, informados pela própria pessoa (adultos 18+).
 - Fluxo de dados: navegador → servidor (Brasil) → banco (Brasil). Nenhum dado vai a provedor de IA (ADR-0030).
-  Fora do Brasil, provavelmente, só e-mail transacional e monitoramento de erros, sem dado de saúde (OI-03).
+  Fora do Brasil, provavelmente, só e-mail transacional e monitoramento de erros, sem conteúdo de saúde (o envio
+  de um lembrete pode indicar rotina, ROPA T7; OI-03).
 
 ## 2. Necessidade e proporcionalidade
 - Minimização: só os campos necessários a cada módulo; resumos calculados por regras no próprio servidor.
@@ -43,7 +44,7 @@ subprocessador.
 | R1 | RLS + `app_user` sem BYPASSRLS, `SET LOCAL app.user_id`, testes de isolamento | LEG-S03 |
 | R2 | Logger só com metadados, ESLint proíbe `console`, remoção de PII em erros | LEG-R04 |
 | R3 | Encerrado: sem IA nem provedor de LLM; finalidades de IA e transferência bloqueadas por CHECK no banco | ADR-0030 |
-| R4 | Registro em SUBPROCESSORS antes de ativar, nenhum dado de saúde nos serviços fora do Brasil, mecanismo do art. 33 sem consentimento do titular (ex.: cláusulas contratuais padrão), a definir no jurídico (OI-03) | LEG-S10, LEG-R04 |
+| R4 | Registro em SUBPROCESSORS antes de ativar, nenhum conteúdo de saúde nos serviços fora do Brasil (o lembrete por e-mail pode indicar rotina, ROPA T7), mecanismo do art. 33 sem consentimento do titular (ex.: cláusulas contratuais padrão), a definir no jurídico (OI-03) | LEG-S10, LEG-R04 |
 | R5 | Age gate 18+ sem persistir dado do menor; linguagem não dirigida a menores | LEG-F01–F04 |
 | R6 | Declaração de finalidade, avisos `disclaimer.*`, teste de alegações proibidas, resumos por regras fixas (sem IA nem recomendações automáticas); sem prescrição de dieta ou treino | LEG-M01, LEG-M03, LEG-M08, ADR-0030 |
 | R7 | `PURGE_DAYS`, backup ≤ prazo de purga (validado), expurgo de AccessLog | LEG-D04, S07, R02 |

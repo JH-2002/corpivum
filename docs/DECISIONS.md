@@ -860,7 +860,8 @@ navegação e a página `/ia` (placeholder), os stubs `src/modules/ai` e `src/mo
 **Consequências.** O ADR-0007 continua valendo para os demais adaptadores; a parte do `LlmProvider` deixa de existir.
 As partes de IA dos ADRs 0019 (finalidades da Fase 5), 0021 (detecção no texto na Fase 5) e 0027 (modo de risco da IA,
 metas e IA usando guardrails) deixam de existir; os ADRs antigos não são editados. OI-03 continua aberta só para
-e-mail e monitoramento de erros, cuja transferência não pode se apoiar em consentimento do titular; as partes de IA
+e-mail e monitoramento de erros, cuja transferência não pode se apoiar em consentimento do titular; os Termos v1
+ainda citam "Sugestões do app" e serão versionados (OI-29); as partes de IA
 de OI-07, OI-08, OI-09, OI-21 e OI-23 foram fechadas por escopo removido. Reintroduzir IA ou recomendações exige nova
 ADR, nova finalidade e texto de consentimento, revisão do RIPD, do ROPA e de SUBPROCESSORS e requisitos com IDs
 novos.
