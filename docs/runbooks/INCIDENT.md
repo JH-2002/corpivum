@@ -26,7 +26,7 @@
 
 ## 3. Contenção
 - Revogar sessões afetadas (sessões em banco, LEG-S04), rotacionar segredos e chaves (ver `KEY_ROTATION.md`).
-- Desativar a funcionalidade afetada (ex.: envio à IA) se necessário.
+- Desativar a funcionalidade afetada (ex.: envio de lembretes por e-mail) se necessário.
 - Bloquear acessos suspeitos; aplicar correção; validar com testes de isolamento.
 
 ## 4. Avaliação de risco aos titulares
