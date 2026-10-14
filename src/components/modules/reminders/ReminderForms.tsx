@@ -36,7 +36,13 @@ export function ReminderForm({
   const [kind, setKind] = useState<ReminderKind>(values.kind);
   const err = state.fieldErrors ?? {};
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form
+      action={action}
+      className="flex flex-col gap-4"
+      noValidate
+      // Depois da ação o React reseta o formulário: o tipo volta ao valor inicial junto com o select.
+      onReset={() => setKind(values.kind)}
+    >
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField

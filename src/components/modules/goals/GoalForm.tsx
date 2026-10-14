@@ -45,7 +45,13 @@ export function GoalForm({
   const reasons = (Array.isArray(raw) ? raw : []).filter(isReason);
   const metrics = GOAL_METRICS.filter((m) => m !== 'kcal_reference_day' || estimateEnabled);
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form
+      action={action}
+      className="flex flex-col gap-4"
+      noValidate
+      // Depois da ação o React reseta o formulário: a métrica volta ao valor inicial junto com o select.
+      onReset={() => setMetric(values.metric)}
+    >
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
