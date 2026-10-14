@@ -89,10 +89,45 @@ describe('textos fictícios da demo (LEG-M03)', () => {
   it('não contêm alegações clínicas proibidas (ficam fora do i18n)', async () => {
     const { findForbiddenTerms } = await import('../../../tests/content/forbidden-terms');
     const data = generateDemoData(TODAY, TZ);
-    const texts = [...data.sleep.map((r) => r.note), ...data.habits.map((h) => h.name)].filter(
-      (t): t is string => Boolean(t),
-    );
+    const texts = [
+      ...data.sleep.map((r) => r.note),
+      ...data.habits.map((h) => h.name),
+      ...data.meals.map((r) => r.description),
+      ...data.activities.map((r) => r.note),
+      ...data.activities.flatMap((r) => r.sets.map((x) => x.exercise)),
+    ].filter((t): t is string => Boolean(t));
     expect(texts.length).toBeGreaterThan(0);
     for (const text of new Set(texts)) expect(findForbiddenTerms(text)).toEqual([]);
+  });
+});
+
+describe('rotina da demo: alimentação, atividade, metas e lembretes (Fase 4)', () => {
+  const data = generateDemoData(TODAY, TZ);
+  const first = addDays(TODAY, -(DEMO_DAYS - 1));
+
+  it('não muda as sequências anteriores (PRNG próprio)', () => {
+    expect(data.sleep).toHaveLength(generateDemoData(TODAY, TZ).sleep.length);
+    expect(data.sleep[0]?.id).toBe('demo-sleep-0');
+  });
+
+  it('cobre o período, dentro das faixas do banco', () => {
+    expect(data.meals.length).toBeGreaterThan(150);
+    expect(data.water.length).toBeGreaterThan(150);
+    expect(data.activities.length).toBeGreaterThan(40);
+    for (const r of [...data.meals, ...data.water, ...data.activities]) {
+      expect(r.day >= first && r.day <= TODAY).toBe(true);
+    }
+    for (const a of data.activities) {
+      expect(a.durationMin).toBeGreaterThanOrEqual(1);
+      for (const s of a.sets) expect(s.reps).toBeGreaterThanOrEqual(1);
+    }
+    expect(data.activities.some((a) => a.sets.length > 0)).toBe(true);
+  });
+
+  it('sem calorias e sem meta de peso ou de calorias (LEG-M06, LEG-M07)', () => {
+    expect(data.meals.every((m) => m.kcalEstimate === null)).toBe(true);
+    expect(data.goals.some((g) => g.domain === 'weight' || g.domain === 'nutrition')).toBe(false);
+    expect(data.goals.length).toBeGreaterThan(0);
+    expect(data.reminders.length).toBeGreaterThan(0);
   });
 });

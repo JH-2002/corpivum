@@ -21,35 +21,43 @@ datasource db {
 
 /// Conta. Dados não sensíveis (base: execução de contrato). Para 18+ guarda só a declaração (LEG-F01).
 model User {
-  id                    String    @id @default(uuid(7)) @db.Uuid
+  id                     String    @id @default(uuid(7)) @db.Uuid
   /// Normalizado (trim + minúsculas) pela aplicação.
-  email                 String    @unique
-  emailVerifiedAt       DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  email                  String    @unique
+  emailVerifiedAt        DateTime? @map("email_verified_at") @db.Timestamptz(3)
   /// Argon2id em formato PHC.
-  passwordHash          String    @map("password_hash")
-  adultAttestedAt       DateTime  @map("adult_attested_at") @db.Timestamptz(3)
-  ageGateVersion        String    @map("age_gate_version")
-  mfaEnabledAt          DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
+  passwordHash           String    @map("password_hash")
+  adultAttestedAt        DateTime  @map("adult_attested_at") @db.Timestamptz(3)
+  ageGateVersion         String    @map("age_gate_version")
+  mfaEnabledAt           DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
   /// Segredo TOTP cifrado (envelope ADR-0016, contexto users.totp_secret).
-  totpSecret            Bytes?    @map("totp_secret")
+  totpSecret             Bytes?    @map("totp_secret")
   /// Último passo TOTP aceito: códigos de passo <= este são recusados (anti-reuso).
-  totpLastUsedStep      BigInt?   @map("totp_last_used_step")
+  totpLastUsedStep       BigInt?   @map("totp_last_used_step")
   /// Início da ativação do TOTP (segredo pendente). Pendente vence em 15 min e é apagado em 1 dia.
-  totpSetupStartedAt    DateTime? @map("totp_setup_started_at") @db.Timestamptz(3)
-  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz(3)
+  totpSetupStartedAt     DateTime? @map("totp_setup_started_at") @db.Timestamptz(3)
+  deletedAt              DateTime? @map("deleted_at") @db.Timestamptz(3)
   /// Fim do onboarding (§52): termos aceitos e escolhas de consentimento feitas.
-  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz(3)
+  onboardingCompletedAt  DateTime? @map("onboarding_completed_at") @db.Timestamptz(3)
   /// Eliminação agendada dos dados de saúde após revogar o consentimento (ADR-0019). NULL = nada agendado.
-  healthDataPurgeAt     DateTime? @map("health_data_purge_at") @db.Timestamptz(3)
+  healthDataPurgeAt      DateTime? @map("health_data_purge_at") @db.Timestamptz(3)
   /// Escolha do passo 5 do onboarding (§52.5). NULL = ainda não escolheu. `demo` = dados fictícios gerados
   /// em memória, nada gravado nas tabelas de saúde (ADR-0021).
-  dataMode              DataMode? @map("data_mode")
+  dataMode               DataMode? @map("data_mode")
   /// Sequências (streaks) de hábitos visíveis. Desativável (LEG-F05).
-  streaksEnabled        Boolean   @default(true) @map("streaks_enabled")
+  streaksEnabled         Boolean   @default(true) @map("streaks_enabled")
   /// Tour do painel concluído ou pulado (ADR-0025). Booleano, sem data: só o necessário (minimização).
-  tourSeen              Boolean   @default(false) @map("tour_seen")
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tourSeen               Boolean   @default(false) @map("tour_seen")
+  /// Estimativa de calorias nas refeições. Desligada por padrão; só a pessoa liga (LEG-M07, §25).
+  calorieEstimateEnabled Boolean   @default(false) @map("calorie_estimate_enabled")
+  /// Lembretes por tipo (§33, §46). Sem insistência: no máximo um envio por lembrete por dia (LEG-F05).
+  remindHabits           Boolean   @default(true) @map("remind_habits")
+  remindDailyLog         Boolean   @default(true) @map("remind_daily_log")
+  /// Horário silencioso em minutos do dia (0–1439, fuso da pessoa). Ambos nulos = sem horário silencioso.
+  quietStartMin          Int?      @map("quiet_start_min") @db.SmallInt
+  quietEndMin            Int?      @map("quiet_end_min") @db.SmallInt
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   sessions      Session[]
   recoveryCodes RecoveryCode[]
@@ -60,6 +68,12 @@ model User {
   habits           Habit[]
   habitChecks      HabitCheck[]
   bodyMeasurements BodyMeasurement[]
+  mealEntries      MealEntry[]
+  waterEntries     WaterEntry[]
+  activityEntries  ActivityEntry[]
+  strengthSets     StrengthSet[]
+  goals            Goal[]
+  reminders        Reminder[]
 
   @@map("users")
 }
@@ -425,8 +439,10 @@ model Habit {
   createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  checks HabitCheck[]
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checks    HabitCheck[]
+  goals     Goal[]
+  reminders Reminder[]
 
   @@unique([id, userId])
   @@index([userId])
@@ -470,4 +486,202 @@ model BodyMeasurement {
 
   @@index([userId, measuredAt])
   @@map("body_measurements")
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Fase 4: alimentação, atividade, metas e lembretes (ADR-0029). Mesmas REGRAS das tabelas de saúde acima.
+// Referência opcional a hábito: par (habit_id, habit_user_id), ambos nulos ou ambos preenchidos, com CHECK
+// habit_user_id = user_id; a FK composta garante que o hábito é da mesma pessoa.
+// ---------------------------------------------------------------------------------------------------
+
+enum MealCategory {
+  breakfast
+  lunch
+  dinner
+  snack
+  other
+
+  @@map("meal_category")
+}
+
+/// Refeição informada (§25). Sem rótulo de comida e sem plano alimentar. Descrição e nota cifradas
+/// (contextos meal_entries.description_enc e meal_entries.note_enc). Caloria só com a estimativa ligada.
+model MealEntry {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  eatenAt        DateTime     @map("eaten_at") @db.Timestamptz(3)
+  category       MealCategory
+  descriptionEnc Bytes?       @map("description_enc")
+  /// Percepções 1–5, autorrelato.
+  hunger         Int?         @db.SmallInt
+  fullness       Int?         @db.SmallInt
+  satisfaction   Int?         @db.SmallInt
+  /// Estimativa da própria pessoa (ESTIMADO). Só aceita com users.calorie_estimate_enabled.
+  kcalEstimate   Int?         @map("kcal_estimate") @db.SmallInt
+  noteEnc        Bytes?       @map("note_enc")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, eatenAt])
+  @@map("meal_entries")
+}
+
+/// Água informada (§25), por dia.
+model WaterEntry {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  day       DateTime @db.Date
+  ml        Int      @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, day])
+  @@map("water_entries")
+}
+
+enum ActivityType {
+  walking
+  running
+  cycling
+  swimming
+  strength
+  stretching
+  dance
+  sport
+  other
+
+  @@map("activity_type")
+}
+
+/// Atividade informada (§26). Sem calorias gastas e sem prescrição de treino (LEG-M08). Nota cifrada
+/// (contexto activity_entries.note_enc).
+model ActivityEntry {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  startedAt   DateTime     @map("started_at") @db.Timestamptz(3)
+  type        ActivityType
+  durationMin Int          @map("duration_min") @db.SmallInt
+  /// Intensidade percebida 1–10, autorrelato.
+  intensity   Int?         @db.SmallInt
+  distanceKm  Float?       @map("distance_km")
+  noteEnc     Bytes?       @map("note_enc")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sets StrengthSet[]
+
+  @@unique([id, userId])
+  @@index([userId, startedAt])
+  @@map("activity_entries")
+}
+
+/// Série de força de uma atividade. O nome do exercício pode revelar dado de saúde (ex.: reabilitação):
+/// cifrado (contexto strength_sets.exercise_name_enc). FK composta: a série é sempre do dono da atividade.
+model StrengthSet {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  activityId      String   @map("activity_id") @db.Uuid
+  exerciseNameEnc Bytes    @map("exercise_name_enc")
+  setIndex        Int      @map("set_index") @db.SmallInt
+  reps            Int      @db.SmallInt
+  loadKg          Float?   @map("load_kg")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity ActivityEntry @relation(fields: [activityId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([activityId, setIndex])
+  @@index([userId])
+  @@map("strength_sets")
+}
+
+enum GoalDomain {
+  sleep
+  activity
+  habits
+  weight
+  logging
+  nutrition
+
+  @@map("goal_domain")
+}
+
+enum GoalMetric {
+  sleep_avg_minutes
+  activity_minutes_week
+  activity_sessions_week
+  habit_completion_pct
+  weight_kg
+  logging_days_week
+  kcal_reference_day
+
+  @@map("goal_metric")
+}
+
+enum GoalStatus {
+  active
+  archived
+
+  @@map("goal_status")
+}
+
+/// Meta (§30). Sem texto livre. Peso e calorias validados por `checkGoal` (guardrails, LEG-M04/M07) no
+/// servidor, com o peso e a altura do banco. Sem sequência e sem recompensa ligada a peso (LEG-M06).
+model Goal {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  domain      GoalDomain
+  metric      GoalMetric
+  targetValue Float      @map("target_value")
+  /// Peso no momento da criação (metas de peso): base da barra de progresso.
+  startValue  Float?     @map("start_value")
+  habitId     String?    @map("habit_id") @db.Uuid
+  habitUserId String?    @map("habit_user_id") @db.Uuid
+  targetDay   DateTime?  @map("target_day") @db.Date
+  status      GoalStatus @default(active)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit Habit? @relation(fields: [habitId, habitUserId], references: [id, userId], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("goals")
+}
+
+enum ReminderKind {
+  habit
+  daily_log
+
+  @@map("reminder_kind")
+}
+
+/// Lembrete (§33). Processado no servidor pela JobQueue (não depende do navegador). O e-mail não leva
+/// conteúdo de saúde (nem o nome do hábito). `last_sent_day` garante no máximo um envio por dia.
+model Reminder {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  kind        ReminderKind
+  habitId     String?      @map("habit_id") @db.Uuid
+  habitUserId String?      @map("habit_user_id") @db.Uuid
+  /// Minuto do dia (0–1439) no fuso da pessoa.
+  timeMin     Int          @map("time_min") @db.SmallInt
+  /// Dias da semana (0 = domingo). Vazio = todos os dias.
+  weekdays    Int[]        @db.SmallInt
+  enabled     Boolean      @default(true)
+  lastSentDay DateTime?    @map("last_sent_day") @db.Date
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit Habit? @relation(fields: [habitId, habitUserId], references: [id, userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("reminders")
 }

@@ -50,7 +50,8 @@ export const METRIC_RANGE: Readonly<
   kcal_reference_day: { min: 1, max: 10000, step: 50 },
 });
 
-export const GOAL_STATUSES = ['active', 'achieved', 'closed', 'archived'] as const;
+/** Guardado: ativa ou arquivada. 'Alvo alcançado' e 'prazo encerrado' são derivados na leitura. */
+export const GOAL_STATUSES = ['active', 'archived'] as const;
 export type GoalStatus = (typeof GOAL_STATUSES)[number];
 
 /** Meta como a interface recebe. Mesma forma para dados reais e de demo. */
@@ -66,6 +67,4 @@ export interface GoalRecord {
   targetDay: string | null;
   status: GoalStatus;
   createdDay: string;
-  /** Dia em que a meta foi marcada como alcançada (marco na timeline, exceto peso). */
-  achievedDay: string | null;
 }

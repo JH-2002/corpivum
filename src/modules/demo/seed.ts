@@ -29,6 +29,42 @@ export async function seedSyntheticData(deps: {
     })),
   );
   const habitNames = await Promise.all(data.habits.map((h) => seal('habits', 'name_enc', h.name)));
+  const meals = await Promise.all(
+    data.meals.map(async (r) => ({
+      userId,
+      eatenAt: new Date(r.eatenAt),
+      category: r.category,
+      descriptionEnc: r.description
+        ? await seal('meal_entries', 'description_enc', r.description)
+        : null,
+      hunger: r.hunger,
+      fullness: r.fullness,
+      satisfaction: r.satisfaction,
+      kcalEstimate: r.kcalEstimate,
+      noteEnc: r.note ? await seal('meal_entries', 'note_enc', r.note) : null,
+    })),
+  );
+  const activities = await Promise.all(
+    data.activities.map(async (r) => ({
+      entry: {
+        userId,
+        startedAt: new Date(r.startedAt),
+        type: r.type,
+        durationMin: r.durationMin,
+        intensity: r.intensity,
+        distanceKm: r.distanceKm,
+        noteEnc: r.note ? await seal('activity_entries', 'note_enc', r.note) : null,
+      },
+      sets: await Promise.all(
+        r.sets.map(async (x) => ({
+          exerciseNameEnc: await seal('strength_sets', 'exercise_name_enc', x.exercise),
+          setIndex: x.setIndex,
+          reps: x.reps,
+          loadKg: x.loadKg,
+        })),
+      ),
+    })),
+  );
 
   return run(userId, async (tx) => {
     let rows = 0;
@@ -72,6 +108,55 @@ export async function seedSyntheticData(deps: {
           const habitId = ids.get(c.habitId);
           return habitId ? [{ userId, habitId, day: isoToDbDate(c.day) }] : [];
         }),
+      })
+    ).count;
+    rows += (await tx.mealEntry.createMany({ data: meals })).count;
+    rows += (
+      await tx.waterEntry.createMany({
+        data: data.water.map((w) => ({ userId, day: isoToDbDate(w.day), ml: w.ml })),
+      })
+    ).count;
+    for (const a of activities) {
+      const created = await tx.activityEntry.create({ data: a.entry, select: { id: true } });
+      rows += 1;
+      if (a.sets.length > 0) {
+        rows += (
+          await tx.strengthSet.createMany({
+            data: a.sets.map((x) => ({ ...x, userId, activityId: created.id })),
+          })
+        ).count;
+      }
+    }
+    const habitRef = (habitId: string | null) => {
+      const id = habitId === null ? undefined : ids.get(habitId);
+      return id ? { habitId: id, habitUserId: userId } : { habitId: null, habitUserId: null };
+    };
+    rows += (
+      await tx.goal.createMany({
+        data: data.goals.map((g) => ({
+          userId,
+          domain: g.domain,
+          metric: g.metric,
+          targetValue: g.targetValue,
+          startValue: g.startValue,
+          ...habitRef(g.habitId),
+          targetDay: g.targetDay === null ? null : isoToDbDate(g.targetDay),
+          status: g.status,
+          createdAt: new Date(`${g.createdDay}T12:00:00Z`),
+        })),
+      })
+    ).count;
+    rows += (
+      await tx.reminder.createMany({
+        data: data.reminders.map((r) => ({
+          userId,
+          kind: r.kind,
+          ...habitRef(r.habitId),
+          timeMin: r.timeMin,
+          weekdays: r.weekdays,
+          // Seed: lembretes guardados desligados; nada é enviado a contas sintéticas.
+          enabled: false,
+        })),
       })
     ).count;
     return rows;

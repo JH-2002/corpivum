@@ -160,3 +160,14 @@ export function isoToDbDate(iso: string): Date {
 export function dbDateToIso(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+/** Segunda-feira (início da semana em pt-BR) da semana de `iso`. */
+export function weekStart(iso: string): string {
+  const wd = weekday(iso);
+  return addDays(iso, wd === 0 ? -6 : 1 - wd);
+}
+
+/** Semana corrente até `today` (segunda-feira → hoje). */
+export function weekToDate(today: string): DateRange {
+  return { from: weekStart(today), to: today };
+}

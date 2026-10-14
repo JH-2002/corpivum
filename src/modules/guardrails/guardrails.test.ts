@@ -218,9 +218,10 @@ describe('sequências e marcos (LEG-M06, LEG-F05)', () => {
     }
   });
 
-  it('meta de peso alcançada não vira marco; as demais viram', () => {
+  it('meta de peso ou de calorias alcançada não vira marco; as demais viram', () => {
     expect(allowsMilestone('weight')).toBe(false);
-    for (const domain of ['sleep', 'activity', 'habits', 'logging', 'nutrition'] as const) {
+    expect(allowsMilestone('nutrition')).toBe(false);
+    for (const domain of ['sleep', 'activity', 'habits', 'logging'] as const) {
       expect(allowsMilestone(domain)).toBe(true);
     }
   });

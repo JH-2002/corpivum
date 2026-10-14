@@ -3,9 +3,13 @@ import { getAdapters } from '@/adapters';
 import { withUser } from '@/lib/db';
 import { APP_TIME_ZONE, localDay } from '@/lib/dates';
 import { readTourSeen, writeTourSeen } from './preferences';
+import { createActivityService, type ActivityService } from '@/modules/activity/service';
 import { createBodyService, type BodyService } from '@/modules/body/service';
 import { withConsent } from '@/modules/consent/server';
+import { createGoalsService, type GoalsService } from '@/modules/goals/service';
 import { createHabitsService, type HabitsService } from '@/modules/habits/service';
+import { createRemindersService, type RemindersService } from '@/modules/notifications/service';
+import { createNutritionService, type NutritionService } from '@/modules/nutrition/service';
 import { createSleepService, type SleepService } from '@/modules/sleep/service';
 import { createDemoSource, type HealthDataSource } from './source';
 import { generateDemoData } from '@/modules/demo/generator';
@@ -30,6 +34,10 @@ interface HealthServices {
   sleep: SleepService;
   habits: HabitsService;
   body: BodyService;
+  nutrition: NutritionService;
+  activity: ActivityService;
+  goals: GoalsService;
+  reminders: RemindersService;
 }
 
 let services: HealthServices | undefined;
@@ -69,6 +77,10 @@ function servicesWith(d: HealthDeps): HealthServices {
     sleep: createSleepService(d),
     habits: createHabitsService(d),
     body: createBodyService(d),
+    nutrition: createNutritionService(d),
+    activity: createActivityService(d),
+    goals: createGoalsService(d),
+    reminders: createRemindersService(d),
   };
 }
 
@@ -84,6 +96,14 @@ export function createOwnSource(userId: string, bound?: HealthDeps): HealthDataS
     checks: (range) => s.habits.listChecks(userId, range),
     body: (range) => s.body.list(userId, range),
     latestHeightCm: () => s.body.latestHeightCm(userId),
+    latestWeightKg: () => s.body.latestWeightKg(userId),
+    meals: (range, opts) => s.nutrition.listMeals(userId, range, opts),
+    water: (range) => s.nutrition.listWater(userId, range),
+    activities: (range, opts) => s.activity.list(userId, range, opts),
+    goals: (opts) => s.goals.list(userId, opts),
+    reminders: () => s.reminders.list(userId),
+    reminderPrefs: () => s.reminders.prefs(userId),
+    calorieEstimateEnabled: () => s.nutrition.calorieEstimateEnabled(userId),
     streaksEnabled: () =>
       run(userId, async (tx) => {
         const user = await tx.user.findUnique({
@@ -98,6 +118,9 @@ export function createOwnSource(userId: string, bound?: HealthDeps): HealthDataS
           tx.sleepEntry.findFirst({ select: { id: true } }),
           tx.habit.findFirst({ select: { id: true } }),
           tx.bodyMeasurement.findFirst({ select: { id: true } }),
+          tx.mealEntry.findFirst({ select: { id: true } }),
+          tx.waterEntry.findFirst({ select: { id: true } }),
+          tx.activityEntry.findFirst({ select: { id: true } }),
         ]);
         return found.some((row) => row !== null);
       }),

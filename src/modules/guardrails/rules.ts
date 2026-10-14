@@ -219,8 +219,9 @@ export function allowsStreak(domain: GoalDomain | 'body'): boolean {
 
 /**
  * Meta alcançada vira marco na timeline? Peso não (decisão da Fase 4, LEG-M06: sem recompensa ligada a
- * peso): a meta só muda de status, em tom neutro.
+ * peso) e calorias também não (LEG-M07: comer uma quantidade não é conquista). A meta só muda de status,
+ * em tom neutro.
  */
 export function allowsMilestone(domain: GoalDomain): boolean {
-  return domain !== 'weight';
+  return domain !== 'weight' && domain !== 'nutrition';
 }

@@ -5,9 +5,15 @@ import type { Db } from '@/lib/db/client';
 import { withUserOn, type Tx } from '@/lib/db/rls';
 import { ConsentRequiredError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { createActivityService } from '@/modules/activity/service';
 import { createBodyService } from '@/modules/body/service';
 import { withConsentOn } from '@/modules/consent/guard';
+import { goalInputSchema } from '@/modules/goals';
+import { createGoalsService } from '@/modules/goals/service';
 import { createHabitsService } from '@/modules/habits/service';
+import { reminderInputSchema } from '@/modules/notifications';
+import { createRemindersService } from '@/modules/notifications/service';
+import { createNutritionService } from '@/modules/nutrition/service';
 import { createFieldCipher, type HealthDeps } from '@/modules/health/core';
 import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
 import { createHealthDataEliminator } from '@/modules/privacy/health-data';
@@ -35,7 +41,18 @@ let deps: HealthDeps;
 const TZ = 'America/Sao_Paulo';
 
 /** Tabelas de saúde conhecidas. Tabela nova com `user_id` precisa ser classificada aqui ou em NON_HEALTH. */
-const HEALTH_TABLES = ['body_measurements', 'habit_checks', 'habits', 'sleep_entries'];
+const HEALTH_TABLES = [
+  'activity_entries',
+  'body_measurements',
+  'goals',
+  'habit_checks',
+  'habits',
+  'meal_entries',
+  'reminders',
+  'sleep_entries',
+  'strength_sets',
+  'water_entries',
+];
 /** Tabelas com `user_id` que NÃO são dado de saúde (auth, provas, logs). */
 const NON_HEALTH = new Set([
   'sessions',
@@ -56,6 +73,10 @@ function services() {
     sleep: createSleepService(deps),
     habits: createHabitsService(deps),
     body: createBodyService(deps),
+    nutrition: createNutritionService(deps),
+    activity: createActivityService(deps),
+    goals: createGoalsService(deps),
+    reminders: createRemindersService(deps),
   };
 }
 
@@ -69,6 +90,8 @@ async function onboarded(purposes: Array<'health_data'>) {
 const RANGE = { from: '2026-09-01', to: '2026-10-07' };
 const SECRET_NOTE = 'nota-secreta-sintetica-sono';
 const SECRET_HABIT = 'habito-secreto-sintetico';
+const SECRET_MEAL = 'refeicao-secreta-sintetica';
+const SECRET_EXERCISE = 'exercicio-secreto-sintetico';
 
 /** Um registro em cada tabela de saúde, pelos serviços reais. */
 async function seedAll(userId: string) {
@@ -88,8 +111,39 @@ async function seedAll(userId: string) {
   });
   expect(await s.habits.setCheck(userId, habitId, '2026-10-06', true)).toBe('ok');
   const body = await s.body.create(userId, { measuredAt: '2026-10-06T08:00', weightKg: 70 });
-  if (!sleep.ok || !body.ok) throw new Error('seed');
-  return { sleepId: sleep.id, habitId, bodyId: body.id };
+  const meal = await s.nutrition.createMeal(userId, {
+    eatenAt: '2026-10-06T12:30',
+    category: 'lunch',
+    description: SECRET_MEAL,
+  });
+  const water = await s.nutrition.addWater(userId, { day: '2026-10-06', ml: 300 });
+  const activity = await s.activity.create(userId, {
+    startedAt: '2026-10-06T18:00',
+    type: 'strength',
+    durationMin: 40,
+    sets: [{ exercise: SECRET_EXERCISE, reps: 10, loadKg: 20 }],
+  });
+  const goal = await s.goals.create(
+    userId,
+    goalInputSchema.parse({ metric: 'habit_completion_pct', targetValue: '80', habitId }),
+  );
+  const reminder = await s.reminders.create(
+    userId,
+    reminderInputSchema.parse({ kind: 'habit', habitId, time: '21:00' }),
+  );
+  if (!sleep.ok || !body.ok || !meal.ok || !water.ok || !activity.ok || !goal.ok || !reminder.ok) {
+    throw new Error('seed');
+  }
+  return {
+    sleepId: sleep.id,
+    habitId,
+    bodyId: body.id,
+    mealId: meal.id,
+    waterId: water.id,
+    activityId: activity.id,
+    goalId: goal.id,
+    reminderId: reminder.reminder.id,
+  };
 }
 
 async function countsFor(userId: string): Promise<Record<string, number>> {
@@ -242,6 +296,11 @@ describe('isolamento entre pessoas (LEG-S03)', () => {
     expect(await s.habits.listHabits(b.userId)).toEqual([]);
     expect(await s.habits.listChecks(b.userId, RANGE)).toEqual([]);
     expect(await s.body.list(b.userId, RANGE)).toEqual([]);
+    expect(await s.nutrition.listMeals(b.userId, RANGE)).toEqual([]);
+    expect(await s.nutrition.listWater(b.userId, RANGE)).toEqual([]);
+    expect(await s.activity.list(b.userId, RANGE)).toEqual([]);
+    expect(await s.goals.list(b.userId)).toEqual([]);
+    expect(await s.reminders.list(b.userId)).toEqual([]);
 
     expect(
       await s.sleep.update(b.userId, ids.sleepId, {
@@ -253,9 +312,71 @@ describe('isolamento entre pessoas (LEG-S03)', () => {
     expect(await s.habits.remove(b.userId, ids.habitId)).toBe(false);
     expect(await s.habits.setCheck(b.userId, ids.habitId, '2026-10-06', false)).toBe('not_found');
     expect(await s.body.remove(b.userId, ids.bodyId)).toBe(false);
+    expect(await s.nutrition.removeMeal(b.userId, ids.mealId)).toBe(false);
+    expect(await s.nutrition.removeWater(b.userId, ids.waterId)).toBe(false);
+    expect(await s.activity.remove(b.userId, ids.activityId)).toBe(false);
+    expect(await s.goals.remove(b.userId, ids.goalId)).toBe(false);
+    expect(await s.goals.setArchived(b.userId, ids.goalId, true)).toBe(false);
+    expect(await s.reminders.remove(b.userId, ids.reminderId)).toBe(false);
+    expect(await s.reminders.setEnabled(b.userId, ids.reminderId, false)).toBeNull();
+    expect(await s.reminders.claimSend(b.userId, ids.reminderId, '2026-10-07')).toBe(false);
+    // B não aponta meta nem lembrete para o hábito de A.
+    expect(
+      await s.goals.create(
+        b.userId,
+        goalInputSchema.parse({
+          metric: 'habit_completion_pct',
+          targetValue: '80',
+          habitId: ids.habitId,
+        }),
+      ),
+    ).toEqual({ ok: false, error: 'habit_not_found' });
 
     const counts = await countsFor(a.userId);
     for (const table of HEALTH_TABLES) expect(counts[table]).toBe(1);
+  });
+
+  it('FK composta: série, meta e lembrete nunca apontam para registro de outra pessoa', async () => {
+    const a = await onboarded(['health_data']);
+    const b = await onboarded(['health_data']);
+    const ids = await seedAll(a.userId);
+    const attempts: Array<(tx: Tx) => Promise<unknown>> = [
+      (tx) =>
+        tx.strengthSet.create({
+          data: {
+            userId: b.userId,
+            activityId: ids.activityId,
+            exerciseNameEnc: new Uint8Array([1]),
+            setIndex: 9,
+            reps: 1,
+          },
+        }),
+      (tx) =>
+        tx.goal.create({
+          data: {
+            userId: b.userId,
+            domain: 'habits',
+            metric: 'habit_completion_pct',
+            targetValue: 50,
+            habitId: ids.habitId,
+            habitUserId: b.userId,
+          },
+        }),
+      (tx) =>
+        tx.reminder.create({
+          data: {
+            userId: b.userId,
+            kind: 'habit',
+            habitId: ids.habitId,
+            habitUserId: a.userId,
+            timeMin: 600,
+            weekdays: [],
+          },
+        }),
+    ];
+    for (const write of attempts) {
+      await expect(withConsentOn(db, b.userId, 'health_data', write)).rejects.toThrow();
+    }
   });
 
   it('B não grava em nome de A (WITH CHECK) nem marca check no hábito de A (FK composta)', async () => {
@@ -362,6 +483,22 @@ describe('cifragem de campo (LEG-S02)', () => {
     expect(entry?.note).toBe(SECRET_NOTE);
     const [meta] = await services().sleep.list(a.userId, RANGE);
     expect(meta?.note).toBeNull();
+
+    const routine = await admin.query<{ meal: Buffer; exercise: Buffer }>(
+      `SELECT (SELECT description_enc FROM meal_entries WHERE user_id = $1) AS meal,
+              (SELECT exercise_name_enc FROM strength_sets WHERE user_id = $1) AS exercise`,
+      [a.userId],
+    );
+    const enc = routine.rows[0];
+    if (!enc) throw new Error('sem linha');
+    expect(enc.meal.includes(Buffer.from(SECRET_MEAL))).toBe(false);
+    expect(enc.exercise.includes(Buffer.from(SECRET_EXERCISE))).toBe(false);
+    const [meal] = await services().nutrition.listMeals(a.userId, RANGE, { withText: true });
+    expect(meal?.description).toBe(SECRET_MEAL);
+    const [mealMeta] = await services().nutrition.listMeals(a.userId, RANGE);
+    expect(mealMeta?.description).toBeNull();
+    const [activity] = await services().activity.list(a.userId, RANGE);
+    expect(activity?.sets[0]?.exercise).toBe(SECRET_EXERCISE);
   });
 });
 
