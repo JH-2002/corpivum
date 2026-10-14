@@ -1,9 +1,9 @@
 # Módulo `notifications`
 
-Lembretes e notificações via JobQueue, sem insistência.
+Lembretes por e-mail processados no servidor pela JobQueue, sem insistência (ADR-0029).
 
-- Spec: §33 (ver docs/PRODUCT_SPEC.md e docs/SPEC_ADDENDUM.md)
-- Requisitos: LEG-F05
-- Fase prevista: 4
-
-Exponha a API pública do módulo apenas por `index.ts`. Outros módulos não importam arquivos internos.
+- Spec: §33 · Requisitos: LEG-F05, LEG-C04, LEG-R04
+- `schedule.ts`: próxima ocorrência no fuso, horário silencioso, próximos lembretes (puro).
+- `service.ts`: lembretes (tabela de saúde) e `claimSend` (um envio por lembrete por dia).
+- `jobs.ts`: `reminder.dispatch` (payload só com IDs), registrado em `src/server-jobs.ts`.
+- Regras: e-mail só com um link (sem nome do hábito); push fora do escopo (OI-27).
