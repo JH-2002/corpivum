@@ -10,6 +10,10 @@ export const CHART_GUIDES = [
   'habits',
   'weight',
   'girth',
+  'meals',
+  'water',
+  'activityMinutes',
+  'exercise',
 ] as const;
 export type ChartGuideId = (typeof CHART_GUIDES)[number];
 

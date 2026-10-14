@@ -77,6 +77,10 @@ export const DEMO_ITEMS: readonly NavItem[] = [
   { key: 'body', href: '/demo/corpo', icon: PersonStanding },
   { key: 'sleep', href: '/demo/sono', icon: Moon },
   { key: 'habits', href: '/demo/habitos', icon: ListChecks },
+  { key: 'nutrition', href: '/demo/alimentacao', icon: Apple },
+  { key: 'activity', href: '/demo/atividade', icon: Activity },
+  { key: 'goals', href: '/demo/metas', icon: Target },
+  { key: 'timeline', href: '/demo/timeline', icon: History },
   { key: 'twin', href: '/demo/twin', icon: Orbit },
 ];
 

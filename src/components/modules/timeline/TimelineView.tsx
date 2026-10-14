@@ -1,0 +1,171 @@
+import Link from 'next/link';
+import type { Route } from 'next';
+import { useFormatter, useTranslations } from 'next-intl';
+import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
+import type { HealthMode } from '@/components/health/HealthPage';
+import { PeriodSummary } from '@/components/insights/PeriodInsights';
+import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
+import { StateView } from '@/components/ui/StateView';
+import { cn } from '@/lib/cn';
+import type { DateRange } from '@/lib/period';
+import { timelineInsights } from '@/modules/insights';
+import {
+  TIMELINE_DOMAINS,
+  type TimelineDay,
+  type TimelineDomain,
+  type TimelineItem,
+} from '@/modules/timeline';
+
+/**
+ * Timeline pessoal (§31): registros por dia, do mais recente ao mais antigo, filtráveis por domínio
+ * (links com `?dominio=`, funcionam sem JS) e pelo período global. Marcos automáticos sem comemoração
+ * ligada a peso ou comida (LEG-M06, LEG-M07). Mesma tela para dados próprios e demo.
+ */
+export function TimelineView({
+  days,
+  domain,
+  basePath,
+  range,
+  today,
+  mode,
+}: {
+  days: TimelineDay[];
+  domain: TimelineDomain | null;
+  basePath: '/timeline' | '/demo/timeline';
+  range: DateRange;
+  today: string;
+  mode: HealthMode;
+}) {
+  const t = useTranslations('timeline');
+  const tn = useTranslations('nutrition');
+  const ta = useTranslations('activity');
+  const tg = useTranslations('goals');
+  const format = useFormatter();
+  const own = mode === 'own';
+  const longDay = (iso: string) =>
+    format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'full', timeZone: 'UTC' });
+  const filters: Array<{ value: TimelineDomain | null; label: string }> = [
+    { value: null, label: t('all') },
+    ...TIMELINE_DOMAINS.map((d) => ({ value: d, label: t(`domains.${d}`) })),
+  ];
+
+  function text(item: TimelineItem): string {
+    switch (item.kind) {
+      case 'sleep':
+        return [
+          t('items.sleep', { duration: formatDuration(item.durationMin) }),
+          item.quality !== null ? t('items.sleepQuality', { value: item.quality }) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+      case 'activity':
+        return [
+          t('items.activity', {
+            type: ta(`types.${item.type}`),
+            duration: formatDuration(item.durationMin),
+          }),
+          item.sets > 0 ? t('items.activitySets', { count: item.sets }) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+      case 'habits':
+        return t('items.habits', { count: item.done });
+      case 'body': {
+        const parts: string[] = [t('items.body')];
+        if (item.weightKg !== null) {
+          parts.push(t('items.bodyWeight', { weight: formatDecimal(item.weightKg) }));
+        }
+        const trend = trendOf(item.weightChangeKg, 0.05);
+        if (item.weightChangeKg !== null && trend) {
+          parts.push(
+            t('items.bodyChange', {
+              arrow: TREND_ARROW[trend],
+              delta: formatDecimal(Math.abs(item.weightChangeKg)),
+              word: trend,
+            }),
+          );
+        }
+        if (item.otherFields > 0) parts.push(t('items.bodyOther', { count: item.otherFields }));
+        return parts.join(' · ');
+      }
+      case 'meal':
+        return t('items.meal', { category: tn(`categories.${item.category}`), time: item.time });
+      case 'water':
+        return t('items.water', { ml: item.ml });
+      case 'milestone':
+        return item.milestone === 'new_habit'
+          ? t('items.newHabit', { name: item.habitName })
+          : t('items.goalReached', {
+              metric: tg(`metrics.${item.metric}`),
+              value: formatDecimal(item.value),
+              target: formatDecimal(item.target),
+            });
+    }
+  }
+
+  const levelOf = (item: TimelineItem) =>
+    !own ? 'DEMO' : item.kind === 'milestone' ? 'ESTIMADO' : 'INFORMADO';
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PeriodSummary insights={timelineInsights({ days, range, today })} demo={!own} />
+
+      <nav aria-label={t('filterLabel')} className="flex flex-wrap gap-2">
+        {filters.map((f) => {
+          const current = f.value === domain;
+          const href = (f.value ? `${basePath}?dominio=${f.value}` : basePath) as Route;
+          return (
+            <Link
+              key={f.label}
+              href={href}
+              aria-current={current ? 'page' : undefined}
+              className={cn(
+                'inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold',
+                current
+                  ? 'border-primary bg-primary-soft text-fg'
+                  : 'border-border-strong bg-surface text-fg',
+              )}
+            >
+              {current ? <span aria-hidden="true">✓ </span> : null}
+              {f.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {days.length === 0 ? (
+        <StateView state="no-data" />
+      ) : (
+        <section aria-labelledby="timeline-list" className="flex flex-col gap-4">
+          <h2 id="timeline-list" className="text-base font-semibold">
+            {t('listTitle')}
+          </h2>
+          <ol className="flex flex-col gap-4">
+            {days.map((d) => (
+              <li key={d.day} className="rounded-lg border border-border bg-surface p-4">
+                <h3 className="font-semibold">
+                  <time dateTime={d.day}>{longDay(d.day)}</time>
+                </h3>
+                <p className="text-sm text-fg-muted">{t('dayItems', { count: d.items.length })}</p>
+                <ul className="mt-2 flex flex-col gap-2">
+                  {d.items.map((item, i) => (
+                    <li
+                      key={`${item.kind}-${'id' in item ? item.id : i}`}
+                      className="flex flex-wrap items-start justify-between gap-2 border-t border-border pt-2 first:border-t-0 first:pt-0"
+                    >
+                      <p>
+                        <span className="font-semibold">{t(`kindLabels.${item.kind}`)}: </span>
+                        <span className="tabular">{text(item)}</span>
+                      </p>
+                      <ConfidenceBadge level={levelOf(item)} />
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+    </div>
+  );
+}

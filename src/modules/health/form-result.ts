@@ -15,7 +15,14 @@ export async function fieldErrorsOf(error: z.ZodError): Promise<FormState> {
   const fieldErrors: Record<string, string> = {};
   for (const issue of error.issues) {
     const field = String(issue.path[0] ?? 'form');
-    const known = ['wake_before_bed', 'weekdays_required', 'times_required', 'at_least_one'];
+    const known = [
+      'wake_before_bed',
+      'weekdays_required',
+      'times_required',
+      'at_least_one',
+      'habit_required',
+      'quiet_both',
+    ];
     fieldErrors[field] ??= known.includes(issue.message)
       ? t(`errors.${issue.message as 'wake_before_bed'}`)
       : t('errors.field');

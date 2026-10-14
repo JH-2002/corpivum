@@ -24,14 +24,17 @@ function BottomLink({
   label,
   icon: Icon,
   active,
+  fixedWidth = false,
 }: {
   href: Route;
   label: string;
   icon: LucideIcon;
   active: boolean;
+  /** Largura fixa (barra com rolagem própria, sem rolar a página). */
+  fixedWidth?: boolean;
 }) {
   return (
-    <li className="flex flex-1">
+    <li className={fixedWidth ? 'flex w-[4.5rem] flex-none' : 'flex flex-1'}>
       <Link
         href={href}
         aria-current={active ? 'page' : undefined}
@@ -44,7 +47,10 @@ function BottomLink({
   );
 }
 
-/** Navegação inferior do demo público: só os módulos com dados de demonstração (LEG-X02). */
+/**
+ * Navegação inferior do demo público: só os módulos com dados de demonstração (LEG-X02). Com mais itens
+ * que cabem em 320px, a própria barra rola na horizontal (a página não).
+ */
 function DemoBottomNav() {
   const t = useTranslations('nav');
   const pathname = usePathname();
@@ -53,9 +59,10 @@ function DemoBottomNav() {
       aria-label={t('mobileLabel')}
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="flex items-stretch gap-0.5 px-1 py-1">
+      <ul className="flex items-stretch gap-0.5 overflow-x-auto px-1 py-1">
         {DEMO_ITEMS.map((item) => (
           <BottomLink
+            fixedWidth
             key={item.key}
             href={item.href}
             label={t(item.key === 'twin' ? 'twinShort' : item.key)}

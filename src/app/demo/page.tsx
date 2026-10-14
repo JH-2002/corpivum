@@ -4,7 +4,9 @@ import { Suspense } from 'react';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { Tour } from '@/components/tour/Tour';
 import { buttonClasses } from '@/components/ui/Button';
+import { UpcomingReminders } from '@/components/modules/reminders/UpcomingReminders';
 import { buildDashboard } from '@/modules/health/dashboard';
+import { loadReminders } from '@/modules/health/screens';
 import { demoContext } from './demo-data';
 
 /** Dashboard de demonstração (§40a). CTA "Começar com meus próprios dados" leva ao cadastro (§40b). */
@@ -12,6 +14,7 @@ export default async function DemoHomePage() {
   const t = await getTranslations('demo');
   const { range, today, source } = await demoContext();
   const data = await buildDashboard(source, range, today);
+  const reminders = await loadReminders(source);
   return (
     <div className="flex flex-col gap-6">
       <section
@@ -29,6 +32,13 @@ export default async function DemoHomePage() {
         </Link>
       </section>
       <Dashboard data={data} mode="publicDemo" />
+      <UpcomingReminders
+        reminders={reminders.reminders}
+        habits={reminders.habits}
+        now={new Date()}
+        manageHref="/demo/habitos"
+        demo
+      />
       {/* Sem conta: lembrar que viu fica só no navegador (LEG-X02). */}
       <Suspense fallback={null}>
         <Tour autoStart persist="local" />

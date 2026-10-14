@@ -23,6 +23,10 @@ export const DEMO_ROUTES = [
   { path: '/demo/sono', title: 'Sono' },
   { path: '/demo/habitos', title: 'Hábitos' },
   { path: '/demo/corpo', title: 'Corpo' },
+  { path: '/demo/alimentacao', title: 'Alimentação' },
+  { path: '/demo/atividade', title: 'Atividade' },
+  { path: '/demo/metas', title: 'Metas' },
+  { path: '/demo/timeline', title: 'Timeline' },
   { path: '/demo/twin', title: 'Health Twin' },
 ] as const;
 

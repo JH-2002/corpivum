@@ -1,10 +1,13 @@
 import { getAdapters } from '@/adapters';
 import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import { PgJobQueue } from '@/adapters/jobs/postgres';
+import { APP_TIME_ZONE } from '@/lib/dates';
 import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { registerAuthJobs, scheduleAuthPurge } from '@/modules/auth/jobs';
 import { getAuthService } from '@/modules/auth/server';
+import { getHealthServices } from '@/modules/health/server';
+import { registerReminderJobs } from '@/modules/notifications/jobs';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
 import { getHealthDataEliminator, getPrivacyService } from '@/modules/privacy/server';
 
@@ -22,6 +25,13 @@ export async function startJobs(): Promise<void> {
   registerPrivacyJobs(jobs, {
     service: getPrivacyService(),
     eliminator: getHealthDataEliminator(),
+  });
+  // Lembretes (§33, ADR-0029): processados aqui, no servidor; não dependem do navegador aberto.
+  registerReminderJobs(jobs, {
+    service: getHealthServices().reminders,
+    mail: getAdapters().mail,
+    appUrl: getEnv().APP_URL,
+    timeZone: APP_TIME_ZONE,
   });
   await scheduleAuthPurge(jobs);
   await schedulePrivacyJobs(jobs);

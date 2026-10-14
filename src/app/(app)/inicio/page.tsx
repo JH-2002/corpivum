@@ -7,7 +7,9 @@ import { OpenQuickLogButton } from '@/components/shell/OpenQuickLogButton';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
 import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
+import { UpcomingReminders } from '@/components/modules/reminders/UpcomingReminders';
 import { buildDashboard } from '@/modules/health/dashboard';
+import { loadReminders } from '@/modules/health/screens';
 import { hasSeenTour } from '@/modules/health/server';
 import { Tour } from '@/components/tour/Tour';
 
@@ -26,18 +28,30 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const view = healthView(session, today);
   const data =
     view.kind === 'data' && !preview
-      ? await view.source.session((s) => buildDashboard(s, range, today))
+      ? await view.source.session(async (s) => ({
+          dashboard: await buildDashboard(s, range, today),
+          reminders: await loadReminders(s),
+        }))
       : null;
   // Só com o painel na tela; se a leitura falhar, o tour não abre sozinho (e o painel não cai).
   const tourSeen = data ? await hasSeenTour(session.userId).catch(() => true) : true;
   return (
     <HealthFrame page="home" href="/inicio" session={session} view={view} preview={preview}>
       {data && view.kind === 'data' ? (
-        <Dashboard
-          data={data}
-          mode={view.mode}
-          emptyAction={<OpenQuickLogButton>{t('pages.home.cta')}</OpenQuickLogButton>}
-        />
+        <>
+          <Dashboard
+            data={data.dashboard}
+            mode={view.mode}
+            emptyAction={<OpenQuickLogButton>{t('pages.home.cta')}</OpenQuickLogButton>}
+          />
+          <UpcomingReminders
+            reminders={data.reminders.reminders}
+            habits={data.reminders.habits}
+            now={new Date()}
+            manageHref="/habitos#lembretes"
+            demo={view.mode !== 'own'}
+          />
+        </>
       ) : null}
       {/* Tour opcional (ADR-0025): sozinho na primeira visita; reaberto pelo menu de ajuda. */}
       {data ? (

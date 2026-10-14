@@ -24,9 +24,9 @@ const ITEMS: ReadonlyArray<{ key: QuickLogKey; href: Route; icon: LucideIcon; to
   { key: 'sleep', href: '/sono#novo', icon: Moon, tone: 'text-sleep' },
   { key: 'habit', href: '/habitos#novo', icon: ListChecks, tone: 'text-primary' },
   { key: 'body', href: '/corpo#novo', icon: Scale, tone: 'text-body' },
-  { key: 'meal', href: '/alimentacao', icon: Apple, tone: 'text-nutrition' },
+  { key: 'meal', href: '/alimentacao#novo', icon: Apple, tone: 'text-nutrition' },
   { key: 'water', href: '/alimentacao', icon: Droplet, tone: 'text-info' },
-  { key: 'activity', href: '/atividade', icon: Activity, tone: 'text-activity' },
+  { key: 'activity', href: '/atividade#novo', icon: Activity, tone: 'text-activity' },
 ];
 
 /**
