@@ -1,0 +1,17 @@
+{
+  "title": "Termos de Uso",
+  "s1Title": "O serviço",
+  "s1Body": "O HealthMind 360 é uma ferramenta de bem-estar e autoacompanhamento oferecida por '{{CONTROLADOR}}'. Não é um serviço médico.",
+  "s2Title": "Quem pode usar",
+  "s2Body": "Pessoas com 18 anos ou mais. Ao criar a conta, você declara ter 18 anos ou mais.",
+  "s3Title": "Sua conta",
+  "s3Body": "Você é responsável por manter sua senha em segredo. Recomendamos ativar a verificação em duas etapas.",
+  "s4Title": "Uso adequado",
+  "s4Body": "Não use o app para atividades ilegais nem tente acessar dados de outras pessoas.",
+  "s5Title": "Sugestões do app",
+  "s5Body": "As sugestões são gerais, de bem-estar, e não levam em conta sua história de saúde. Em caso de dúvida sobre sua saúde, procure um profissional habilitado.",
+  "s6Title": "Encerramento",
+  "s6Body": "Você pode encerrar a conta quando quiser. Podemos suspender contas que violem estes termos, com aviso, salvo quando a lei exigir o contrário.",
+  "s7Title": "Contato e foro",
+  "s7Body": "Contato: '{{CONTATO_ENCARREGADO}}'. Foro: '{{FORO}}'."
+}

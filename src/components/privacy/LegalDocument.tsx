@@ -16,7 +16,7 @@ export async function DraftBanner() {
 
 const SECTIONS = {
   privacyPolicy: 9,
-  terms: 7,
+  terms: 6,
 } as const;
 
 /** Documento versionado (Política ou Termos), com versão e data de publicação. */
@@ -24,7 +24,8 @@ export async function LegalDocument({ doc }: { doc: 'privacyPolicy' | 'terms' })
   const t = await getTranslations(`legal.${doc}`);
   const tl = await getTranslations('legal');
   const format = await getFormatter();
-  const version = CURRENT_VERSIONS[doc === 'terms' ? 'terms' : 'privacy_policy'].version;
+  const document = doc === 'terms' ? 'terms' : 'privacy_policy';
+  const version = CURRENT_VERSIONS[document].version;
   const sections = Array.from({ length: SECTIONS[doc] }, (_, i) => i + 1);
   return (
     <article className="flex flex-col gap-4">
@@ -33,7 +34,9 @@ export async function LegalDocument({ doc }: { doc: 'privacyPolicy' | 'terms' })
       <p className="text-sm text-fg-muted">
         {tl('version', {
           version,
-          date: format.dateTime(new Date(`${PUBLISHED_AT}T12:00:00Z`), { dateStyle: 'long' }),
+          date: format.dateTime(new Date(`${PUBLISHED_AT[document]}T12:00:00Z`), {
+            dateStyle: 'long',
+          }),
         })}
       </p>
       {sections.map((n) => (

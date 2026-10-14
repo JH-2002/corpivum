@@ -9,6 +9,7 @@ import {
   HEALTH_DATA_GRACE_DAYS_IN_TEXT,
   purposeDocument,
 } from './catalog';
+import { noticeChangeKey } from '@/components/privacy/policy-notice';
 
 function namespace(path: string): unknown {
   return path.split('.').reduce<unknown>((node, key) => {
@@ -39,6 +40,16 @@ describe('catálogo de documentos versionados', () => {
       for (const field of ['title', 'collected', 'purpose', 'processors', 'refusal', 'revoke']) {
         expect(text[field], `${purpose}.${field}`).toEqual(expect.any(String));
       }
+    }
+  });
+
+  it('versão vigente não substancial dos Termos ou da Política tem texto de aviso próprio (ADR-0031)', () => {
+    for (const document of ['terms', 'privacy_policy'] as const) {
+      const current = CURRENT_VERSIONS[document];
+      if (current.requiresReconsent) continue;
+      const key = noticeChangeKey(document, current.version);
+      expect(key, `${document} v${current.version}: falta policyNotice.changes`).not.toBeNull();
+      expect(namespace(`policyNotice.${key}`), String(key)).toEqual(expect.any(String));
     }
   });
 

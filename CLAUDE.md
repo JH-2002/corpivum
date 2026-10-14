@@ -2,8 +2,7 @@
 
 Plataforma pessoal de acompanhamento do desenvolvimento corporal com foco em bem-estar (corpo e medidas,
 sono, hábitos, alimentação, atividade física, metas), com twin 3D do corpo e resumos por regras.
-Público: adultos (18+) no Brasil. Idioma principal: pt-BR. Humor, diário, cérebro 3D, neuroquímica e
-medicamentos foram removidos (ADR-0027). Assistente de IA e recomendações automáticas foram removidos (ADR-0030).
+Público: adultos (18+) no Brasil. Idioma principal: pt-BR. Escopo atual e módulos removidos: `docs/DECISIONS.md`.
 
 ## Leia antes de planejar
 - `docs/LEGAL_REQUIREMENTS.md`: requisitos legais com IDs `LEG-xx`
@@ -23,7 +22,7 @@ interface pode contradizer isso.
 ## Regras inegociáveis
 1. Dado de saúde é dado pessoal sensível. Nunca tratar sem `ConsentRecord` ativo para a finalidade.
 2. Nunca vender ou compartilhar dados de saúde. Sem SDKs de publicidade, sem trackers de terceiros.
-3. Revogada (ADR-0030): sem IA. Nenhum dado é enviado a serviço de IA ou LLM; reintroduzir exige nova ADR.
+3. Revogada (ADR-0030). A numeração das demais regras não muda.
 4. Menores de 18 não criam conta e não têm dado persistido.
 5. Nunca logar conteúdo de saúde, notas, alimentação ou medidas. Só metadados.
 6. Nunca usar dados reais em desenvolvimento (apenas seed sintético). Nunca commitar segredos.
@@ -52,8 +51,9 @@ Adaptadores trocáveis: `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQu
   Qualquer serviço fora do Brasil entra em `docs/privacy/SUBPROCESSORS.md`.
 - **Teste de strings proibidas:** varre os arquivos i18n e falha com alegações clínicas, EXCETO nas
   chaves do namespace `disclaimer.*`, que contêm negações obrigatórias ("não diagnostica...").
-- **Criptografia de campo × busca:** campos criptografados não são pesquisáveis no banco. No MVP não
-  há busca textual no conteúdo do diário (filtros só por data e campos não sensíveis).
+- **Criptografia de campo × busca:** campos criptografados (notas, descrição de refeição, nomes de hábito e de
+  exercício) não são pesquisáveis no banco. Filtros só por data e campos não sensíveis; agrupar por nome cifrado
+  só em memória, depois de decifrar.
 
 ## Convenções
 - Sem `any`. Zod em toda entrada. Erros tipados. Strings de UI em i18n.

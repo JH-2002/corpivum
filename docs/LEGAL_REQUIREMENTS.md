@@ -33,7 +33,9 @@ econômica (art. 11, §4º). Sem venda, sem publicidade, sem data brokers.
 - LEG-C04 Revogar é tão fácil quanto conceder (Central de Privacidade, 1–2 cliques). A revogação interrompe
   imediatamente o tratamento futuro correspondente.
 - LEG-C05 Recusar marketing ou métricas não bloqueia o restante do app.
-- LEG-C06 Nova versão substancial de política/consentimento → reconsentimento antes de continuar.
+- LEG-C06 Nova versão substancial de política/consentimento → reconsentimento antes de continuar. Versão não
+  substancial (só remove funcionalidade, sem ampliar o tratamento) → aviso informativo único e registro de ciência,
+  sem bloquear (ADR-0031; `LEGAL-REVIEW`, OI-30).
 
 ### B2. Direitos do titular (art. 18) — Central de Privacidade
 - LEG-D01 Confirmação e acesso: tela que lista todos os dados tratados, por categoria.
