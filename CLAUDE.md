@@ -1,9 +1,9 @@
 # HealthMind 360
 
 Plataforma pessoal de acompanhamento do desenvolvimento corporal com foco em bem-estar (corpo e medidas,
-sono, hábitos, alimentação, atividade física, metas), com twin 3D do corpo e assistente de IA opcional.
+sono, hábitos, alimentação, atividade física, metas), com twin 3D do corpo e resumos por regras.
 Público: adultos (18+) no Brasil. Idioma principal: pt-BR. Humor, diário, cérebro 3D, neuroquímica e
-medicamentos foram removidos (ADR-0027).
+medicamentos foram removidos (ADR-0027). Assistente de IA e recomendações automáticas foram removidos (ADR-0030).
 
 ## Leia antes de planejar
 - `docs/LEGAL_REQUIREMENTS.md`: requisitos legais com IDs `LEG-xx`
@@ -18,16 +18,16 @@ Produto de bem-estar e autoacompanhamento. NÃO é dispositivo médico: não dia
 não monitora doenças, não sugere doses, não prescreve dieta nem treino, não substitui profissional de saúde.
 Imagem corporal e alimentação são requisito central: nada julga o corpo nem incentiva restrição
 (LEG-M04, M06, M07, M08; guardrails em `src/modules/guardrails`). Nenhum texto de
-interface ou resposta de IA pode contradizer isso.
+interface pode contradizer isso.
 
 ## Regras inegociáveis
 1. Dado de saúde é dado pessoal sensível. Nunca tratar sem `ConsentRecord` ativo para a finalidade.
 2. Nunca vender ou compartilhar dados de saúde. Sem SDKs de publicidade, sem trackers de terceiros.
-3. Envio ao LLM exige consentimento próprio (padrão desligado) e envio mínimo.
+3. Revogada (ADR-0030): sem IA. Nenhum dado é enviado a serviço de IA ou LLM; reintroduzir exige nova ADR.
 4. Menores de 18 não criam conta e não têm dado persistido.
-5. Nunca logar conteúdo de saúde, notas, alimentação, medidas ou mensagens da IA. Só metadados.
+5. Nunca logar conteúdo de saúde, notas, alimentação ou medidas. Só metadados.
 6. Nunca usar dados reais em desenvolvimento (apenas seed sintético). Nunca commitar segredos.
-7. Todo dado exibido tem selo: MEDIDO | INFORMADO | ESTIMADO | INFERIDO | RECOMENDADO | DEMO.
+7. Todo dado exibido tem selo: MEDIDO | INFORMADO | ESTIMADO | INFERIDO | DEMO.
 8. Nunca afirmar estado cerebral, nível de neurotransmissor, liberação de substância, transtorno
    ou diagnóstico.
 9. Sinais de risco → orientação profissional; emergência SAMU 192; apoio emocional CVV 188.
@@ -36,7 +36,7 @@ interface ou resposta de IA pode contradizer isso.
 ## Stack
 Next.js (App Router) · React · TypeScript strict · Tailwind · React Three Fiber (sem Drei, ADR-0026) · Recharts ·
 PostgreSQL · Prisma · auth próprio (ADR-0014; Auth.js descartado) · Zod · Vitest · Playwright · pnpm.
-Adaptadores trocáveis: `LlmProvider`, `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQueue`,
+Adaptadores trocáveis: `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQueue`,
 `AgeSignalProvider`, `WearableProvider`. Módulos em `src/modules/<dominio>`.
 
 ## Armadilhas conhecidas (não ignore)
@@ -65,7 +65,7 @@ Adaptadores trocáveis: `LlmProvider`, `KmsProvider`, `StorageProvider`, `MailPr
 - Antes de encerrar: `pnpm lint && pnpm typecheck && pnpm test`.
 - Decisões → `docs/DECISIONS.md`. Dívida legal → marcar `LEGAL-REVIEW` e registrar em
   `docs/legal/OPEN_ISSUES.md`.
-- Ao tocar em dados sensíveis, auth, consentimento, IA, exportação ou logs, rode o subagente
+- Ao tocar em dados sensíveis, auth, consentimento, exportação ou logs, rode o subagente
   `privacy-reviewer` antes de finalizar.
 
 ## Definition of Done

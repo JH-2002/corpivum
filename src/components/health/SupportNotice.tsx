@@ -2,7 +2,7 @@ import { HeartHandshake } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 /**
- * Orientação de apoio (§48, LEG-I07, CLAUDE.md regra 9): CVV 188 e SAMU 192. Texto do namespace
+ * Orientação de apoio (§48, LEG-M04, CLAUDE.md regra 9): CVV 188 e SAMU 192. Texto do namespace
  * `disclaimer.*` (revisão jurídica e clínica, OI-09). Não avalia risco nem dá conselho.
  */
 export function SupportNotice({ emphasis = false }: { emphasis?: boolean }) {

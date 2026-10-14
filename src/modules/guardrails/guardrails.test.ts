@@ -4,7 +4,6 @@ import {
   checkCalorieEstimate,
   checkCalorieTarget,
   checkGoal,
-  checkRecommendationTopic,
   checkWeightGoal,
   GUARDRAIL_RULES,
   NUTRITION_RULES,
@@ -93,18 +92,6 @@ describe('meta calórica (LEG-M07)', () => {
       reasons: ['calorie_target_below_floor'],
     });
     expect(checkCalorieTarget(GUARDRAIL_RULES.minDailyKcal)).toEqual({ ok: true });
-  });
-});
-
-describe('temas de recomendação (§28)', () => {
-  it('só sono, rotina, hábitos, movimento, hidratação, pausas e registro', () => {
-    expect(checkRecommendationTopic('sleep')).toEqual({ ok: true });
-    for (const topic of ['weight_loss', 'fasting', 'diet', 'calorie_restriction', 'appearance']) {
-      expect(checkRecommendationTopic(topic)).toEqual({
-        ok: false,
-        reasons: ['topic_not_allowed'],
-      });
-    }
   });
 });
 

@@ -1,12 +1,13 @@
 ---
 name: privacy-reviewer
-description: Revisa mudanças que tocam dados sensíveis, consentimento, autenticação, IA, exportação, retenção ou logs.
+description: Revisa mudanças que tocam dados sensíveis, consentimento, autenticação, exportação, retenção ou logs.
 ---
 Revise o diff atual contra docs/LEGAL_REQUIREMENTS.md. Procure:
 
-- dado de saúde, diário, medicamento ou mensagem da IA em log, erro ou telemetria (LEG-R04);
+- dado de saúde, nota, alimentação ou medida em log, erro ou telemetria (LEG-R04);
 - tratamento de dado de saúde sem checagem de ConsentRecord ativo para a finalidade (LEG-C*);
-- envio ao LLM sem consentimento de IA ou além do mínimo (LEG-I01/I02);
+- qualquer envio de dado a serviço de IA ou LLM, ou finalidade de consentimento revogada (`ai_sharing`,
+  `international_transfer`) em uso: proibidos desde o ADR-0030;
 - campo sensível gravado sem criptografia de campo (LEG-S02);
 - consulta a tabela de usuário fora de transação com `SET LOCAL app.user_id`, ou uso do papel
   `app_migrator`/superusuário em runtime (LEG-S03);

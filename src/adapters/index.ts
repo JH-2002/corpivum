@@ -2,7 +2,6 @@ import { getEnv, type Env } from '@/lib/env';
 import { createAgeSignalProvider, type AgeSignalProvider } from './age-signal';
 import { createJobQueue, type JobQueue } from './jobs';
 import { createKmsProvider, type KmsProvider } from './kms';
-import { createLlmProvider, type LlmProvider } from './llm';
 import { createMailProvider, type MailProvider } from './mail';
 import { createStorageProvider, type StorageProvider } from './storage';
 import { createWearableProvider, type WearableProvider } from './wearable';
@@ -12,7 +11,6 @@ import { createWearableProvider, type WearableProvider } from './wearable';
  * implementações fake/locais são recusadas por `parseEnv`. Somente servidor.
  */
 export interface Adapters {
-  llm: LlmProvider;
   kms: KmsProvider;
   storage: StorageProvider;
   mail: MailProvider;
@@ -23,7 +21,6 @@ export interface Adapters {
 
 export function createAdapters(env: Env): Adapters {
   return {
-    llm: createLlmProvider(env),
     kms: createKmsProvider(env),
     storage: createStorageProvider(env),
     mail: createMailProvider(env),

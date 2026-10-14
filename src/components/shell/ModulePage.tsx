@@ -17,7 +17,6 @@ export type PageKey =
   | 'goals'
   | 'timeline'
   | 'twin'
-  | 'ai'
   | 'reports'
   | 'settings'
   | 'privacy';

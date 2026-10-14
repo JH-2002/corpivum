@@ -9,7 +9,6 @@ export const ROUTES = [
   { path: '/metas', title: 'Metas' },
   { path: '/timeline', title: 'Timeline' },
   { path: '/twin', title: 'Health Twin' },
-  { path: '/ia', title: 'HealthMind AI' },
   { path: '/relatorios', title: 'Relatórios' },
   { path: '/configuracoes', title: 'Configurações' },
   { path: '/configuracoes/seguranca', title: 'Configurações' },

@@ -17,7 +17,7 @@
 | Anonimização | Opção de anonimizar para uso estatístico | LEG-D05 |
 | Informação sobre compartilhamento | Página de subprocessadores | LEG-D06 |
 | Revogação de consentimento | Central de Privacidade, 1–2 cliques, efeito imediato | LEG-C04 |
-| Revisão de decisão automatizada | Botão "pedir revisão" no Health Score e recomendações | LEG-D08 |
+| Revisão de decisão automatizada | Botão "pedir revisão" no Índice de Bem-Estar (Health Score) | LEG-D08 |
 
 ## Pedidos fora do app (e-mail ao encarregado)
 1. Registrar o pedido (`PrivacyRequest`) sem copiar dados de saúde para e-mail ou ticket.

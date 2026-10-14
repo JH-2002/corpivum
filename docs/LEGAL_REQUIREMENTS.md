@@ -1,8 +1,10 @@
-# Requisitos legais rastreáveis — HealthMind 360 (v4)
+# Requisitos legais rastreáveis — HealthMind 360 (v5)
 Status: RASCUNHO técnico. Validação jurídica pendente (`LEGAL-REVIEW`).
 Este documento traduz requisitos legais em requisitos técnicos. **Não é parecer jurídico.**
 v4 (ADR-0027): reorientação para o desenvolvimento corporal. LEG-M02 e LEG-M05 revogados; LEG-M04 reescrito;
 novos LEG-M06, LEG-M07 e LEG-M08. IDs revogados não são reaproveitados.
+v5 (ADR-0030): sem assistente de IA e sem recomendações automáticas. LEG-I01 a LEG-I08 revogados; itens (2) e
+(3) de LEG-C02 revogados; LEG-M04 e LEG-M08 reescritos sem recomendações.
 
 ## A. Matriz de bases legais (LGPD)
 
@@ -10,7 +12,6 @@ novos LEG-M06, LEG-M07 e LEG-M08. IDs revogados não são reaproveitados.
 |---|---|---|
 | Conta e autenticação (nome, e-mail, credenciais) | Execução de contrato (art. 7º, V) | Dados não sensíveis |
 | Dados de saúde e bem-estar (peso, medidas, sono, hábitos, alimentação, atividade informados) | **Consentimento específico e destacado (art. 11, I)** | A "tutela da saúde" (art. 11, II, f) é restrita a procedimentos por profissionais/serviços de saúde ou autoridade sanitária; não presumir que se aplica |
-| Envio de dados ao provedor de LLM | Consentimento próprio, separado, padrão desligado | Provedor fora do Brasil: art. 33 e regulamento da ANPD sobre transferência internacional |
 | Registros de acesso (IP + data/hora) | Obrigação legal (Marco Civil, art. 15 — 6 meses) **se aplicável** | O art. 15 alcança provedor de aplicação constituído como pessoa jurídica com fins econômicos. Depende da definição do controlador (ver LEG-R02) |
 | Segurança da conta e prevenção a abuso | Legítimo interesse (art. 7º, IX) | Somente dados não sensíveis |
 | Métricas de produto | Anonimizado/agregado; opt-in se houver identificador | Sem trackers de terceiros |
@@ -24,13 +25,14 @@ econômica (art. 11, §4º). Sem venda, sem publicidade, sem data brokers.
 
 ### B1. Consentimento
 - LEG-C01 Entidade `ConsentRecord` (user_id, purpose, policy_version, text_hash, granted_at, revoked_at).
-- LEG-C02 Finalidades separadas: (1) dados de saúde para o funcionamento do app; (2) compartilhamento com IA;
-  (3) transferência internacional (se aplicável); (4) comunicações de marketing; (5) métricas de produto com
-  identificador. Cada uma com checkbox próprio, nunca pré-marcado.
+- LEG-C02 Finalidades separadas: (1) dados de saúde para o funcionamento do app; (2) **revogado (ADR-0030)**:
+  compartilhamento com IA; (3) **revogado (ADR-0030)**: transferência internacional por consentimento; (4)
+  comunicações de marketing; (5) métricas de produto com identificador. Cada uma com checkbox próprio, nunca
+  pré-marcado. A numeração não muda; reintroduzir uma finalidade exige nova ADR e nova versão do consentimento.
 - LEG-C03 Consentimento genérico é inválido: cada texto descreve finalidade, dados e consequências.
 - LEG-C04 Revogar é tão fácil quanto conceder (Central de Privacidade, 1–2 cliques). A revogação interrompe
-  imediatamente o tratamento futuro correspondente (inclusive a IA).
-- LEG-C05 Recusar IA, marketing ou métricas não bloqueia o restante do app.
+  imediatamente o tratamento futuro correspondente.
+- LEG-C05 Recusar marketing ou métricas não bloqueia o restante do app.
 - LEG-C06 Nova versão substancial de política/consentimento → reconsentimento antes de continuar.
 
 ### B2. Direitos do titular (art. 18) — Central de Privacidade
@@ -45,8 +47,8 @@ econômica (art. 11, §4º). Sem venda, sem publicidade, sem data brokers.
 - LEG-D06 Informação sobre compartilhamento: página pública e na conta com subprocessadores e finalidades.
 - LEG-D07 Registro de cada pedido (`PrivacyRequest`) com status e prazos: confirmação imediata em formato
   simplificado; declaração completa em até 15 dias (art. 19, II).
-- LEG-D08 Revisão de decisões automatizadas (art. 20): Health Score e recomendações têm explicação de critérios
-  e canal "pedir revisão".
+- LEG-D08 Revisão de decisões automatizadas (art. 20): o Índice de Bem-Estar (Health Score) tem explicação de
+  critérios e canal "pedir revisão". Não há recomendações automáticas (ADR-0030).
 
 ### B3. Crianças e adolescentes
 Contexto: o ECA Digital (Lei 15.211/2025), fiscalizado pela ANPD, alcança serviços digitais com acesso provável
@@ -65,8 +67,8 @@ por menores. A LGPD (art. 14) exige melhor interesse e consentimento parental pa
 
 ### B4. Segurança (arts. 46–49)
 - LEG-S01 TLS em todo tráfego; criptografia em repouso; criptografia de campo nos campos sensíveis (LEG-S02).
-- LEG-S02 Campos sensíveis criptografados (AES-256-GCM, envelope via `KmsProvider`): notas livres dos registros
-  e mensagens da IA. Campos criptografados não são pesquisáveis no banco: no MVP não há busca textual
+- LEG-S02 Campos sensíveis criptografados (AES-256-GCM, envelope via `KmsProvider`): notas livres dos registros.
+  Campos criptografados não são pesquisáveis no banco: no MVP não há busca textual
   no conteúdo desses campos.
 - LEG-S03 RLS no PostgreSQL + autorização na aplicação. Runtime conecta como `app_user` (não é dono das tabelas,
   sem BYPASSRLS); migrações como `app_migrator`. Toda consulta a dados de usuário roda em transação com
@@ -85,32 +87,31 @@ por menores. A LGPD (art. 14) exige melhor interesse e consentimento parental pa
 - LEG-S09 Varredura de dependências e SAST no CI.
 - LEG-S10 Residência de dados: banco, storage, filas, jobs **e execução das funções/servidores** em região no
   Brasil. Todo serviço que processe dados fora do Brasil (inclusive logs da plataforma de hospedagem, e-mail,
-  monitoramento de erros e LLM) consta em docs/privacy/SUBPROCESSORS.md com finalidade, região e dados envolvidos.
+  monitoramento de erros) consta em docs/privacy/SUBPROCESSORS.md com finalidade, região e dados envolvidos.
 
 ### B5. Governança documental (rascunhos para revisão jurídica)
 - LEG-G01 docs/privacy/ROPA.md — registro das operações de tratamento (art. 37).
 - LEG-G02 docs/privacy/RIPD.md — relatório de impacto (art. 38).
 - LEG-G03 Encarregado (art. 41): página pública com canal de contato, nome como `{{ENCARREGADO}}`.
 - LEG-G04 Rascunhos com placeholders `{{...}}`: Política de Privacidade, Termos de Uso, Aviso de Consentimento
-  por finalidade, Política de Cookies, Aviso de IA, lista de subprocessadores. Cada um versionado
+  por finalidade, Política de Cookies, lista de subprocessadores. Cada um versionado
   (`PolicyVersion`) e marcado "RASCUNHO — revisão jurídica obrigatória".
 - LEG-G05 docs/INTENDED_USE.md — declaração de finalidade pretendida (ver B7).
 
-### B6. IA (HealthMind AI)
-- LEG-I01 Sem consentimento de IA ativo, nenhum dado é enviado ao LLM e o chat explica como ativar.
-- LEG-I02 Minimização: enviar agregados e resumos; texto bruto de notas só se o usuário selecionar explicitamente
-  o trecho/período. Painel "o que a IA verá".
-- LEG-I03 Provedor via `LlmProvider`, com contrato de tratamento (DPA), sem uso para treino, **retenção zero ou
-  a menor disponível no provedor (inclusive logs de abuso), com prazo documentado**, e região documentada.
-  Registrar em SUBPROCESSORS.md.
-- LEG-I04 Camada de saída: bloquear/reescrever diagnósticos, afirmações de neuroquímica, recomendação de dose ou
-  mudança de medicação, prescrição de dieta ou treino (LEG-M08) e conteúdo que viole LEG-M04, M06 ou M07.
-  Linguagem de associação, nunca de causa/diagnóstico.
-- LEG-I05 Toda resposta cita os dados usados e rotula "Gerado por IA" + selo INFERIDO/RECOMENDADO.
-- LEG-I06 Defesa contra prompt injection (notas e mensagens são entrada não confiável); a IA não executa ações nem
-  altera dados.
-- LEG-I07 Detecção de sinais de risco → interromper o fluxo normal e mostrar orientação (CVV 188, SAMU 192).
-- LEG-I08 Cota por usuário e rate limit. Logs só com metadados (tokens, latência, modelo), nunca conteúdo.
+### B6. IA (revogada)
+O produto não tem assistente de IA nem envia dados a modelo de linguagem (ADR-0030). Os IDs ficam reservados.
+Reintroduzir IA exige nova ADR, novo consentimento próprio, revisão do RIPD, ROPA e SUBPROCESSORS e requisitos
+com IDs novos.
+- LEG-I01 **Revogado (ADR-0030).** Consentimento de IA antes de enviar dados ao LLM.
+- LEG-I02 **Revogado (ADR-0030).** Minimização do envio à IA e painel "o que a IA verá".
+- LEG-I03 **Revogado (ADR-0030).** Provedor de LLM com DPA, sem treino e retenção mínima.
+- LEG-I04 **Revogado (ADR-0030).** Camada de saída da IA. A proibição de diagnóstico, neuroquímica, dose e
+  prescrição continua em LEG-M01, LEG-M03, LEG-M04 e LEG-M08 para todo texto do app.
+- LEG-I05 **Revogado (ADR-0030).** Rótulo "Gerado por IA" e citação dos dados nas respostas.
+- LEG-I06 **Revogado (ADR-0030).** Defesa contra prompt injection.
+- LEG-I07 **Revogado (ADR-0030).** Detecção de sinais de risco no chat. A orientação de apoio (CVV 188, SAMU 192)
+  continua contextual, por LEG-M04 e CLAUDE.md regra 9.
+- LEG-I08 **Revogado (ADR-0030).** Cota e rate limit da IA; metadados de IA em log.
 
 ### B7. Posicionamento regulatório (ANVISA / dispositivo médico)
 - LEG-M01 INTENDED_USE.md: bem-estar e autoacompanhamento; não diagnostica, não trata, não monitora doença, não
@@ -119,17 +120,18 @@ por menores. A LGPD (art. 14) exige melhor interesse e consentimento parental pa
 - LEG-M03 Teste automatizado que falha se strings de interface contiverem alegações clínicas proibidas. O teste
   ignora o namespace i18n `disclaimer.*`, reservado aos avisos obrigatórios (que contêm negações como
   "não diagnostica doenças"). Qualquer chave nova em `disclaimer.*` exige revisão no PR.
-- LEG-M04 **Requisito central.** Guardrails de metas e recomendações, em módulo puro testado
-  (`src/modules/guardrails`) e usado por toda meta, recomendação e resposta de IA:
-  - não aceitar nem sugerir meta de peso que leve a IMC abaixo de 18,5;
-  - não aceitar nem sugerir ritmo de perda de peso acima do limite semanal definido no módulo;
-  - não sugerir déficit calórico agressivo nem jejum prolongado;
+- LEG-M04 **Requisito central.** Guardrails de metas e de alimentação, em módulo puro testado
+  (`src/modules/guardrails`) e usado por toda meta e todo registro com caloria. O app não faz recomendações
+  automáticas (ADR-0030):
+  - não aceitar meta de peso que leve a IMC abaixo de 18,5;
+  - não aceitar ritmo de perda de peso acima do limite semanal definido no módulo;
+  - não sugerir déficit calórico nem jejum, e não aceitar meta calórica abaixo do piso;
   - meta bloqueada ou sinal de padrão alimentar preocupante → mensagem acolhedora com orientação para buscar
     profissional de saúde (e CVV 188 / SAMU 192, §48), sem números restritivos e sem propor alternativa
     "mais leve" da mesma restrição.
   Limiares numéricos: rascunho com revisão clínica obrigatória (`LEGAL-REVIEW`, OI-23).
 - LEG-M05 **Revogado (ADR-0027).** Cérebro 3D e indicadores neuroquímicos saíram do produto. Continua proibido
-  afirmar estado cerebral ou nível de neurotransmissor (LEG-M03, LEG-I04).
+  afirmar estado cerebral ou nível de neurotransmissor (LEG-M03).
 - LEG-M06 Imagem corporal: nenhum texto, cor ou visual julga o corpo. Sem "corpo ideal", sem classificação ou faixa
   de IMC na interface, sem comparação com outras pessoas ou com médias da população, sem antes/depois com juízo
   (diferenças só em número, seta e palavra), sem streak ou recompensa ligados a peso, opção de ocultar peso e
@@ -139,7 +141,8 @@ por menores. A LGPD (art. 14) exige melhor interesse e consentimento parental pa
   recomendação de jejum, dieta restritiva ou compensação por exercício.
 - LEG-M08 Profissões regulamentadas: o app não prescreve dieta, plano alimentar nem treino (atividades de
   nutricionista, Lei 8.234/1991, e de profissional de educação física, Lei 9.696/1998). Registra o que a pessoa
-  informa e sugere só ações gerais de rotina. `LEGAL-REVIEW`: limite entre sugestão geral e prescrição (OI-23).
+  informa e não sugere ações (sem recomendações automáticas, ADR-0030). Textos educativos gerais continuam
+  `LEGAL-REVIEW` (OI-23).
 
 ### B8. Retenção e logs
 - LEG-R01 Dados de saúde: enquanto a conta existir; depois, LEG-D04.
@@ -161,9 +164,10 @@ por menores. A LGPD (art. 14) exige melhor interesse e consentimento parental pa
 ## C. Pontos para validação jurídica
 1. Base legal para dados de saúde em app de bem-estar (consentimento vs. outras hipóteses).
 2. Suficiência do age gate de 18+ frente ao ECA Digital e à fiscalização da ANPD.
-3. Transferência internacional para o provedor de LLM e demais subprocessadores fora do Brasil.
+3. Transferência internacional para subprocessadores fora do Brasil (e-mail transacional e monitoramento de
+   erros, sem dado de saúde): base do art. 33 sem consentimento do titular (OI-03).
 4. Prazos de retenção (prova de consentimento, backups, logs) e de comunicação de incidentes.
-5. Enquadramento regulatório (SaMD) das funcionalidades de metas e recomendações; limite entre sugestão geral
-   e prescrição de dieta ou treino (profissões regulamentadas, LEG-M08).
+5. Enquadramento regulatório (SaMD) das funcionalidades de metas; limite entre texto educativo geral e
+   prescrição de dieta ou treino (profissões regulamentadas, LEG-M08).
 6. Definição do controlador (pessoa física ou jurídica) e, a partir dela, aplicabilidade do art. 15 do Marco Civil.
 7. Textos finais de política, termos e consentimentos.

@@ -1,7 +1,8 @@
 # HealthMind 360
 
-Plataforma pessoal de acompanhamento de **bem-estar** (sono, humor, hábitos, corpo, alimentação, atividade,
-diário e medicamentos informados pela própria pessoa), com visualização 3D e assistente de IA opcional.
+Plataforma pessoal de acompanhamento do desenvolvimento corporal com foco em **bem-estar** (corpo e medidas,
+sono, hábitos, alimentação, atividade física e metas informados pela própria pessoa), com twin 3D do corpo e
+resumos por regras. Sem assistente de IA (ADR-0030).
 Público: adultos (18+) no Brasil, em pt-BR.
 
 > **Não é dispositivo médico.** Não diagnostica, não trata, não monitora doenças, não sugere doses e não
@@ -36,7 +37,7 @@ pnpm dev
 src/app/              rotas (App Router); (app)/ = shell autenticado
 src/components/       ui/ (base), shell/ (sidebar, header, navegação), theme/
 src/modules/<dominio> módulos de domínio (ver src/modules/README.md)
-src/adapters/         LlmProvider, KmsProvider, StorageProvider, MailProvider, JobQueue,
+src/adapters/         KmsProvider, StorageProvider, MailProvider, JobQueue,
                       AgeSignalProvider, WearableProvider (+ implementações locais)
 src/lib/              env (Zod), logger (só metadados), erros tipados, período
 src/styles/           design tokens (CSS variables) e Tailwind

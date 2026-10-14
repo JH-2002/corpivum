@@ -8,7 +8,6 @@
 | Chave mestra (KEK) do KMS | `{{KMS}}` (produção); `KMS_LOCAL_MASTER_KEY` só em dev | `{{PERIODICIDADE}}` ou em incidente | Recifrar DEKs |
 | Credenciais do banco (`app_user`, `app_migrator`) | Gerenciador de segredos `{{SEGREDOS}}` | `{{PERIODICIDADE}}` | Reinício do runtime |
 | Segredo de sessão / CSRF | `{{SEGREDOS}}` | Em incidente | Usuários precisam entrar de novo |
-| Chave do provedor de LLM | `{{SEGREDOS}}` | `{{PERIODICIDADE}}` | Nenhum |
 | Chave do provedor de e-mail | `{{SEGREDOS}}` | `{{PERIODICIDADE}}` | Nenhum |
 
 Segredos **nunca** no repositório (CLAUDE.md regra 6; gitleaks na CI).

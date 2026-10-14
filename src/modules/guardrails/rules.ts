@@ -4,7 +4,7 @@ import { bmi } from '@/modules/body';
 
 /**
  * Guardrails de imagem corporal e alimentação (LEG-M04, LEG-M07, ADR-0027). Funções puras, usadas por
- * metas, recomendações e respostas de IA antes de aceitar ou sugerir qualquer alvo.
+ * metas, alimentação, timeline e hábitos antes de aceitar qualquer alvo, caloria, marco ou sequência.
  *
  * `LEGAL-REVIEW` + revisão clínica obrigatória (OI-23): os limiares abaixo são rascunho conservador. Mudar
  * um limiar muda o que o app aceita: atualize os testes e o OI.
@@ -21,18 +21,6 @@ export const GUARDRAIL_RULES = Object.freeze({
   minDailyKcal: 1500,
 });
 
-/** Temas que uma recomendação pode ter (§28). Fora disso, nada é sugerido. */
-export const ALLOWED_RECOMMENDATION_TOPICS = [
-  'sleep',
-  'routine',
-  'habits',
-  'movement',
-  'hydration',
-  'breaks',
-  'logging',
-] as const;
-export type RecommendationTopic = (typeof ALLOWED_RECOMMENDATION_TOPICS)[number];
-
 export const GUARDRAIL_REASONS = [
   'target_below_safe_range',
   'pace_too_fast',
@@ -43,7 +31,6 @@ export const GUARDRAIL_REASONS = [
   'estimate_disabled',
   'invalid_date',
   'invalid_input',
-  'topic_not_allowed',
 ] as const;
 export type GuardrailReason = (typeof GUARDRAIL_REASONS)[number];
 
@@ -119,15 +106,6 @@ export function checkWeightGoal(input: WeightGoalInput): GuardrailResult {
 export function checkCalorieTarget(kcalPerDay: number): GuardrailResult {
   if (!positive(kcalPerDay)) return result(['invalid_input']);
   return result(kcalPerDay < GUARDRAIL_RULES.minDailyKcal ? ['calorie_target_below_floor'] : []);
-}
-
-/** Tema de recomendação (§28, LEG-M04, LEG-M07): sem perda de peso, jejum, dieta ou aparência. */
-export function checkRecommendationTopic(topic: string): GuardrailResult {
-  return result(
-    (ALLOWED_RECOMMENDATION_TOPICS as readonly string[]).includes(topic)
-      ? []
-      : ['topic_not_allowed'],
-  );
 }
 
 /** Uso da estimativa calórica (LEG-M07): desligada por padrão; sem ela, nenhuma caloria é aceita. */

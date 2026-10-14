@@ -91,7 +91,6 @@ describe('parseEnv', () => {
     it('recusa adaptadores fake/local', () => {
       expect(issuesOf(prod)).toEqual(
         expect.arrayContaining([
-          expect.stringContaining('LLM_PROVIDER'),
           expect.stringContaining('KMS_PROVIDER'),
           expect.stringContaining('STORAGE_PROVIDER'),
           expect.stringContaining('MAIL_PROVIDER'),

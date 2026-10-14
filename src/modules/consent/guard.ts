@@ -4,7 +4,7 @@ import { ConsentRequiredError } from '@/lib/errors';
 import type { ConsentPurpose } from './catalog';
 
 /**
- * Guard de tratamento (CLAUDE.md regra 1; LEG-C04, LEG-I01). Todo tratamento de dado que dependa de
+ * Guard de tratamento (CLAUDE.md regra 1; LEG-C04). Todo tratamento de dado que dependa de
  * consentimento passa por aqui, NA MESMA TRANSAÇÃO do acesso: revogar vale para a próxima operação.
  * A partir da Fase 2, as políticas RLS das tabelas de saúde repetem a checagem no banco
  * (`app.has_active_consent('health_data')`), então um esquecimento na aplicação também falha fechado.

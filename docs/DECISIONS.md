@@ -823,3 +823,45 @@ requisito central (LEG-M04, M06, M07, M08): o app registra e descreve, não pres
 **Consequências.** O Índice de Bem-Estar segue sem atividade (V3 em OI-28). ROPA T2/T7 e RIPD R15 atualizados.
 Textos novos (`nutrition.*`, `activity.*`, `goals.*`, `reminders.*`, `timeline.*`, `insights.*`) são RASCUNHO
 (`LEGAL-REVIEW`, OI-21, OI-23).
+
+## ADR-0030 — Remoção do assistente de IA e das recomendações automáticas
+**Contexto.** Decisão de produto (responsável pelo produto, 2026-10-14): o HealthMind 360 não terá assistente de IA
+(HealthMind AI) nem módulo de recomendações automáticas. Nada disso tinha sido implementado: havia o item de
+navegação e a página `/ia` (placeholder), os stubs `src/modules/ai` e `src/modules/recommendations`, o adaptador
+`LlmProvider` só com a implementação fake, a variável `LLM_PROVIDER`, o motivo de guardrail `topic_not_allowed`
+(`checkRecommendationTopic`), o selo RECOMENDADO (nenhuma tela o exibia) e as finalidades `ai_sharing` e
+`international_transfer`, já no enum do banco mas nunca oferecidas (ADR-0019). Nenhum dado sai do Brasil para IA.
+**Decisão.**
+- **Código:** saem o item "HealthMind AI", a rota `/ia` (redireciona para `/inicio`, como as rotas do ADR-0027), os
+  textos `nav.ai`, `pages.ai.*` e `disclaimer.aiGenerated`, os dois stubs, o `LlmProvider`, `LLM_PROVIDER`, os
+  metadados de IA do logger (`model`, `inputTokens`, `outputTokens`), `ALLOWED_RECOMMENDATION_TOPICS` e
+  `checkRecommendationTopic`, e o subprocessador `llm`.
+- **Selo RECOMENDADO:** sai do `ConfidenceBadge`, do i18n e da regra 7 do CLAUDE.md. Os selos passam a ser MEDIDO,
+  INFORMADO, ESTIMADO, INFERIDO e DEMO.
+- **Consentimento:** `ai_sharing` e `international_transfer` saem do catálogo (`CONSENT_PURPOSES`,
+  `POLICY_DOCUMENTS`). O Postgres não remove valor de enum sem recriar o tipo, e recriar `consent_purpose`
+  exigiria recriar `app.has_active_consent` e todas as políticas RLS das Fases 2 e 4 que a chamam. Por isso os
+  valores ficam **dormentes** no enum (comentados no `schema.prisma`) e a migração `revoga_ia_transferencia` acrescenta
+  CHECKs em `consent_records` e `policy_versions` que proíbem usá-los. O serviço só lê versões dos documentos
+  vigentes. Nunca houve linha com esses valores, então não há o que migrar e o texto do consentimento de saúde
+  não muda (LEG-C06).
+- **Requisitos:** LEG-I01 a LEG-I08 revogados (IDs não reaproveitados); itens (2) e (3) de LEG-C02 revogados sem
+  renumerar; LEG-C04, C05, D08, S02, S10, G04, M04 e M08 ajustados (LEGAL_REQUIREMENTS v5). PRODUCT_SPEC (§27 e §28
+  removidos), SPEC_ADDENDUM v5, INTENDED_USE v0.3, ROPA v0.6 (T3 removido), RIPD v0.5 (R3 encerrado, R4 só e-mail e
+  erros), SUBPROCESSORS v0.3 e CLAUDE.md (regra 3 revogada, regras 5 e 7) refletem o novo escopo.
+- **Ficam:** os resumos por regras (ADR-0021, ADR-0025, ADR-0029), que descrevem o período sem propor ações; o
+  INFERIDO das correlações; o apoio de crise contextual (fixo na tela de corpo, `GuardrailNotice` quando um
+  guardrail de segurança dispara nas metas de peso e de calorias, e "Precisa de ajuda?" no menu de ajuda), agora
+  apoiado em LEG-M04 e na regra 9. Sem chat, não há detecção de risco em texto livre. A alimentação não ganha aviso
+  fixo próprio (decisão do produto, 2026-10-14).
+- **Fases:** a Fase 5 (`docs/prompts/fase-5-ia-recomendacoes.md`) fica cancelada. As Fases 6 e 7 **não são
+  renumeradas**: são citadas em ADRs, OPEN_ISSUES, RIPD e runbooks, e renumerar quebraria essas referências, como
+  aconteceria com IDs reaproveitados.
+**Consequências.** O ADR-0007 continua valendo para os demais adaptadores; a parte do `LlmProvider` deixa de existir.
+As partes de IA dos ADRs 0019 (finalidades da Fase 5), 0021 (detecção no texto na Fase 5) e 0027 (modo de risco da IA,
+metas e IA usando guardrails) deixam de existir; os ADRs antigos não são editados. OI-03 continua aberta só para
+e-mail e monitoramento de erros, cuja transferência não pode se apoiar em consentimento do titular; os Termos v1
+ainda citam "Sugestões do app" e serão versionados (OI-29); as partes de IA
+de OI-07, OI-08, OI-09, OI-21 e OI-23 foram fechadas por escopo removido. Reintroduzir IA ou recomendações exige nova
+ADR, nova finalidade e texto de consentimento, revisão do RIPD, do ROPA e de SUBPROCESSORS e requisitos com IDs
+novos.

@@ -5,6 +5,7 @@
 > Fórmulas, textos de saúde e fluxos de risco dependem de revisão clínica antes do lançamento.
 > **ADR-0027 (reorientação):** o produto foca no desenvolvimento corporal. Humor e energia, diário, cérebro 3D,
 > indicadores neuroquímicos e medicamentos foram removidos; as seções correspondentes ficam marcadas.
+> **ADR-0030:** sem assistente de IA (HealthMind AI) e sem recomendações automáticas; §27 e §28 ficam marcadas.
 
 ---
 
@@ -14,7 +15,7 @@
 HealthMind 360 é uma plataforma web pessoal de acompanhamento do desenvolvimento corporal, com foco em
 bem-estar. A pessoa registra peso e medidas, sono, hábitos, alimentação e atividade física, define metas próprias,
 e o app transforma esses registros em uma visão integrada: um dashboard do estado atual, um "Health Digital
-Twin" do corpo em 3D, uma linha do tempo pessoal, relatórios e um assistente de IA opcional. O app não prescreve
+Twin" do corpo em 3D, uma linha do tempo pessoal, resumos por regras e relatórios. O app não prescreve
 dieta nem treino (LEG-M08) e trata imagem corporal e alimentação com guardrails próprios (LEG-M04, M06, M07).
 
 Objetivos:
@@ -35,15 +36,16 @@ O produto não é desenhado nem divulgado para crianças ou adolescentes.
 2. Transparência: todo dado tem origem e nível de confiabilidade visíveis (§39).
 3. Registro rápido: qualquer registro diário em até 3 toques/cliques a partir do dashboard.
 4. Sem culpa: linguagem neutra, sem punição por dias sem registro e sem juízo sobre o corpo (LEG-M06).
-5. Privacidade por padrão: o mínimo de dados, IA desligada até a pessoa ativar.
+5. Privacidade por padrão: o mínimo de dados, nada enviado a terceiros para análise (sem IA, ADR-0030).
 6. Acessível e leve: funciona em celular modesto e com teclado/leitor de tela.
 
 ### §4 Escopo do MVP
 Dentro: conta e onboarding, dashboard, peso/medidas, sono, hábitos, alimentação (registro simples), atividade
-física, metas, timeline, corpo 3D, IA opcional, recomendações, relatórios, Central de Privacidade, modo demo.
+física, metas, timeline, corpo 3D, resumos por regras, relatórios, Central de Privacidade, modo demo.
 Fora do MVP: integrações com wearables e apps de saúde, cobrança, app nativo, compartilhamento com
 profissionais, comunidade/social, planos de dieta ou de treino (LEG-M08).
 Removidos (ADR-0027): humor e energia, diário, cérebro 3D, indicadores neuroquímicos, medicamentos.
+Removidos (ADR-0030): assistente de IA (HealthMind AI) e recomendações automáticas.
 
 ---
 
@@ -73,7 +75,7 @@ Título da página, seletor de período global (§10), atalho para registro ráp
 (perfil, configurações, Central de Privacidade, sair).
 
 ### §9 Sidebar
-Itens: Início, Corpo, Sono, Hábitos, Alimentação, Atividade, Metas, Timeline, Health Twin, HealthMind AI, Relatórios, Configurações. Item ativo com indicação visual além da cor.
+Itens: Início, Corpo, Sono, Hábitos, Alimentação, Atividade, Metas, Timeline, Health Twin, Relatórios, Configurações. Item ativo com indicação visual além da cor.
 
 ### §10 Seletor de período global
 Opções: 7 dias, 30 dias, 90 dias, 12 meses, personalizado. A escolha vale para dashboard, gráficos, twin e
@@ -164,20 +166,14 @@ prescreve treino (LEG-M08).
 
 ---
 
-## Parte V — Inteligência e saídas
+## Parte V — Resumos e saídas
 
 ### §27 HealthMind AI
-Chat opcional que conversa sobre os próprios dados da pessoa: resume períodos, aponta associações, sugere
-reflexões. Desligado até a pessoa ativar o consentimento específico. Mostra antes "o que a IA verá", cita os
-dados usados em cada resposta e rotula "Gerado por IA". Não diagnostica, não fala de doses, não faz afirmações
-neuroquímicas, não prescreve dieta nem treino e segue os guardrails de imagem corporal e alimentação. Em sinais
-de risco, interrompe e orienta (§48).
+**Removido (ADR-0030).** O produto não tem assistente de IA nem envia dados a modelo de linguagem.
 
 ### §28 Recomendações
-Cartões de sugestão gerados por regras (e opcionalmente refinados por IA), cada um com: Motivo (dados que
-levaram à sugestão), Ação, Dificuldade, Tempo estimado, Objetivo relacionado. A pessoa pode aceitar, adiar,
-dispensar ou pedir revisão. Temas permitidos: sono, rotina, hábitos, movimento, hidratação, pausas, registro.
-Nunca sobre perda de peso agressiva, restrição alimentar ou aparência (LEG-M04, M06, M07).
+**Removido (ADR-0030).** O app não gera sugestões automáticas. Os resumos por regras (§11.1, ADR-0025) descrevem o
+período, sem propor ações.
 
 ### §29 Relatórios
 Semanal, mensal e anual. Conteúdo: resumo por domínio, gráficos principais, metas, destaques. Exportação em
@@ -219,13 +215,13 @@ Substituído integralmente por `docs/LEGAL_REQUIREMENTS.md`.
 ### §37 Arquitetura
 Next.js (App Router), React, TypeScript strict, Tailwind, React Three Fiber + Drei, Recharts, Node.js,
 PostgreSQL, Prisma, Auth.js, Zod. Módulos por domínio em `src/modules/<dominio>`. Adaptadores trocáveis:
-LlmProvider, KmsProvider, StorageProvider, MailProvider, JobQueue, AgeSignalProvider, WearableProvider.
+KmsProvider, StorageProvider, MailProvider, JobQueue, AgeSignalProvider, WearableProvider.
 Jobs em fila para lembretes, relatórios e exportações. Hospedagem no Brasil.
 
 ### §38 Banco de dados
 Entidades principais: User, Profile, SleepEntry, Habit, HabitCheck, BodyMeasurement, MealEntry, WaterEntry,
-ActivityEntry, StrengthSet, Goal, Recommendation, AiConversation, AiMessage, Report, WellbeingScore,
-Notification. (MoodEntry, JournalEntry, Medication* e BrainIndicator removidos, ADR-0027.)
+ActivityEntry, StrengthSet, Goal, Report, WellbeingScore, Notification. (MoodEntry, JournalEntry, Medication* e
+BrainIndicator removidos, ADR-0027; Recommendation, AiConversation e AiMessage, ADR-0030.)
 Todas com id, user_id, created_at, updated_at. Campos sensíveis criptografados.
 
 ### §39 Níveis de confiabilidade
@@ -234,7 +230,7 @@ Todo dado exibido tem um selo:
 - **INFORMADO:** a pessoa registrou.
 - **ESTIMADO:** cálculo direto a partir de dados informados (ex.: IMC).
 - **INFERIDO:** padrão ou associação calculada (ex.: correlações).
-- **RECOMENDADO:** sugestão do sistema.
+(O selo RECOMENDADO saiu com as recomendações, ADR-0030.)
 Cada selo tem tooltip explicando o significado.
 
 ### §40 Demonstração
@@ -267,15 +263,16 @@ streaks ligados/desligados, perfil, segurança da conta.
 Fluxo curto de boas-vindas, criação de conta e escolha entre demo e dados próprios. Detalhado na §52 do adendo.
 
 ### §48 Alertas de risco e segurança do usuário
-Quando o chat indicar sofrimento intenso ou risco, ou quando um guardrail de imagem corporal ou alimentação
-disparar (LEG-M04, M06, M07), o app interrompe o fluxo normal e exibe orientação acolhedora para buscar
+Quando um guardrail de imagem corporal ou alimentação disparar (LEG-M04, M06, M07), por exemplo numa meta de
+peso ou de calorias bloqueada, o app interrompe o fluxo normal e exibe orientação acolhedora para buscar
 profissional de saúde, com CVV 188 (apoio emocional, 24h) e SAMU 192 (emergência), sem continuar dando
-conselhos. Acesso permanente "Precisa de ajuda?" no menu de ajuda.
+conselhos. A tela de corpo mostra a orientação de forma fixa, e há acesso permanente "Precisa de ajuda?" no menu
+de ajuda. Não há detecção de risco em texto livre (sem chat, ADR-0030).
 Textos revisados por profissional habilitado antes do lançamento.
 
 ### §49 Testes e qualidade
 Vitest para unidades e integração, Playwright para e2e, axe para acessibilidade, teste de isolamento entre
-usuários, teste de strings proibidas, suíte adversarial da IA.
+usuários, teste de strings proibidas, testes dos guardrails.
 
 ### §50 Roadmap futuro
 Integrações com wearables e plataformas de saúde (com novo consentimento), app mobile, compartilhamento

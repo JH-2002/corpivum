@@ -71,14 +71,14 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     pattern: new RegExp(
       `\\b(nivel|niveis|taxas?|quantidade|concentracao)\\s+(de\\s+|da\\s+|do\\s+)?(sua\\s+|seu\\s+)?${NEUROCHEMICALS}`,
     ),
-    reason: 'Nunca afirmar nível de neurotransmissor (regra 8, LEG-I04; ADR-0027).',
+    reason: 'Nunca afirmar nível de neurotransmissor (regra 8, LEG-M03; ADR-0027).',
   },
   {
     id: 'neurochemical-release',
     pattern: new RegExp(
       `\\b(libera\\w*|produz\\w*|aument\\w*|reduz\\w*|diminu\\w*|dispar\\w*|eleva\\w*)\\s+(\\w+\\s+){0,3}${NEUROCHEMICALS}|\\b${NEUROCHEMICALS}\\s+(\\w+\\s+){0,2}(liberad|produzid|aumentad|elevad|baix|alt)\\w*`,
     ),
-    reason: 'Nunca afirmar liberação ou alteração de substância (regra 8, LEG-I04; ADR-0027).',
+    reason: 'Nunca afirmar liberação ou alteração de substância (regra 8, LEG-M03; ADR-0027).',
   },
   {
     id: 'brain-state',
@@ -88,18 +88,18 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
   {
     id: 'dose-advice',
     pattern: /\b(dose|dosagem|posologia)\s+(recomendad|ideal|sugerid|cert|corret|adequad)\w*/,
-    reason: 'Sem sugestão de dose (LEG-I04; medicamentos fora do produto, ADR-0027).',
+    reason: 'Sem sugestão de dose (LEG-M03; medicamentos fora do produto, ADR-0027).',
   },
   {
     id: 'medication-change',
     pattern:
       /\b(aument\w*|reduz\w*|diminu\w*|ajust\w*|suspend\w*|interromp\w*|par[ea] de tomar|troqu\w*|substitu\w*)\s+(\w+\s+){0,3}(dose|dosagem|medicament\w*|remedio\w*|medicac\w*)/,
-    reason: 'Sem recomendação de mudança de medicação (LEG-I04).',
+    reason: 'Sem recomendação de mudança de medicação (LEG-M03).',
   },
   {
     id: 'drug-interaction',
     pattern: /\binterac(ao|oes)\s+(medicamentos\w*|entre\s+(medicamentos|remedios))/,
-    reason: 'Sem verificação de interações (LEG-I04).',
+    reason: 'Sem verificação de interações (LEG-M03).',
   },
   {
     id: 'replaces-professional',
@@ -135,7 +135,7 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
   {
     id: 'brain-assertion',
     pattern: /\b(seu\s+)?cerebro\s+(esta|fica|anda|ficou|estava)\b/,
-    reason: 'Nunca afirmar estado cerebral (regra 8, LEG-I04; ADR-0027).',
+    reason: 'Nunca afirmar estado cerebral (regra 8, LEG-M03; ADR-0027).',
   },
   {
     id: 'you-are-condition',
@@ -154,7 +154,7 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     id: 'causal-claim',
     pattern:
       /\b(causou|causam?|causad[oa]s?|causaram)\b|\bpor\s+causa\s+d|\bdevido\s+(a|ao|aos|as)\b|\bgracas\s+(a|ao|aos|as)\b|\bresult(ou|a|aram)\s+(em|n[oa]s?)\b|\bfez\s+(voce|seu|sua)\b|\bporque\s+voce\b|\b(melhor|pior)(a|ou|aram)\s+(o\s+|a\s+)?(seu|sua)\s+(humor|sono|energia|estresse|bem-estar)/,
-    reason: 'Descrever e associar, nunca atribuir causa (§32, LEG-I04, ADR-0025).',
+    reason: 'Descrever e associar, nunca atribuir causa (§32, LEG-M03, ADR-0025).',
   },
   {
     id: 'ideal-body',

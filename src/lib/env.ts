@@ -51,7 +51,6 @@ const envSchema = z
     /** Retenção das provas de consentimento e de pedidos (LEG-R03). `LEGAL-REVIEW` (OI-04). Mínimo 1 ano. */
     PROOF_RETENTION_DAYS: days.min(365).default(1825),
 
-    LLM_PROVIDER: z.enum(['fake']).default('fake'),
     KMS_PROVIDER: z.enum(['local']).default('local'),
     KMS_LOCAL_MASTER_KEY: z.string().optional(),
     STORAGE_PROVIDER: z.enum(['local']).default('local'),
@@ -110,7 +109,6 @@ const envSchema = z
     if (env.APP_ENV === 'production') {
       // Implementações locais/fake nunca rodam em produção.
       const devOnly = {
-        LLM_PROVIDER: 'fake',
         KMS_PROVIDER: 'local',
         STORAGE_PROVIDER: 'local',
         MAIL_PROVIDER: 'console',

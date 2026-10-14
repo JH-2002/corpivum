@@ -10,7 +10,6 @@ import { NoAgeSignalProvider } from './age-signal/none';
 import { createAdapters } from './index';
 import { MemoryJobQueue } from './jobs/memory';
 import { LocalKmsProvider } from './kms/local';
-import { FakeLlmProvider } from './llm/fake';
 import { ConsoleMailProvider } from './mail/console';
 import { LocalStorageProvider } from './storage/local';
 import { isValidStorageKey } from './storage/types';
@@ -36,7 +35,6 @@ describe('createAdapters', () => {
     });
     const adapters = createAdapters(env);
     expect(Object.fromEntries(Object.entries(adapters).map(([k, v]) => [k, v.id]))).toEqual({
-      llm: 'fake',
       kms: 'local',
       storage: 'local',
       mail: 'console',
@@ -44,26 +42,6 @@ describe('createAdapters', () => {
       ageSignal: 'none',
       wearable: 'disabled',
     });
-  });
-});
-
-describe('FakeLlmProvider', () => {
-  it('é determinístico e informa uso de tokens', async () => {
-    const llm = new FakeLlmProvider();
-    const request = {
-      messages: [{ role: 'user' as const, content: 'resuma minha semana' }],
-      maxOutputTokens: 50,
-    };
-    const a = await llm.complete(request);
-    const b = await llm.complete(request);
-    expect(a).toEqual(b);
-    expect(a.usage.inputTokens).toBe(3);
-    expect(a.model).toBe('fake-llm-v1');
-  });
-
-  it('respeita maxOutputTokens', async () => {
-    const result = await new FakeLlmProvider().complete({ messages: [], maxOutputTokens: 2 });
-    expect(result.usage.outputTokens).toBe(2);
   });
 });
 

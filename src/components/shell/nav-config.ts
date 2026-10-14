@@ -1,7 +1,6 @@
 import {
   Activity,
   Apple,
-  Bot,
   FileText,
   History,
   House,
@@ -26,7 +25,6 @@ export type NavKey =
   | 'goals'
   | 'timeline'
   | 'twin'
-  | 'ai'
   | 'reports'
   | 'settings'
   | 'privacy';
@@ -50,7 +48,6 @@ export const SIDEBAR_ITEMS: readonly NavItem[] = [
   { key: 'goals', href: '/metas', icon: Target },
   { key: 'timeline', href: '/timeline', icon: History },
   { key: 'twin', href: '/twin', icon: Orbit },
-  { key: 'ai', href: '/ia', icon: Bot },
   { key: 'reports', href: '/relatorios', icon: FileText },
   { key: 'settings', href: '/configuracoes', icon: Settings },
 ];

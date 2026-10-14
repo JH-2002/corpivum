@@ -143,16 +143,55 @@ describe('onboarding e escolhas por finalidade (LEG-C01–C03, C05)', () => {
     expect(state.health).toEqual({ status: 'missing' });
   });
 
-  it('finalidades não oferecidas (IA, transferência) são recusadas', async () => {
+  it('finalidades revogadas (IA, transferência, ADR-0030) são recusadas pelo serviço', async () => {
     const u = await onboarded([]);
-    expect(await u.service.grant(u.userId, 'ai_sharing')).toEqual({
-      ok: false,
-      error: 'unavailable',
-    });
-    expect(await u.service.grant(u.userId, 'international_transfer')).toEqual({
-      ok: false,
-      error: 'unavailable',
-    });
+    for (const purpose of ['ai_sharing', 'international_transfer']) {
+      expect(await u.service.grant(u.userId, purpose)).toEqual({ ok: false, error: 'unavailable' });
+      expect(await u.service.revoke(u.userId, purpose)).toEqual({
+        ok: false,
+        error: 'unavailable',
+      });
+    }
+  });
+
+  it('o banco recusa publicar texto das finalidades revogadas (ADR-0030)', async () => {
+    for (const document of ['consent_ai_sharing', 'consent_international_transfer']) {
+      await expect(
+        admin.query(
+          `INSERT INTO policy_versions (id, document, version, text_hash, requires_reconsent, published_at, updated_at)
+           VALUES (gen_random_uuid(), $1, 1, 'x', true, now(), now())`,
+          [document],
+        ),
+      ).rejects.toMatchObject({ code: '23514', constraint: 'policy_versions_document_ativo' });
+    }
+  });
+
+  it('consent_records recusa finalidade revogada mesmo sem o gatilho (CHECK, ADR-0030)', async () => {
+    const { rows: versions } = await admin.query<{ id: string }>(
+      `SELECT id FROM policy_versions WHERE document = 'consent_marketing' LIMIT 1`,
+    );
+    await admin.query('BEGIN');
+    try {
+      await admin.query('ALTER TABLE consent_records DISABLE TRIGGER consent_records_guard');
+      await expect(
+        admin.query(
+          `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at, updated_at)
+           VALUES (gen_random_uuid(), gen_random_uuid(), 'ai_sharing', $1, 'x', now(), now())`,
+          [versions[0]?.id],
+        ),
+      ).rejects.toMatchObject({ code: '23514', constraint: 'consent_records_purpose_ativo' });
+    } finally {
+      await admin.query('ROLLBACK');
+    }
+  });
+
+  it('consent_records tem a CHECK das finalidades revogadas (ADR-0030)', async () => {
+    const { rows } = await admin.query<{ def: string }>(
+      `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+        WHERE conname = 'consent_records_purpose_ativo' AND conrelid = 'public.consent_records'::regclass`,
+    );
+    expect(rows[0]?.def).toMatch(/ai_sharing/);
+    expect(rows[0]?.def).toMatch(/international_transfer/);
   });
 });
 

@@ -24,13 +24,15 @@ const SECURITY_HEADERS = [
 ];
 
 /**
- * Rotas removidas na reorientação (ADR-0027): links salvos levam à tela inicial em vez de um 404.
+ * Rotas removidas na reorientação (ADR-0027) e com o fim da IA (ADR-0030): links salvos levam à tela
+ * inicial em vez de um 404.
  * Temporário (307), não permanente: o navegador não guarda o redirecionamento se a rota voltar a existir.
  */
 const REMOVED_ROUTES = [
   { source: '/humor', destination: '/inicio' },
   { source: '/diario', destination: '/inicio' },
   { source: '/medicamentos', destination: '/inicio' },
+  { source: '/ia', destination: '/inicio' },
   { source: '/twin/cerebro', destination: '/twin' },
   { source: '/demo/humor', destination: '/demo' },
   { source: '/demo/diario', destination: '/demo' },

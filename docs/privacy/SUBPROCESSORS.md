@@ -1,10 +1,10 @@
 # Subprocessadores e serviços de terceiros
 
-> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.2 (reorientação, ADR-0027)
-> Requisitos: LEG-S10 (residência no Brasil), LEG-D06 (informação sobre compartilhamento), LEG-I03.
+> **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW` · Versão 0.3 (remoção da IA, ADR-0030)
+> Requisitos: LEG-S10 (residência no Brasil), LEG-D06 (informação sobre compartilhamento).
 
 Regra: banco, storage, filas, jobs **e execução das funções/servidores** ficam no Brasil. Todo serviço que
-processe dados fora do Brasil — inclusive logs da hospedagem, e-mail, monitoramento de erros e LLM — precisa
+processe dados fora do Brasil — inclusive logs da hospedagem, e-mail e monitoramento de erros — precisa
 constar aqui **antes** de ser ativado, com finalidade, região e dados envolvidos. Dados de saúde nunca são
 vendidos nem compartilhados para vantagem econômica (LGPD art. 11, §4º).
 
@@ -20,7 +20,6 @@ vendidos nem compartilhados para vantagem econômica (LGPD art. 11, §4º).
 | KMS | `{{KMS}}` | Chaves de criptografia de campo | Chaves; nenhum dado de usuário | `{{REGIAO}}` | Não (exigido) | `{{DPA}}` | A definir |
 | E-mail transacional | `{{EMAIL}}` | Verificação, recuperação de senha, lembretes | E-mail, nome, links; **sem conteúdo de saúde** | `{{REGIAO}}` | Provável | `{{DPA}}` | A definir |
 | Monitoramento de erros | `{{ERROS}}` | Diagnóstico técnico | Metadados técnicos, com remoção de PII (LEG-R04) | `{{REGIAO}}` | Provável | `{{DPA}}` | A definir |
-| Provedor de LLM | `{{LLM}}` | HealthMind AI (somente com consentimento de IA, LEG-I01) | Agregados e trechos escolhidos pela pessoa (LEG-I02) | `{{REGIAO}}` | Provável → consentimento de transferência (LEG-C02 item 3) e art. 33 | `{{DPA}}`, sem treino, retenção zero/mínima (inclusive logs de abuso) com prazo documentado | A definir |
 
 ## Desenvolvimento e CI (sem dados pessoais de usuários)
 
@@ -31,6 +30,10 @@ vendidos nem compartilhados para vantagem econômica (LGPD art. 11, §4º).
 | Registro de regras do Semgrep | Download de regras públicas | Nenhum dado; executado com `--metrics=off` | Global |
 
 Reorientação (ADR-0027): nenhum subprocessador novo nem removido; menos categorias de dado passam pelos mesmos provedores (sem humor, diário e medicamentos).
+
+Remoção da IA (ADR-0030): sai o provedor de LLM. Nenhum dado é enviado a modelo de linguagem, dentro ou fora
+do Brasil. Os únicos serviços com provável tratamento fora do Brasil são e-mail transacional e monitoramento de
+erros, sem conteúdo de saúde; o envio de um lembrete pode indicar rotina (ROPA T7, OPEN_ISSUES OI-03).
 
 Não usados: SDKs de publicidade, analytics de terceiros, fontes remotas (Google Fonts), telemetria do Next.js
 (`NEXT_TELEMETRY_DISABLED=1`) e telemetria da CLI do Prisma (`CHECKPOINT_DISABLE=1`, no `.env` e na CI).

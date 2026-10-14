@@ -1,6 +1,6 @@
 /**
  * Erros tipados da aplicação. Mensagens nunca carregam conteúdo de saúde, notas,
- * medidas ou mensagens da IA (CLAUDE.md regra 5, LEG-R04): só códigos e metadados.
+ * alimentação ou medidas (CLAUDE.md regra 5, LEG-R04): só códigos e metadados.
  */
 export type AppErrorCode =
   | 'ENV_INVALID'

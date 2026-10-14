@@ -24,7 +24,6 @@
     "timeline": "Timeline",
     "twin": "Health Twin",
     "twinShort": "Twin",
-    "ai": "HealthMind AI",
     "reports": "Relatórios",
     "settings": "Configurações",
     "privacy": "Central de Privacidade",
@@ -93,8 +92,6 @@
     "ESTIMADO_hint": "Cálculo direto a partir dos dados que você informou.",
     "INFERIDO": "Inferido",
     "INFERIDO_hint": "Padrão ou associação calculada a partir dos seus registros.",
-    "RECOMENDADO": "Recomendado",
-    "RECOMENDADO_hint": "Sugestão do sistema, que você pode aceitar ou dispensar.",
     "DEMO": "Demo",
     "DEMO_hint": "Dado fictício de demonstração."
   },
@@ -145,11 +142,6 @@
       "emptyTitle": "Seu Health Twin ainda não tem dados",
       "emptyDescription": "Com algumas medidas e registros, a visualização em 3D ganha forma."
     },
-    "ai": {
-      "title": "HealthMind AI",
-      "emptyTitle": "Assistente desativado",
-      "emptyDescription": "O assistente só funciona se você ativar o consentimento específico. Nada é enviado sem a sua escolha."
-    },
     "reports": {
       "title": "Relatórios",
       "emptyTitle": "Nenhum relatório ainda",
@@ -177,7 +169,6 @@
   "disclaimer": {
     "wellbeingOnly": "O HealthMind 360 é uma ferramenta de bem-estar e autoacompanhamento. Não diagnostica, não trata e não monitora doenças, e não substitui profissional de saúde.",
     "notMedicalDevice": "Este aplicativo não é um dispositivo médico e não faz recomendações de diagnóstico ou tratamento.",
-    "aiGenerated": "Gerado por IA. Pode conter erros e não substitui avaliação de um profissional de saúde.",
     "reportFooter": "Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.",
     "riskSupport": "Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).",
     "draftLegal": "RASCUNHO — revisão jurídica obrigatória.",
@@ -313,7 +304,7 @@
       "intro": "Um espaço para você registrar corpo e medidas, sono, hábitos, alimentação e atividade, e acompanhar a sua evolução no seu ritmo.",
       "doesTitle": "O que o app faz",
       "does1": "Organiza o que você registra e mostra tendências ao longo do tempo.",
-      "does2": "Sugere hábitos gerais de bem-estar, sempre como sugestão.",
+      "does2": "Resume cada período por regras fixas, comparando você só com o seu próprio histórico.",
       "does3": "Deixa você decidir, finalidade por finalidade, o que pode ser feito com seus dados.",
       "doesNotTitle": "O que o app não faz",
       "doesNot1": "Não é um serviço médico.",
@@ -537,12 +528,6 @@
         "service": "Monitoramento de erros",
         "purpose": "Identificar e corrigir falhas técnicas",
         "data": "Metadados técnicos, com remoção de dados pessoais",
-        "region": "A definir"
-      },
-      "llm": {
-        "service": "Provedor de LLM",
-        "purpose": "HealthMind AI, somente com autorização própria",
-        "data": "Resumos e trechos escolhidos por você",
         "region": "A definir"
       }
     },
@@ -1251,7 +1236,6 @@
       "height_required": "Para metas de perda de peso, o app precisa da sua altura.",
       "invalid_date": "A data escolhida para a meta já passou ou é hoje.",
       "calorie_target_below_floor": "O alvo de calorias fica fora do que o app aceita.",
-      "topic_not_allowed": "O app não faz sugestões sobre esse tema.",
       "invalid_input": "Algum valor da meta não é válido. Confira e tente de novo.",
       "current_weight_required": "Para metas de peso, registre seu peso atual em Corpo antes.",
       "target_day_required": "Para metas de perda de peso, escolha uma data para a meta.",
