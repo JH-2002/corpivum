@@ -6,3 +6,4 @@ antiga vem para cá, com o JSON exato do namespace i18n daquela versão
 arquivo e compara com o registrado nas migrações: as provas antigas continuam verificáveis.
 
 - `consent_health_data.v1.json`: consentimento de saúde da Fase 1b, substituído na reorientação (ADR-0027).
+- `terms.v1.json`: Termos de Uso da Fase 1b, com a seção "Sugestões do app"; substituídos pela v2 (ADR-0031).

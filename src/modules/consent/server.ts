@@ -8,7 +8,7 @@ import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import type { ResolvedSession } from '@/modules/auth';
 import { requireVerifiedSession } from '@/modules/auth/server';
-import type { ConsentPurpose } from './catalog';
+import type { ConsentPurpose, RequiredDocument } from './catalog';
 import { withConsentOn } from './guard';
 import type { HealthConsentState } from './health';
 import {
@@ -42,6 +42,8 @@ export interface AppSession extends ResolvedSession {
   health: HealthConsentState;
   /** `null` só na Central de Privacidade antes da escolha do passo 5 (`allowPendingUpdate`). */
   dataMode: DataMode | null;
+  /** Versão nova não substancial a informar uma vez (ADR-0031); não bloqueia nada. */
+  documentNotices: RequiredDocument[];
 }
 
 /**
@@ -59,7 +61,12 @@ export async function requireAppSession(
   if (!state.onboardingCompleted) redirect('/boas-vindas/seguranca');
   if (state.updatePending && !options.allowPendingUpdate) redirect('/boas-vindas/atualizacao');
   if (state.dataMode === null && !options.allowPendingUpdate) redirect('/boas-vindas/dados');
-  return { ...session, health: state.health, dataMode: state.dataMode };
+  return {
+    ...session,
+    health: state.health,
+    dataMode: state.dataMode,
+    documentNotices: state.documentNotices,
+  };
 }
 
 /**

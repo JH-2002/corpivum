@@ -461,6 +461,97 @@ describe('reconsentimento após versão substancial nova (LEG-C06)', () => {
   });
 });
 
+describe('Termos v2 não substancial: aviso único e ciência (ADR-0031)', () => {
+  /** Simula quem aceitou os Termos v1: aponta o aceite para a v1 (só o admin, no banco de teste). */
+  async function acceptedTermsV1() {
+    const u = await onboarded([]);
+    await admin.query(
+      `UPDATE policy_acceptances a SET policy_version_id = v1.id
+         FROM policy_versions v1, policy_versions cur
+        WHERE a.user_id = $1 AND a.policy_version_id = cur.id AND cur.document = 'terms'
+          AND v1.document = 'terms' AND v1.version = 1`,
+      [u.userId],
+    );
+    return u;
+  }
+
+  const termsRows = (userId: string) =>
+    admin
+      .query<{ version: number; kind: string }>(
+        `SELECT v.version, a.kind::text AS kind FROM policy_acceptances a
+           JOIN policy_versions v ON v.id = a.policy_version_id
+          WHERE a.user_id = $1 AND v.document = 'terms' ORDER BY v.version`,
+        [userId],
+      )
+      .then((r) => r.rows);
+
+  it('a v2 está publicada como não substancial', () => {
+    expect(CURRENT_VERSIONS.terms).toMatchObject({ version: 2, requiresReconsent: false });
+  });
+
+  it('quem aceitou a v1 não é bloqueado e vê o aviso uma vez; "Entendi" registra a ciência', async () => {
+    const u = await acceptedTermsV1();
+    const before = await u.service.getState(u.userId);
+    expect(before.updatePending).toBe(false);
+    expect(before.documentNotices).toEqual(['terms']);
+    expect(before.documents.find((d) => d.document === 'terms')).toMatchObject({
+      acceptedVersion: 1,
+      needsAcceptance: false,
+      noticePending: true,
+    });
+
+    expect(await u.service.acknowledgeDocuments(u.userId, ['terms'])).toBe(1);
+    const after = await u.service.getState(u.userId);
+    expect(after.documentNotices).toEqual([]);
+    // O aceite continua sendo o da v1; a v2 fica registrada como ciência, não como aceite.
+    expect(after.documents.find((d) => d.document === 'terms')?.acceptedVersion).toBe(1);
+    expect(await termsRows(u.userId)).toEqual([
+      { version: 1, kind: 'accepted' },
+      { version: 2, kind: 'acknowledged' },
+    ]);
+    const { rows } = await admin.query(
+      `SELECT action::text FROM audit_logs WHERE subject_user_id = $1 AND action = 'policy_acknowledged'`,
+      [u.userId],
+    );
+    expect(rows).toHaveLength(1);
+
+    // Idempotente: um segundo "Entendi" não grava nada.
+    expect(await u.service.acknowledgeDocuments(u.userId, ['terms'])).toBe(0);
+    expect(await termsRows(u.userId)).toHaveLength(2);
+  });
+
+  it('conta nova aceita a v2 no onboarding e não vê aviso', async () => {
+    const u = await onboarded([]);
+    const state = await u.service.getState(u.userId);
+    expect(state.documentNotices).toEqual([]);
+    expect(await u.service.acknowledgeDocuments(u.userId, ['terms', 'privacy_policy'])).toBe(0);
+    expect(await termsRows(u.userId)).toEqual([{ version: 2, kind: 'accepted' }]);
+  });
+
+  it('o banco recusa ciência sem versão anterior ou de versão substancial', async () => {
+    const u = await onboarded([]);
+    const { rows } = await admin.query<{ document: string; id: string }>(
+      `SELECT DISTINCT ON (document) document::text, id FROM policy_versions
+        WHERE document IN ('terms', 'privacy_policy') ORDER BY document, version DESC`,
+    );
+    for (const row of rows) {
+      // Termos v2: a pessoa não tem versão anterior. Política v1: versão substancial.
+      await expect(
+        withUserOn(db, u.userId, (tx) =>
+          tx.policyAcceptance.create({
+            data: {
+              userId: u.userId,
+              policyVersionId: row.id,
+              kind: 'acknowledged',
+              acceptedAt: new Date(),
+            },
+          }),
+        ),
+      ).rejects.toThrow();
+    }
+  });
+});
+
 describe('integridade das provas (LEG-R03, LEG-S06)', () => {
   it('as datas das provas vêm do relógio do banco, não do cliente (revisão B1)', async () => {
     const u = await onboarded([]);

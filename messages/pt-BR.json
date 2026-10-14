@@ -574,12 +574,10 @@
       "s3Body": "Você é responsável por manter sua senha em segredo. Recomendamos ativar a verificação em duas etapas.",
       "s4Title": "Uso adequado",
       "s4Body": "Não use o app para atividades ilegais nem tente acessar dados de outras pessoas.",
-      "s5Title": "Sugestões do app",
-      "s5Body": "As sugestões são gerais, de bem-estar, e não levam em conta sua história de saúde. Em caso de dúvida sobre sua saúde, procure um profissional habilitado.",
-      "s6Title": "Encerramento",
-      "s6Body": "Você pode encerrar a conta quando quiser. Podemos suspender contas que violem estes termos, com aviso, salvo quando a lei exigir o contrário.",
-      "s7Title": "Contato e foro",
-      "s7Body": "Contato: '{{CONTATO_ENCARREGADO}}'. Foro: '{{FORO}}'."
+      "s5Title": "Encerramento",
+      "s5Body": "Você pode encerrar a conta quando quiser. Podemos suspender contas que violem estes termos, com aviso, salvo quando a lei exigir o contrário.",
+      "s6Title": "Contato e foro",
+      "s6Body": "Contato: '{{CONTATO_ENCARREGADO}}'. Foro: '{{FORO}}'."
     },
     "dpo": {
       "title": "Encarregado e contato",
@@ -1509,5 +1507,18 @@
       "water": "Alimentação",
       "milestone": "Marco"
     }
+  },
+  "policyNotice": {
+    "title": "Atualizamos um documento",
+    "changes": {
+      "terms": "Os Termos de Uso estão na versão {version}: saiu a seção \"Sugestões do app\", porque o app não faz sugestões automáticas. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo.",
+      "privacy_policy": "A Política de Privacidade está na versão {version}. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo."
+    },
+    "read": {
+      "terms": "Ler os Termos de Uso",
+      "privacy_policy": "Ler a Política de Privacidade"
+    },
+    "acknowledge": "Entendi",
+    "acknowledgeHint": "Ao tocar em Entendi, registramos que você viu este aviso, e ele não aparece mais."
   }
 }

@@ -222,14 +222,24 @@ model ConsentRecord {
   @@map("consent_records")
 }
 
+/// Como a pessoa registrou a versão (ADR-0031): `accepted` = aceite (Termos) ou ciência obrigatória (Política) no
+/// onboarding ou numa versão substancial; `acknowledged` = ciência de uma versão não substancial, pelo aviso único.
+enum PolicyAcceptanceKind {
+  accepted
+  acknowledged
+
+  @@map("policy_acceptance_kind")
+}
+
 /// Aceite dos Termos e ciência da Política (base: contrato, não consentimento). Prova sem FK para users.
 model PolicyAcceptance {
-  id              String   @id @default(uuid(7)) @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
-  policyVersionId String   @map("policy_version_id") @db.Uuid
-  acceptedAt      DateTime @map("accepted_at") @db.Timestamptz(3)
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id              String               @id @default(uuid(7)) @db.Uuid
+  userId          String               @map("user_id") @db.Uuid
+  policyVersionId String               @map("policy_version_id") @db.Uuid
+  kind            PolicyAcceptanceKind @default(accepted)
+  acceptedAt      DateTime             @map("accepted_at") @db.Timestamptz(3)
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   policyVersion PolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Restrict)
 
@@ -282,6 +292,7 @@ model PrivacyRequest {
 enum AuditAction {
   onboarding_completed
   policy_accepted
+  policy_acknowledged
   consent_granted
   consent_revoked
   health_data_elimination_scheduled

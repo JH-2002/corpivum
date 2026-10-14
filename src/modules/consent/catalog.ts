@@ -57,10 +57,13 @@ export const CURRENT_VERSIONS = {
     textHash: 'd97b589c8574c2a3cf3f339adb51e4ef491744504e88f77fff906273580afa6a',
     requiresReconsent: true,
   },
+  // v2 (ADR-0031): sem a seção "Sugestões do app" (recomendações removidas, ADR-0030). Só remove
+  // funcionalidade e não amplia o tratamento: sem novo aceite; aviso único com registro de ciência.
+  // `LEGAL-REVIEW` (OI-30). Texto da v1 em `legal/archive/terms.v1.json`.
   terms: {
-    version: 1,
-    textHash: '705838b552199e7dfe1a5f0b8d996b8b0e03369ddbe82db54de9d6b88cc4121f',
-    requiresReconsent: true,
+    version: 2,
+    textHash: '8b52ac67dec39808391b76a6724e7daaa3d78a2a09cf5b994310447f35081c66',
+    requiresReconsent: false,
   },
   // v2 (ADR-0027): categorias do novo escopo (sem humor, diário e medicamentos). Mudança substancial:
   // quem autorizou a v1 escolhe de novo antes de qualquer tratamento (LEG-C06).
@@ -99,5 +102,8 @@ export const DOCUMENT_MESSAGES = {
  */
 export const HEALTH_DATA_GRACE_DAYS_IN_TEXT = 30;
 
-/** Data de publicação da versão vigente (exibida nas páginas públicas). */
-export const PUBLISHED_AT = '2026-10-07';
+/** Data de publicação da versão vigente de cada documento obrigatório (exibida nas páginas públicas). */
+export const PUBLISHED_AT = {
+  privacy_policy: '2026-10-07',
+  terms: '2026-10-14',
+} as const satisfies Record<RequiredDocument, string>;

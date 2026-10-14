@@ -9,6 +9,7 @@ import type { Tx } from './rls';
 export type AuditAction =
   | 'onboarding_completed'
   | 'policy_accepted'
+  | 'policy_acknowledged'
   | 'consent_granted'
   | 'consent_revoked'
   | 'health_data_elimination_scheduled'
