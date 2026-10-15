@@ -13,6 +13,8 @@ services:
       APP_TEST_DB_NAME: ${APP_TEST_DB_NAME:-healthmind_test}
       APP_MIGRATOR_PASSWORD: ${APP_MIGRATOR_PASSWORD:?defina APP_MIGRATOR_PASSWORD no .env}
       APP_USER_PASSWORD: ${APP_USER_PASSWORD:?defina APP_USER_PASSWORD no .env}
+      # Atendimento manual de pedidos do titular (ADR-0034), criado por docker/postgres/init/03-operator-role.sh.
+      APP_OPERATOR_PASSWORD: ${APP_OPERATOR_PASSWORD:?defina APP_OPERATOR_PASSWORD no .env}
       TZ: UTC
     ports:
       # Exposto só na máquina local.

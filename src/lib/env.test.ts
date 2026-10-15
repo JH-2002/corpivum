@@ -72,11 +72,14 @@ describe('parseEnv', () => {
     expect(hasIssue({ ...base, KMS_LOCAL_MASTER_KEY: 'curta' }, 'KMS_LOCAL_MASTER_KEY')).toBe(true);
   });
 
-  it.each(['app_migrator', 'postgres'])('recusa runtime conectando como %s (LEG-S03)', (user) => {
-    expect(
-      hasIssue({ ...base, DATABASE_URL: `postgresql://${user}:x@localhost/db` }, 'DATABASE_URL'),
-    ).toBe(true);
-  });
+  it.each(['app_migrator', 'app_operator', 'postgres'])(
+    'recusa runtime conectando como %s (LEG-S03)',
+    (user) => {
+      expect(
+        hasIssue({ ...base, DATABASE_URL: `postgresql://${user}:x@localhost/db` }, 'DATABASE_URL'),
+      ).toBe(true);
+    },
+  );
 
   it.each(['public', 'public/exports', './public'])(
     'recusa storage local em %s (LEG-D03)',
@@ -104,6 +107,15 @@ describe('parseEnv', () => {
         hasIssue(
           { ...prod, MIGRATION_DATABASE_URL: 'postgresql://app_migrator:x@h/db' },
           'MIGRATION_DATABASE_URL',
+        ),
+      ).toBe(true);
+    });
+
+    it('recusa a credencial do atendimento manual no runtime (ADR-0034)', () => {
+      expect(
+        hasIssue(
+          { ...prod, OPERATOR_DATABASE_URL: 'postgresql://app_operator:x@h/db' },
+          'OPERATOR_DATABASE_URL',
         ),
       ).toBe(true);
     });

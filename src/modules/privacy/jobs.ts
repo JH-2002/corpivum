@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { JobQueue } from '@/adapters/jobs/types';
 import { HEALTH_ELIMINATION_JOB, healthEliminationKey } from '@/modules/consent';
 import type { createHealthDataEliminator } from './health-data';
-import type { PrivacyService } from './service';
+import { ACCOUNT_PURGE_JOB, accountPurgeKey, type PrivacyService } from './service';
 
 /**
  * Jobs da Central de Privacidade (ADR-0019). Payloads só com IDs (LEG-R04).
@@ -10,6 +10,9 @@ import type { PrivacyService } from './service';
  * - `privacy.purge_access_logs` (diário): AccessLog além de ACCESS_LOG_RETENTION_DAYS (LEG-R02).
  * - `privacy.purge_proofs` (diário): provas além de PROOF_RETENTION_DAYS (LEG-R03, LEGAL-REVIEW).
  * - `privacy.health_data_sweep` (diário): reagenda eliminações vencidas cujo job se perdeu.
+ * - `privacy.account_purge` ({ userId }): purga da conta excluída, logo depois da exclusão (ADR-0034).
+ * - `privacy.account_purge_sweep` (diário): reenfileira a purga de contas excluídas que ainda existem.
+ * - `privacy.request_deadlines` (diário): só a contagem de pedidos que vencem em até 3 dias e dos vencidos.
  * Os recorrentes usam `singletonKey` e se reagendam ao terminar, mesmo após falha.
  */
 export const PRIVACY_DAILY_MS = 24 * 60 * 60 * 1000;
@@ -17,22 +20,36 @@ export const PRIVACY_RECURRING_JOBS = [
   'privacy.purge_access_logs',
   'privacy.purge_proofs',
   'privacy.health_data_sweep',
+  'privacy.account_purge_sweep',
+  'privacy.request_deadlines',
 ] as const;
 type RecurringJob = (typeof PRIVACY_RECURRING_JOBS)[number];
 
-const eliminatePayload = z.object({ userId: z.uuid() });
+const userPayload = z.object({ userId: z.uuid() });
 
 export function registerPrivacyJobs(
   queue: JobQueue,
   deps: {
-    service: Pick<PrivacyService, 'purgeAccessLogs' | 'purgeProofs' | 'dueHealthEliminations'>;
+    service: Pick<
+      PrivacyService,
+      | 'purgeAccessLogs'
+      | 'purgeProofs'
+      | 'dueHealthEliminations'
+      | 'purgeAccount'
+      | 'duePurges'
+      | 'requestDeadlines'
+    >;
     eliminator: ReturnType<typeof createHealthDataEliminator>;
   },
   now: () => Date = () => new Date(),
 ): void {
   queue.register(HEALTH_ELIMINATION_JOB, async (payload) => {
-    const { userId } = eliminatePayload.parse(payload);
+    const { userId } = userPayload.parse(payload);
     await deps.eliminator.eliminate(userId);
+  });
+  queue.register(ACCOUNT_PURGE_JOB, async (payload) => {
+    const { userId } = userPayload.parse(payload);
+    await deps.service.purgeAccount(userId);
   });
 
   const tasks: Record<RecurringJob, () => Promise<unknown>> = {
@@ -47,6 +64,16 @@ export function registerPrivacyJobs(
         );
       }
     },
+    'privacy.account_purge_sweep': async () => {
+      for (const userId of await deps.service.duePurges()) {
+        await queue.enqueue(
+          ACCOUNT_PURGE_JOB,
+          { userId },
+          { singletonKey: accountPurgeKey(userId) },
+        );
+      }
+    },
+    'privacy.request_deadlines': () => deps.service.requestDeadlines(),
   };
   for (const name of PRIVACY_RECURRING_JOBS) {
     queue.register(name, async () => {

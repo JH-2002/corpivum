@@ -11,7 +11,10 @@ export type MailTemplateId =
   | 'security-alert'
   | 'reminder'
   | 'export-ready'
-  | 'privacy-request-received';
+  /** Recibo de pedido do titular (LEG-D07): protocolo, tipo, data e prazo. Sem conteúdo de saúde. */
+  | 'privacy-request-received'
+  /** Aviso de exclusão de conta (LEG-D04): data, o que fica e por quanto tempo, canal do encarregado. */
+  | 'account-deleted';
 
 export interface MailMessage {
   to: string;

@@ -5,6 +5,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { PurposeDetails } from '@/components/privacy/PurposeDetails';
 import { HealthRevokeDialog, MinorClosureDialog } from '@/components/privacy/PrivacyDialogs';
+import { AccountDeletionDialog, PrivacyRequestForm } from '@/components/privacy/RightsForms';
 import { SubprocessorTable } from '@/components/privacy/SubprocessorTable';
 import { ExportFiles } from '@/components/reports/ExportFiles';
 import { FullExportForm } from '@/components/reports/ExportForms';
@@ -73,18 +74,21 @@ function Section({
 }
 
 /**
- * Central de Privacidade (§46 + adendo; LEG-C04, LEG-D06, LEG-D07, LEG-F04, LEG-S04): autorizações por
- * finalidade (conceder/revogar em 1–2 cliques), documentos aceitos, sessões ativas, subprocessadores,
- * pedidos abertos e encerramento de conta de menor. Acessível mesmo com reconsentimento pendente.
+ * Central de Privacidade (§46 + adendo; LEG-C04, LEG-D01–D07, LEG-F04, LEG-S04): autorizações por
+ * finalidade (conceder/revogar em 1–2 cliques), seus dados, documentos aceitos, sessões ativas,
+ * subprocessadores, pedidos do titular, exclusão de conta e encerramento de conta de menor. Acessível mesmo
+ * com reconsentimento pendente.
  */
 export default async function PrivacyCenterPage() {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
   const session = await requireAppSession({ allowPendingUpdate: true });
   const env = getEnv();
   const reports = getReportsService();
-  const [state, sessions, requests, counts, exports] = await Promise.all([
+  const auth = getAuthService();
+  const [state, sessions, security, requests, counts, exports] = await Promise.all([
     getConsentState(session.userId),
-    getAuthService().listSessions(session.userId, session.sessionId),
+    auth.listSessions(session.userId, session.sessionId),
+    auth.getSecurityOverview(session.userId),
     getPrivacyService()
       .listOpenRequests(session.userId)
       .catch((): null => null),
@@ -100,6 +104,13 @@ export default async function PrivacyCenterPage() {
   const purgeAt = state.health.status === 'revoked' ? state.health.purgeAt : null;
   // Carência (OI-32): só até a data da eliminação, mesmo que o job ainda não tenha rodado (revisão B4).
   const graceUntil = purgeAt && purgeAt > new Date() ? purgeAt : null;
+  const canExport = session.dataMode === 'own' && (counts !== null || graceUntil !== null);
+  const fullExports = exports.filter((j) => j.kind === 'full_export');
+  const retention = {
+    proofDays: env.PROOF_RETENTION_DAYS,
+    accessDays: env.ACCESS_LOG_RETENTION_DAYS,
+    backupDays: env.BACKUP_RETENTION_DAYS,
+  };
 
   function status(p: PurposeState) {
     if (p.active) {
@@ -223,7 +234,7 @@ export default async function PrivacyCenterPage() {
           <li>{t('data.accountItems.access', { days: env.ACCESS_LOG_RETENTION_DAYS })}</li>
         </ul>
         {/* Na carência após revogar (OI-32), a cópia completa continua disponível até a eliminação. */}
-        {session.dataMode === 'own' && (counts !== null || graceUntil) ? (
+        {canExport ? (
           <>
             <h3 className="text-base font-semibold">{t('data.exportTitle')}</h3>
             <p className="text-sm text-fg-muted">{t('data.exportDescription')}</p>
@@ -312,19 +323,53 @@ export default async function PrivacyCenterPage() {
         </Link>
       </Section>
 
-      <Section id="pedidos" title={t('requestsTitle')}>
+      <Section id="pedidos" title={t('requestsTitle')} description={t('requests.description')}>
         <RequestList requests={requests} />
+        <h3 className="text-base font-semibold">{t('requests.newTitle')}</h3>
+        <PrivacyRequestForm />
+      </Section>
+
+      <Section
+        id="excluir-conta"
+        title={t('deletion.title')}
+        description={t('deletion.description')}
+      >
+        <h3 className="text-base font-semibold">{t('deletion.whatTitle')}</h3>
+        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
+          <li>{t('deletion.what.now')}</li>
+          <li>{t('deletion.what.erased')}</li>
+          <li>{t('deletion.what.proofs', { days: retention.proofDays })}</li>
+          <li>{t('deletion.what.access', { days: retention.accessDays })}</li>
+          <li>{t('deletion.what.backups', { days: retention.backupDays })}</li>
+          <li>{t('deletion.what.final')}</li>
+        </ul>
+        <h3 className="text-base font-semibold">{t('deletion.exportTitle')}</h3>
+        {canExport ? (
+          <>
+            <p className="text-sm text-fg-muted">{t('deletion.exportDescription')}</p>
+            <FullExportForm />
+            <ExportFiles
+              jobs={fullExports}
+              href="/privacidade"
+              until={graceUntil}
+              headingId="deletion-export-files"
+            />
+          </>
+        ) : (
+          <p className="text-sm">{t('deletion.exportUnavailable')}</p>
+        )}
+        <div>
+          <AccountDeletionDialog
+            mfaEnabled={security.mfaEnabled}
+            hasExport={fullExports.some((j) => j.downloadable)}
+            retention={retention}
+          />
+        </div>
       </Section>
 
       <Section id="menor-de-18" title={t('minorTitle')} description={t('minorDescription')}>
         <div>
-          <MinorClosureDialog
-            retention={{
-              proofDays: env.PROOF_RETENTION_DAYS,
-              accessDays: env.ACCESS_LOG_RETENTION_DAYS,
-              backupDays: env.BACKUP_RETENTION_DAYS,
-            }}
-          />
+          <MinorClosureDialog retention={retention} mfaEnabled={security.mfaEnabled} />
         </div>
       </Section>
     </div>

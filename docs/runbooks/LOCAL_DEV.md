@@ -63,6 +63,21 @@ TEST_DATABASE_URL=postgresql://app_user:<senha>@localhost:<porta>/healthmind_tes
 TEST_MIGRATION_DATABASE_URL=postgresql://app_migrator:<senha>@localhost:<porta>/healthmind_test
 ```
 
+### Papel `app_operator` num volume criado antes da Fase 6b
+A migração `fase_6b_direitos` falha se o papel do atendimento manual (ADR-0034) não existir. Num volume novo ele
+é criado sozinho (`docker/postgres/init/03-operator-role.sh`). Num volume que já existe, acrescente ao `.env`:
+```sh
+APP_OPERATOR_PASSWORD=<senha nova>
+OPERATOR_DATABASE_URL=postgresql://app_operator:<senha nova>@localhost:<porta>/healthmind
+TEST_OPERATOR_DATABASE_URL=postgresql://app_operator:<senha nova>@localhost:<porta>/healthmind_test
+```
+e rode:
+```sh
+docker compose up -d --wait db   # recria o contêiner com a variável nova; o volume continua
+pnpm db:operator:init            # cria o papel e dá CONNECT nos dois bancos (idempotente)
+pnpm db:deploy
+```
+
 O `pnpm db:seed` grava no banco de **desenvolvimento** (é para usar o app logado com dados sintéticos).
 
 ## Regras
