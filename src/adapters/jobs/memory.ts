@@ -27,6 +27,7 @@ export class MemoryJobQueue implements JobQueue {
   readonly #handlers = new Map<string, JobHandler>();
   readonly #logger: Logger;
   #draining = false;
+  #again = false;
 
   constructor(logger: Logger = defaultLogger) {
     this.#logger = logger;
@@ -58,15 +59,29 @@ export class MemoryJobQueue implements JobQueue {
     this.#handlers.set(name, handler);
   }
 
+  async processNow(): Promise<void> {
+    await this.drain();
+  }
+
   /**
    * Executa os jobs pendentes com `runAt <= now`. Retorna quantos foram concluídos. Uma chamada
-   * enquanto outra ainda roda não faz nada: o mesmo job nunca executa duas vezes (PR1a-R2-B6).
+   * enquanto outra ainda roda não executa nada em paralelo (o mesmo job nunca roda duas vezes,
+   * PR1a-R2-B6): só pede mais uma passada ao fim da atual, para um job enfileirado no meio não esperar o
+   * próximo ciclo (ex.: exportação pedida agora, ADR-0032).
    */
-  async drain(now: Date = new Date()): Promise<number> {
-    if (this.#draining) return 0;
+  async drain(now?: Date): Promise<number> {
+    if (this.#draining) {
+      this.#again = true;
+      return 0;
+    }
     this.#draining = true;
     try {
-      return await this.#drain(now);
+      let completed = await this.#drain(now ?? new Date());
+      while (this.#again) {
+        this.#again = false;
+        completed += await this.#drain(new Date());
+      }
+      return completed;
     } finally {
       this.#draining = false;
     }

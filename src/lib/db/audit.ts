@@ -17,10 +17,19 @@ export type AuditAction =
   | 'health_data_eliminated'
   | 'session_revoked'
   | 'privacy_request_created'
-  | 'account_closed_minor';
+  | 'account_closed_minor'
+  | 'data_export_requested'
+  | 'data_export_downloaded'
+  | 'data_export_deleted';
 
 export type AuditResourceType =
-  'user' | 'consent_record' | 'policy_version' | 'privacy_request' | 'session' | 'health_data';
+  | 'user'
+  | 'consent_record'
+  | 'policy_version'
+  | 'privacy_request'
+  | 'session'
+  | 'health_data'
+  | 'data_export';
 
 export async function auditAppend(
   tx: Tx,

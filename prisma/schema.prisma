@@ -74,6 +74,7 @@ model User {
   strengthSets     StrengthSet[]
   goals            Goal[]
   reminders        Reminder[]
+  dataExportJobs   DataExportJob[]
 
   @@map("users")
 }
@@ -301,6 +302,9 @@ enum AuditAction {
   session_revoked
   privacy_request_created
   account_closed_minor
+  data_export_requested
+  data_export_downloaded
+  data_export_deleted
 
   @@map("audit_action")
 }
@@ -312,6 +316,7 @@ enum AuditResourceType {
   privacy_request
   session
   health_data
+  data_export
 
   @@map("audit_resource_type")
 }
@@ -697,4 +702,67 @@ model Reminder {
 
   @@index([userId])
   @@map("reminders")
+}
+
+enum DataExportKind {
+  full_export
+  report
+
+  @@map("data_export_kind")
+}
+
+enum DataExportFormat {
+  json
+  csv
+  pdf
+
+  @@map("data_export_format")
+}
+
+enum ReportPeriod {
+  week
+  month
+  year
+
+  @@map("report_period")
+}
+
+enum DataExportStatus {
+  queued
+  processing
+  ready
+  failed
+  expired
+
+  @@map("data_export_status")
+}
+
+/// Exportação completa ou relatório (LEG-D03, §29, ADR-0032). O arquivo (dado de saúde) fica no
+/// StorageProvider, cifrado (envelope, contexto data_export_jobs.file), nunca em storage público; o download é
+/// pela rota autenticada até `expires_at` (teto de 24 h). Tabela de saúde: RLS dono + consentimento.
+model DataExportJob {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  kind           DataExportKind
+  format         DataExportFormat
+  /// Só em `report`: semana, mês ou ano civil e o intervalo resolvido.
+  reportPeriod   ReportPeriod?    @map("report_period")
+  periodStart    DateTime?        @map("period_start") @db.Date
+  periodEnd      DateTime?        @map("period_end") @db.Date
+  /// Peso, medidas, altura e calorias omitidos do arquivo (modo privacidade).
+  hideBodyValues Boolean          @default(false) @map("hide_body_values")
+  status         DataExportStatus @default(queued)
+  sizeBytes      Int?             @map("size_bytes")
+  expiresAt      DateTime?        @map("expires_at") @db.Timestamptz(3)
+  /// Arquivo já apagado do storage (vencido, apagado pela pessoa ou após a revogação). A linha fica até
+  /// `app.exports_cleanup` removê-la (ADR-0032, revisão).
+  fileDeletedAt  DateTime?        @map("file_deleted_at") @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, expiresAt])
+  @@map("data_export_jobs")
 }

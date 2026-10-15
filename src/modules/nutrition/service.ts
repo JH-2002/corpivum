@@ -67,10 +67,12 @@ export function createNutritionService(deps: HealthDeps) {
     async listMeals(
       userId: string,
       range: DateRange,
-      opts: { withText?: boolean } = {},
+      opts: { withText?: boolean; allStored?: boolean } = {},
     ): Promise<MealRecord[]> {
       return deps.run(userId, async (tx) => {
-        const showKcal = await estimateEnabled(tx, userId);
+        // `allStored`: exportação completa (LEG-D03). A estimativa desligada oculta o valor na tela, mas ele
+        // continua guardado e é dado da pessoa (revisão M3 da 6a, ADR-0032).
+        const showKcal = opts.allStored === true || (await estimateEnabled(tx, userId));
         const rows = await tx.mealEntry.findMany({
           where: { eatenAt: rangeBounds(range, deps.timeZone) },
           orderBy: { eatenAt: 'asc' },

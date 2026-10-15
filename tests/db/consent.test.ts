@@ -288,6 +288,7 @@ describe('revogação dos dados de saúde: eliminação agendada (ADR-0019)', ()
     const eliminator = createHealthDataEliminator({
       db,
       erasers,
+      eraseObjects: async () => {},
       logger: createLogger({ sink: () => {} }),
       now: () => t.clock.now,
     });
@@ -323,6 +324,7 @@ describe('revogação dos dados de saúde: eliminação agendada (ADR-0019)', ()
     const eliminator = createHealthDataEliminator({
       db,
       erasers,
+      eraseObjects: async () => {},
       logger: createLogger({ sink: () => {} }),
       now: () => new Date(t.clock.now.getTime() + 60 * 24 * 60 * 60 * 1000),
     });

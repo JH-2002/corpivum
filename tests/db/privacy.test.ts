@@ -59,6 +59,8 @@ const USER_FKS: Record<string, string> = {
   strength_sets: 'CASCADE',
   goals: 'CASCADE',
   reminders: 'CASCADE',
+  // Fase 6a (ADR-0032): pedidos de exportação; os arquivos saem pelo eliminador de objetos.
+  data_export_jobs: 'CASCADE',
 };
 const PROOF_TABLES = ['consent_records', 'policy_acceptances', 'privacy_requests', 'audit_logs'];
 
@@ -355,7 +357,12 @@ describe('jobs de privacidade', () => {
     const queue = new MemoryJobQueue(silent);
     registerPrivacyJobs(queue, {
       service: privacy(),
-      eliminator: createHealthDataEliminator({ db, logger: silent, erasers: HEALTH_DATA_ERASERS }),
+      eliminator: createHealthDataEliminator({
+        db,
+        logger: silent,
+        erasers: HEALTH_DATA_ERASERS,
+        eraseObjects: async () => {},
+      }),
     });
     await schedulePrivacyJobs(queue);
     await schedulePrivacyJobs(queue); // segunda instância: não duplica

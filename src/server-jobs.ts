@@ -10,6 +10,8 @@ import { getHealthServices } from '@/modules/health/server';
 import { registerReminderJobs } from '@/modules/notifications/jobs';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
 import { getHealthDataEliminator, getPrivacyService } from '@/modules/privacy/server';
+import { registerReportJobs, scheduleReportJobs } from '@/modules/reports/jobs';
+import { getReportsService } from '@/modules/reports/server';
 
 const MEMORY_DRAIN_MS = 60 * 1000;
 
@@ -33,8 +35,11 @@ export async function startJobs(): Promise<void> {
     appUrl: getEnv().APP_URL,
     timeZone: APP_TIME_ZONE,
   });
+  // Exportação e relatórios (ADR-0032): geração em segundo plano e expiração dos links (LEG-D03).
+  registerReportJobs(jobs, getReportsService());
   await scheduleAuthPurge(jobs);
   await schedulePrivacyJobs(jobs);
+  await scheduleReportJobs(jobs);
   if (jobs instanceof MemoryJobQueue) {
     void jobs.drain().catch(() => logger.warn('job.drain_failed', { adapter: jobs.id }));
     const timer = setInterval(() => {

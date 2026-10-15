@@ -4,7 +4,7 @@
  * (`insights.*`) e argumentos; o texto é montado em `src/components/insights`.
  */
 export { activityInsights, type ActivityInsightsInput } from './activity';
-export { bodyInsights, type BodyInsightsInput } from './body';
+export { bodyInsights, bodyInsightsHidden, type BodyInsightsInput } from './body';
 export { dashboardInsights, type PeriodRecords } from './dashboard';
 export { goalsInsights, type GoalsInsightsInput } from './goals';
 export { habitsInsights, type HabitsInsightsInput } from './habits';

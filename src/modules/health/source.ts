@@ -25,7 +25,11 @@ export interface HealthDataSource {
   body(range: DateRange): Promise<BodyRecord[]>;
   latestHeightCm(): Promise<number | null>;
   latestWeightKg(): Promise<number | null>;
-  meals(range: DateRange, opts?: { withText?: boolean }): Promise<MealRecord[]>;
+  /** `allStored`: inclui a estimativa de calorias guardada mesmo com a estimativa desligada (exportação). */
+  meals(
+    range: DateRange,
+    opts?: { withText?: boolean; allStored?: boolean },
+  ): Promise<MealRecord[]>;
   water(range: DateRange): Promise<WaterRecord[]>;
   activities(range: DateRange, opts?: { withText?: boolean }): Promise<ActivityRecord[]>;
   goals(opts?: { includeArchived?: boolean }): Promise<GoalRecord[]>;

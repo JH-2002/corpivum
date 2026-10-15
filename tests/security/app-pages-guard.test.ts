@@ -68,6 +68,30 @@ describe('guarda de sessão nas páginas de (onboarding)', () => {
   });
 });
 
+describe('route handlers de (app) validam a sessão (ADR-0032: download da exportação)', () => {
+  const files = readdirSync(APP_DIR, { recursive: true })
+    .map(String)
+    .filter((f) => /(^|[\\/])route\.ts$/.test(f))
+    .map((f) => path.join(APP_DIR, f));
+
+  it('encontra a rota de download', () => {
+    expect(files.some((f) => f.includes('exportacoes'))).toBe(true);
+  });
+
+  it.each(files.map((f) => [path.relative(APP_DIR, f), f]))(
+    '%s: todo método exportado começa pela guarda',
+    (_, f) => {
+      const src = readFileSync(f, 'utf8');
+      const bodies = src.split(/\nexport async function /).slice(1);
+      expect(bodies.length).toBeGreaterThan(0);
+      for (const body of bodies) {
+        const afterOpen = body.slice(body.indexOf('{\n') + 2);
+        expect(afterOpen.split('\n')[0]).toMatch(ACTION_GUARD);
+      }
+    },
+  );
+});
+
 describe('server actions validam a sessão no início', () => {
   const files = [...actionFiles(APP_DIR), ...actionFiles(ONBOARDING_DIR)];
 

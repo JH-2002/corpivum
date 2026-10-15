@@ -406,10 +406,10 @@
       "stopNow": "A partir de agora, nada é exibido nem processado: os registros ficam bloqueados.",
       "elimination": "Os dados de bem-estar já registrados serão eliminados em {date} ({days} dias).",
       "cancel": "Se você autorizar de novo antes dessa data, nada é eliminado.",
-      "exportFirst": "Exportar meus dados antes",
-      "exportSoon": "A exportação dos dados estará disponível em breve na Central de Privacidade.",
+      "exportFirst": "Antes de revogar, você pode baixar uma cópia completa dos seus dados em “Seus dados”, nesta página.",
       "confirm": "Revogar agora",
-      "keep": "Manter autorização"
+      "keep": "Manter autorização",
+      "exportLink": "Ir para “Seus dados”"
     },
     "healthMissing": {
       "title": "Registro de bem-estar desativado",
@@ -470,7 +470,38 @@
     "closedBody": "Sua conta e o que foi registrado nela foram apagados. Ficam só os registros mínimos informados antes da confirmação (prova do encerramento e registros de acesso, sem seu e-mail), pelos prazos indicados.",
     "closedSupport": "Se quiser conversar com alguém, o CVV atende 24 horas pelo telefone 188, de graça.",
     "minorUnavailable": "Não foi possível encerrar a conta agora. Tente de novo em alguns minutos ou fale com o encarregado pelo contato em Documentos › Encarregado e contato.",
-    "documentsAcknowledged": "Ciência da versão {version} em {date}"
+    "documentsAcknowledged": "Ciência da versão {version} em {date}",
+    "data": {
+      "title": "Seus dados",
+      "description": "Tudo o que o HealthMind 360 guarda sobre você, por categoria. Você corrige cada registro na própria tela e pode baixar uma cópia completa.",
+      "healthTitle": "Dados de bem-estar (com a sua autorização)",
+      "categories": {
+        "sleep": "Sono",
+        "habits": "Hábitos",
+        "habit_checks": "Marcações de hábitos",
+        "body_measurements": "Peso e medidas",
+        "meals": "Refeições",
+        "water": "Água",
+        "activities": "Atividades físicas",
+        "strength_sets": "Séries de exercícios",
+        "goals": "Metas",
+        "reminders": "Lembretes"
+      },
+      "count": "{count, plural, =0 {nenhum registro} one {# registro} other {# registros}}",
+      "correct": "Ver e corrigir: {category}",
+      "noConsent": "Sem autorização ativa para dados de bem-estar: eles não são exibidos nem tratados. A cópia completa também fica indisponível.",
+      "demo": "Você está no modo demonstração: não há dados de bem-estar seus guardados.",
+      "accountTitle": "Conta e registros técnicos",
+      "accountItems": {
+        "account": "E-mail, data de cadastro e preferências da conta.",
+        "proofs": "Autorizações, aceites de documentos e pedidos feitos aqui, guardados como prova.",
+        "sessions": "Sessões ativas (lista nesta página).",
+        "access": "Registros de acesso (endereço IP e data e hora), guardados por até {days} dias e não exibidos no app."
+      },
+      "exportTitle": "Baixar uma cópia de tudo",
+      "exportDescription": "Exportação completa em JSON (estruturado) ou CSV (planilhas, em .zip), com todos os seus registros e os dados da conta. O arquivo fica disponível por até 24 horas, só para você, com a sessão ativa.",
+      "correctShort": "Ver e corrigir"
+    }
   },
   "subprocessors": {
     "columns": {
@@ -837,6 +868,7 @@
       "weightChange": "Do primeiro ao último registro do período, o peso variou {kg} kg.",
       "girthChange": "Entre as circunferências, a que mais variou foi a medida de {field}: {cm} cm.",
       "countTail": "Foram {count, plural, one {# medição} other {# medições}} no período.",
+      "hiddenCount": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, você registrou {count, plural, one {# medição} other {# medições}}. Os valores estão ocultos.",
       "fields": {
         "weightKg": "peso",
         "heightCm": "altura",
@@ -1113,10 +1145,7 @@
       "on": "em {date}",
       "change": "Variação no período",
       "changeHint": "Diferença entre o primeiro e o último peso do período.",
-      "height": "Altura",
-      "bmi": "IMC",
-      "bmiHint": "Cálculo direto: peso ÷ altura². É só um número de referência, sem classificação.",
-      "bmiNeeds": "Informe peso e altura para ver o cálculo."
+      "height": "Altura"
     },
     "form": {
       "measuredAt": "Data da medição",
@@ -1523,5 +1552,104 @@
     },
     "acknowledge": "Entendi",
     "acknowledgeHint": "Ao escolher Entendi, registramos que você viu este aviso, e ele não aparece mais."
+  },
+  "reports": {
+    "intro": "Resumo do período com o que você registrou, por regras fixas, comparando você só com você mesmo. Gere o arquivo em PDF, CSV ou JSON para guardar ou levar.",
+    "picker": {
+      "legend": "Período do relatório",
+      "kind": "Tipo",
+      "week": "Semana",
+      "month": "Mês",
+      "year": "Ano",
+      "reference": "Data dentro do período",
+      "apply": "Ver relatório",
+      "invalid": "Escolha uma data válida, até hoje."
+    },
+    "heading": {
+      "week": "Relatório semanal",
+      "month": "Relatório mensal",
+      "year": "Relatório anual"
+    },
+    "range": "{from} a {to}",
+    "noData": "Nenhum registro neste período. Escolha outro período ou registre algo para ver o relatório.",
+    "sections": {
+      "sleep": "Sono",
+      "habits": "Hábitos",
+      "body": "Peso e medidas",
+      "nutrition": "Alimentação",
+      "activity": "Atividade física",
+      "goals": "Metas"
+    },
+    "highlights": "Destaques",
+    "score": {
+      "title": "Índice de Bem-Estar",
+      "value": "{value} de 100",
+      "partial": "Alguns componentes ficaram fora por falta de registros.",
+      "none": "Sem registros suficientes no período para calcular o Índice."
+    },
+    "charts": {
+      "sleep": "Horas de sono",
+      "activity": "Minutos de atividade",
+      "weight": "Peso",
+      "bucketDay": "Por dia",
+      "bucketWeekMean": "Média por semana (a data é a segunda-feira)",
+      "bucketWeekSum": "Total por semana (a data é a segunda-feira)",
+      "colDay": "Data",
+      "colValue": "Valor ({unit})",
+      "empty": "sem registro"
+    },
+    "goals": {
+      "title": "Metas ativas",
+      "line": "{metric}: agora {current}, alvo {target}",
+      "reached": "alcançado",
+      "noCurrent": "sem registro na semana",
+      "none": "Nenhuma meta ativa para detalhar.",
+      "weightNote": "Metas de peso e de calorias entram só na contagem do resumo, sem números."
+    },
+    "hidden": "Peso, medidas e calorias estão ocultos neste relatório.",
+    "badge": "Origem dos dados: {badge}",
+    "demoNotice": "Relatório da demonstração, com dados 100% fictícios.",
+    "generate": {
+      "title": "Gerar arquivo",
+      "intro": "O arquivo é gerado em segundo plano e fica disponível por até 24 horas, só para você, com a sessão ativa.",
+      "format": "Formato",
+      "pdf": "PDF (relatório para ler ou imprimir)",
+      "csv": "CSV (planilha, em arquivo .zip)",
+      "json": "JSON (dados estruturados)",
+      "hideBody": "Ocultar peso, medidas e calorias no arquivo",
+      "submit": "Gerar arquivo",
+      "queued": "Pedido recebido. O arquivo fica pronto em instantes: atualize a lista abaixo.",
+      "busy": "Já há um arquivo sendo gerado. Espere ele ficar pronto para pedir outro.",
+      "limit": "Você chegou ao limite de {max} arquivos em 24 horas. Tente de novo mais tarde.",
+      "demo": "Na demonstração o relatório aparece só na tela: não geramos arquivo com dados fictícios.",
+      "error": "Não foi possível pedir o arquivo agora. Tente de novo."
+    },
+    "files": {
+      "title": "Arquivos gerados",
+      "empty": "Nenhum arquivo gerado nas últimas 24 horas.",
+      "refresh": "Atualizar lista",
+      "kind": {
+        "full_export": "Exportação completa ({format})",
+        "report": "{heading} ({format}), {range}"
+      },
+      "status": {
+        "queued": "Na fila",
+        "processing": "Gerando",
+        "ready": "Pronto",
+        "failed": "Não foi possível gerar",
+        "expired": "Expirado"
+      },
+      "expires": "Disponível até {date}",
+      "download": "Baixar",
+      "downloadLabel": "Baixar {name}",
+      "delete": "Apagar",
+      "deleteLabel": "Apagar {name}",
+      "deleted": "Arquivo apagado.",
+      "linkNote": "O download só funciona com você conectado e expira em até 24 horas. O arquivo nunca fica em endereço público."
+    },
+    "pdf": {
+      "title": "HealthMind 360 · {heading}",
+      "page": "Página {page} de {total}"
+    }
   }
 }

@@ -4,6 +4,7 @@ import type { Db } from '@/lib/db/client';
 import { withUserOn, type Tx } from '@/lib/db/rls';
 import { AppError } from '@/lib/errors';
 import type { Logger } from '@/lib/logger';
+import { expireExportsIn } from '@/modules/reports/expire';
 import {
   AVAILABLE_PURPOSES,
   CURRENT_VERSIONS,
@@ -207,6 +208,8 @@ export function createConsentService(deps: ConsentDeps) {
   }
 
   async function revokeIn(tx: Tx, userId: string, purpose: AvailablePurpose): Promise<Effect[]> {
+    // Antes de revogar (depois o RLS já barraria): links de exportação vencem na hora (ADR-0032).
+    if (purpose === 'health_data') await expireExportsIn(tx);
     const { count } = await tx.consentRecord.updateMany({
       where: { purpose, revokedAt: null },
       data: { revokedAt: now() },

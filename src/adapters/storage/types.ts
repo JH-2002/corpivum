@@ -14,6 +14,8 @@ export interface StorageProvider {
   get(key: string): Promise<{ body: Uint8Array; info: StoredObjectInfo }>;
   delete(key: string): Promise<void>;
   exists(key: string): Promise<boolean>;
+  /** Apaga todos os objetos sob o prefixo (ex.: `exports/<userId>`), na eliminação e na exclusão (PR1b-B9). */
+  deletePrefix(prefix: string): Promise<void>;
 }
 
 /** Segmentos alfanuméricos separados por `/`; sem `..`, sem caminho absoluto. */
