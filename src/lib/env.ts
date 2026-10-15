@@ -8,7 +8,7 @@ const days = z.coerce.number().int().positive();
 export const BRAZIL_REGIONS = ['gru1', 'sa-east-1', 'brazilsouth', 'southamerica-east1'] as const;
 
 /** Papéis que nunca podem ser usados pelo runtime (LEG-S03). */
-const FORBIDDEN_RUNTIME_DB_USERS = ['app_migrator', 'postgres'];
+const FORBIDDEN_RUNTIME_DB_USERS = ['app_migrator', 'app_operator', 'postgres'];
 
 function dbUser(url: string): string {
   try {
@@ -25,6 +25,8 @@ const envSchema = z
     APP_REGION: z.string().min(1),
     DATABASE_URL: z.url(),
     MIGRATION_DATABASE_URL: z.url().optional(),
+    /** Só para `pnpm privacy:requests` (papel app_operator, ADR-0034). Recusada no runtime de produção. */
+    OPERATOR_DATABASE_URL: z.url().optional(),
     /** Base dos links enviados por e-mail (verificação, redefinição). https obrigatório em produção. */
     APP_URL: z.url(),
     /** Segredos de auth (ADR-0014), 32+ bytes em base64. Cookies do fluxo e pepper dos códigos de recuperação. */
@@ -131,6 +133,10 @@ const envSchema = z
       // A credencial de migração não fica disponível ao runtime de produção (LEG-S03).
       if (env.MIGRATION_DATABASE_URL) {
         issue('MIGRATION_DATABASE_URL', 'não deve estar definido no runtime de produção (LEG-S03)');
+      }
+      // Nem a do atendimento manual (ADR-0034): o operador usa o script, nunca o app web.
+      if (env.OPERATOR_DATABASE_URL) {
+        issue('OPERATOR_DATABASE_URL', 'não deve estar definido no runtime de produção (LEG-S03)');
       }
       // LEG-S10: execução no Brasil.
       if (!(BRAZIL_REGIONS as readonly string[]).includes(env.APP_REGION)) {

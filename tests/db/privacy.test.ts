@@ -38,6 +38,14 @@ function privacy() {
       t.service.issueReauthProof(userId, password, 'minor_closure'),
     accessLogRetentionDays: 180,
     proofRetentionDays: 1825,
+    backupRetentionDays: 30,
+    erasers: HEALTH_DATA_ERASERS,
+    eraseObjects: async () => {},
+    mail: t.mail,
+    queue: new MemoryJobQueue(silent),
+    requestFullExport: async () => false,
+    appUrl: 'http://localhost:3000',
+    timeZone: 'America/Sao_Paulo',
   });
 }
 

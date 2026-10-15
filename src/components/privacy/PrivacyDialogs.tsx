@@ -62,7 +62,14 @@ export interface RetentionDays {
 }
 
 /** Encerramento para quem se descobre menor (LEG-F04): confirmação reforçada com a senha. */
-export function MinorClosureDialog({ retention }: { retention: RetentionDays }) {
+export function MinorClosureDialog({
+  retention,
+  mfaEnabled,
+}: {
+  retention: RetentionDays;
+  /** Com MFA ligado, o encerramento também pede o 2º fator (revisão M1 da 6b). */
+  mfaEnabled: boolean;
+}) {
   const t = useTranslations('privacyCenter');
   const ta = useTranslations('auth.fields');
   return (
@@ -72,6 +79,7 @@ export function MinorClosureDialog({ retention }: { retention: RetentionDays }) 
           onCancel={close}
           passwordLabel={ta('currentPassword')}
           retention={retention}
+          mfaEnabled={mfaEnabled}
         />
       )}
     </ConfirmDialog>
@@ -82,12 +90,15 @@ function MinorClosureForm({
   onCancel,
   passwordLabel,
   retention,
+  mfaEnabled,
 }: {
   onCancel: () => void;
   passwordLabel: string;
   retention: RetentionDays;
+  mfaEnabled: boolean;
 }) {
   const t = useTranslations('privacyCenter');
+  const td = useTranslations('privacyCenter.deletion');
   const [state, action] = useActionState(closeMinorAccountAction, INITIAL_FORM_STATE);
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
@@ -102,6 +113,15 @@ function MinorClosureForm({
         autoComplete="current-password"
         required
       />
+      {mfaEnabled ? (
+        <TextField
+          name="mfaCode"
+          label={td('mfaCode')}
+          hint={td('mfaHint')}
+          autoComplete="one-time-code"
+          required
+        />
+      ) : null}
       <div className="flex flex-wrap gap-3">
         <SubmitButton>{t('minorConfirm')}</SubmitButton>
         <Button variant="secondary" onClick={onCancel}>

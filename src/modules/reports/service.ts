@@ -445,10 +445,15 @@ export function createReportsService(deps: ReportsDeps) {
           // Serializa com a eliminação (que trava a mesma linha FOR UPDATE, revisão M1 do OI-32): se ela
           // terminou antes, o pedido já não existe e o arquivo é descartado logo abaixo.
           await tx.$queryRaw`SELECT 1 FROM public.users WHERE id = ${userId}::uuid FOR SHARE`;
-          return tx.$executeRaw`UPDATE public.data_export_jobs
+          const n = await tx.$executeRaw`UPDATE public.data_export_jobs
              SET status = 'ready', size_bytes = ${sealed.byteLength},
                  expires_at = now() + make_interval(hours => ${deps.linkHours}::int), updated_at = now()
            WHERE id = ${jobId}::uuid AND status = 'processing' AND file_deleted_at IS NULL`;
+          // Portabilidade (LEG-D07, ADR-0034): a cópia completa pronta conclui o pedido aberto, junto.
+          if (n > 0 && job.kind === 'full_export') {
+            await tx.$queryRaw`SELECT app.privacy_requests_close_portability()`;
+          }
+          return n;
         });
         if (!done) {
           // Consentimento revogado (ou pedido apagado) durante a geração: o arquivo não fica.

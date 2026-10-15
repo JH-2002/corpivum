@@ -21,7 +21,13 @@ export type AuditAction =
   | 'data_export_requested'
   | 'data_export_downloaded'
   | 'data_export_deleted'
-  | 'data_export_health_read';
+  | 'data_export_health_read'
+  | 'privacy_request_closed'
+  | 'privacy_request_contact_read'
+  | 'account_deletion_requested'
+  | 'account_deleted'
+  | 'account_deletion_notice_sent'
+  | 'account_purged';
 
 export type AuditResourceType =
   | 'user'

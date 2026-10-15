@@ -174,6 +174,7 @@ test.describe('páginas públicas (§53, LEG-D06) e acessibilidade', () => {
     ['/legal/subprocessadores', 'Subprocessadores'],
     ['/legal/encarregado', 'Encarregado e contato'],
     ['/conta-encerrada', 'Conta encerrada'],
+    ['/conta-excluida', 'Conta excluída'],
   ] as const) {
     test(`${path} abre sem login e sem violações (rascunho nos documentos)`, async ({ page }) => {
       await page.goto(path);

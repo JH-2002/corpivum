@@ -703,22 +703,33 @@ export function createAuthService(deps: AuthDeps) {
     },
 
     /**
-     * Reautenticação para ações destrutivas fora do módulo (ex.: encerramento de conta, LEG-F04). Confere a
-     * senha atual (com limite) e registra no banco o hash de um nonce de uso único, válido por 2 min, que a
-     * ação consome (`app.reauth_issue`; revisão M1). Devolve o nonce, ou null se a senha não conferir.
+     * Reautenticação para ações destrutivas fora do módulo (encerramento de conta de menor, LEG-F04; exclusão
+     * de conta, LEG-D04). Confere a senha atual (com limite) e registra no banco o hash de um nonce de uso
+     * único, válido por 2 min, que a ação consome (`app.reauth_issue`; revisão M1). Devolve o nonce, ou null.
+     * Com MFA ligado, toda ação destrutiva exige também o TOTP ou um código de recuperação (limite `mfaAccount`;
+     * revisão M1 da 6b: o encerramento de menor apaga a conta tanto quanto a exclusão).
      */
     async issueReauthProof(
       userId: string,
       password: string,
-      purpose: 'minor_closure',
+      purpose: 'minor_closure' | 'account_deletion',
+      mfaCode?: string,
     ): Promise<string | null> {
-      if (!(await checkCurrentPassword(userId, password))) return null;
-      const nonce = randomToken();
-      await withUser(
-        userId,
-        (tx) => tx.$executeRaw`SELECT app.reauth_issue(${purpose}, ${sha256(nonce)})`,
+      const mfa = await withUser(userId, (tx) =>
+        tx.user.findUniqueOrThrow({ where: { id: userId }, select: { mfaEnabledAt: true } }),
       );
-      return nonce;
+      if (mfa.mfaEnabledAt) {
+        const code = mfaCode?.trim() ?? '';
+        if (!code || !(await mfaAccountAllowed(userId))) return null;
+        if (!(await checkCurrentPassword(userId, password))) return null;
+        const accepted = looksLikeRecoveryCode(code)
+          ? await consumeRecoveryCode(userId, code)
+          : await acceptTotp(userId, code);
+        if (!accepted) return null;
+        return issueProof(userId, purpose);
+      }
+      if (!(await checkCurrentPassword(userId, password))) return null;
+      return issueProof(userId, purpose);
     },
 
     /**
@@ -743,6 +754,15 @@ export function createAuthService(deps: AuthDeps) {
       return r;
     },
   };
+
+  async function issueProof(userId: string, purpose: string): Promise<string> {
+    const nonce = randomToken();
+    await withUser(
+      userId,
+      (tx) => tx.$executeRaw`SELECT app.reauth_issue(${purpose}, ${sha256(nonce)})`,
+    );
+    return nonce;
+  }
 
   /** Reautenticação nas ações da conta, com limite por usuário (sessão roubada não testa senhas à vontade). */
   async function checkCurrentPassword(userId: string, password: string): Promise<boolean> {

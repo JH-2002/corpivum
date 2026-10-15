@@ -23,6 +23,7 @@ const SUBJECTS: Record<MailTemplateId, string> = {
   reminder: 'Lembrete',
   'export-ready': 'Sua exportação está pronta',
   'privacy-request-received': 'Pedido de privacidade recebido',
+  'account-deleted': 'Sua conta foi excluída',
 };
 
 /** Texto simples da mensagem de desenvolvimento: assunto do template e os parâmetros (links, códigos). */

@@ -18,11 +18,14 @@ export function ExportFiles({
   jobs,
   href,
   until = null,
+  headingId = 'export-files',
 }: {
   jobs: ExportJobSummary[];
   href: Route;
   /** Carência após revogar (OI-32): nenhum link vale além da data da eliminação. */
   until?: Date | null;
+  /** Id do título, quando a lista aparece mais de uma vez na página (Central: dados e exclusão). */
+  headingId?: string;
 }) {
   const t = useTranslations('reports.files');
   const th = useTranslations('reports.heading');
@@ -38,9 +41,9 @@ export function ExportFiles({
         });
 
   return (
-    <section aria-labelledby="export-files" className="flex flex-col gap-3">
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="export-files" className="text-base font-semibold">
+        <h2 id={headingId} className="text-base font-semibold">
           {t('title')}
         </h2>
         <Link href={href} className={buttonClasses('secondary')}>
