@@ -5,7 +5,9 @@ import { TimelineView } from '@/components/modules/timeline/TimelineView';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
 import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
+import { maskTimeline } from '@/modules/health/mask';
 import { loadTimeline } from '@/modules/health/screens';
+import { readPrivacyMode } from '@/lib/privacy-mode-server';
 import { buildTimeline, parseTimelineDomain } from '@/modules/timeline';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,17 +22,20 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const domain = parseTimelineDomain((await searchParams).dominio);
   const { range, today } = await readPeriod();
   const view = healthView(session, today);
+  const hidden = await readPrivacyMode();
   const data = view.kind === 'data' && !preview ? await loadTimeline(view.source, range) : null;
+  const days = data ? buildTimeline({ ...data, range, today, domain }) : [];
   return (
     <HealthFrame page="timeline" href="/timeline" session={session} view={view} preview={preview}>
       {view.kind === 'data' && data ? (
         <TimelineView
-          days={buildTimeline({ ...data, range, today, domain })}
+          days={hidden ? maskTimeline(days) : days}
           domain={domain}
           basePath="/timeline"
           range={range}
           today={today}
           mode={view.mode}
+          hidden={hidden}
         />
       ) : null}
     </HealthFrame>

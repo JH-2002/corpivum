@@ -960,7 +960,10 @@
       "neutral": "{count, plural, one {Uma medida sem registro fica} other {# medidas sem registro ficam}} na forma neutra padrão do modelo.",
       "dates": "O controle de datas percorre {count, plural, one {# data de medição} other {# datas de medição}}: a primeira {first} e a última {last}.",
       "weightNote": "O peso aparece só em número: ele não muda o formato do modelo.",
-      "partial": "Com uma data de medição só, ainda não há como percorrer nem comparar datas."
+      "partial": "Com uma data de medição só, ainda não há como percorrer nem comparar datas.",
+      "hiddenDates": "{recent, select, yes {Nos últimos {days} dias} other {No período escolhido}}, há {count, plural, one {# data de medição} other {# datas de medição}}.",
+      "hiddenReference": "No modo privacidade, o modelo aparece na forma de referência e os valores das medidas ficam ocultos.",
+      "hiddenValues": "No modo privacidade, os valores das medidas ficam ocultos."
     },
     "nutrition": {
       "empty": "Ainda não há refeições nem água registradas neste período.",
@@ -1248,7 +1251,6 @@
       "rotateLeft": "Girar para a esquerda",
       "rotateRight": "Girar para a direita",
       "reset": "Restaurar visão",
-      "hideValues": "Ocultar valores",
       "hidden": "oculto"
     },
     "bodyModel": {
@@ -1684,13 +1686,15 @@
       "pdf": "PDF (relatório para ler ou imprimir)",
       "csv": "CSV (planilha, em arquivo .zip)",
       "json": "JSON (dados estruturados)",
-      "hideBody": "Ocultar peso, medidas e calorias no arquivo",
+      "hideBody": "Ocultar",
       "submit": "Gerar arquivo",
       "queued": "Pedido recebido. O arquivo fica pronto em instantes: atualize a lista abaixo.",
       "busy": "Já há um arquivo sendo gerado. Espere ele ficar pronto para pedir outro.",
       "limit": "Você chegou ao limite de {max} arquivos em 24 horas. Tente de novo mais tarde.",
       "demo": "Na demonstração o relatório aparece só na tela: não geramos arquivo com dados fictícios.",
-      "error": "Não foi possível pedir o arquivo agora. Tente de novo."
+      "error": "Não foi possível pedir o arquivo agora. Tente de novo.",
+      "bodyValues": "Peso, medidas e calorias no arquivo",
+      "showBody": "Mostrar"
     },
     "files": {
       "title": "Arquivos gerados",
@@ -1719,5 +1723,17 @@
       "title": "HealthMind 360 · {heading}",
       "page": "Página {page} de {total}"
     }
+  },
+  "privacyMode": {
+    "toggle": "Modo privacidade",
+    "turnOn": "Ligar o modo privacidade: oculta peso, medidas, altura e calorias",
+    "turnOff": "Desligar o modo privacidade",
+    "active": "Modo privacidade ativo.",
+    "activeHint": "Peso, medidas, altura e calorias estão ocultos em todas as telas.",
+    "hidden": "oculto",
+    "valuesHidden": "Valores ocultos",
+    "valuesHiddenHint": "Desligue o modo privacidade para ver os valores.",
+    "editHidden": "Para editar este registro, desligue o modo privacidade.",
+    "goalHidden": "Alvo e progresso ocultos no modo privacidade."
   }
 }

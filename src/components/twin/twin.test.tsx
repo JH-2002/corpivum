@@ -141,8 +141,7 @@ describe('corpo 3D (§15, §16)', () => {
     expect(front).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('Antes × Agora: diferença em número, seta e palavra; modo privacidade oculta números', async () => {
-    const user = userEvent.setup();
+  it('Antes × Agora: diferença em número, seta e palavra', () => {
     renderWithIntl(
       <BodyTwin rows={toTwinRows(records)} latestHeightCm={null} demo={false} describedBy="x" />,
     );
@@ -151,11 +150,31 @@ describe('corpo 3D (§15, §16)', () => {
     expect(waistRow).toHaveTextContent('80 cm');
     expect(waistRow).toHaveTextContent('+1,5 cm (subiu)');
     expect(within(table).getByRole('row', { name: /Peito/ })).toHaveTextContent('sem registro');
+    // O botão local saiu: ocultar valores é o modo privacidade global (ADR-0035).
+    expect(screen.queryByRole('button', { name: 'Ocultar valores' })).toBeNull();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Ocultar valores' }));
-    expect(waistRow).not.toHaveTextContent('80 cm');
-    expect(waistRow).toHaveTextContent('oculto');
-    expect(screen.queryByText(/71 kg/)).toBeNull();
+  it('modo privacidade: "oculto" em todo valor, inclusive sem registro e na direção', async () => {
+    const user = userEvent.setup();
+    renderWithIntl(
+      <BodyTwin
+        rows={toTwinRows(records)}
+        latestHeightCm={null}
+        demo={false}
+        describedBy="x"
+        hidden
+      />,
+    );
+    const table = screen.getByRole('table', { name: /Medidas nas duas datas/ });
+    for (const row of within(table).getAllByRole('row').slice(1)) {
+      expect(row).toHaveTextContent('oculto');
+      expect(row).not.toHaveTextContent(/\d+(,\d+)? ?(cm|kg)|subiu|desceu|sem registro/);
+    }
+    const waist = screen.getAllByRole('button', { name: 'Cintura' })[0]!;
+    await user.click(waist);
+    const panel = document.getElementById(waist.getAttribute('aria-controls')!)!;
+    expect(panel).toHaveTextContent('Circunferência: oculto');
+    expect(document.body.textContent).not.toMatch(/\d+(,\d+)? ?(cm|kg)\b/);
   });
 
   it('uma data só: comparação explica que precisa de duas', () => {

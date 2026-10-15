@@ -6,6 +6,7 @@ import { ReportFileForm } from '@/components/reports/ExportForms';
 import { ReportPicker } from '@/components/reports/ReportPicker';
 import { ReportView } from '@/components/reports/ReportView';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
+import { readPrivacyMode } from '@/lib/privacy-mode-server';
 import { requireAppSession } from '@/modules/consent/server';
 import { todayIso } from '@/modules/health/server';
 import {
@@ -24,6 +25,8 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * Relatórios (§29, ADR-0032): semana, mês ou ano civil, na tela e em arquivo (PDF, CSV, JSON) com link
  * autenticado que expira (LEG-D03). Mesmas regras das telas de saúde: consentimento ou demo (ADR-0021).
+ * Modo privacidade (ADR-0035): o relatório na tela sai com os valores do corpo ocultos e o arquivo começa
+ * com "ocultar" marcado.
  */
 export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
@@ -39,10 +42,11 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const range = calendarRange(period, reference, today);
   const view = healthView(session, today);
   const own = view.kind === 'data' && view.mode === 'own';
+  const hidden = await readPrivacyMode();
   const [model, jobs] =
     view.kind === 'data' && !preview
       ? await Promise.all([
-          buildReport(view.source, { period, range, today, hideBodyValues: false }),
+          buildReport(view.source, { period, range, today, hideBodyValues: hidden }),
           own ? getReportsService().list(session.userId) : Promise.resolve([]),
         ])
       : [null, []];
@@ -63,7 +67,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
           {own ? (
             <>
               <p className="text-sm text-fg-muted">{t('generate.intro')}</p>
-              <ReportFileForm period={period} reference={reference} />
+              <ReportFileForm period={period} reference={reference} hideBodyDefault={hidden} />
             </>
           ) : (
             <p className="text-sm">{t('generate.demo')}</p>

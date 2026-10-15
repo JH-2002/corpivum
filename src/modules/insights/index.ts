@@ -12,7 +12,7 @@ export { nutritionInsights, type NutritionInsightsInput } from './nutrition';
 export { INSIGHT_RULES } from './rules';
 export { sleepInsights, type SleepInsightsInput } from './sleep';
 export { timelineInsights, type TimelineInsightsInput } from './timeline';
-export { twinBodyInsights, type TwinBodyInsightsInput } from './twin';
+export { twinBodyInsights, twinBodyInsightsHidden, type TwinBodyInsightsInput } from './twin';
 export type {
   DayStyle,
   Highlight,

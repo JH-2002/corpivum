@@ -8,6 +8,8 @@ import { ShellProvider } from '@/components/shell/ShellProvider';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/ui/SkipLink';
 import { readPeriod } from '@/lib/period-server';
+import { readPrivacyMode } from '@/lib/privacy-mode-server';
+import { PrivacyModeProvider } from '@/components/privacy-mode/PrivacyModeProvider';
 import { requireAppSession } from '@/modules/consent/server';
 import { acknowledgePolicyNoticeAction } from './actions';
 
@@ -21,36 +23,39 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await requireAppSession({ allowPendingUpdate: true });
   const t = await getTranslations('disclaimer');
   const { period, today } = await readPeriod();
+  const privacyMode = await readPrivacyMode();
 
   return (
-    <ShellProvider initialPeriod={period} today={today}>
-      <SkipLink />
-      <div className="flex min-h-dvh">
-        <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          {/* Modo demo (§52.5, ADR-0021): dados fictícios em memória, sempre com o indicador DEMO. */}
-          <Header isDemo={session.dataMode === 'demo'} />
-          <main
-            id={MAIN_CONTENT_ID}
-            tabIndex={-1}
-            className="flex-1 px-4 py-6 pb-24 outline-none md:pb-6 lg:px-6"
-          >
-            <div className="mx-auto w-full max-w-6xl">
-              {/* Versão nova não substancial dos Termos ou da Política: aviso único (ADR-0031). */}
-              <PolicyUpdateNotice
-                documents={session.documentNotices}
-                action={acknowledgePolicyNoticeAction}
-              />
-              {children}
-            </div>
-          </main>
-          <footer className="border-t border-border px-4 pt-4 pb-24 text-xs text-fg-muted md:pb-4 lg:px-6">
-            <p className="mx-auto max-w-6xl">{t('wellbeingOnly')}</p>
-          </footer>
+    <PrivacyModeProvider initialHidden={privacyMode}>
+      <ShellProvider initialPeriod={period} today={today}>
+        <SkipLink />
+        <div className="flex min-h-dvh">
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col">
+            {/* Modo demo (§52.5, ADR-0021): dados fictícios em memória, sempre com o indicador DEMO. */}
+            <Header isDemo={session.dataMode === 'demo'} />
+            <main
+              id={MAIN_CONTENT_ID}
+              tabIndex={-1}
+              className="flex-1 px-4 py-6 pb-24 outline-none md:pb-6 lg:px-6"
+            >
+              <div className="mx-auto w-full max-w-6xl">
+                {/* Versão nova não substancial dos Termos ou da Política: aviso único (ADR-0031). */}
+                <PolicyUpdateNotice
+                  documents={session.documentNotices}
+                  action={acknowledgePolicyNoticeAction}
+                />
+                {children}
+              </div>
+            </main>
+            <footer className="border-t border-border px-4 pt-4 pb-24 text-xs text-fg-muted md:pb-4 lg:px-6">
+              <p className="mx-auto max-w-6xl">{t('wellbeingOnly')}</p>
+            </footer>
+          </div>
         </div>
-      </div>
-      <BottomNav />
-      <QuickLogDialog />
-    </ShellProvider>
+        <BottomNav />
+        <QuickLogDialog />
+      </ShellProvider>
+    </PrivacyModeProvider>
   );
 }

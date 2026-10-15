@@ -4,6 +4,8 @@ import { HealthFrame, healthView } from '@/components/health/HealthPage';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
 import { TwinBodyView } from '@/components/twin/TwinViews';
 import { readPeriod } from '@/lib/period-server';
+import { readPrivacyMode } from '@/lib/privacy-mode-server';
+import { maskBodyScreen } from '@/modules/health/mask';
 import { requireAppSession } from '@/modules/consent/server';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,10 +23,16 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const preview = await readPreviewState(searchParams);
   const { range, today } = await readPeriod();
   const view = healthView(session, today);
-  const [records, height] =
+  const hidden = await readPrivacyMode();
+  const [raw, rawHeight] =
     view.kind === 'data' && !preview
       ? await view.source.session((s) => Promise.all([s.body(range), s.latestHeightCm()]))
       : [[], null];
+  // Modo privacidade (ADR-0035): medidas próprias não saem do servidor (o modelo fica na forma de
+  // referência). No demo os dados são fictícios e a forma continua; só os números ficam ocultos.
+  const own = view.kind === 'data' && view.mode === 'own';
+  const { records, latestHeightCm: height } =
+    hidden && own ? maskBodyScreen(raw) : { records: raw, latestHeightCm: rawHeight };
   return (
     <HealthFrame page="twin" href="/twin" session={session} view={view} preview={preview}>
       {view.kind === 'data' ? (
@@ -35,6 +43,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
             range={range}
             today={today}
             mode={view.mode}
+            hidden={hidden}
           />
         </div>
       ) : null}

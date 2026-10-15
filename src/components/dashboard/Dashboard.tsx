@@ -9,6 +9,7 @@ import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/component
 import { HabitCheckButton } from '@/components/health/HabitCheckButton';
 import { ScoreReviewForm } from '@/components/health/ScoreReviewForm';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
+import { Masked } from '@/components/privacy-mode/Masked';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import type { DashboardData } from '@/modules/health/dashboard';
@@ -131,16 +132,19 @@ function TodayHabits({ data, mode }: { data: DashboardData; mode: DashboardMode 
 /**
  * Dashboard "Seu estado atual" (§11, §12). Estados: vazio (nunca registrou), sem dados no período,
  * parcial (algum domínio sem registro) e completo. Todo valor tem selo (§39). Nenhum gráfico vazio.
+ * Modo privacidade (`hidden`, ADR-0035): o card do corpo chega sem peso (`maskDashboard`) e mostra "oculto".
  */
 export function Dashboard({
   data,
   mode,
   emptyAction,
+  hidden = false,
 }: {
   data: DashboardData;
   mode: DashboardMode;
   /** Ação do estado vazio (ex.: abrir o registro rápido). */
   emptyAction?: ReactNode;
+  hidden?: boolean;
 }) {
   const t = useTranslations('dashboard');
   const tp = useTranslations('pages.home');
@@ -269,16 +273,24 @@ export function Dashboard({
             tone="text-body"
             badge={b('INFORMADO')}
             noData={cards.body.state === 'no-data'}
-            value={cards.body.weightKg !== null ? `${formatDecimal(cards.body.weightKg)} kg` : null}
+            value={
+              hidden ? (
+                <Masked hidden />
+              ) : cards.body.weightKg !== null ? (
+                `${formatDecimal(cards.body.weightKg)} kg`
+              ) : null
+            }
             variation={
-              bodyTrend && cards.body.changeKg !== null
+              !hidden && bodyTrend && cards.body.changeKg !== null
                 ? `${TREND_ARROW[bodyTrend]} ${t(`variation.kg.${bodyTrend}`, {
                     value: formatDecimal(Math.abs(cards.body.changeKg)),
                   })}`
                 : null
             }
             origin={t('origins.body')}
-            spark={<Sparkline data={cards.body.spark} color="var(--hm-domain-body)" />}
+            spark={
+              hidden ? null : <Sparkline data={cards.body.spark} color="var(--hm-domain-body)" />
+            }
           />
         </div>
       </section>

@@ -107,7 +107,11 @@ export function BodyCompare({
             <>
               <span className="block font-semibold">{tb(`regions.${r}`)}</span>
               <span className="block">
-                {m ? tb('measure', { value: fmt.value(m.value, 'cm') }) : tb('notInformed')}
+                {fmt.hidden
+                  ? tb('measure', { value: fmt.hiddenText })
+                  : m
+                    ? tb('measure', { value: fmt.value(m.value, 'cm') })
+                    : tb('notInformed')}
               </span>
             </>
           );
@@ -230,13 +234,23 @@ export function BodyCompare({
                   {tf(d.field)}
                 </th>
                 <td className="tabular border-b border-border p-2">
-                  {d.before ? fmt.value(d.before.value, unit(d.field)) : t('noValue')}
+                  {fmt.hidden
+                    ? fmt.hiddenText
+                    : d.before
+                      ? fmt.value(d.before.value, unit(d.field))
+                      : t('noValue')}
                 </td>
                 <td className="tabular border-b border-border p-2">
-                  {d.after ? fmt.value(d.after.value, unit(d.field)) : t('noValue')}
+                  {fmt.hidden
+                    ? fmt.hiddenText
+                    : d.after
+                      ? fmt.value(d.after.value, unit(d.field))
+                      : t('noValue')}
                 </td>
                 <td className="tabular border-b border-border p-2">
-                  {d.delta !== null && d.direction ? (
+                  {fmt.hidden ? (
+                    fmt.hiddenText
+                  ) : d.delta !== null && d.direction ? (
                     <>
                       <span aria-hidden>{ARROW[d.direction]} </span>
                       {d.direction === 'same'

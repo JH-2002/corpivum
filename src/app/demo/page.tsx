@@ -7,12 +7,13 @@ import { buttonClasses } from '@/components/ui/Button';
 import { UpcomingReminders } from '@/components/modules/reminders/UpcomingReminders';
 import { buildDashboard } from '@/modules/health/dashboard';
 import { loadReminders } from '@/modules/health/screens';
+import { maskDashboard } from '@/modules/health/mask';
 import { demoContext } from './demo-data';
 
 /** Dashboard de demonstração (§40a). CTA "Começar com meus próprios dados" leva ao cadastro (§40b). */
 export default async function DemoHomePage() {
   const t = await getTranslations('demo');
-  const { range, today, source } = await demoContext();
+  const { range, today, source, hidden } = await demoContext();
   const data = await buildDashboard(source, range, today);
   const reminders = await loadReminders(source);
   return (
@@ -31,7 +32,7 @@ export default async function DemoHomePage() {
           {t('startOwn')}
         </Link>
       </section>
-      <Dashboard data={data} mode="publicDemo" />
+      <Dashboard data={hidden ? maskDashboard(data) : data} mode="publicDemo" hidden={hidden} />
       <UpcomingReminders
         reminders={reminders.reminders}
         prefs={reminders.prefs}

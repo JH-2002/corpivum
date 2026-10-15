@@ -12,6 +12,7 @@ import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { StatTile } from '@/components/health/StatTile';
+import { HiddenEditNotice, Masked } from '@/components/privacy-mode/Masked';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
@@ -35,7 +36,9 @@ import { MealForm } from './MealForm';
 /**
  * Tela de alimentação (§25, LEG-M07, LEG-M08): registro simples por refeição, água em um toque, contagem e
  * percepções, sem rótulo de comida, sem cardápio e sem calorias por padrão. Mesma tela para dados próprios
- * e demo (somente leitura, selo DEMO).
+ * e demo (somente leitura, selo DEMO). Modo privacidade (`hidden`, ADR-0035): as refeições chegam sem a
+ * estimativa de calorias (`maskNutritionScreen`); o total do dia diz "oculto" e a edição fica bloqueada (salvar
+ * sem o valor apagaria a estimativa).
  */
 export function NutritionView({
   meals,
@@ -46,6 +49,7 @@ export function NutritionView({
   range,
   today,
   mode,
+  hidden = false,
 }: {
   meals: MealRecord[];
   previousMeals: MealRecord[];
@@ -55,6 +59,7 @@ export function NutritionView({
   range: DateRange;
   today: string;
   mode: HealthMode;
+  hidden?: boolean;
 }) {
   const t = useTranslations('nutrition');
   const format = useFormatter();
@@ -204,7 +209,13 @@ export function NutritionView({
               value={avgWater !== null ? t('stats.waterValue', { ml: avgWater }) : '—'}
               badge={level('ESTIMADO')}
             />
-            {kcalToday !== null ? (
+            {estimateEnabled && hidden ? (
+              <StatTile
+                label={t('stats.kcalToday')}
+                value={<Masked hidden />}
+                badge={level('ESTIMADO')}
+              />
+            ) : kcalToday !== null ? (
               <StatTile label={t('stats.kcalToday')} value={kcalToday} badge={level('ESTIMADO')} />
             ) : (
               <StatTile
@@ -290,11 +301,15 @@ export function NutritionView({
                       {own ? (
                         <div className="mt-2">
                           <EntryActions id={m.id} itemLabel={label} deleteAction={deleteMealAction}>
-                            <MealForm
-                              maxDateTime={maxDateTime}
-                              estimateEnabled={estimateEnabled}
-                              values={{ ...m, eatenAt: toLocalDateTime(new Date(m.eatenAt)) }}
-                            />
+                            {hidden && estimateEnabled ? (
+                              <HiddenEditNotice />
+                            ) : (
+                              <MealForm
+                                maxDateTime={maxDateTime}
+                                estimateEnabled={estimateEnabled}
+                                values={{ ...m, eatenAt: toLocalDateTime(new Date(m.eatenAt)) }}
+                              />
+                            )}
                           </EntryActions>
                         </div>
                       ) : null}

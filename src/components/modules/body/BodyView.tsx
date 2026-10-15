@@ -6,13 +6,14 @@ import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
+import { HiddenValuesNotice, Masked } from '@/components/privacy-mode/Masked';
 import { StatTile } from '@/components/health/StatTile';
 import { SupportNotice } from '@/components/health/SupportNotice';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
-import { bodyInsights } from '@/modules/insights';
+import { bodyInsights, bodyInsightsHidden } from '@/modules/insights';
 import { BODY_FIELDS, change, latest, type BodyField, type BodyRecord } from '@/modules/body';
 import { BodyForm } from './BodyForm';
 
@@ -27,7 +28,8 @@ const GIRTH_STYLE: Record<string, { color: string; dash?: string }> = {
 
 /**
  * Tela de peso e medidas (§23): registro, valores mais recentes, evolução e lista editável. Sem IMC: é valor
- * só interno dos guardrails, nunca exibido (LEG-M06, ADR-0032).
+ * só interno dos guardrails, nunca exibido (LEG-M06, ADR-0032). No modo privacidade (`hidden`, ADR-0035) os
+ * registros já chegam sem valores: blocos com "oculto", gráficos e lista trocados por um aviso.
  */
 export function BodyView({
   records,
@@ -35,12 +37,15 @@ export function BodyView({
   range,
   today,
   mode,
+  hidden = false,
 }: {
   records: BodyRecord[];
   latestHeightCm: number | null;
   range: DateRange;
   today: string;
   mode: HealthMode;
+  /** Modo privacidade: os registros chegam sem valores (`maskBodyRecords`). */
+  hidden?: boolean;
 }) {
   const t = useTranslations('body');
   const format = useFormatter();
@@ -55,7 +60,7 @@ export function BodyView({
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'long', timeZone: 'UTC' });
   const empty = Object.fromEntries(BODY_FIELDS.map((f) => [f, null])) as Record<BodyField, null>;
 
-  const insights = bodyInsights({ records, range, today });
+  const insights = (hidden ? bodyInsightsHidden : bodyInsights)({ records, range, today });
 
   return (
     <div className="flex flex-col gap-6">
@@ -83,104 +88,122 @@ export function BodyView({
           <div className="grid gap-4 sm:grid-cols-3">
             <StatTile
               label={t('stats.weight')}
-              value={weight ? `${formatDecimal(weight.value)} kg` : '—'}
+              value={
+                <Masked hidden={hidden}>
+                  {weight ? `${formatDecimal(weight.value)} kg` : '—'}
+                </Masked>
+              }
               detail={weight ? t('stats.on', { date: longDay(weight.day) }) : undefined}
               badge={level('INFORMADO')}
             />
             <StatTile
               label={t('stats.change')}
               value={
-                weightChange !== null
-                  ? `${weightChange > 0 ? '+' : ''}${formatDecimal(weightChange)} kg`
-                  : '—'
+                <Masked hidden={hidden}>
+                  {weightChange !== null
+                    ? `${weightChange > 0 ? '+' : ''}${formatDecimal(weightChange)} kg`
+                    : '—'}
+                </Masked>
               }
               detail={t('stats.changeHint')}
               badge={level('ESTIMADO')}
             />
             <StatTile
               label={t('stats.height')}
-              value={height !== null ? `${formatDecimal(height)} cm` : '—'}
+              value={
+                <Masked hidden={hidden}>
+                  {height !== null ? `${formatDecimal(height)} cm` : '—'}
+                </Masked>
+              }
               badge={level('INFORMADO')}
             />
           </div>
 
-          <TimeChart
-            title={t('weightChart')}
-            badge={level('INFORMADO')}
-            guide="weight"
-            describedBy={summaryTextId('body')}
-            data={records.map((r) => ({ day: r.day, weightKg: r.weightKg }))}
-            series={[
-              {
-                key: 'weightKg',
-                label: t('fields.weightKg'),
-                unit: 'kg',
-                kind: 'line',
-                color: 'var(--hm-domain-body)',
-              },
-            ]}
-          />
-          {usedGirths.length > 0 ? (
-            <TimeChart
-              title={t('girthChart')}
-              badge={level('INFORMADO')}
-              guide="girth"
-              describedBy={summaryTextId('body')}
-              data={records.map((r) => ({
-                day: r.day,
-                ...Object.fromEntries(usedGirths.map((f) => [f, r[f]])),
-              }))}
-              series={usedGirths.map((f) => ({
-                key: f,
-                label: t(`fields.${f}`),
-                unit: 'cm',
-                kind: 'line' as const,
-                color: GIRTH_STYLE[f]?.color ?? 'var(--hm-domain-body)',
-                dash: GIRTH_STYLE[f]?.dash,
-              }))}
-            />
-          ) : null}
+          {hidden ? (
+            <HiddenValuesNotice title={t('weightChart')} />
+          ) : (
+            <>
+              <TimeChart
+                title={t('weightChart')}
+                badge={level('INFORMADO')}
+                guide="weight"
+                describedBy={summaryTextId('body')}
+                data={records.map((r) => ({ day: r.day, weightKg: r.weightKg }))}
+                series={[
+                  {
+                    key: 'weightKg',
+                    label: t('fields.weightKg'),
+                    unit: 'kg',
+                    kind: 'line',
+                    color: 'var(--hm-domain-body)',
+                  },
+                ]}
+              />
+              {usedGirths.length > 0 ? (
+                <TimeChart
+                  title={t('girthChart')}
+                  badge={level('INFORMADO')}
+                  guide="girth"
+                  describedBy={summaryTextId('body')}
+                  data={records.map((r) => ({
+                    day: r.day,
+                    ...Object.fromEntries(usedGirths.map((f) => [f, r[f]])),
+                  }))}
+                  series={usedGirths.map((f) => ({
+                    key: f,
+                    label: t(`fields.${f}`),
+                    unit: 'cm',
+                    kind: 'line' as const,
+                    color: GIRTH_STYLE[f]?.color ?? 'var(--hm-domain-body)',
+                    dash: GIRTH_STYLE[f]?.dash,
+                  }))}
+                />
+              ) : null}
+            </>
+          )}
 
-          <section aria-labelledby="body-list" className="flex flex-col gap-3">
-            <h2 id="body-list" className="text-base font-semibold">
-              {t('listTitle')}
-            </h2>
-            <ul className="flex flex-col gap-3">
-              {[...records].reverse().map((r) => (
-                <li key={r.id} className="rounded-lg border border-border bg-surface p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <h3 className="font-semibold">{longDay(r.day)}</h3>
-                    <ConfidenceBadge level={level('INFORMADO')} />
-                  </div>
-                  <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
-                    {BODY_FIELDS.filter((f) => r[f] !== null).map((f) => (
-                      <div key={f}>
-                        <dt className="text-fg-muted">{t(`fields.${f}`)}</dt>
-                        <dd className="tabular font-semibold">{formatDecimal(r[f] ?? 0)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  {own ? (
-                    <div className="mt-2">
-                      <EntryActions
-                        id={r.id}
-                        itemLabel={longDay(r.day)}
-                        deleteAction={deleteBodyAction}
-                      >
-                        <BodyForm
-                          maxDateTime={maxDateTime}
-                          values={{
-                            ...r,
-                            measuredAt: toLocalDateTime(new Date(r.measuredAt)),
-                          }}
-                        />
-                      </EntryActions>
+          {hidden ? null : (
+            <section aria-labelledby="body-list" className="flex flex-col gap-3">
+              <h2 id="body-list" className="text-base font-semibold">
+                {t('listTitle')}
+              </h2>
+              <ul className="flex flex-col gap-3">
+                {[...records].reverse().map((r) => (
+                  <li key={r.id} className="rounded-lg border border-border bg-surface p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <h3 className="font-semibold">{longDay(r.day)}</h3>
+                      <ConfidenceBadge level={level('INFORMADO')} />
                     </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </section>
+                    <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+                      {BODY_FIELDS.filter((f) => r[f] !== null).map((f) => (
+                        <div key={f}>
+                          <dt className="text-fg-muted">{t(`fields.${f}`)}</dt>
+                          <dd className="tabular font-semibold">{formatDecimal(r[f] ?? 0)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {own ? (
+                      <div className="mt-2">
+                        <EntryActions
+                          id={r.id}
+                          itemLabel={longDay(r.day)}
+                          deleteAction={deleteBodyAction}
+                        >
+                          <BodyForm
+                            maxDateTime={maxDateTime}
+                            values={{
+                              ...r,
+                              measuredAt: toLocalDateTime(new Date(r.measuredAt)),
+                            }}
+                          />
+                        </EntryActions>
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </>
       )}
       {/* Apoio sempre visível no corpo (§48, ADR-0027; revisão de privacidade A1). */}

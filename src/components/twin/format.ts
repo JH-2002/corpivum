@@ -9,12 +9,16 @@ export const signedDecimal = (v: number) =>
 
 /**
  * Formatação das telas do twin: data longa e valores com unidade. No modo privacidade (§44/§45,
- * ADR-0026) todo número de medida vira "oculto", sem unidade.
+ * ADR-0035) todo número de medida vira "oculto", sem unidade; `hidden` diz às telas para trocar também o
+ * "não informado" e a direção da variação por "oculto" (com dados próprios as medidas nem chegam).
+ * Mesmo texto de `<Masked>` (`privacyMode.hidden`).
  */
 export function useTwinFormat(hideValues: boolean) {
   const format = useFormatter();
-  const tc = useTranslations('twin.controls');
+  const tc = useTranslations('privacyMode');
   return {
+    hidden: hideValues,
+    hiddenText: tc('hidden'),
     longDay: (iso: string) =>
       format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'long', timeZone: 'UTC' }),
     value: (v: number, unit: string) => (hideValues ? tc('hidden') : `${formatDecimal(v)} ${unit}`),

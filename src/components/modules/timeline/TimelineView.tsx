@@ -20,6 +20,8 @@ import {
  * Timeline pessoal (§31): registros por dia, do mais recente ao mais antigo, filtráveis por domínio
  * (links com `?dominio=`, funcionam sem JS) e pelo período global. Marcos automáticos sem comemoração
  * ligada a peso ou comida (LEG-M06, LEG-M07). Mesma tela para dados próprios e demo.
+ * Modo privacidade (`hidden`, ADR-0035): as medições chegam sem peso (`maskTimeline`) e dizem "valores
+ * ocultos". `filters={false}` tira os filtros (modo apresentação).
  */
 export function TimelineView({
   days,
@@ -28,6 +30,8 @@ export function TimelineView({
   range,
   today,
   mode,
+  hidden = false,
+  filters: showFilters = true,
 }: {
   days: TimelineDay[];
   domain: TimelineDomain | null;
@@ -35,8 +39,11 @@ export function TimelineView({
   range: DateRange;
   today: string;
   mode: HealthMode;
+  hidden?: boolean;
+  filters?: boolean;
 }) {
   const t = useTranslations('timeline');
+  const tm = useTranslations('privacyMode');
   const tn = useTranslations('nutrition');
   const ta = useTranslations('activity');
   const tg = useTranslations('goals');
@@ -86,6 +93,7 @@ export function TimelineView({
           );
         }
         if (item.otherFields > 0) parts.push(t('items.bodyOther', { count: item.otherFields }));
+        if (hidden) parts.push(tm('valuesHidden'));
         return parts.join(' · ');
       }
       case 'meal':
@@ -110,28 +118,30 @@ export function TimelineView({
     <div className="flex flex-col gap-6">
       <PeriodSummary insights={timelineInsights({ days, range, today })} demo={!own} />
 
-      <nav aria-label={t('filterLabel')} className="flex flex-wrap gap-2">
-        {filters.map((f) => {
-          const current = f.value === domain;
-          const href = (f.value ? `${basePath}?dominio=${f.value}` : basePath) as Route;
-          return (
-            <Link
-              key={f.label}
-              href={href}
-              aria-current={current ? 'page' : undefined}
-              className={cn(
-                'inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold',
-                current
-                  ? 'border-primary bg-primary-soft text-fg'
-                  : 'border-border-strong bg-surface text-fg',
-              )}
-            >
-              {current ? <span aria-hidden="true">✓ </span> : null}
-              {f.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {showFilters ? (
+        <nav aria-label={t('filterLabel')} className="flex flex-wrap gap-2">
+          {filters.map((f) => {
+            const current = f.value === domain;
+            const href = (f.value ? `${basePath}?dominio=${f.value}` : basePath) as Route;
+            return (
+              <Link
+                key={f.label}
+                href={href}
+                aria-current={current ? 'page' : undefined}
+                className={cn(
+                  'inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold',
+                  current
+                    ? 'border-primary bg-primary-soft text-fg'
+                    : 'border-border-strong bg-surface text-fg',
+                )}
+              >
+                {current ? <span aria-hidden="true">✓ </span> : null}
+                {f.label}
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
 
       {days.length === 0 ? (
         <StateView state="no-data" />

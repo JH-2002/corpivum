@@ -7,7 +7,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { StateView } from '@/components/ui/StateView';
 import type { DateRange } from '@/lib/period';
 import type { BodyRecord } from '@/modules/body';
-import { twinBodyInsights } from '@/modules/insights';
+import { twinBodyInsights, twinBodyInsightsHidden } from '@/modules/insights';
 import { toTwinRows } from '@/modules/twin';
 import { BodyTwin } from './BodyTwin';
 
@@ -15,6 +15,8 @@ import { BodyTwin } from './BodyTwin';
  * Corpo 3D (§15, §16, ADR-0026): resumo por regras, aviso de representação aproximada, modelo e
  * comparação. Recebe só as medições do período, já lidas com consentimento (ou do demo). Ao navegador
  * vão só dia e medidas (`toTwinRows`). Sem medição no período, mostra o estado "sem dados" (§34).
+ * Modo privacidade (`hidden`, ADR-0035): com dados próprios, as medições já chegam sem valores
+ * (`maskBodyScreen`) e o modelo fica na forma de referência; no demo, só os números ficam ocultos.
  */
 export function TwinBodyView({
   records,
@@ -22,17 +24,21 @@ export function TwinBodyView({
   range,
   today,
   mode,
+  hidden = false,
 }: {
   records: BodyRecord[];
   latestHeightCm: number | null;
   range: DateRange;
   today: string;
   mode: HealthMode;
+  hidden?: boolean;
 }) {
   const t = useTranslations('disclaimer');
   const tn = useTranslations('nav');
   const demo = mode !== 'own';
-  const insights = twinBodyInsights({ records, latestHeightCm, range, today });
+  const insights = hidden
+    ? twinBodyInsightsHidden({ records, range, today, referenceShape: !demo })
+    : twinBodyInsights({ records, latestHeightCm, range, today });
   return (
     <div className="flex flex-col gap-6">
       <PeriodInsights insights={insights} demo={demo} />
@@ -59,6 +65,7 @@ export function TwinBodyView({
           latestHeightCm={latestHeightCm}
           demo={demo}
           describedBy={summaryTextId('twin')}
+          hidden={hidden}
         />
       )}
     </div>

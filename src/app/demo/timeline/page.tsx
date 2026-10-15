@@ -4,6 +4,7 @@ import { TimelineView } from '@/components/modules/timeline/TimelineView';
 import type { PageSearchParams } from '@/components/shell/ModulePage';
 import { loadTimeline } from '@/modules/health/screens';
 import { buildTimeline, parseTimelineDomain } from '@/modules/timeline';
+import { maskTimeline } from '@/modules/health/mask';
 import { demoContext } from '../demo-data';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,17 +17,19 @@ export default async function DemoTimelinePage({
 }: {
   searchParams: PageSearchParams;
 }) {
-  const { range, today, source } = await demoContext();
+  const { range, today, source, hidden } = await demoContext();
   const domain = parseTimelineDomain((await searchParams).dominio);
   const data = await loadTimeline(source, range);
+  const days = buildTimeline({ ...data, range, today, domain });
   return (
     <TimelineView
-      days={buildTimeline({ ...data, range, today, domain })}
+      days={hidden ? maskTimeline(days) : days}
       domain={domain}
       basePath="/demo/timeline"
       range={range}
       today={today}
       mode="publicDemo"
+      hidden={hidden}
     />
   );
 }
