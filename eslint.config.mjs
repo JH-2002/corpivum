@@ -43,6 +43,9 @@ const config = [
       'src/modules/consent/**',
       'src/modules/privacy/**',
       'src/adapters/jobs/**',
+      // Exportação (ADR-0032): função SECURITY DEFINER de expiração e injeção do client nos testes.
+      'src/modules/reports/service.ts',
+      'src/modules/reports/server.ts',
     ],
     rules: {
       'no-restricted-imports': [

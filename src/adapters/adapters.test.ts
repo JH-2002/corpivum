@@ -163,6 +163,24 @@ describe('MemoryJobQueue', () => {
     expect(seen).toEqual(['r1']);
   });
 
+  it('drain chamado durante outro: sem execução dupla, mas o job novo roda na mesma rodada', async () => {
+    const queue = new MemoryJobQueue(captureLogger().logger);
+    const seen: string[] = [];
+    let concurrent: Promise<number> | undefined;
+    queue.register('slow', async () => {
+      seen.push('slow');
+      await queue.enqueue('fast', {});
+      concurrent = queue.drain();
+    });
+    queue.register('fast', async () => {
+      seen.push('fast');
+    });
+    await queue.enqueue('slow', {});
+    expect(await queue.drain()).toBe(2);
+    expect(await concurrent).toBe(0);
+    expect(seen).toEqual(['slow', 'fast']);
+  });
+
   it('marca como falho após o limite de tentativas, logando só metadados', async () => {
     const { records, logger } = captureLogger();
     const queue = new MemoryJobQueue(logger);

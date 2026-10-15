@@ -127,7 +127,9 @@ test('hábitos: criar, marcar no dashboard e ocultar sequências', async ({ page
   await expectNoAxeViolations(page);
 });
 
-test('corpo: medição com vírgula decimal e IMC estimado sem classificação', async ({ page }) => {
+test('corpo: medição com vírgula decimal, sem IMC na tela (LEG-M06, ADR-0032)', async ({
+  page,
+}) => {
   await newPerson(page, 'corpo');
   await page.goto('/corpo');
   await page.getByLabel('Peso (kg)').fill('70,5');
@@ -135,8 +137,10 @@ test('corpo: medição com vírgula decimal e IMC estimado sem classificação',
   await page.getByRole('button', { name: 'Salvar medição' }).click();
   await expect(page.getByRole('status').getByText('Registro salvo.')).toBeVisible();
   await expect(page.getByText('70,5 kg').first()).toBeVisible();
-  await expect(page.getByText('23,8', { exact: true })).toBeVisible();
-  await expect(page.getByText(/sem classificação/)).toBeVisible();
+  await expect(page.getByText('172 cm').first()).toBeVisible();
+  // IMC é valor só interno dos guardrails: nunca aparece (nem o número 23,8 de 70,5 kg e 172 cm).
+  await expect(page.locator('main')).not.toContainText(/IMC/);
+  await expect(page.getByText('23,8', { exact: true })).toHaveCount(0);
   await expectNoAxeViolations(page);
 });
 

@@ -78,3 +78,19 @@ export function bodyInsights({ records, range, today }: BodyInsightsInput): Modu
     ]),
   };
 }
+
+/**
+ * Variante sem números (modo privacidade, relatório com valores ocultos, ADR-0032): só a quantidade de
+ * medições no período. Nenhum peso, medida ou variação.
+ */
+export function bodyInsightsHidden({ records, range, today }: BodyInsightsInput): ModuleInsights {
+  const base = { module: 'body' as const, highlights: [] };
+  if (records.length === 0) return { ...base, state: 'empty', sentences: [sentence('empty')] };
+  return {
+    ...base,
+    state: records.length < 2 ? 'partial' : 'ok',
+    sentences: [
+      sentence('hiddenCount', { ...periodArgs(range, today), count: int(records.length) }),
+    ],
+  };
+}

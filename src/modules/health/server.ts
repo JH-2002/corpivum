@@ -1,6 +1,6 @@
 import 'server-only';
 import { getAdapters } from '@/adapters';
-import { withUser } from '@/lib/db';
+import { withUser, type Tx } from '@/lib/db';
 import { APP_TIME_ZONE, localDay } from '@/lib/dates';
 import { readTourSeen, writeTourSeen } from './preferences';
 import { createActivityService, type ActivityService } from '@/modules/activity/service';
@@ -97,8 +97,17 @@ function servicesWith(d: HealthDeps): HealthServices {
   };
 }
 
+/** Abre a transação com consentimento de `session` (no Next: `withConsent`; nos testes: banco de testes). */
+export type ConsentTx = <T>(userId: string, fn: (tx: Tx) => Promise<T>) => Promise<T>;
+
+const consentTx: ConsentTx = (userId, fn) => withConsent(userId, 'health_data', fn);
+
 /** Dados da própria pessoa (consentimento + RLS em toda leitura). */
-export function createOwnSource(userId: string, bound?: HealthDeps): HealthDataSource {
+export function createOwnSource(
+  userId: string,
+  bound?: HealthDeps,
+  openSession: ConsentTx = consentTx,
+): HealthDataSource {
   const d = bound ?? healthDeps();
   const s = bound ? servicesWith(bound) : getHealthServices();
   const { run } = d;
@@ -139,8 +148,8 @@ export function createOwnSource(userId: string, bound?: HealthDeps): HealthDataS
       }),
     // Uma transação com consentimento; os serviços dentro dela reutilizam o mesmo `tx`.
     session: (fn) =>
-      withConsent(userId, 'health_data', (tx) =>
-        fn(createOwnSource(userId, { ...healthDeps(), run: (_user, inner) => inner(tx) })),
+      openSession(userId, (tx) =>
+        fn(createOwnSource(userId, { ...d, run: (_user, inner) => inner(tx) }, openSession)),
       ),
   };
 }

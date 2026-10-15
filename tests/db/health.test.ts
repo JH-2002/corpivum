@@ -44,6 +44,7 @@ const TZ = 'America/Sao_Paulo';
 const HEALTH_TABLES = [
   'activity_entries',
   'body_measurements',
+  'data_export_jobs',
   'goals',
   'habit_checks',
   'habits',
@@ -134,7 +135,12 @@ async function seedAll(userId: string) {
   if (!sleep.ok || !body.ok || !meal.ok || !water.ok || !activity.ok || !goal.ok || !reminder.ok) {
     throw new Error('seed');
   }
+  // Pedido de exportação (ADR-0032): tabela de saúde, no mesmo modelo de políticas.
+  const exportJob = await deps.run(userId, (tx) =>
+    tx.dataExportJob.create({ data: { userId, kind: 'full_export', format: 'json' } }),
+  );
   return {
+    exportId: exportJob.id,
     sleepId: sleep.id,
     habitId,
     bodyId: body.id,
@@ -252,12 +258,16 @@ describe('eliminação agendada cobre todas as tabelas de saúde (LEG-D04, PR1b-
       [a.userId],
     );
     // Lista de produção, a mesma injetada por @/modules/privacy/server.
+    const objects: string[] = [];
     const eliminator = createHealthDataEliminator({
       db,
       logger: createLogger({ sink: () => {} }),
       erasers: HEALTH_DATA_ERASERS,
+      eraseObjects: async (userId) => void objects.push(userId),
     });
     expect(await eliminator.eliminate(a.userId)).toBe('eliminated');
+    // Arquivos de exportação (fora do banco) também saem, só os da própria pessoa (PR1b-B9).
+    expect(objects).toEqual([a.userId]);
 
     const after = await countsFor(a.userId);
     for (const table of HEALTH_TABLES) expect(after[table]).toBe(0);
@@ -266,7 +276,12 @@ describe('eliminação agendada cobre todas as tabelas de saúde (LEG-D04, PR1b-
 
   it('sem eliminadores, falha em vez de dar a eliminação como feita (revisão M1)', () => {
     expect(() =>
-      createHealthDataEliminator({ db, logger: createLogger({ sink: () => {} }), erasers: {} }),
+      createHealthDataEliminator({
+        db,
+        logger: createLogger({ sink: () => {} }),
+        erasers: {},
+        eraseObjects: async () => {},
+      }),
     ).toThrow();
   });
 

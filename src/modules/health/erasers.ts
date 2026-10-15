@@ -5,6 +5,7 @@ import { eraseHabitsData } from '@/modules/habits/eraser';
 import { eraseRemindersData } from '@/modules/notifications/eraser';
 import { eraseNutritionData } from '@/modules/nutrition/eraser';
 import type { HealthDataErasers } from '@/modules/privacy/health-data';
+import { eraseExportJobs } from '@/modules/reports/eraser';
 import { eraseSleepData } from '@/modules/sleep/eraser';
 
 /**
@@ -21,4 +22,6 @@ export const HEALTH_DATA_ERASERS: HealthDataErasers = {
   body: eraseBodyData,
   nutrition: eraseNutritionData,
   activity: eraseActivityData,
+  // Pedidos de exportação (ADR-0032); os arquivos no storage saem pelo `eraseObjects` do eliminador.
+  exports: eraseExportJobs,
 };

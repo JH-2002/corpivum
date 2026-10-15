@@ -50,6 +50,8 @@ const envSchema = z
     HEALTH_DATA_GRACE_DAYS: days.max(90).default(30),
     /** Retenção das provas de consentimento e de pedidos (LEG-R03). `LEGAL-REVIEW` (OI-04). Mínimo 1 ano. */
     PROOF_RETENTION_DAYS: days.min(365).default(1825),
+    /** Validade do link de download da exportação e dos relatórios: teto de 24 h (LEG-D03, ADR-0032). */
+    EXPORT_LINK_HOURS: z.coerce.number().int().min(1).max(24).default(24),
 
     KMS_PROVIDER: z.enum(['local']).default('local'),
     KMS_LOCAL_MASTER_KEY: z.string().optional(),

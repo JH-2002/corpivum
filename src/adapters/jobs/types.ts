@@ -25,6 +25,11 @@ export interface JobQueue {
   readonly id: string;
   enqueue(name: string, payload: JobPayload, options?: EnqueueOptions): Promise<string>;
   register(name: string, handler: JobHandler): void;
+  /**
+   * Só a fila em memória (dev/test): consome agora o que estiver pendente, sem esperar o próximo ciclo.
+   * A fila Postgres não implementa: quem consome é o worker (`JOB_WORKER`).
+   */
+  processNow?(): Promise<void>;
 }
 // Sem cancelamento genérico: cancelar é uma operação de domínio, na transação e só da própria pessoa
 // (ex.: app.health_elimination_cancel; revisão M4 da ADR-0019).

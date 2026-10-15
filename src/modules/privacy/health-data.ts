@@ -15,6 +15,8 @@ import { hasActiveConsent } from '@/modules/consent/guard';
  */
 export type HealthDataEraser = (tx: Tx) => Promise<number>;
 export type HealthDataErasers = Readonly<Record<string, HealthDataEraser>>;
+/** Dado de saúde FORA do banco (arquivos de exportação no storage, ADR-0032), apagado depois das tabelas. */
+export type ObjectEraser = (userId: string) => Promise<void>;
 
 export type EliminationOutcome = 'eliminated' | 'skipped';
 
@@ -22,6 +24,7 @@ export function createHealthDataEliminator(deps: {
   db: Db;
   logger: Logger;
   erasers: HealthDataErasers;
+  eraseObjects: ObjectEraser;
   now?: () => Date;
 }) {
   const now = deps.now ?? (() => new Date());
@@ -40,6 +43,9 @@ export function createHealthDataEliminator(deps: {
         });
         if (!user?.healthDataPurgeAt || user.healthDataPurgeAt > now()) return 'skipped';
         if (await hasActiveConsent(tx, 'health_data')) return 'skipped';
+        // Arquivos fora do banco primeiro, ainda na transação (revisão A1 da 6a): se o storage falhar, nada é
+        // confirmado e o job tenta de novo; se as tabelas falharem depois, o arquivo já sumiu e o download dá 404.
+        await deps.eraseObjects(userId);
         let rows = 0;
         for (const eraser of erasers) rows += await eraser(tx);
         await tx.user.update({ where: { id: userId }, data: { healthDataPurgeAt: null } });

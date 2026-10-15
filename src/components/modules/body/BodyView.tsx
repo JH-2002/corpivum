@@ -13,7 +13,7 @@ import { StateView } from '@/components/ui/StateView';
 import { toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { bodyInsights } from '@/modules/insights';
-import { BODY_FIELDS, bmi, change, latest, type BodyField, type BodyRecord } from '@/modules/body';
+import { BODY_FIELDS, change, latest, type BodyField, type BodyRecord } from '@/modules/body';
 import { BodyForm } from './BodyForm';
 
 const GIRTHS: BodyField[] = ['waistCm', 'hipCm', 'armCm', 'thighCm', 'chestCm'];
@@ -26,8 +26,8 @@ const GIRTH_STYLE: Record<string, { color: string; dash?: string }> = {
 };
 
 /**
- * Tela de peso e medidas (§23): registro, valores mais recentes, IMC estimado com texto neutro (sem
- * classificação, LEG-M04), evolução e lista editável.
+ * Tela de peso e medidas (§23): registro, valores mais recentes, evolução e lista editável. Sem IMC: é valor
+ * só interno dos guardrails, nunca exibido (LEG-M06, ADR-0032).
  */
 export function BodyView({
   records,
@@ -49,7 +49,6 @@ export function BodyView({
   const maxDateTime = toLocalDateTime(new Date());
   const weight = latest(records, 'weightKg');
   const height = latest(records, 'heightCm')?.value ?? latestHeightCm;
-  const bmiValue = bmi(weight?.value ?? null, height);
   const weightChange = change(records, 'weightKg');
   const usedGirths = GIRTHS.filter((f) => records.some((r) => r[f] !== null));
   const longDay = (iso: string) =>
@@ -81,7 +80,7 @@ export function BodyView({
         <StateView state="no-data" />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <StatTile
               label={t('stats.weight')}
               value={weight ? `${formatDecimal(weight.value)} kg` : '—'}
@@ -102,12 +101,6 @@ export function BodyView({
               label={t('stats.height')}
               value={height !== null ? `${formatDecimal(height)} cm` : '—'}
               badge={level('INFORMADO')}
-            />
-            <StatTile
-              label={t('stats.bmi')}
-              value={bmiValue !== null ? formatDecimal(bmiValue) : '—'}
-              detail={bmiValue !== null ? t('stats.bmiHint') : t('stats.bmiNeeds')}
-              badge={level('ESTIMADO')}
             />
           </div>
 

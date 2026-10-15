@@ -10,18 +10,15 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 /**
  * Revogação dos dados de bem-estar (ADR-0019): aviso claro antes do 2º clique. O que para na hora, a data
- * da eliminação, como cancelar e a oferta de exportar antes. A exportação chega na Fase 6
- * (`exportAvailable`); até lá o aviso diz que ela estará disponível em breve.
+ * da eliminação, como cancelar e a oferta de exportar antes (exportação completa em "Seus dados", ADR-0032).
  */
 export function HealthRevokeDialog({
   purgeDate,
   graceDays,
-  exportAvailable,
 }: {
   /** Data da eliminação, já formatada no servidor. */
   purgeDate: string;
   graceDays: number;
-  exportAvailable: boolean;
 }) {
   const t = useTranslations('consent');
   const title = t('purposes.health_data.title');
@@ -38,11 +35,12 @@ export function HealthRevokeDialog({
             <li>{t('healthRevoke.elimination', { date: purgeDate, days: graceDays })}</li>
             <li>{t('healthRevoke.cancel')}</li>
           </ul>
-          {exportAvailable ? null : (
-            <p className="rounded-md bg-surface-muted p-3 text-sm">
-              {t('healthRevoke.exportSoon')}
-            </p>
-          )}
+          <p className="rounded-md bg-surface-muted p-3 text-sm">
+            {t('healthRevoke.exportFirst')}{' '}
+            <a href="#seus-dados" onClick={close} className="font-semibold text-primary underline">
+              {t('healthRevoke.exportLink')}
+            </a>
+          </p>
           <form action={revokeConsentAction} className="flex flex-wrap gap-3">
             <input type="hidden" name="purpose" value="health_data" />
             <SubmitButton variant="primary">{t('healthRevoke.confirm')}</SubmitButton>

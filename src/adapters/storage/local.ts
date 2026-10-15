@@ -52,6 +52,11 @@ export class LocalStorageProvider implements StorageProvider {
     await Promise.all([rm(file, { force: true }), rm(meta, { force: true })]);
   }
 
+  async deletePrefix(prefix: string): Promise<void> {
+    const { file } = this.#paths(prefix);
+    await rm(file, { recursive: true, force: true });
+  }
+
   async exists(key: string): Promise<boolean> {
     const { file } = this.#paths(key);
     return stat(file).then(
