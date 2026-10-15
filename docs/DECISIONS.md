@@ -1011,3 +1011,75 @@ o prazo de eliminação não é estendido por pedido em curso (OI-32 b). N4: o j
 repositório não tem checagens obrigatórias configuradas.
 **Consequências.** Toda nova tabela de saúde entra também em `app.export_job_health_data` e em `export-rows.ts` (o
 teste de equivalência quebra se faltar). O ADR-0032 continua valendo no restante.
+
+## ADR-0034 — Direitos do titular, exclusão de conta com purga imediata e papel `app_operator` (Fase 6b)
+**Contexto.** Segunda entrega da Fase 6 (ADR-0032). Até aqui o runtime só lia `privacy_requests`, `users.deleted_at`
+existia sem ninguém preenchê-la e o encerramento de menor não apagava os arquivos de exportação (PR1b-B9). Decisões do
+responsável pelo produto (2026-10-14): exclusão com **purga imediata, sem prazo de arrependimento**; pedidos manuais por
+runbook + script de linha de comando, sem painel admin; LEG-D05 sem anonimização (OI-31).
+**Decisão.**
+- **Pedidos (LEG-D07):** `app.privacy_request_open(kind)` (SECURITY DEFINER, `search_path` fixo, retorno mínimo) para
+  `confirmation_access`, `correction`, `portability`, `sharing_info` e `anonymization`: trava consultiva por pessoa,
+  idempotente com pedido aberto do mesmo tipo, prazo de 15 dias, no máximo 10 pedidos novos em 24 h, AuditLog
+  (`privacy_request_created`; `privacy_request_closed` nos fechamentos, sem ator humano). Confirmação e
+  compartilhamento já nascem concluídos (atendidos na tela: "Seus dados" e subprocessadores). Portabilidade nasce em
+  andamento, pede a exportação completa em JSON (fluxo da 6a) e é concluída por
+  `app.privacy_requests_close_portability()` quando há cópia completa pronta, na mesma transação que marca o arquivo
+  pronto. Sem autorização nem carência, no demo ou no limite diário, fica aberta para o encarregado. Comprovante na
+  tela (protocolo, tipo, situação, abertura e prazo) e recibo por e-mail `privacy-request-received` com os mesmos
+  dados, sem conteúdo de saúde. Job diário `privacy.request_deadlines` loga só contagens (vencendo em 3 dias, vencidos).
+  O plano previa `privacy_request_close_own(id, status)`; ficou uma função sem parâmetros e só para portabilidade
+  (os outros fechamentos automáticos acontecem na abertura), que não permite fechar pedido arbitrário.
+- **Atendimento manual:** papel `app_operator` (LOGIN, sem BYPASSRLS, NOINHERIT, sem USAGE em `public`, sem nenhuma
+  tabela), criado fora das migrações (`docker/postgres/init/03-operator-role.sh`, `pnpm db:operator:init`; a migração
+  falha com mensagem clara se ele não existir). Só executa `app.operator_requests_due()` (sem e-mail nem pessoa),
+  `app.operator_request_contact(id)` (e-mail da conta de pedido aberto, AuditLog `privacy_request_contact_read`) e
+  `app.operator_request_close(id, status)` (não fecha `deletion` nem `minor_closure`). `pnpm privacy:requests` usa
+  `OPERATOR_DATABASE_URL`; o `parseEnv` recusa essa URL no runtime de produção e `DATABASE_URL` com `app_operator`.
+  `db:verify-roles` e `tests/db/rls.test.ts` conferem o papel. O runbook existente `DATA_SUBJECT_REQUEST.md` foi
+  atualizado (em vez de um `PRIVACY_REQUESTS.md` novo, para não ter dois runbooks do mesmo processo).
+- **Exclusão de conta (LEG-D04):** seção "Excluir conta" na Central: o que é apagado e o que fica; a exportação
+  completa da 6a ali mesmo (gerar, ver o link e baixar) e, sem cópia pronta, a marcação obrigatória "Não quero baixar
+  meus dados"; reautenticação com senha atual e, com MFA, TOTP ou código de recuperação (`issueReauthProof(...,
+  'account_deletion', código)`, limites `reauthUser` e `mfaAccount`), prova de uso único de 2 min
+  (`app.reauth_issue` aceita `account_deletion`); frase "excluir minha conta" conferida no servidor (Zod, espaços e
+  maiúsculas normalizados). `app.account_delete(proof_hash)` consome a prova e, na mesma transação, preenche
+  `deleted_at`, revoga sessões, tokens e consentimentos, vence os links de exportação e abre o pedido `deletion` em
+  andamento (AuditLog `account_deletion_requested` pela pessoa e `account_deleted` pelo sistema). Depois, a action
+  limpa os cookies e leva a `/conta-excluida` (pública).
+- **Purga (`privacy.account_purge`, em minutos):** aviso `account-deleted` (data, prazos do que fica, canal do
+  encarregado; sem dado de saúde nem link de login; falha no envio não segura a purga e loga só `mail.failed` com o
+  modelo); depois, numa transação travada na linha da pessoa, arquivos no storage, eliminadores de
+  `HEALTH_DATA_ERASERS` e `app.account_purge()`, que conclui o pedido `deletion` e os demais abertos, grava
+  `account_purged` e apaga a conta (cascata). Falha no storage desfaz tudo e o job tenta de novo. O e-mail fica livre
+  para novo cadastro. `account_deletion_notice_sent` só quando o aviso saiu. Varredura diária
+  `privacy.account_purge_sweep` (`app.account_purge_due`) reenfileira contas excluídas que ainda existem. AuditLog só
+  com enums e UUIDs; logs sem userId, e-mail ou contagem de registros.
+- **Encerramento de menor (LEG-F04):** igual, e agora apaga também os arquivos no storage, na mesma transação.
+  Fecha PR1b-B9.
+- **Testes:** `tests/db/rights.test.ts` (pedidos: atendimento na hora, recibo, idempotência, concorrência, teto,
+  recusas do banco, portabilidade com e sem autorização, prazos; exclusão: senha errada, corte do acesso, MFA, prova
+  vencida/reutilizada/de outro propósito, só a própria conta; purga: todas as tabelas com `user_id` zeradas pelo
+  catálogo exceto as provas, storage vazio, AuditLog exato, falhas de e-mail e de storage, varredura; operador sem
+  tabela e só com as três funções). e2e `e2e/rights.spec.ts`: comprovante do pedido e o caminho
+  exportar → excluir → login falha → `rowCounts` zerado → arquivo apagado → pedido `deletion` concluído.
+**Revisão de privacidade (nada crítico nem alto; 2 médios, 5 baixos, 6 notas).** Corrigido, com teste, na migração
+`fase_6b_revisao`:
+- **M1:** com MFA ligado, **toda** ação destrutiva pede o 2º fator, inclusive o encerramento de menor (antes, só a
+  exclusão: o encerramento era um atalho para apagar a conta só com a senha).
+- **M2:** a exclusão encerra a carência (`health_data_purge_at = NULL`) e vence também os pedidos de exportação na
+  fila ou em geração; `app.health_grace_active()` ignora conta excluída. Nada de saúde é lido depois da exclusão.
+- **B1:** o aviso de exclusão sai uma vez só, logo depois da confirmação (antes, a cada nova tentativa da purga).
+- **B2:** textos dizem "acesso encerrado agora, apagamento em poucos minutos" (a purga é assíncrona).
+- **B3:** o texto da anonimização fala dos registros de bem-estar e cita métricas de uso e comunicações autorizadas.
+- **B4:** a purga conclui só o pedido `deletion`; os outros abertos saem como `rejected` (perderam o objeto, OI-33).
+- **N4:** segundo envio da exclusão responde como concluída, sem página de erro.
+**Não alterado.** **B5** (leitura do contato sem identificar o operador e sem teto): papel único por enquanto, sem
+produção; registrado em OI-34 para a Fase 7 (papel por pessoa num grupo NOLOGIN). **N5** (arquivo órfão se o storage
+falhar depois da purga): registrado em OI-35. **N1–N3, N6:** aceitas como estão (revogação provada por `revoked_at` +
+`account_deleted`; funções de varredura no mesmo padrão de `privacy_due_health_eliminations`; logs só com contagens
+globais; e-mails sem conteúdo de saúde).
+**Consequências.** Os prazos e textos novos (`privacyCenter.requests.*`, `privacyCenter.deletion.*`) são RASCUNHO
+(`LEGAL-REVIEW`; OI-33 exclusão imediata, OI-34 atendimento manual, OI-31 anonimização). Em produção, a credencial do
+`app_operator` e a criação do papel entram no runbook da Fase 7. Retenção, modo privacidade e modo apresentação ficam
+para a 6c (ADR-0035).
