@@ -54,6 +54,7 @@ export function PresentationDeck({
   children: ReactNode;
 }) {
   const t = useTranslations('presentation');
+  const td = useTranslations('disclaimer');
   const router = useRouter();
   const base: PresentationBase = scope === 'app' ? '/apresentacao' : '/demo/apresentacao';
   const index = PRESENTATION_SCREENS.indexOf(screen);
@@ -87,10 +88,12 @@ export function PresentationDeck({
     function onKey(event: KeyboardEvent) {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
       if (event.key === 'Escape') {
-        // Em tela cheia, o navegador usa o Esc para sair dela; fora, o Esc sai da apresentação. Um menu
-        // aberto (ex.: ajuda) fecha primeiro.
-        if (!document.fullscreenElement && !ownsArrows(event.target))
+        // Em tela cheia, o navegador usa o Esc para sair dela; fora, o Esc sai da apresentação. Um painel
+        // aberto (qualquer `aria-expanded="true"`, ex.: "Como é calculado") fecha primeiro (revisão B4).
+        const panelOpen = document.querySelector('[aria-expanded="true"]') !== null;
+        if (!document.fullscreenElement && !panelOpen && !ownsArrows(event.target)) {
           exitRef.current?.requestSubmit();
+        }
         return;
       }
       if (ownsArrows(event.target)) return;
@@ -223,6 +226,11 @@ export function PresentationDeck({
         </div>
         <p className="mx-auto mt-1 hidden w-full max-w-6xl text-xs text-fg-muted md:block">
           {t('keyboardHint')}
+        </p>
+        {/* Os mesmos avisos fixos do rodapé do app e do demo (revisão N5). */}
+        <p className="mx-auto mt-1 w-full max-w-6xl text-xs text-fg-muted">
+          {demo ? `${td('demoData')} ` : null}
+          {td('wellbeingOnly')}
         </p>
       </nav>
     </div>

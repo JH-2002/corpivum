@@ -11,6 +11,8 @@ export const RETENTION_LIMITS = {
   accessLogMaxDays: 180,
   /** LEG-D03: o link de download das exportações vale no máximo 24 h. */
   exportLinkMaxHours: 24,
+  /** LEG-R03: provas por pelo menos 1 ano (OI-04). */
+  proofMinDays: 365,
 } as const;
 
 export interface RetentionPolicy {
@@ -18,6 +20,7 @@ export interface RetentionPolicy {
   BACKUP_RETENTION_DAYS: number;
   ACCESS_LOG_RETENTION_DAYS: number;
   EXPORT_LINK_HOURS: number;
+  PROOF_RETENTION_DAYS: number;
 }
 
 /** Motivos da recusa: só nomes de variáveis e regras, nunca dados (LEG-R04). */
@@ -37,11 +40,15 @@ export function retentionViolations(policy: RetentionPolicy): string[] {
       `ACCESS_LOG_RETENTION_DAYS deve ser no máximo ${RETENTION_LIMITS.accessLogMaxDays} (LEG-R02)`,
     );
   }
+  if (policy.PROOF_RETENTION_DAYS < RETENTION_LIMITS.proofMinDays) {
+    out.push(`PROOF_RETENTION_DAYS deve ser no mínimo ${RETENTION_LIMITS.proofMinDays} (LEG-R03)`);
+  }
   for (const key of [
     'PURGE_DAYS',
     'BACKUP_RETENTION_DAYS',
     'ACCESS_LOG_RETENTION_DAYS',
     'EXPORT_LINK_HOURS',
+    'PROOF_RETENTION_DAYS',
   ] as const) {
     if (!Number.isInteger(policy[key]) || policy[key] <= 0) {
       out.push(`${key} deve ser um inteiro positivo`);

@@ -84,6 +84,25 @@ test.describe('demo público', () => {
     expect(await privacyCookie(page)).toBe('on');
   });
 
+  test('apresentação abandonada pelo voltar não pula a entrada depois de mudar o modo no shell', async ({
+    page,
+  }) => {
+    await page.goto('/demo/apresentacao');
+    await page.getByRole('button', { name: 'Começar apresentação' }).click();
+    await expect(page.getByRole('heading', { level: 2, name: 'Painel' })).toBeVisible();
+    // Sai sem o botão "Sair" e desliga o modo no shell: a apresentação aberta é esquecida (revisão M1).
+    await page.goto('/demo');
+    await page.getByRole('button', { name: 'Desligar o modo privacidade' }).click();
+    await expect.poll(() => privacyCookie(page)).toBe('off');
+    await expect
+      .poll(async () =>
+        (await page.context().cookies()).some((c) => c.name === '__Host-hm_presenting'),
+      )
+      .toBe(false);
+    await page.goto('/demo/apresentacao?tela=twin');
+    await expect(page.getByRole('button', { name: 'Começar apresentação' })).toBeVisible();
+  });
+
   for (const viewport of [
     { width: 320, height: 640 },
     { width: 1920, height: 1080 },

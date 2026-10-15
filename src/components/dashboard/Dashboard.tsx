@@ -36,7 +36,8 @@ function DomainCard({
   noData,
 }: {
   title: string;
-  href: Route;
+  /** Sem `href` (modo apresentação), o título não leva para fora da tela. */
+  href?: Route;
   icon: LucideIcon;
   tone: string;
   badge: ConfidenceLevel;
@@ -52,9 +53,13 @@ function DomainCard({
       <div className="flex items-start justify-between gap-2">
         <h3 className="flex items-center gap-2 font-semibold">
           <Icon className={`size-5 ${tone}`} aria-hidden="true" />
-          <Link href={href} className="underline-offset-4 hover:underline">
-            {title}
-          </Link>
+          {href ? (
+            <Link href={href} className="underline-offset-4 hover:underline">
+              {title}
+            </Link>
+          ) : (
+            title
+          )}
         </h3>
         <ConfidenceBadge level={badge} />
       </div>
@@ -78,7 +83,15 @@ function DomainCard({
 }
 
 /** Hábitos de hoje com check rápido (§11.5). Aparece também quando não há registros no período. */
-function TodayHabits({ data, mode }: { data: DashboardData; mode: DashboardMode }) {
+function TodayHabits({
+  data,
+  mode,
+  links = true,
+}: {
+  data: DashboardData;
+  mode: DashboardMode;
+  links?: boolean;
+}) {
   const t = useTranslations('dashboard');
   const b = (level: ConfidenceLevel) => badgeFor(mode, level);
   return (
@@ -95,7 +108,7 @@ function TodayHabits({ data, mode }: { data: DashboardData; mode: DashboardMode 
       {data.todayHabits.length === 0 ? (
         <p className="text-sm text-fg-muted">
           {t('noHabits')}{' '}
-          {mode === 'own' ? (
+          {mode === 'own' && links ? (
             <Link href="/habitos" className="font-semibold text-primary underline">
               {t('createHabit')}
             </Link>
@@ -133,24 +146,27 @@ function TodayHabits({ data, mode }: { data: DashboardData; mode: DashboardMode 
  * Dashboard "Seu estado atual" (§11, §12). Estados: vazio (nunca registrou), sem dados no período,
  * parcial (algum domínio sem registro) e completo. Todo valor tem selo (§39). Nenhum gráfico vazio.
  * Modo privacidade (`hidden`, ADR-0035): o card do corpo chega sem peso (`maskDashboard`) e mostra "oculto".
+ * `links={false}` (modo apresentação): nada leva para fora do deck, que sairia sem restaurar o modo.
  */
 export function Dashboard({
   data,
   mode,
   emptyAction,
   hidden = false,
+  links = true,
 }: {
   data: DashboardData;
   mode: DashboardMode;
   /** Ação do estado vazio (ex.: abrir o registro rápido). */
   emptyAction?: ReactNode;
   hidden?: boolean;
+  links?: boolean;
 }) {
   const t = useTranslations('dashboard');
   const tp = useTranslations('pages.home');
   const td = useTranslations('disclaimer');
   const base = mode === 'publicDemo' ? '/demo' : '';
-  const link = (path: string) => `${base}${path}` as Route;
+  const link = (path: string) => (links ? (`${base}${path}` as Route) : undefined);
   const b = (level: ConfidenceLevel) => badgeFor(mode, level);
 
   if (data.state === 'empty') {
@@ -167,7 +183,7 @@ export function Dashboard({
     return (
       <div className="flex flex-col gap-6">
         <StateView state="no-data" action={emptyAction} />
-        {data.todayHabits.length > 0 ? <TodayHabits data={data} mode={mode} /> : null}
+        {data.todayHabits.length > 0 ? <TodayHabits data={data} mode={mode} links={links} /> : null}
       </div>
     );
   }
@@ -315,9 +331,9 @@ export function Dashboard({
         />
       </div>
 
-      <TodayHabits data={data} mode={mode} />
+      <TodayHabits data={data} mode={mode} links={links} />
 
-      {mode === 'publicDemo' ? null : (
+      {mode === 'publicDemo' || !links ? null : (
         <Link
           href="/twin"
           className="flex items-center gap-3 rounded-lg border border-border bg-surface p-4 hover:bg-surface-muted"

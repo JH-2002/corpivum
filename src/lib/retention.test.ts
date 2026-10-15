@@ -7,6 +7,7 @@ const ok = {
   BACKUP_RETENTION_DAYS: 30,
   ACCESS_LOG_RETENTION_DAYS: 180,
   EXPORT_LINK_HOURS: 24,
+  PROOF_RETENTION_DAYS: 1825,
 };
 
 const infra = (backup: Record<string, unknown> = {}, storage: Record<string, unknown> = {}) =>
@@ -32,6 +33,7 @@ describe('assertRetentionPolicy (ADR-0035)', () => {
     [{ EXPORT_LINK_HOURS: 25 }, 'EXPORT_LINK_HOURS'],
     [{ ACCESS_LOG_RETENTION_DAYS: 181 }, 'ACCESS_LOG_RETENTION_DAYS'],
     [{ PURGE_DAYS: 0, BACKUP_RETENTION_DAYS: 0 }, 'PURGE_DAYS'],
+    [{ PROOF_RETENTION_DAYS: 364 }, 'PROOF_RETENTION_DAYS'],
   ])('recusa %o', (change, key) => {
     const policy = { ...ok, ...change };
     expect(() => assertRetentionPolicy(policy)).toThrow(RetentionPolicyError);

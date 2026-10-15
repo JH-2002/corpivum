@@ -36,7 +36,14 @@ export async function PresentationContent({
   switch (screen) {
     case 'painel': {
       const data = await buildDashboard(source, range, today);
-      return <Dashboard data={hidden ? maskDashboard(data) : data} mode={mode} hidden={hidden} />;
+      return (
+        <Dashboard
+          data={hidden ? maskDashboard(data) : data}
+          mode={mode}
+          hidden={hidden}
+          links={false}
+        />
+      );
     }
     case 'twin': {
       const [raw, rawHeight] = await source.session((s) =>

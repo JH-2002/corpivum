@@ -162,7 +162,11 @@ export function GoalsView({
             )}
           />
         </div>
-        {archivedGoal ? null : blocked.length > 0 ? (
+        {archivedGoal ? null : hidden && isBodyValueGoal(goal.metric) ? (
+          // Nem o aviso do guardrail: ele revela a relação entre alvo, peso e altura (revisão B5). O apoio
+          // continua fixo na tela de corpo.
+          <p className="text-sm text-fg-muted">{tm('goalHidden')}</p>
+        ) : blocked.length > 0 ? (
           <GuardrailNotice reasons={blocked} />
         ) : (
           <Progress goal={goal} />

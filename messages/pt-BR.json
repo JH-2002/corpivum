@@ -1250,8 +1250,7 @@
       "side": "Lado",
       "rotateLeft": "Girar para a esquerda",
       "rotateRight": "Girar para a direita",
-      "reset": "Restaurar visão",
-      "hidden": "oculto"
+      "reset": "Restaurar visão"
     },
     "bodyModel": {
       "legend": "Modelo do corpo",
@@ -1717,7 +1716,8 @@
       "delete": "Apagar",
       "deleteLabel": "Apagar {name}",
       "deleted": "Arquivo apagado.",
-      "linkNote": "O download só funciona com você conectado e expira em até 24 horas. O arquivo nunca fica em endereço público."
+      "linkNote": "O download só funciona com você conectado e expira em até 24 horas. O arquivo nunca fica em endereço público.",
+      "bodyHidden": "Peso, medidas e calorias ocultos"
     },
     "pdf": {
       "title": "HealthMind 360 · {heading}",

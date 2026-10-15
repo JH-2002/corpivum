@@ -38,7 +38,7 @@ export function PresentationStart({ scope }: { scope: 'app' | 'demo' }) {
   );
 }
 
-/** Botão que entra no modo apresentação (menu de ajuda e página "Mais"). */
+/** Botão que entra no modo apresentação (menu de ajuda). */
 export function EnterPresentationForm({
   scope,
   className,

@@ -28,23 +28,38 @@ const PrivacyModeContext = createContext<PrivacyModeContextValue | null>(null);
  */
 export function PrivacyModeProvider({
   initialHidden,
+  scope = 'shell',
   children,
 }: {
   initialHidden: boolean;
+  /** `presentation`: dentro do deck (não encerra a apresentação ao mudar). */
+  scope?: 'shell' | 'presentation';
   children: ReactNode;
 }) {
   const router = useRouter();
   const [hidden, setLocal] = useState(initialHidden);
+  // O servidor manda o estado do cookie a cada recarga: se mudou (outra aba, falha), o indicador acompanha.
+  const [serverHidden, setServerHidden] = useState(initialHidden);
+  if (serverHidden !== initialHidden) {
+    setServerHidden(initialHidden);
+    setLocal(initialHidden);
+  }
   const [pending, startTransition] = useTransition();
   const setHidden = useCallback(
     (next: boolean) => {
+      const previous = hidden;
       setLocal(next);
       startTransition(async () => {
-        await setPrivacyModeAction(next);
+        try {
+          await setPrivacyModeAction(next, scope);
+        } catch {
+          // Sem gravar o cookie, o servidor segue no estado anterior: o botão e a faixa também.
+          setLocal(previous);
+        }
         router.refresh();
       });
     },
-    [router],
+    [hidden, router, scope],
   );
   const value = useMemo(() => ({ hidden, setHidden, pending }), [hidden, setHidden, pending]);
   return <PrivacyModeContext.Provider value={value}>{children}</PrivacyModeContext.Provider>;

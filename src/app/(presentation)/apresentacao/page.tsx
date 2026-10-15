@@ -40,7 +40,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const source = own && view.kind === 'data' ? view.source : createDemoSourceFor(today);
 
   return (
-    <PrivacyModeProvider initialHidden={hidden}>
+    <PrivacyModeProvider initialHidden={hidden} scope="presentation">
       <PresentationDeck
         scope="app"
         screen={screen}

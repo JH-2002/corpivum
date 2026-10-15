@@ -1137,6 +1137,22 @@ peso, medidas, altura e calorias; o modo apresentação usa dados de demonstraç
   (teclado, foco, Esc, privacidade ligada na entrada e restaurada na saída, "meus dados", sem consentimento, axe, sem
   IMC, 320 e 1920 px). A CI mede o JS de entrada das rotas da apresentação (o three.js segue sob demanda) e migra o
   banco de testes antes de subir o servidor do e2e (os jobs da subida falhavam contra um banco vazio).
+**Revisão de privacidade (nada crítico nem alto; 2 médios, 5 baixos, 8 notas).** Corrigido, com teste:
+- **M1:** apresentação abandonada (voltar do navegador, link para fora) deixava `__Host-hm_presenting` e a próxima
+  entrada pulava a tela de entrada ou restaurava uma escolha velha. Agora o cookie vale no máximo 4 h, mudar o modo
+  privacidade fora do deck o apaga (`setPrivacyModeAction(on, 'shell')`) e o painel da apresentação não tem links que
+  saem do deck (`Dashboard links={false}`).
+- **B2:** a lista de arquivos diz "Peso, medidas e calorias ocultos" (chave própria). **B3:** o estado do botão e da
+  faixa acompanha o cookie a cada recarga e volta atrás se a action falhar. **B4:** Esc com um painel aberto
+  (`aria-expanded="true"`) não sai da apresentação. **B5:** metas de peso e calorias suspensas pelo guardrail mostram
+  só "Alvo e progresso ocultos" no modo (o aviso revelaria a relação entre alvo, peso e altura; o apoio segue fixo na
+  tela de corpo). **N2:** Zod na action do modo. **N4:** o piso de `PROOF_RETENTION_DAYS` (365) entra em
+  `assertRetentionPolicy` e no `check:retention`. **N5:** avisos fixos (`disclaimer.wellbeingOnly` e, no demo,
+  `disclaimer.demoData`) no rodapé da apresentação. **N6:** chave `twin.controls.hidden` removida.
+**Não alterado.** **M2** (sair da apresentação restaura o modo desligado e mostra os valores em seguida, um Esc depois
+de sair da tela cheia): é a decisão do plano ("ao sair, volta ao estado anterior"); o risco fica registrado em OI-36(d)
+para decisão do produto. **B1** (no demo, as medidas fictícias vão ao twin com o modo ligado, para a forma fictícia
+continuar): dado sintético, decisão registrada acima; o e2e confere só dados próprios no HTML.
 **Consequências.** PR4-B8 e PR1b-R2-B1 fechados; OI-23(e) feito na parte técnica. Os cookies de preferência e os
 textos `privacyMode.*`/`presentation.*` são RASCUNHO (`LEGAL-REVIEW`, OI-36). O modo privacidade some ao fechar o
 navegador (como o período); persistir entre sessões fica para decisão (OI-36 c). Arquivo órfão de exportação segue

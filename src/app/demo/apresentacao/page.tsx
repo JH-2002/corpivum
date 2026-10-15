@@ -27,7 +27,7 @@ export default async function DemoPresentationPage({
   const screen = parsePresentationScreen((await searchParams).tela);
   const { range, today, source, hidden } = await demoContext();
   return (
-    <PrivacyModeProvider initialHidden={hidden}>
+    <PrivacyModeProvider initialHidden={hidden} scope="presentation">
       <PresentationDeck scope="demo" screen={screen} own={false} demo>
         <PresentationContent
           screen={screen}

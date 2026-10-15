@@ -14,6 +14,7 @@ const DEFAULTS: RetentionPolicy = {
   BACKUP_RETENTION_DAYS: 30,
   ACCESS_LOG_RETENTION_DAYS: 180,
   EXPORT_LINK_HOURS: 24,
+  PROOF_RETENTION_DAYS: 1825,
 };
 
 /** `CHAVE=valor` por linha; ignora comentários e linhas em branco. */
@@ -39,6 +40,7 @@ export function policyFromDotenv(vars: Record<string, string>): RetentionPolicy 
     BACKUP_RETENTION_DAYS: pick('BACKUP_RETENTION_DAYS'),
     ACCESS_LOG_RETENTION_DAYS: pick('ACCESS_LOG_RETENTION_DAYS'),
     EXPORT_LINK_HOURS: pick('EXPORT_LINK_HOURS'),
+    PROOF_RETENTION_DAYS: pick('PROOF_RETENTION_DAYS'),
   };
 }
 
