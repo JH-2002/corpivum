@@ -890,3 +890,81 @@ não exigir novo aceite; mostrar um aviso informativo único e registrar a ciên
 **Consequências.** Versão nova de documento passa a exigir escolher entre substancial (reconsentimento, LEG-C06) e não
 substancial (aviso e ciência) e escrever o texto de `policyNotice.changes.<documento>.v<n>`. A decisão é `LEGAL-REVIEW`
 (OI-30). OI-29 fechada.
+
+## ADR-0032 — Exportação completa, relatórios em arquivo e valores só internos (Fase 6a)
+**Contexto.** A Fase 6 foi dividida em três entregas (6a exportação e relatórios, 6b direitos do titular e exclusão de
+conta, 6c retenção, modo privacidade e modo apresentação), no escopo do ADR-0027 e do ADR-0030: só os domínios do
+desenvolvimento corporal, sem humor, diário, cérebro, medicamentos nem IA. Esta entrega cobre LEG-D03 (portabilidade)
+e o §29 (relatórios), e parte de LEG-D01 (seção "Seus dados").
+**Decisão.**
+- **`data_export_jobs`** (migração `fase_6a_exportacao`): pedido de exportação completa (JSON ou CSV) ou de relatório
+  (PDF, CSV ou JSON) de semana, mês ou ano civil. Tabela de saúde no modelo do ADR-0021 (RLS dono + consentimento, DELETE
+  só pelo dono, FK em cascata, sem TRUNCATE, eliminador em `HEALTH_DATA_ERASERS`). CHECKs: PDF só em relatório; pronto
+  exige prazo e tamanho; **prazo do link no máximo 24 h depois da última atualização** (LEG-D03), conferido no banco.
+- **Arquivo nunca público:** gerado em segundo plano (`reports.generate`, payload só com IDs), **cifrado** com envelope
+  (ADR-0016, contexto `{ userId, data_export_jobs, file }`) e guardado no `StorageProvider` em
+  `exports/<userId>/<jobId>.bin` (sem coluna de chave; o prefixo por pessoa permite apagar tudo de uma vez). O "link" é a
+  rota `GET /privacidade/exportacoes/[id]`: sessão validada no banco, dono (RLS), consentimento ativo, `status = ready` e
+  `expires_at > now()` pelo relógio do banco; `Content-Disposition: attachment`, `Cache-Control: private, no-store`.
+  `EXPORT_LINK_HOURS` (padrão 24, máximo 24) no `parseEnv`. Um teste de segurança exige a guarda em todo `route.ts` de
+  `(app)`.
+- **Limites:** trava consultiva por pessoa, um pedido em andamento por vez e no máximo 5 em 24 h. Só com
+  `data_mode = own` (no demo, o relatório aparece só na tela: nada de arquivo com dado fictício, ADR-0021).
+- **Expiração e revogação:** job `reports.expire` de hora em hora (`app.exports_expire_due`, SECURITY DEFINER, devolve só
+  IDs) marca vencidos e apaga os arquivos. Revogar o consentimento de saúde vence todos os links **na mesma transação,
+  antes da revogação** (`expireExportsIn`); a geração em curso confere o estado e descarta o arquivo. A eliminação
+  agendada apaga as linhas (eliminador) e depois os arquivos (`eraseObjects`, injetado como os eliminadores; fecha a
+  parte de storage de PR1b-B9 para a revogação; a exclusão de conta vem na 6b).
+- **Conteúdo da exportação (portabilidade):** JSON versionado (`schemaVersion`) com conta (e-mail, datas, preferências,
+  consentimentos, aceites e pedidos, sem hash, token ou segredo), e uma tabela por domínio com selo e unidades. CSV: ZIP
+  sem compressão escrito no projeto (`zip.ts`, sem dependência nova, ADR-0009), um CSV por tabela, UTF-8 com BOM,
+  separador `;`, e neutralização de injeção de fórmula (`= + - @`). Colunas em **lista fechada** por tabela, copiadas
+  campo a campo.
+- **Relatório (§29):** modelo único (`buildReport`) para a tela e o arquivo: resumo por domínio pela camada explicativa
+  (ADR-0025), destaques, gráficos (por dia; acima de 62 dias, média ou total por semana), metas e Índice v2 com
+  `disclaimer.wellbeingScore`. Só descreve o período (ADR-0030). Metas de peso e de calorias entram só na contagem, sem
+  número (LEG-M06, LEG-M07). Opção "ocultar peso, medidas e calorias" (`hide_body_values`): o corpo vira só a quantidade
+  de medições (`bodyInsightsHidden`) e o gráfico de peso sai. Rodapé fixo `disclaimer.reportFooter` na tela, no JSON, no
+  CSV e **em toda página do PDF**, com "Página X de Y".
+- **PDF com `pdf-lib` 1.17.1** (versão fixa; 4 dependências transitivas, `pnpm audit` sem achado novo), gerado no
+  servidor, sem rede nem fonte externa (Helvetica padrão, WinAnsi; caracteres fora dela são trocados ou descartados).
+  Gráficos em vetor sempre seguidos da tabela de valores. O PDF não é marcado para leitor de tela: a versão acessível é a
+  página `/relatorios`. O `pdf-lib` não entra em nenhum JS do navegador (conferido no build).
+- **Valores só internos (LEG-M06, decisão do responsável pelo produto, 2026-10-14):** IMC, relação cintura/quadril e
+  dimensões de calibração do twin nunca são exibidos nem exportados. O bloco de IMC saiu da tela de corpo (OI-23(h)); o
+  IMC fica só nos guardrails. `INTERNAL_ONLY_VALUES` é a rede de segurança dos testes (JSON, CSV, PDF, texto do relatório
+  e e2e das telas).
+- **Fila em memória (dev/test):** uma só por processo (`globalThis`): no build, a instrumentação e as server actions
+  ficavam com filas diferentes e o job pedido numa action nunca rodava. `JobQueue.processNow?()` consome na hora depois
+  de um pedido (só a fila em memória implementa; a Postgres segue com o worker). Um `drain` chamado durante outro pede
+  mais uma passada, sem executar o mesmo job duas vezes.
+- **Central de Privacidade:** seção "Seus dados" (LEG-D01, fecha PR2-N6) com a quantidade de registros por categoria,
+  onde corrigir cada uma, o que fica da conta e dos registros técnicos, a exportação completa e os arquivos das últimas
+  24 h. O aviso de revogação passa a oferecer a exportação (fecha PR1b-N2).
+**Fora desta entrega.** Pedidos do titular, exclusão de conta e o papel `app_operator` (6b); modo privacidade global,
+modo apresentação e `pnpm check:retention` (6c). LEG-D02 sem histórico de versões e LEG-D05 sem anonimização ficam
+registrados em OPEN_ISSUES (OI-20, OI-31).
+**Revisão de privacidade (nada crítico; 2 altos, 3 médios, 5 baixos, 3 notas).** Corrigido, com teste
+(`tests/db/reports.test.ts`), nas migrações `fase_6a_revisao` e `fase_6a_prazo`:
+- **A1:** a eliminação apaga os arquivos (`eraseObjects`) DENTRO da transação, antes das tabelas: falha no storage
+  desfaz tudo e o job tenta de novo (antes, o arquivo ficava órfão para sempre).
+- **A2/B5:** limpeza em duas fases (`app.exports_cleanup_due` lista sem mudar nada; o job apaga o arquivo e só então
+  `app.exports_mark_file_deleted` marca `expired` + `file_deleted_at`), com falha isolada por item; a linha sai 2 dias
+  depois do arquivo (`app.exports_purge_rows`).
+- **M1/B3:** apagar um arquivo vence o link na hora e mantém a linha (o limite diário continua contando); o arquivo sai
+  em seguida ou na próxima execução do job.
+- **M3:** a exportação completa leva a estimativa de calorias guardada mesmo com a estimativa desligada
+  (`meals(..., { allStored: true })`): é dado da pessoa.
+- **B1:** gatilho `app.data_export_jobs_guard`: prazo nunca acima de `now() + 24 h` (1 s de tolerância pelo
+  arredondamento em milissegundos), nunca estendido, arquivo apagado não volta.
+- **B2 (parte):** pedido parado há mais de 1 h (antes, 1 dia) tem o arquivo apagado. Depois da revogação, o arquivo sai
+  na próxima execução do job, em até 1 h (ROPA T10 ajustado).
+- **B4:** a lista mostra como expirado o arquivo vencido ainda não limpo. **N1:** relatório com atualização pendente
+  leva à atualização; só a exportação completa passa. **N2:** logs da exportação só com `jobId`.
+- **Fila em memória:** o job pedido numa action nunca rodava no build (cópias diferentes da fila e da classe por
+  bundle); fila única por processo e `processNow?()`.
+**Não alterado.** **M2** (portabilidade bloqueada sem consentimento de saúde, inclusive os dados da conta, e durante a
+carência após a revogação): decisão de produto e jurídica, registrada em OI-32. **N3** (selo `INFORMADO` na estimativa
+de calorias): é a estimativa da própria pessoa, como no cartão de metas (PR4-B4).
+**Consequências.** Tabela nova com dado de saúde fora do banco precisa de eliminador de objetos. Textos novos
+(`reports.*`, `privacyCenter.data.*`, `consent.healthRevoke.exportFirst`) são RASCUNHO (`LEGAL-REVIEW`, OI-21).
