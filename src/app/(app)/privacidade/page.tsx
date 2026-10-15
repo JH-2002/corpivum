@@ -98,6 +98,8 @@ export default async function PrivacyCenterPage() {
   const date = (d: Date) => format.dateTime(d, { dateStyle: 'long' });
   const when = (d: Date) => format.dateTime(d, { dateStyle: 'short', timeStyle: 'short' });
   const purgeAt = state.health.status === 'revoked' ? state.health.purgeAt : null;
+  // Carência (OI-32): só até a data da eliminação, mesmo que o job ainda não tenha rodado (revisão B4).
+  const graceUntil = purgeAt && purgeAt > new Date() ? purgeAt : null;
 
   function status(p: PurposeState) {
     if (p.active) {
@@ -187,7 +189,9 @@ export default async function PrivacyCenterPage() {
         {session.dataMode === 'demo' ? (
           <p className="text-sm">{t('data.demo')}</p>
         ) : counts === null ? (
-          <p className="text-sm">{t('data.noConsent')}</p>
+          <p className="text-sm">
+            {graceUntil ? t('data.grace', { date: date(graceUntil) }) : t('data.noConsent')}
+          </p>
         ) : (
           <ul className="grid gap-2 text-sm sm:grid-cols-2">
             {EXPORT_TABLES.map((name) => (
@@ -218,12 +222,13 @@ export default async function PrivacyCenterPage() {
           <li>{t('data.accountItems.sessions')}</li>
           <li>{t('data.accountItems.access', { days: env.ACCESS_LOG_RETENTION_DAYS })}</li>
         </ul>
-        {session.dataMode === 'own' && counts !== null ? (
+        {/* Na carência após revogar (OI-32), a cópia completa continua disponível até a eliminação. */}
+        {session.dataMode === 'own' && (counts !== null || graceUntil) ? (
           <>
             <h3 className="text-base font-semibold">{t('data.exportTitle')}</h3>
             <p className="text-sm text-fg-muted">{t('data.exportDescription')}</p>
             <FullExportForm />
-            <ExportFiles jobs={exports} href="/privacidade" />
+            <ExportFiles jobs={exports} href="/privacidade" until={graceUntil} />
           </>
         ) : null}
       </Section>

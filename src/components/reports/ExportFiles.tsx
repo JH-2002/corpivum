@@ -8,11 +8,22 @@ import { buttonClasses } from '@/components/ui/Button';
 import { formatIsoDate } from '@/lib/period';
 import type { ExportJobSummary } from '@/modules/reports/service';
 
+const earliest = (a: Date, b: Date | null) => (b && b < a ? b : a);
+
 /**
  * Arquivos das últimas 24 h (LEG-D03, ADR-0032): estado, prazo do link, baixar e apagar. O link aponta para a
  * rota autenticada; não há endereço público. Estado em texto e ícone (a cor nunca é o único canal).
  */
-export function ExportFiles({ jobs, href }: { jobs: ExportJobSummary[]; href: Route }) {
+export function ExportFiles({
+  jobs,
+  href,
+  until = null,
+}: {
+  jobs: ExportJobSummary[];
+  href: Route;
+  /** Carência após revogar (OI-32): nenhum link vale além da data da eliminação. */
+  until?: Date | null;
+}) {
   const t = useTranslations('reports.files');
   const th = useTranslations('reports.heading');
   const tg = useTranslations('reports.generate');
@@ -57,7 +68,7 @@ export function ExportFiles({ jobs, href }: { jobs: ExportJobSummary[]; href: Ro
                     {t(`status.${status}`)}
                     {ready && j.expiresAt
                       ? ` · ${t('expires', {
-                          date: format.dateTime(new Date(j.expiresAt), {
+                          date: format.dateTime(earliest(new Date(j.expiresAt), until), {
                             dateStyle: 'short',
                             timeStyle: 'short',
                           }),

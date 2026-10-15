@@ -46,9 +46,14 @@ jobs:
       - run: node scripts/route-js.mjs "(app)/inicio" demo "(app)/twin" demo/twin
 
   e2e:
-    name: E2E e acessibilidade (Playwright + axe)
+    # Dividido em 2 partes (shards), cada uma com banco e servidor próprios: o job inteiro chegou a 9m54s.
+    name: E2E e acessibilidade (Playwright + axe) ${{ matrix.shard }}/2
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -67,13 +72,13 @@ jobs:
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       # Inclui cadastro, menor sem linha no banco, revogação de sessão e CSP (LEG-S04, LEG-F01, LEG-S05).
-      - run: pnpm test:e2e
+      - run: pnpm test:e2e --shard=${{ matrix.shard }}/2
       - if: always()
         run: docker compose down -v
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7
 

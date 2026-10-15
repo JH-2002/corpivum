@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { BODY_ASSETS } from '../src/modules/twin/bodyAssets';
 import {
   createVerifiedUser,
@@ -17,8 +17,20 @@ import {
  */
 // WebGL por software (SwiftShader) no navegador headless; os testes "sem WebGL" desligam por script.
 test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] } });
+// Testes com várias trocas de modelo somam esperas pelo sinal de carregamento: teto do teste acima do padrão (30 s).
+test.describe.configure({ timeout: 90_000 });
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+/**
+ * Espera o SINAL de modelo carregado (`data-twin-model`, gravado por `BodyModelMesh` quando o .glb é montado), não
+ * um tempo fixo. O teto passa o prazo do próprio app para cair no corpo em código (`MODEL_LOAD_TIMEOUT_MS` = 10 s):
+ * na CI o WebGL é por software e o 3D chega devagar. Um modelo errado falha logo pelo valor do atributo.
+ */
+const MODEL_READY_MS = 25_000;
+function expectModel(canvas: Locator, model: 'feminine' | 'masculine') {
+  return expect(canvas).toHaveAttribute('data-twin-model', model, { timeout: MODEL_READY_MS });
+}
 
 async function expectNoAxeViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
@@ -144,7 +156,7 @@ test.describe('demo público', () => {
       const preloaded = models.length;
       await prompt.getByRole('button', { name: 'Feminino' }).click();
       await expect(prompt).toHaveCount(0);
-      await expect(canvas).toHaveAttribute('data-twin-model', 'feminine');
+      await expectModel(canvas, 'feminine');
       // Escolher não pede nada novo: os arquivos já vieram na pré-carga (cache por arquivo).
       expect(models).toHaveLength(preloaded);
       const response = await page.request.get(all[0] ?? '');
@@ -154,7 +166,7 @@ test.describe('demo público', () => {
       const before = models.length;
       const picker = page.getByRole('group', { name: 'Modelo do corpo' });
       await picker.getByRole('radio', { name: 'Masculino' }).check();
-      await expect(canvas).toHaveAttribute('data-twin-model', 'masculine');
+      await expectModel(canvas, 'masculine');
       expect(models).toHaveLength(before);
 
       await page.reload();
@@ -166,7 +178,7 @@ test.describe('demo público', () => {
       await expect(page.getByRole('region', { name: 'Qual modelo você prefere ver?' })).toHaveCount(
         0,
       );
-      await expect(viewer(page).locator('canvas')).toHaveAttribute('data-twin-model', 'masculine');
+      await expectModel(viewer(page).locator('canvas'), 'masculine');
       await expectNoAxeViolations(page);
     });
     test.describe('carregamento do modelo (ADR-0028, revisão de carregamento)', () => {
@@ -206,7 +218,7 @@ test.describe('demo público', () => {
         await expect(loading).toHaveAttribute('data-reason', 'loading');
         await expect(loading).toContainText('Carregando o modelo 3D…');
         const canvas = viewer(page).locator('canvas');
-        await expect(canvas).toHaveAttribute('data-twin-model', 'feminine', { timeout: 15_000 });
+        await expectModel(canvas, 'feminine');
         await expect(loading).toHaveCount(0);
         await expect(status(page)).toHaveAttribute('data-twin-status', 'ready');
         expect(await drawn(page)).not.toContain('geometry');
@@ -238,7 +250,7 @@ test.describe('demo público', () => {
         await expect(status(page)).toHaveAttribute('data-twin-status', 'timeout');
         // O modelo chega depois do tempo limite.
         await Promise.all(held.map((go) => go()));
-        await expect(canvas).toHaveAttribute('data-twin-model', 'feminine', { timeout: 15_000 });
+        await expectModel(canvas, 'feminine');
       });
 
       test('contexto 3D perdido: restaurado vira corpo em código; sem restauração, 2D', async ({
@@ -247,7 +259,7 @@ test.describe('demo público', () => {
         await trackDrawnModels(page);
         await page.goto('/demo/twin');
         const canvas = viewer(page).locator('canvas');
-        await expect(canvas).toHaveAttribute('data-twin-model', 'feminine', { timeout: 15_000 });
+        await expectModel(canvas, 'feminine');
         const lose = (restore: boolean) =>
           page.evaluate((restoreIt) => {
             const el = document.querySelector('[data-twin-mode] canvas') as HTMLCanvasElement;
@@ -261,7 +273,7 @@ test.describe('demo público', () => {
         await expect(viewer(page)).toHaveAttribute('data-twin-mode', '3d');
 
         await page.reload();
-        await expect(canvas).toHaveAttribute('data-twin-model', 'feminine', { timeout: 15_000 });
+        await expectModel(canvas, 'feminine');
         await lose(false);
         await expect(viewer(page)).toHaveAttribute('data-twin-mode', '2d', { timeout: 10_000 });
         await expect(page.getByTestId('twin-fallback-notice')).toBeVisible();

@@ -305,6 +305,7 @@ enum AuditAction {
   data_export_requested
   data_export_downloaded
   data_export_deleted
+  data_export_health_read
 
   @@map("audit_action")
 }
@@ -757,6 +758,8 @@ model DataExportJob {
   /// Arquivo já apagado do storage (vencido, apagado pela pessoa ou após a revogação). A linha fica até
   /// `app.exports_cleanup` removê-la (ADR-0032, revisão).
   fileDeletedAt  DateTime?        @map("file_deleted_at") @db.Timestamptz(3)
+  /// Leitura dos dados de saúde pelo job de exportação (uma só por pedido, OI-32, ADR-0033).
+  healthReadAt   DateTime?        @map("health_read_at") @db.Timestamptz(3)
   createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
