@@ -6,6 +6,8 @@ import pg from 'pg';
 
 const migratorUrl = process.env.MIGRATION_DATABASE_URL;
 const userUrl = process.env.DATABASE_URL;
+// Opcional: conexão do atendimento manual (ADR-0034), conferida só se definida.
+const operatorUrl = process.env.OPERATOR_DATABASE_URL;
 if (!migratorUrl || !userUrl) {
   console.error('MIGRATION_DATABASE_URL e DATABASE_URL precisam estar definidos.');
   process.exit(1);
@@ -23,10 +25,11 @@ try {
 
   const { rows: roles } = await migrator.query(
     `SELECT rolname, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole
-       FROM pg_roles WHERE rolname IN ('app_user', 'app_migrator')`,
+       FROM pg_roles WHERE rolname IN ('app_user', 'app_migrator', 'app_operator')`,
   );
   const appUser = roles.find((r) => r.rolname === 'app_user');
   const appMigrator = roles.find((r) => r.rolname === 'app_migrator');
+  const appOperator = roles.find((r) => r.rolname === 'app_operator');
 
   check('app_user existe', appUser);
   check('app_user não é superusuário', appUser && !appUser.rolsuper);
@@ -38,12 +41,45 @@ try {
   check('app_migrator existe', appMigrator);
   check('app_migrator não é superusuário', appMigrator && !appMigrator.rolsuper);
   check('app_migrator sem BYPASSRLS', appMigrator && !appMigrator.rolbypassrls);
+  // Fase 6b (ADR-0034): atendimento manual de pedidos do titular.
+  check('app_operator existe', appOperator);
+  check('app_operator não é superusuário', appOperator && !appOperator.rolsuper);
+  check('app_operator sem BYPASSRLS', appOperator && !appOperator.rolbypassrls);
+  check(
+    'app_operator sem CREATEDB/CREATEROLE',
+    appOperator && !appOperator.rolcreatedb && !appOperator.rolcreaterole,
+  );
 
   // NOINHERIT não impede SET ROLE: app_user não pode ser membro de nenhum outro papel.
   const { rows: memberships } = await migrator.query(
     `SELECT count(*)::int AS n FROM pg_auth_members WHERE member = 'app_user'::regrole`,
   );
   check('app_user não é membro de outros papéis', memberships[0]?.n === 0);
+  const { rows: opMemberships } = await migrator.query(
+    `SELECT count(*)::int AS n FROM pg_auth_members
+      WHERE member = 'app_operator'::regrole OR roleid = 'app_operator'::regrole`,
+  );
+  check('app_operator fora de outros papéis', opMemberships[0]?.n === 0);
+  const { rows: opTables } = await migrator.query(
+    `SELECT count(*)::int AS n FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind IN ('r', 'v', 'm')
+        AND has_table_privilege('app_operator', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')`,
+  );
+  check('app_operator sem acesso a nenhuma tabela', opTables[0]?.n === 0);
+  const { rows: opPublic } = await migrator.query(
+    `SELECT has_schema_privilege('app_operator', 'public', 'USAGE,CREATE') AS any`,
+  );
+  check('app_operator sem USAGE/CREATE em public', opPublic[0] && !opPublic[0].any);
+  const { rows: opFunctions } = await migrator.query(
+    `SELECT coalesce(array_agg(p.proname::text ORDER BY p.proname), '{}') AS names
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'app' AND has_function_privilege('app_operator', p.oid, 'EXECUTE')`,
+  );
+  check(
+    'app_operator executa só app.operator_*',
+    (opFunctions[0]?.names ?? []).join(',') ===
+      'operator_request_close,operator_request_contact,operator_requests_due',
+  );
 
   const { rows: owners } = await migrator.query(
     `SELECT pg_get_userbyid(d.datdba) AS db_owner,
@@ -115,6 +151,17 @@ try {
 
   const { rows: who } = await runtime.query('SELECT current_user AS u');
   check('DATABASE_URL conecta como app_user', who[0]?.u === 'app_user');
+
+  if (operatorUrl) {
+    const operator = new pg.Client({ connectionString: operatorUrl });
+    try {
+      await operator.connect();
+      const { rows: op } = await operator.query('SELECT current_user AS u');
+      check('OPERATOR_DATABASE_URL conecta como app_operator', op[0]?.u === 'app_operator');
+    } finally {
+      await operator.end().catch(() => {});
+    }
+  }
 } catch (error) {
   console.error(`Falha ao verificar papéis: ${error?.code ?? error?.name ?? 'erro desconhecido'}`);
   process.exitCode = 1;

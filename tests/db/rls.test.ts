@@ -187,16 +187,25 @@ describe('privilégios e funções SECURITY DEFINER (ADR-0015)', () => {
     }
   });
 
-  it('PUBLIC não executa as funções de app; app_user só as que recebeu', async () => {
-    const { rows } = await admin.query<{ name: string; pub: boolean; usr: boolean }>(
+  it('PUBLIC não executa as funções de app; app_user e app_operator só as que receberam', async () => {
+    const { rows } = await admin.query<{ name: string; pub: boolean; usr: boolean; op: boolean }>(
       `SELECT p.proname AS name,
               has_function_privilege('public', p.oid, 'EXECUTE') AS pub,
-              has_function_privilege('app_user', p.oid, 'EXECUTE') AS usr
+              has_function_privilege('app_user', p.oid, 'EXECUTE') AS usr,
+              has_function_privilege('app_operator', p.oid, 'EXECUTE') AS op
          FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'app'`,
     );
+    // Atendimento manual (ADR-0034): o operador só executa as funções `operator_*`, e o runtime nenhuma delas.
+    const operatorOnly = (name: string) => name.startsWith('operator_');
+    expect(
+      rows
+        .filter((fn) => fn.op)
+        .map((fn) => fn.name)
+        .sort(),
+    ).toEqual(['operator_request_close', 'operator_request_contact', 'operator_requests_due']);
     for (const fn of rows) {
       expect(fn.pub, fn.name).toBe(false);
-      expect(fn.usr, fn.name).toBe(true);
+      expect(fn.usr, fn.name).toBe(!operatorOnly(fn.name));
     }
   });
 
