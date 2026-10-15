@@ -51,6 +51,8 @@ export const infraRetentionSchema = z.object({
     regions: z.array(z.string()).min(1),
     pointInTimeRecoveryDays: days,
   }),
+  /** Regra de ciclo de vida no prefixo `exports/` do storage: rede de segurança do `reports.expire` (OI-35). */
+  storage: z.object({ exportsLifecycleDays: days }),
 });
 
 /** Motivos de falha (vazio = ok). Só nomes e regras, nunca segredos. */
@@ -71,7 +73,7 @@ export function checkRetentionFiles(envExample: string, infraJson: string): stri
       ...parsed.error.issues.map((i) => `infra/retention.json: ${i.path.join('.')}: ${i.message}`),
     ];
   }
-  const { backup } = parsed.data;
+  const { backup, storage } = parsed.data;
   // LEG-S07: o backup do provedor não pode durar mais que a purga, e o ambiente declara o mesmo valor.
   if (backup.retentionDays > policy.PURGE_DAYS) {
     out.push('infra/retention.json: backup.retentionDays deve ser ≤ PURGE_DAYS (LEG-S07)');
@@ -89,6 +91,17 @@ export function checkRetentionFiles(envExample: string, infraJson: string): stri
   const outside = backup.regions.filter((r) => !(BRAZIL_REGIONS as readonly string[]).includes(r));
   if (outside.length > 0) {
     out.push(`infra/retention.json: região fora do Brasil: ${outside.join(', ')} (LEG-S10)`);
+  }
+  // O arquivo vive no máximo o link + 1 h (o job de hora em hora); a regra do provedor fica acima disso, para
+  // não apagar antes do link vencer, e nunca além da purga.
+  const minLifecycleDays = Math.ceil((policy.EXPORT_LINK_HOURS + 1) / 24);
+  if (storage.exportsLifecycleDays < minLifecycleDays) {
+    out.push(
+      `infra/retention.json: storage.exportsLifecycleDays deve ser ≥ ${minLifecycleDays} (link + 1 h)`,
+    );
+  }
+  if (storage.exportsLifecycleDays > policy.PURGE_DAYS) {
+    out.push('infra/retention.json: storage.exportsLifecycleDays deve ser ≤ PURGE_DAYS');
   }
   return out;
 }

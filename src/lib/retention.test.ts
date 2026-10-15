@@ -9,7 +9,7 @@ const ok = {
   EXPORT_LINK_HOURS: 24,
 };
 
-const infra = (backup: Record<string, unknown> = {}) =>
+const infra = (backup: Record<string, unknown> = {}, storage: Record<string, unknown> = {}) =>
   JSON.stringify({
     version: 1,
     backup: {
@@ -19,6 +19,7 @@ const infra = (backup: Record<string, unknown> = {}) =>
       pointInTimeRecoveryDays: 7,
       ...backup,
     },
+    storage: { exportsLifecycleDays: 2, ...storage },
   });
 
 describe('assertRetentionPolicy (ADR-0035)', () => {
@@ -63,6 +64,17 @@ describe('check:retention', () => {
   ])('recusa backup %o', (backup, reason) => {
     const env = 'PURGE_DAYS=30\nBACKUP_RETENTION_DAYS=30\n';
     expect(checkRetentionFiles(env, infra(backup)).join(' ')).toContain(reason);
+  });
+
+  it('recusa ciclo de vida das exportações mais curto que o link ou além da purga', () => {
+    const env = 'PURGE_DAYS=30\nBACKUP_RETENTION_DAYS=30\nEXPORT_LINK_HOURS=24\n';
+    expect(checkRetentionFiles(env, infra({}, { exportsLifecycleDays: 1 })).join(' ')).toContain(
+      'exportsLifecycleDays deve ser ≥ 2',
+    );
+    expect(checkRetentionFiles(env, infra({}, { exportsLifecycleDays: 31 })).join(' ')).toContain(
+      'PURGE_DAYS',
+    );
+    expect(checkRetentionFiles(env, infra())).toEqual([]);
   });
 
   it('recusa .env.example com backup acima da purga e JSON inválido', () => {

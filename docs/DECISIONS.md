@@ -1083,3 +1083,61 @@ globais; e-mails sem conteúdo de saúde).
 (`LEGAL-REVIEW`; OI-33 exclusão imediata, OI-34 atendimento manual, OI-31 anonimização). Em produção, a credencial do
 `app_operator` e a criação do papel entram no runbook da Fase 7. Retenção, modo privacidade e modo apresentação ficam
 para a 6c (ADR-0035).
+
+## ADR-0035 — Retenção, modo privacidade e modo apresentação (Fase 6c)
+**Contexto.** Terceira entrega da Fase 6 (ADR-0032, ADR-0034). A retenção já tinha jobs e a checagem de backup no
+`parseEnv` (ADR-0008), mas sem conferência fora do ambiente, sem documento único de prazos e com provas de
+reautenticação esquecidas na tabela (PR1b-R2-B1). Ocultar valores existia só no twin, como estado local (ADR-0026),
+e o peso continuava visível na timeline e nas metas (PR4-B8). O adendo (§44/§45) pede um modo privacidade e um modo
+apresentação que o liga por padrão. Decisões do responsável pelo produto (2026-10-14): o modo privacidade oculta
+peso, medidas, altura e calorias; o modo apresentação usa dados de demonstração por padrão, com opção "meus dados".
+**Decisão.**
+- **Política de retenção única** (`src/lib/retention.ts`): `assertRetentionPolicy` recusa backup > `PURGE_DAYS`,
+  link > 24 h e AccessLog > 180 dias. Roda no início dos jobs (`startJobs`): sem política válida, nenhum job sobe. Os
+  tetos (`RETENTION_LIMITS`) são os mesmos do `parseEnv`. `pnpm check:retention` (CI) confere o `.env.example` e a
+  política declarada em `infra/retention.json`: backup cifrado, no Brasil, retenção igual a `BACKUP_RETENTION_DAYS`
+  e ≤ `PURGE_DAYS`, recuperação a um ponto no tempo dentro da retenção, e a regra de ciclo de vida do prefixo
+  `exports/` (≥ link + 1 h, ≤ `PURGE_DAYS`). A conferência no provedor real fica para a Fase 7.
+- **Provas de reautenticação:** job diário `privacy.reauth_proofs_purge` com `app.privacy_purge_reauth_proofs()`
+  (SECURITY DEFINER, `search_path` fixo, só a contagem): apaga, de todas as contas, as usadas e as vencidas há mais de
+  1 minuto (a folga evita disputa com quem está consumindo a prova). Fecha PR1b-R2-B1.
+- **Expiração das exportações:** o job de hora em hora já existia como `reports.expire` (ADR-0032); o nome fica (o
+  plano o chamava de `privacy.exports_expire`). A varredura de arquivos órfãos (OI-35) não entra: o `StorageProvider`
+  não lista objetos; fica a regra de ciclo de vida declarada, aplicada no provedor na Fase 7.
+- **`docs/privacy/RETENTION.md`:** prazos, jobs, o pior caso (revogar: carência 30 + backup ≤ 30 = até 60 dias em
+  backup; excluir: minutos + backup ≤ 30) e a reaplicação das eliminações depois de restaurar um backup (runbook).
+- **Modo privacidade global:** cookie de sessão `__Host-hm_privacy` (`on`/`off`, HttpOnly, Secure, SameSite=Lax, sem
+  identificador; só `on` liga), gravado por server action pública (como o período, vale no demo). O **servidor**
+  omite os valores: as páginas leem o cookie e passam os dados por `src/modules/health/mask.ts` antes de qualquer
+  componente (corpo e twin sem medidas nem altura; card do corpo sem peso, variação nem minigráfico; metas de peso e
+  de calorias sem alvo, peso de partida nem progresso; timeline sem peso; refeições sem calorias). As telas mostram
+  "oculto" (`<Masked>`, `maskBodyValue`), trocam gráficos e a lista do corpo por um aviso e bloqueiam a edição onde
+  salvar sem o valor apagaria o dado (refeição com estimativa ligada, metas de peso e calorias). Resumos sem número
+  (`bodyInsightsHidden`, `twinBodyInsightsHidden`). Datas e quantidade de registros continuam (PR3-B3). Botão na
+  segunda linha do header (`aria-pressed`, ícone e texto; na primeira linha não cabe a 320 px) e indicador "Modo
+  privacidade ativo." com atalho para desligar. O botão local do twin sai.
+- **Twin no modo privacidade:** com dados próprios as medidas não saem do servidor e o modelo fica na **forma de
+  referência** (a forma é derivada das medidas; mandar a forma seria mandar as medidas). No demo, a forma fictícia
+  continua e só os números ficam ocultos.
+- **Relatórios:** a tela usa `hide_body_values` igual ao modo; o arquivo começa em "Ocultar" (escolha por botões de
+  opção: é preferência de exibição, não consentimento, então pode vir marcada; LEG-C02 vale para consentimento).
+- **Modo apresentação (§45):** `/apresentacao` (conta, grupo `(presentation)`, fora do shell) e `/demo/apresentacao`
+  (o shell do demo passou para `demo/(shell)`). Entrada e saída por server action (sem GET com efeito colateral):
+  entrar grava o estado anterior do modo privacidade em `__Host-hm_presenting` (sessão) e liga o modo; sair o
+  restaura (sem registro, fica ligado). Quem abre o endereço direto vê a tela de entrada antes de qualquer dado.
+  Quatro telas (painel, corpo 3D, timeline sem filtros, relatório do mês) com os mesmos componentes e selos; setas,
+  PageUp/PageDown, Home/End e botões navegam (as setas não agem dentro de campos e do controle de datas), Esc sai (em
+  tela cheia, o navegador usa o Esc para sair dela), foco no título a cada troca, Fullscreen API quando existe (senão
+  a janela inteira), sem animação de troca. Dados de demonstração por padrão (selo DEMO); "meus dados" só com conta no
+  modo de dados próprios e consentimento ativo (`healthView`). Entrada pelo menu de ajuda.
+- **Testes:** unidade (`assertRetentionPolicy`, `check:retention`, mascaradores e telas com "oculto", twin com
+  `hidden`, telas da apresentação); banco (purga das provas de reautenticação); e2e `e2e/privacy-mode.spec.ts`
+  (nenhum valor kg/cm/kcal no texto e nenhum valor gravado da pessoa no HTML de início, corpo, twin, metas, timeline,
+  alimentação e relatórios, com controle positivo; demo; cookie de sessão; axe) e `e2e/presentation.spec.ts`
+  (teclado, foco, Esc, privacidade ligada na entrada e restaurada na saída, "meus dados", sem consentimento, axe, sem
+  IMC, 320 e 1920 px). A CI mede o JS de entrada das rotas da apresentação (o three.js segue sob demanda) e migra o
+  banco de testes antes de subir o servidor do e2e (os jobs da subida falhavam contra um banco vazio).
+**Consequências.** PR4-B8 e PR1b-R2-B1 fechados; OI-23(e) feito na parte técnica. Os cookies de preferência e os
+textos `privacyMode.*`/`presentation.*` são RASCUNHO (`LEGAL-REVIEW`, OI-36). O modo privacidade some ao fechar o
+navegador (como o período); persistir entre sessões fica para decisão (OI-36 c). Arquivo órfão de exportação segue
+em OI-35 (Fase 7).
