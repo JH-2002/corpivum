@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import 'dotenv/config';
 import type { Page } from '@playwright/test';
 import pg from 'pg';
@@ -41,7 +42,8 @@ export async function withAdmin<T>(fn: (db: pg.Client) => Promise<T>): Promise<T
 }
 
 export function e2eEmail(name: string): string {
-  return `${name}.${Date.now()}.${Math.floor(Math.random() * 1e6)}@${E2E_DOMAIN}`;
+  // Sufixo de `node:crypto` (CodeQL js/insecure-randomness): o e-mail vira credencial de login nos testes.
+  return `${name}.${Date.now()}.${randomBytes(4).toString('hex')}@${E2E_DOMAIN}`;
 }
 
 type Purpose = 'health_data' | 'marketing' | 'product_metrics';
