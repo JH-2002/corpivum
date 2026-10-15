@@ -427,8 +427,9 @@ describe('consentimento no banco, não só na aplicação (LEG-C04)', () => {
       s.body.create(a.userId, { measuredAt: '2026-10-06T10:00', weightKg: 70 }),
     ).rejects.toBeInstanceOf(ConsentRequiredError);
 
-    // Sem o guard da aplicação: só `app.user_id`.
-    for (const table of HEALTH_TABLES) {
+    // Sem o guard da aplicação: só `app.user_id`. Exceção única: os pedidos de EXPORTAÇÃO COMPLETA (só metadados,
+    // sem conteúdo de saúde) continuam visíveis na carência, para a pessoa exportar até a eliminação (OI-32).
+    for (const table of HEALTH_TABLES.filter((t) => t !== 'data_export_jobs')) {
       const n = await withUserOn(db, a.userId, async (tx) => {
         const rows = await tx.$queryRawUnsafe<Array<{ n: number }>>(
           `SELECT count(*)::int AS n FROM public."${table}"`,
@@ -441,6 +442,12 @@ describe('consentimento no banco, não só na aplicação (LEG-C04)', () => {
       );
       expect(updated).toBe(0);
     }
+    const exportsVisible = await withUserOn(
+      db,
+      a.userId,
+      (tx) => tx.$queryRaw<Array<{ kind: string }>>`SELECT kind::text FROM public.data_export_jobs`,
+    );
+    expect(exportsVisible.map((r) => r.kind)).toEqual(['full_export']);
     await expect(
       withUserOn(db, a.userId, (tx) =>
         tx.sleepEntry.create({

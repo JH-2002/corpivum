@@ -403,10 +403,10 @@
     "error": "Não foi possível salvar. Tente novamente.",
     "healthRevoke": {
       "title": "Revogar o uso dos dados de bem-estar?",
-      "stopNow": "A partir de agora, nada é exibido nem processado: os registros ficam bloqueados.",
+      "stopNow": "A partir de agora, nada é exibido nem usado, exceto para gerar a cópia completa que você pedir: os registros ficam bloqueados.",
       "elimination": "Os dados de bem-estar já registrados serão eliminados em {date} ({days} dias).",
       "cancel": "Se você autorizar de novo antes dessa data, nada é eliminado.",
-      "exportFirst": "Antes de revogar, você pode baixar uma cópia completa dos seus dados em “Seus dados”, nesta página.",
+      "exportFirst": "Você pode baixar uma cópia completa dos seus dados em “Seus dados”, nesta página, antes ou depois de revogar, até a eliminação. Arquivos gerados antes de revogar deixam de valer na hora; depois de revogar, peça uma cópia nova.",
       "confirm": "Revogar agora",
       "keep": "Manter autorização",
       "exportLink": "Ir para “Seus dados”"
@@ -500,7 +500,8 @@
       },
       "exportTitle": "Baixar uma cópia de tudo",
       "exportDescription": "Exportação completa em JSON (estruturado) ou CSV (planilhas, em .zip), com todos os seus registros e os dados da conta. O arquivo fica disponível por até 24 horas, só para você, com a sessão ativa.",
-      "correctShort": "Ver e corrigir"
+      "correctShort": "Ver e corrigir",
+      "grace": "Você revogou a autorização dos dados de bem-estar: eles não são exibidos nem usados para nada, exceto para gerar a cópia que você pedir. Até a eliminação, em {date}, você ainda pode baixar uma cópia completa de tudo o que guardamos."
     }
   },
   "subprocessors": {

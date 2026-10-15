@@ -20,6 +20,16 @@ import { createSleepService } from '@/modules/sleep/service';
 import { createBodyService } from '@/modules/body/service';
 import { createNutritionService } from '@/modules/nutrition/service';
 import type { StorageProvider } from '@/adapters/storage/types';
+import { localDay } from '@/lib/dates';
+import { ConsentRequiredError } from '@/lib/errors';
+import { createActivityService } from '@/modules/activity/service';
+import { goalInputSchema } from '@/modules/goals';
+import { createGoalsService } from '@/modules/goals/service';
+import { createHabitsService } from '@/modules/habits/service';
+import { reminderInputSchema } from '@/modules/notifications';
+import { createRemindersService } from '@/modules/notifications/service';
+import { exportTables } from '@/modules/reports';
+import { exportRecordsFromRows } from '@/modules/reports/export-rows';
 import { createTestConsent } from './consent-helpers';
 import {
   connectAdmin,
@@ -180,6 +190,7 @@ describe('exportação completa (LEG-D03)', () => {
 
     expect(await auditActions(a.userId)).toEqual([
       'data_export_requested',
+      'data_export_health_read',
       'data_export_downloaded',
     ]);
   });
@@ -289,7 +300,7 @@ describe('exportação completa (LEG-D03)', () => {
 });
 
 describe('consentimento (LEG-C04)', () => {
-  it('sem consentimento: não pede, não gera e não baixa', async () => {
+  it('revogar vence os links anteriores e bloqueia o relatório', async () => {
     const a = await person();
     const s = service();
     const ready = await s.request(a.userId, { kind: 'full_export', format: 'json' });
@@ -298,13 +309,21 @@ describe('consentimento (LEG-C04)', () => {
     await a.consent.revoke(a.userId, 'health_data');
 
     expect(await s.download(a.userId, ready.jobId)).toBeNull();
-    expect(await s.list(a.userId)).toEqual([]);
-    expect((await s.request(a.userId, { kind: 'full_export', format: 'json' })).status).toBe(
-      'no_consent',
-    );
-    // A revogação venceu o link na mesma transação: o job apaga o arquivo.
+    expect(
+      (
+        await s.request(a.userId, {
+          kind: 'report',
+          format: 'pdf',
+          period: 'month',
+          reference: '2026-10-07',
+          hideBodyValues: false,
+        })
+      ).status,
+    ).toBe('no_consent');
+    // A revogação venceu o link na mesma transação: o job apaga o arquivo e ele some da lista.
     await s.expireDue();
     expect(await storage.exists(exportKey(a.userId, ready.jobId))).toBe(false);
+    expect(await s.list(a.userId)).toEqual([]);
   });
 
   it('revogação durante a geração: o arquivo não fica', async () => {
@@ -498,5 +517,287 @@ describe('revisão de privacidade da 6a (ADR-0032)', () => {
       tables: { meals: { records: Array<{ kcalEstimate: number | null }> } };
     };
     expect(doc.tables.meals.records[0]?.kcalEstimate).toBe(600);
+  });
+});
+
+describe('OI-32: exportação na carência após revogar (caminho restrito, LEGAL-REVIEW)', () => {
+  const HEALTH = [
+    'sleep_entries',
+    'habits',
+    'habit_checks',
+    'body_measurements',
+    'meal_entries',
+    'water_entries',
+    'activity_entries',
+    'strength_sets',
+    'goals',
+    'reminders',
+  ];
+  const ALL = { from: '1900-01-01', to: '2999-12-31' };
+
+  async function seedEverything(userId: string) {
+    await seed(userId);
+    await admin.query(`UPDATE users SET calorie_estimate_enabled = true WHERE id = $1`, [userId]);
+    const habits = createHabitsService(deps);
+    const habitId = await habits.create(userId, {
+      name: 'habito-sintetico-exportacao',
+      frequency: 'weekdays',
+      weekdays: [1, 3],
+      timesPerWeek: null,
+    });
+    expect(await habits.setCheck(userId, habitId, localDay(new Date()), true)).toBe('ok');
+    const nutrition = createNutritionService(deps);
+    const meal = await nutrition.createMeal(userId, {
+      eatenAt: '2026-10-06T12:30',
+      category: 'lunch',
+      description: 'refeicao-sintetica-exportacao',
+      kcalEstimate: 550,
+      note: 'nota-refeicao-sintetica',
+    });
+    const water = await nutrition.addWater(userId, { day: localDay(new Date()), ml: 250 });
+    const activity = await createActivityService(deps).create(userId, {
+      startedAt: '2026-10-06T18:00',
+      type: 'strength',
+      durationMin: 40,
+      note: 'nota-atividade-sintetica',
+      sets: [
+        { exercise: 'exercicio-sintetico-a', reps: 10, loadKg: 20 },
+        { exercise: 'exercicio-sintetico-b', reps: 8 },
+      ],
+    });
+    const goal = await createGoalsService(deps).create(
+      userId,
+      goalInputSchema.parse({ metric: 'habit_completion_pct', targetValue: '80', habitId }),
+    );
+    const reminder = await createRemindersService(deps).create(
+      userId,
+      reminderInputSchema.parse({ kind: 'habit', habitId, time: '21:00' }),
+    );
+    expect([meal.ok, water.ok, activity.ok, goal.ok, reminder.ok]).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+    await admin.query(`UPDATE users SET calorie_estimate_enabled = false WHERE id = $1`, [userId]);
+  }
+
+  /** Pedido de exportação completa já em geração (o único estado em que a função lê). */
+  async function processingJob(userId: string): Promise<string> {
+    const req = await service().request(userId, { kind: 'full_export', format: 'json' });
+    if (req.status !== 'queued') throw new Error(req.status);
+    await admin.query(`UPDATE data_export_jobs SET status = 'processing' WHERE id = $1`, [
+      req.jobId,
+    ]);
+    return req.jobId;
+  }
+
+  const readViaFunction = (userId: string, jobId: string) =>
+    withUserOn(
+      db,
+      userId,
+      (tx) =>
+        tx.$queryRaw<
+          Array<{ data: unknown }>
+        >`SELECT app.export_job_health_data(${jobId}::uuid) AS data`,
+    );
+
+  const ownSource = (userId: string) =>
+    createOwnSource(userId, deps, (u, fn) => withConsentOn(db, u, 'health_data', fn));
+
+  it('mesmo resultado que os serviços das telas, com textos decifrados e calorias guardadas', async () => {
+    const a = await person();
+    await seedEverything(a.userId);
+    const viaScreens = await ownSource(a.userId).session(async (s) => ({
+      sleep: await s.sleep(ALL, { withText: true }),
+      habits: await s.habits({ includeArchived: true }),
+      checks: await s.checks(ALL),
+      body: await s.body(ALL),
+      meals: await s.meals(ALL, { withText: true, allStored: true }),
+      water: await s.water(ALL),
+      activities: await s.activities(ALL, { withText: true }),
+      goals: await s.goals({ includeArchived: true }),
+      reminders: await s.reminders(),
+    }));
+    const jobId = await processingJob(a.userId);
+    const rows = await readViaFunction(a.userId, jobId);
+    const viaExport = await exportRecordsFromRows(rows[0]?.data, {
+      userId: a.userId,
+      cipher: deps.cipher,
+      timeZone: deps.timeZone,
+    });
+    expect(exportTables(viaExport)).toEqual(exportTables(viaScreens));
+    expect(viaExport.meals[0]?.kcalEstimate).toBe(550);
+    expect(viaExport.activities[0]?.sets.map((x) => x.exercise)).toEqual([
+      'exercicio-sintetico-a',
+      'exercicio-sintetico-b',
+    ]);
+  });
+
+  it('na carência: exporta tudo, com AuditLog; relatório continua bloqueado', async () => {
+    const a = await person();
+    await seedEverything(a.userId);
+    await a.consent.revoke(a.userId, 'health_data');
+    const s = service();
+    const report = await s.request(a.userId, {
+      kind: 'report',
+      format: 'json',
+      period: 'month',
+      reference: '2026-10-07',
+      hideBodyValues: false,
+    });
+    expect(report.status).toBe('no_consent');
+    const req = await s.request(a.userId, { kind: 'full_export', format: 'json' });
+    if (req.status !== 'queued') throw new Error(req.status);
+    expect(await s.generate(a.userId, req.jobId)).toBe('ready');
+    expect((await s.list(a.userId)).map((j) => j.id)).toContain(req.jobId);
+    const file = await s.download(a.userId, req.jobId);
+    const doc = JSON.parse(decoder.decode(file?.body)) as {
+      tables: Record<string, { records: Array<Record<string, unknown>> }>;
+    };
+    expect(doc.tables.sleep?.records[0]?.note).toBe(SECRET_NOTE);
+    expect(doc.tables.habits?.records[0]?.name).toBe('habito-sintetico-exportacao');
+    expect(doc.tables.meals?.records[0]?.kcalEstimate).toBe(550);
+    expect(await auditActions(a.userId)).toEqual(
+      expect.arrayContaining([
+        'data_export_requested',
+        'data_export_health_read',
+        'data_export_downloaded',
+      ]),
+    );
+  });
+
+  it('na carência, com um pedido em geração, as telas e o RLS continuam vazios', async () => {
+    const a = await person();
+    await seedEverything(a.userId);
+    await a.consent.revoke(a.userId, 'health_data');
+    await processingJob(a.userId);
+    for (const table of HEALTH) {
+      const rows = await withUserOn(db, a.userId, (tx) =>
+        tx.$queryRawUnsafe<Array<{ n: number }>>(
+          `SELECT count(*)::int AS n FROM public."${table}"`,
+        ),
+      );
+      expect(rows[0]?.n, table).toBe(0);
+    }
+    const source = ownSource(a.userId);
+    await expect(source.sleep(ALL)).rejects.toBeInstanceOf(ConsentRequiredError);
+    await expect(source.body(ALL)).rejects.toBeInstanceOf(ConsentRequiredError);
+    await expect(source.session(async (x) => x.meals(ALL))).rejects.toBeInstanceOf(
+      ConsentRequiredError,
+    );
+    await expect(service().dataSummary(a.userId)).resolves.toBeNull();
+  });
+
+  it('a função só lê o próprio pedido de exportação completa em geração, até a eliminação', async () => {
+    const a = await person();
+    const b = await person();
+    await seed(a.userId);
+    await a.consent.revoke(a.userId, 'health_data');
+
+    const queued = await service().request(a.userId, { kind: 'full_export', format: 'json' });
+    if (queued.status !== 'queued') throw new Error(queued.status);
+    // Pedido ainda na fila: a função recusa.
+    await expect(readViaFunction(a.userId, queued.jobId)).rejects.toThrow(/not in progress/);
+    await admin.query(`UPDATE data_export_jobs SET status = 'processing' WHERE id = $1`, [
+      queued.jobId,
+    ]);
+    // Pedido de outra pessoa e chamada sem contexto de usuário: recusa.
+    await expect(readViaFunction(b.userId, queued.jobId)).rejects.toThrow(/not in progress/);
+    await expect(
+      db.$queryRaw`SELECT app.export_job_health_data(${queued.jobId}::uuid)`,
+    ).rejects.toThrow(/user context/);
+    // Prazo de eliminação vencido: acabou a carência, mesmo antes de o job de eliminação rodar.
+    await admin.query(
+      `UPDATE users SET health_data_purge_at = now() - interval '1 minute' WHERE id = $1`,
+      [a.userId],
+    );
+    await expect(readViaFunction(a.userId, queued.jobId)).rejects.toThrow();
+    const after = await service().request(a.userId, { kind: 'full_export', format: 'csv' });
+    expect(after.status).toBe('no_consent');
+  });
+
+  it('relatório não passa pela função, nem com consentimento', async () => {
+    const a = await person();
+    const req = await service().request(a.userId, {
+      kind: 'report',
+      format: 'json',
+      period: 'month',
+      reference: '2026-10-07',
+      hideBodyValues: false,
+    });
+    if (req.status !== 'queued') throw new Error(req.status);
+    await admin.query(`UPDATE data_export_jobs SET status = 'processing' WHERE id = $1`, [
+      req.jobId,
+    ]);
+    await expect(readViaFunction(a.userId, req.jobId)).rejects.toThrow(/not in progress/);
+  });
+});
+
+describe('revisão de privacidade do OI-32 (ADR-0033)', () => {
+  const read = (userId: string, jobId: string) =>
+    withUserOn(
+      db,
+      userId,
+      (tx) =>
+        tx.$queryRaw<
+          Array<{ data: unknown }>
+        >`SELECT app.export_job_health_data(${jobId}::uuid) AS data`,
+    );
+
+  it('B3: leitura única por pedido', async () => {
+    const a = await person();
+    await seed(a.userId);
+    const req = await service().request(a.userId, { kind: 'full_export', format: 'json' });
+    if (req.status !== 'queued') throw new Error(req.status);
+    await admin.query(`UPDATE data_export_jobs SET status = 'processing' WHERE id = $1`, [
+      req.jobId,
+    ]);
+    await read(a.userId, req.jobId);
+    await expect(read(a.userId, req.jobId)).rejects.toThrow(/not in progress/);
+  });
+
+  it('B1: o pedido nasce na fila e o estado só anda para a frente', async () => {
+    const a = await person();
+    // Nascer já em geração (para abrir a leitura sem pedido) é recusado pelo banco.
+    await expect(
+      withConsentOn(db, a.userId, 'health_data', (tx) =>
+        tx.dataExportJob.create({
+          data: { userId: a.userId, kind: 'full_export', format: 'json', status: 'processing' },
+        }),
+      ),
+    ).rejects.toThrow(/start queued/);
+    const s = service();
+    const req = await s.request(a.userId, { kind: 'full_export', format: 'json' });
+    if (req.status !== 'queued') throw new Error(req.status);
+    await s.generate(a.userId, req.jobId);
+    await s.remove(a.userId, req.jobId);
+    // Expirado não volta a ser lido: nem para a fila, nem para geração.
+    for (const status of ['queued', 'processing', 'ready']) {
+      await expect(
+        withConsentOn(db, a.userId, 'health_data', (tx) =>
+          tx.$executeRawUnsafe(
+            `UPDATE public.data_export_jobs SET status = '${status}' WHERE id = '${req.jobId}'`,
+          ),
+        ),
+      ).rejects.toThrow(/invalid export status transition|already deleted/);
+    }
+  });
+
+  it('N1: depois da data de eliminação, a função recusa por falta de base', async () => {
+    const a = await person();
+    await seed(a.userId);
+    await a.consent.revoke(a.userId, 'health_data');
+    const req = await service().request(a.userId, { kind: 'full_export', format: 'json' });
+    if (req.status !== 'queued') throw new Error(req.status);
+    await admin.query(`UPDATE data_export_jobs SET status = 'processing' WHERE id = $1`, [
+      req.jobId,
+    ]);
+    await admin.query(
+      `UPDATE users SET health_data_purge_at = now() - interval '1 minute' WHERE id = $1`,
+      [a.userId],
+    );
+    await expect(read(a.userId, req.jobId)).rejects.toThrow(/no consent nor pending elimination/);
   });
 });

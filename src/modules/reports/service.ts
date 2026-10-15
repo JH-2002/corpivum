@@ -15,6 +15,8 @@ import { fullExportJson, fullExportZip } from './export';
 import { calendarRange, isValidReference, type ReportPeriod } from './period';
 import { buildReport, type ReportModel } from './report';
 import { EXPORT_FILE_FIELD, exportKey } from './storage';
+import { exportRecordsFromRows } from './export-rows';
+import { createFieldCipher } from '@/modules/health/core';
 
 /**
  * Exportação completa e relatórios em arquivo (LEG-D03, §29, ADR-0032).
@@ -95,12 +97,6 @@ const CONTENT_TYPE: Record<ExportFormat, string> = {
   pdf: 'application/pdf',
 };
 const EXTENSION: Record<ExportFormat, string> = { json: 'json', csv: 'zip', pdf: 'pdf' };
-
-/**
- * Todo o histórico: a exportação não depende do período escolhido na tela. Teto em 2999 porque os limites
- * do intervalo somam um dia (`rangeBounds`) e o ano 10000 não é uma data ISO válida.
- */
-const ALL_TIME: DateRange = { from: '1900-01-01', to: '2999-12-31' };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -244,6 +240,21 @@ export function createReportsService(deps: ReportsDeps) {
     throw new Error('linkHours fora de 1–24 (LEG-D03)');
   }
 
+  /**
+   * Exportação completa (OI-32, opção b): consentimento ativo OU carência até a eliminação (direito do titular,
+   * art. 18). As políticas de `data_export_jobs` aplicam a mesma regra no banco, só para exportação completa.
+   */
+  async function withExportAccess<T>(
+    userId: string,
+    fn: (tx: Tx) => Promise<T>,
+  ): Promise<T | null> {
+    return withUserOn(db, userId, async (tx) => {
+      const rows = await tx.$queryRaw<Array<{ ok: boolean }>>`
+        SELECT (app.has_active_consent('health_data') OR app.health_grace_active()) AS ok`;
+      return rows[0]?.ok === true ? fn(tx) : null;
+    });
+  }
+
   async function withConsent<T>(userId: string, fn: (tx: Tx) => Promise<T>): Promise<T | null> {
     try {
       return await withConsentOn(db, userId, 'health_data', fn);
@@ -268,24 +279,19 @@ export function createReportsService(deps: ReportsDeps) {
 
   async function buildFile(userId: string, job: JobRow): Promise<Uint8Array<ArrayBuffer>> {
     const today = deps.today();
-    const source = deps.sourceFor(userId);
     if (job.kind === 'full_export') {
-      const records = await source.session(async (s) => {
-        const [sleep, habits, checks, body, meals, water, activities, goals, reminders] =
-          await Promise.all([
-            s.sleep(ALL_TIME, { withText: true }),
-            s.habits({ includeArchived: true }),
-            s.checks(ALL_TIME),
-            s.body(ALL_TIME),
-            s.meals(ALL_TIME, { withText: true, allStored: true }),
-            s.water(ALL_TIME),
-            s.activities(ALL_TIME, { withText: true }),
-            s.goals({ includeArchived: true }),
-            s.reminders(),
-          ]);
-        return { sleep, habits, checks, body, meals, water, activities, goals, reminders };
+      // Caminho restrito da exportação (OI-32): a função do banco só lê com este pedido em geração, com
+      // consentimento ativo ou na carência até a eliminação, e grava o AuditLog. As telas não passam por aqui.
+      const { raw, account } = await withUserOn(db, userId, async (tx) => {
+        const rows = await tx.$queryRaw<Array<{ data: unknown }>>`
+          SELECT app.export_job_health_data(${job.id}::uuid) AS data`;
+        return { raw: rows[0]?.data, account: await accountExport(tx, userId) };
       });
-      const account = await withUserOn(db, userId, (tx) => accountExport(tx, userId));
+      const records = await exportRecordsFromRows(raw, {
+        userId,
+        cipher: createFieldCipher(deps.kms),
+        timeZone: deps.timeZone,
+      });
       const input = {
         generatedAt: new Date(),
         timeZone: deps.timeZone,
@@ -297,7 +303,7 @@ export function createReportsService(deps: ReportsDeps) {
     }
     if (!job.reportPeriod || !job.periodStart || !job.periodEnd)
       throw new Error('relatório sem período');
-    const model = await buildReport(source, {
+    const model = await buildReport(deps.sourceFor(userId), {
       period: job.reportPeriod,
       range: { from: iso(job.periodStart), to: iso(job.periodEnd) },
       today,
@@ -317,41 +323,44 @@ export function createReportsService(deps: ReportsDeps) {
         if (!isValidReference(input.reference, today)) return { status: 'invalid' };
         range = calendarRange(input.period, input.reference, today);
       }
-      const outcome = await withConsent(userId, async (tx): Promise<RequestOutcome> => {
-        // Serializa os pedidos da pessoa: a contagem e a criação valem juntas (sem corrida).
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('reports.request'), hashtext(${userId}))`;
-        const user = await tx.user.findUnique({
-          where: { id: userId },
-          select: { dataMode: true },
-        });
-        if (user?.dataMode !== 'own') return { status: 'demo' };
-        const active = await tx.dataExportJob.count({
-          where: { status: { in: ['queued', 'processing'] } },
-        });
-        if (active > 0) return { status: 'busy' };
-        const recent = await tx.$queryRaw<Array<{ n: number }>>`
+      const outcome = await (input.kind === 'full_export' ? withExportAccess : withConsent)(
+        userId,
+        async (tx): Promise<RequestOutcome> => {
+          // Serializa os pedidos da pessoa: a contagem e a criação valem juntas (sem corrida).
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('reports.request'), hashtext(${userId}))`;
+          const user = await tx.user.findUnique({
+            where: { id: userId },
+            select: { dataMode: true },
+          });
+          if (user?.dataMode !== 'own') return { status: 'demo' };
+          const active = await tx.dataExportJob.count({
+            where: { status: { in: ['queued', 'processing'] } },
+          });
+          if (active > 0) return { status: 'busy' };
+          const recent = await tx.$queryRaw<Array<{ n: number }>>`
           SELECT count(*)::int AS n FROM public.data_export_jobs
            WHERE created_at > now() - interval '24 hours'`;
-        if ((recent[0]?.n ?? 0) >= MAX_PER_DAY) return { status: 'limit' };
-        const job = await tx.dataExportJob.create({
-          data: {
-            userId,
-            kind: input.kind,
-            format: input.format,
-            ...(input.kind === 'report' && range
-              ? {
-                  reportPeriod: input.period,
-                  periodStart: new Date(`${range.from}T00:00:00Z`),
-                  periodEnd: new Date(`${range.to}T00:00:00Z`),
-                  hideBodyValues: input.hideBodyValues,
-                }
-              : {}),
-          },
-          select: { id: true },
-        });
-        await auditAppend(tx, 'data_export_requested', 'data_export', job.id);
-        return { status: 'queued', jobId: job.id };
-      });
+          if ((recent[0]?.n ?? 0) >= MAX_PER_DAY) return { status: 'limit' };
+          const job = await tx.dataExportJob.create({
+            data: {
+              userId,
+              kind: input.kind,
+              format: input.format,
+              ...(input.kind === 'report' && range
+                ? {
+                    reportPeriod: input.period,
+                    periodStart: new Date(`${range.from}T00:00:00Z`),
+                    periodEnd: new Date(`${range.to}T00:00:00Z`),
+                    hideBodyValues: input.hideBodyValues,
+                  }
+                : {}),
+            },
+            select: { id: true },
+          });
+          await auditAppend(tx, 'data_export_requested', 'data_export', job.id);
+          return { status: 'queued', jobId: job.id };
+        },
+      );
       if (!outcome) return { status: 'no_consent' };
       if (outcome.status === 'queued') {
         await deps.queue.enqueue(
@@ -401,7 +410,7 @@ export function createReportsService(deps: ReportsDeps) {
 
     /** Pedidos das últimas 24 h (os vencidos somem da lista). Sem consentimento: lista vazia. */
     async list(userId: string): Promise<ExportJobSummary[]> {
-      const rows = await withConsent(userId, (tx) =>
+      const rows = await withExportAccess(userId, (tx) =>
         tx.dataExportJob.findMany({
           where: {
             createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
@@ -416,7 +425,7 @@ export function createReportsService(deps: ReportsDeps) {
 
     /** Executado pelo job. Rechecha consentimento e estado em cada passo; nada de conteúdo em log. */
     async generate(userId: string, jobId: string): Promise<'ready' | 'skipped'> {
-      const job = await withConsent(userId, async (tx) => {
+      const job = await withExportAccess(userId, async (tx) => {
         const claimed = await tx.dataExportJob.updateMany({
           where: { id: jobId, status: 'queued' },
           data: { status: 'processing' },
@@ -432,14 +441,15 @@ export function createReportsService(deps: ReportsDeps) {
         const sealed = await encryptField(deps.kms, { userId, ...EXPORT_FILE_FIELD }, plain);
         plain.fill(0);
         await deps.storage.put(key, sealed, { contentType: 'application/octet-stream' });
-        const done = await withConsent(
-          userId,
-          (tx) =>
-            tx.$executeRaw`UPDATE public.data_export_jobs
+        const done = await withExportAccess(userId, async (tx) => {
+          // Serializa com a eliminação (que trava a mesma linha FOR UPDATE, revisão M1 do OI-32): se ela
+          // terminou antes, o pedido já não existe e o arquivo é descartado logo abaixo.
+          await tx.$queryRaw`SELECT 1 FROM public.users WHERE id = ${userId}::uuid FOR SHARE`;
+          return tx.$executeRaw`UPDATE public.data_export_jobs
              SET status = 'ready', size_bytes = ${sealed.byteLength},
                  expires_at = now() + make_interval(hours => ${deps.linkHours}::int), updated_at = now()
-           WHERE id = ${jobId}::uuid AND status = 'processing' AND file_deleted_at IS NULL`,
-        );
+           WHERE id = ${jobId}::uuid AND status = 'processing' AND file_deleted_at IS NULL`;
+        });
         if (!done) {
           // Consentimento revogado (ou pedido apagado) durante a geração: o arquivo não fica.
           await deps.storage.delete(key);
@@ -449,7 +459,7 @@ export function createReportsService(deps: ReportsDeps) {
         return 'ready';
       } catch (error) {
         await deps.storage.delete(key).catch(() => undefined);
-        await withConsent(userId, (tx) =>
+        await withExportAccess(userId, (tx) =>
           tx.dataExportJob.updateMany({
             where: { id: jobId, status: 'processing' },
             data: { status: 'failed' },
@@ -462,7 +472,7 @@ export function createReportsService(deps: ReportsDeps) {
 
     /** Arquivo para a rota de download: dono, consentimento, pronto e dentro do prazo (relógio do banco). */
     async download(userId: string, jobId: string): Promise<ExportFile | null> {
-      const job = await withConsent(userId, async (tx) => {
+      const job = await withExportAccess(userId, async (tx) => {
         const rows = await tx.$queryRaw<Array<{ id: string }>>`
           SELECT id FROM public.data_export_jobs
            WHERE id = ${jobId}::uuid AND status = 'ready' AND expires_at > now()`;
@@ -494,7 +504,7 @@ export function createReportsService(deps: ReportsDeps) {
      * (revisão M1/B3). Sem consentimento, os links já venceram na revogação.
      */
     async remove(userId: string, jobId: string): Promise<boolean> {
-      const removed = await withConsent(userId, async (tx) => {
+      const removed = await withExportAccess(userId, async (tx) => {
         const n = await tx.$executeRaw`UPDATE public.data_export_jobs
            SET status = 'expired', expires_at = least(coalesce(expires_at, now()), now()), updated_at = now()
          WHERE id = ${jobId}::uuid AND file_deleted_at IS NULL`;

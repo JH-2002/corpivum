@@ -109,3 +109,53 @@ test('relatório em PDF pelo link autenticado', async ({ browser }) => {
   expect((await res.body()).subarray(0, 5).toString('latin1')).toBe('%PDF-');
   await context.close();
 });
+
+test('OI-32: depois de revogar, as telas ficam vazias e a cópia completa continua disponível', async ({
+  browser,
+}) => {
+  const { userId, page, context } = await signedIn(browser, 'carencia');
+  await page.goto('/privacidade');
+  await page.getByRole('button', { name: 'Revogar: Dados de bem-estar' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Revogar o uso dos dados de bem-estar?' });
+  await expect(dialog.getByText(/até a eliminação/)).toBeVisible();
+  await dialog.getByRole('button', { name: 'Revogar agora' }).click();
+  await expect(page.getByText(/Revogado: eliminação em/)).toBeVisible();
+
+  // Nada é exibido nem processado: telas, relatório, gráficos e twin mostram só o aviso de autorização.
+  for (const path of ['/sono', '/corpo', '/relatorios', '/twin', '/timeline']) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: 'Autorização revogada' })).toBeVisible();
+    await expect(page.locator('.recharts-wrapper')).toHaveCount(0);
+    await expect(page.locator('main')).not.toContainText(/\d+(,\d+)? kg/);
+  }
+
+  // A cópia completa é o único uso permitido até a eliminação.
+  await page.goto('/privacidade#seus-dados');
+  const section = page.getByRole('region', { name: 'Seus dados', exact: true });
+  await expect(section).toContainText(/até a eliminação, em .+, você ainda pode baixar/i);
+  await section.getByRole('button', { name: 'Gerar arquivo' }).click();
+  await expect(section.getByText(/Pedido recebido/)).toBeVisible();
+  const href = await readyLink(page, '/privacidade');
+  const res = await page.request.get(href);
+  expect(res.status()).toBe(200);
+  const doc = JSON.parse(await res.text()) as {
+    tables: Record<string, { records: unknown[] }>;
+  };
+  expect(doc.tables.sleep?.records.length).toBeGreaterThan(0);
+  expect(doc.tables.body_measurements?.records.length).toBeGreaterThan(0);
+
+  const { rows } = await withAdmin((db) =>
+    db.query<{ action: string }>(
+      `SELECT action::text FROM audit_logs WHERE subject_user_id = $1 AND resource_type = 'data_export'`,
+      [userId],
+    ),
+  );
+  expect(rows.map((r) => r.action)).toEqual(
+    expect.arrayContaining([
+      'data_export_requested',
+      'data_export_health_read',
+      'data_export_downloaded',
+    ]),
+  );
+  await context.close();
+});

@@ -968,3 +968,46 @@ carência após a revogação): decisão de produto e jurídica, registrada em O
 de calorias): é a estimativa da própria pessoa, como no cartão de metas (PR4-B4).
 **Consequências.** Tabela nova com dado de saúde fora do banco precisa de eliminador de objetos. Textos novos
 (`reports.*`, `privacyCenter.data.*`, `consent.healthRevoke.exportFirst`) são RASCUNHO (`LEGAL-REVIEW`, OI-21).
+
+## ADR-0033 — Portabilidade na carência após revogar (OI-32) e e2e estável na CI
+**Contexto.** Revisão de privacidade da 6a (M2, OI-32): a exportação exigia o consentimento de saúde ativo. Quem revogava
+não exportava nada, nem os dados da conta, até a eliminação. Decisão do responsável pelo produto (2026-10-15):
+**opção (b)**. Quem revogou pode exportar tudo o que ainda guardamos (conta + saúde) até a eliminação; base: atendimento
+ao direito do titular (LGPD art. 18), não o consentimento. A exportação é o único uso nesse período. `LEGAL-REVIEW`
+mantido no OI-32.
+**Decisão.**
+- **Carência** = eliminação agendada e ainda não vencida (`users.health_data_purge_at > now()`) sem consentimento ativo
+  (`app.health_grace_active()`). Quem nunca revogou e só está com o reconsentimento pendente (OI-16) não tem data de
+  eliminação e não entra.
+- **Tabelas de saúde (telas, gráficos, resumos, twin): nenhuma política muda.** Só as políticas de
+  `data_export_jobs` (metadados do pedido) passam a aceitar, além do consentimento, a carência, e só para
+  `kind = 'full_export'`. Relatório continua exigindo consentimento.
+- **Caminho restrito de leitura:** `app.export_job_health_data(job)` (SECURITY DEFINER, `search_path` fixo, sem SQL
+  dinâmico) devolve as linhas de saúde da própria pessoa em JSON **só** com um pedido dela de exportação completa em
+  geração (`processing`) e consentimento ativo ou carência, e grava `data_export_health_read` no AuditLog. A exportação
+  completa passa a usar sempre esse caminho (com ou sem consentimento). Os textos continuam cifrados até a aplicação
+  (`export-rows.ts`), com o mesmo contexto da cifra das telas; um teste compara a exportação por esse caminho com a dos
+  serviços das telas (mesmas tabelas, mesmos valores).
+- **Interface:** na carência, a seção "Seus dados" da Central explica que nada é exibido nem processado e oferece a
+  cópia completa até a data da eliminação; o aviso de revogação diz que a cópia continua disponível até lá.
+- **Testes:** carência exporta tudo com AuditLog; relatório bloqueado; com um pedido em geração, as tabelas de saúde
+  continuam vazias pelo RLS e os serviços das telas recusam; a função recusa pedido na fila, de outra pessoa, de
+  relatório, sem contexto e depois da data de eliminação; e2e revoga, confere telas sem dado (sono, corpo, relatórios,
+  twin, timeline) e baixa a cópia.
+- **e2e na CI:** o teste de troca de variante do twin espera o **sinal** de modelo carregado (`data-twin-model`), com
+  teto acima do prazo do próprio app para cair no corpo em código (`MODEL_LOAD_TIMEOUT_MS`), em vez do teto padrão de
+  5 s; o job de e2e roda em 2 shards (chegou a 9m54s inteiro).
+**Revisão de privacidade (nada crítico nem alto; 2 médios, 4 baixos, 5 notas).** Corrigido, com teste:
+- **M1:** a eliminação trava a linha da pessoa (`FOR UPDATE`) e o passo final da geração espera por ela (`FOR SHARE`):
+  um arquivo gravado no meio da eliminação não fica órfão, mesmo com relógios diferentes entre aplicação e banco.
+- **M2:** textos da revogação e da Central dizem que os dados não são usados para nada além de gerar a cópia pedida e
+  que arquivos gerados antes de revogar deixam de valer (RASCUNHO, `LEGAL-REVIEW`).
+- **B1:** o gatilho de `data_export_jobs` exige que o pedido nasça na fila e só ande para a frente (fila → geração →
+  pronto/falho/expirado); nada volta a `queued`/`processing`. **B2:** a função devolve colunas em lista fechada.
+  **B3:** leitura única por pedido (`health_read_at`). **B4:** a Central só trata como carência até a data da
+  eliminação e mostra a validade do link limitada a ela. **N1:** teste com a mensagem exata da recusa.
+**Notas mantidas.** N2: a função monta a exportação num só JSON (limite conhecido para históricos muito grandes). N3:
+o prazo de eliminação não é estendido por pedido em curso (OI-32 b). N4: o job de e2e mudou de nome com os shards; o
+repositório não tem checagens obrigatórias configuradas.
+**Consequências.** Toda nova tabela de saúde entra também em `app.export_job_health_data` e em `export-rows.ts` (o
+teste de equivalência quebra se faltar). O ADR-0032 continua valendo no restante.

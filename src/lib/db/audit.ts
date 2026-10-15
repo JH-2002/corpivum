@@ -20,7 +20,8 @@ export type AuditAction =
   | 'account_closed_minor'
   | 'data_export_requested'
   | 'data_export_downloaded'
-  | 'data_export_deleted';
+  | 'data_export_deleted'
+  | 'data_export_health_read';
 
 export type AuditResourceType =
   | 'user'

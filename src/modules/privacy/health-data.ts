@@ -37,6 +37,9 @@ export function createHealthDataEliminator(deps: {
      */
     async eliminate(userId: string): Promise<EliminationOutcome> {
       const outcome = await withUserOn(deps.db, userId, async (tx) => {
+        // Trava a linha da pessoa: a geração de uma exportação (FOR SHARE) espera a eliminação terminar, e um
+        // arquivo gravado no meio é descartado por ela (revisão M1 do OI-32).
+        await tx.$queryRaw`SELECT 1 FROM public.users WHERE id = ${userId}::uuid FOR UPDATE`;
         const user = await tx.user.findUnique({
           where: { id: userId },
           select: { healthDataPurgeAt: true },
