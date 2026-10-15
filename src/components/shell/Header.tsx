@@ -59,8 +59,6 @@ export function Header({
           </span>
         ) : null}
 
-        <PrivacyModeToggle />
-
         {variant === 'demo' ? (
           <>
             <Link
@@ -81,8 +79,12 @@ export function Header({
         )}
       </div>
 
-      <div data-tour="period" className="border-t border-border px-4 py-2 lg:px-6">
-        <PeriodSelector />
+      {/* Segunda linha: período e modo privacidade (na primeira não cabe a 320px, §42). */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2 lg:px-6">
+        <div data-tour="period" className="min-w-0 flex-1">
+          <PeriodSelector />
+        </div>
+        <PrivacyModeToggle />
       </div>
       <PrivacyModeIndicator />
     </header>

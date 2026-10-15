@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { GoalsView } from '@/components/modules/goals/GoalsView';
 import { loadGoals } from '@/modules/health/screens';
 import { maskGoalsScreen } from '@/modules/health/mask';
-import { demoContext } from '../demo-data';
+import { demoContext } from '@/app/demo/demo-data';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');

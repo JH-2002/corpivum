@@ -1735,5 +1735,34 @@
     "valuesHiddenHint": "Desligue o modo privacidade para ver os valores.",
     "editHidden": "Para editar este registro, desligue o modo privacidade.",
     "goalHidden": "Alvo e progresso ocultos no modo privacidade."
+  },
+  "presentation": {
+    "title": "Modo apresentação",
+    "enter": "Modo apresentação",
+    "start": "Começar apresentação",
+    "back": "Voltar",
+    "startBody": "Tela cheia com quatro telas: painel, corpo 3D, timeline e relatório do mês. Use as setas do teclado ou os botões para navegar e Esc para sair.",
+    "startPrivacy": "A apresentação começa com dados de demonstração e com o modo privacidade ligado: peso, medidas, altura e calorias ficam ocultos. Ao sair, o modo privacidade volta ao que era antes.",
+    "exit": "Sair da apresentação",
+    "fullscreen": "Tela cheia",
+    "previous": "Anterior",
+    "next": "Próxima",
+    "position": "Tela {current} de {total}: {name}",
+    "navLabel": "Telas da apresentação",
+    "keyboardHint": "Setas ← e → trocam de tela. Esc sai da apresentação (em tela cheia, primeiro sai da tela cheia).",
+    "demoBadge": "DEMO",
+    "demoBadgeDescription": "dados de demonstração, fictícios",
+    "screens": {
+      "painel": "Painel",
+      "twin": "Corpo 3D",
+      "timeline": "Timeline",
+      "relatorio": "Relatório do mês"
+    },
+    "data": {
+      "label": "Dados:",
+      "demo": "Demonstração",
+      "own": "Meus dados",
+      "ownUnavailable": "Para apresentar seus próprios dados, a conta precisa estar no modo de dados próprios e com o uso de dados de bem-estar autorizado na Central de Privacidade."
+    }
   }
 }

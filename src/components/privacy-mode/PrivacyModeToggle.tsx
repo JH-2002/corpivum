@@ -7,7 +7,7 @@ import { usePrivacyMode } from './PrivacyModeProvider';
 
 /**
  * Botão do modo privacidade no header (ADR-0035): `aria-pressed`, ícone e texto (a cor não é o único canal).
- * No mobile o texto fica só para leitores de tela; o ícone muda junto com o estado.
+ * Na tela mais estreita o texto fica só para leitores de tela; o ícone muda junto com o estado.
  */
 export function PrivacyModeToggle() {
   const t = useTranslations('privacyMode');
@@ -28,7 +28,7 @@ export function PrivacyModeToggle() {
       )}
     >
       <Icon className="size-5" aria-hidden="true" />
-      <span className="sr-only lg:not-sr-only">{t('toggle')}</span>
+      <span className="sr-only sm:not-sr-only">{t('toggle')}</span>
     </button>
   );
 }

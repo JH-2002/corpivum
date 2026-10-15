@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { SleepView } from '@/components/modules/sleep/SleepView';
 import { previousRange } from '@/lib/dates';
-import { demoContext } from '../demo-data';
+import { demoContext } from '@/app/demo/demo-data';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');

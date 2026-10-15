@@ -8,7 +8,7 @@ import { UpcomingReminders } from '@/components/modules/reminders/UpcomingRemind
 import { buildDashboard } from '@/modules/health/dashboard';
 import { loadReminders } from '@/modules/health/screens';
 import { maskDashboard } from '@/modules/health/mask';
-import { demoContext } from './demo-data';
+import { demoContext } from '@/app/demo/demo-data';
 
 /** Dashboard de demonstração (§40a). CTA "Começar com meus próprios dados" leva ao cadastro (§40b). */
 export default async function DemoHomePage() {

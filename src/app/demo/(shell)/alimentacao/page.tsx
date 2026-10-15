@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { NutritionView } from '@/components/modules/nutrition/NutritionView';
 import { loadNutrition } from '@/modules/health/screens';
 import { maskNutritionScreen } from '@/modules/health/mask';
-import { demoContext } from '../demo-data';
+import { demoContext } from '@/app/demo/demo-data';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');

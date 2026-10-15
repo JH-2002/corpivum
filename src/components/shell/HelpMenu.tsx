@@ -5,15 +5,20 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { useTranslations } from 'next-intl';
 import { SupportNotice } from '@/components/health/SupportNotice';
+import { EnterPresentationForm } from '@/components/presentation/PresentationParts';
 import { CONFIDENCE_LEVELS } from '@/components/ui/ConfidenceBadge';
 import { Disclosure } from './Disclosure';
 
 /**
  * Menu de ajuda (ADR-0025): reabre o tour do painel em qualquer tela, explica os selos de origem do
  * dado (§39) e dá acesso permanente ao apoio, "Precisa de ajuda?" (§48, ADR-0027). Mesmo padrão
- * "disclosure" do menu da conta (ADR-0011).
+ * "disclosure" do menu da conta (ADR-0011). Também a entrada do modo apresentação (§45, ADR-0035).
  */
+const MENU_ITEM =
+  'flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-semibold hover:bg-surface-muted';
+
 export function HelpMenu({ tourHref }: { tourHref: '/inicio?tour=1' | '/demo?tour=1' }) {
+  const scope = tourHref === '/demo?tour=1' ? 'demo' : 'app';
   const t = useTranslations('help');
   const tb = useTranslations('badges');
   return (
@@ -23,13 +28,11 @@ export function HelpMenu({ tourHref }: { tourHref: '/inicio?tour=1' | '/demo?tou
       panelClassName="w-80 max-h-[70vh] overflow-y-auto"
       trigger={<CircleHelp className="size-5" aria-hidden="true" />}
     >
-      <Link
-        href={tourHref as Route}
-        className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-semibold hover:bg-surface-muted"
-      >
+      <Link href={tourHref as Route} className={MENU_ITEM}>
         <Compass className="size-4" aria-hidden="true" />
         {t('tour')}
       </Link>
+      <EnterPresentationForm scope={scope} className={MENU_ITEM} />
       <section
         aria-labelledby="help-badges"
         className="mt-2 border-t border-border px-3 pt-2 text-sm"

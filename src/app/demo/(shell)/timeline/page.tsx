@@ -5,7 +5,7 @@ import type { PageSearchParams } from '@/components/shell/ModulePage';
 import { loadTimeline } from '@/modules/health/screens';
 import { buildTimeline, parseTimelineDomain } from '@/modules/timeline';
 import { maskTimeline } from '@/modules/health/mask';
-import { demoContext } from '../demo-data';
+import { demoContext } from '@/app/demo/demo-data';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');

@@ -5,7 +5,7 @@ import { RemindersSection } from '@/components/modules/reminders/RemindersSectio
 import { addDays, previousRange } from '@/lib/dates';
 import { STREAK_LOOKBACK_DAYS } from '@/modules/habits';
 import { loadReminders } from '@/modules/health/screens';
-import { demoContext } from '../demo-data';
+import { demoContext } from '@/app/demo/demo-data';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
