@@ -30,7 +30,8 @@
     "audit": "pnpm audit --audit-level=high",
     "test:db": "vitest run --project db",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "node --import ./scripts/ts-loader.mjs scripts/seed-demo.ts"
+    "db:seed": "node --import ./scripts/ts-loader.mjs scripts/seed-demo.ts",
+    "check:retention": "node --import ./scripts/ts-loader.mjs scripts/check-retention.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

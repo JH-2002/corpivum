@@ -323,6 +323,15 @@ export function createPrivacyService(deps: PrivacyDeps) {
       return n;
     },
 
+    /** Provas de reautenticação vencidas ou já usadas, de todas as contas (PR1b-R2-B1, ADR-0035). */
+    async purgeReauthProofs(): Promise<number> {
+      const rows = await db.$queryRaw<Array<{ n: number }>>`
+        SELECT app.privacy_purge_reauth_proofs() AS n`;
+      const n = rows[0]?.n ?? 0;
+      logger.info('privacy.reauth_proofs_purged', { count: n });
+      return n;
+    },
+
     /** Contas com eliminação de dados de saúde vencida (rede de segurança do agendamento). */
     async dueHealthEliminations(limit = 500): Promise<string[]> {
       const rows = await db.$queryRaw<Array<{ user_id: string }>>`

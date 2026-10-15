@@ -9,6 +9,7 @@ import { ACCOUNT_PURGE_JOB, accountPurgeKey, type PrivacyService } from './servi
  * - `privacy.health_data_eliminate` ({ userId }): eliminação agendada na revogação; rechecada na execução.
  * - `privacy.purge_access_logs` (diário): AccessLog além de ACCESS_LOG_RETENTION_DAYS (LEG-R02).
  * - `privacy.purge_proofs` (diário): provas além de PROOF_RETENTION_DAYS (LEG-R03, LEGAL-REVIEW).
+ * - `privacy.reauth_proofs_purge` (diário): provas de reautenticação vencidas ou usadas (PR1b-R2-B1, ADR-0035).
  * - `privacy.health_data_sweep` (diário): reagenda eliminações vencidas cujo job se perdeu.
  * - `privacy.account_purge` ({ userId }): purga da conta excluída, logo depois da exclusão (ADR-0034).
  * - `privacy.account_purge_sweep` (diário): reenfileira a purga de contas excluídas que ainda existem.
@@ -19,6 +20,7 @@ export const PRIVACY_DAILY_MS = 24 * 60 * 60 * 1000;
 export const PRIVACY_RECURRING_JOBS = [
   'privacy.purge_access_logs',
   'privacy.purge_proofs',
+  'privacy.reauth_proofs_purge',
   'privacy.health_data_sweep',
   'privacy.account_purge_sweep',
   'privacy.request_deadlines',
@@ -34,6 +36,7 @@ export function registerPrivacyJobs(
       PrivacyService,
       | 'purgeAccessLogs'
       | 'purgeProofs'
+      | 'purgeReauthProofs'
       | 'dueHealthEliminations'
       | 'purgeAccount'
       | 'duePurges'
@@ -55,6 +58,7 @@ export function registerPrivacyJobs(
   const tasks: Record<RecurringJob, () => Promise<unknown>> = {
     'privacy.purge_access_logs': () => deps.service.purgeAccessLogs(),
     'privacy.purge_proofs': () => deps.service.purgeProofs(),
+    'privacy.reauth_proofs_purge': () => deps.service.purgeReauthProofs(),
     'privacy.health_data_sweep': async () => {
       for (const userId of await deps.service.dueHealthEliminations()) {
         await queue.enqueue(

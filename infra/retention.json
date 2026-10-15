@@ -1,0 +1,10 @@
+{
+  "$comment": "Política de backup declarada (ADR-0035, LEG-S07). A CI confere com `pnpm check:retention`; a Fase 7 confere estes valores na configuração real do provedor. Mudar aqui exige ADR.",
+  "version": 1,
+  "backup": {
+    "retentionDays": 30,
+    "encrypted": true,
+    "regions": ["sa-east-1"],
+    "pointInTimeRecoveryDays": 7
+  }
+}
