@@ -187,26 +187,81 @@ describe('privilégios e funções SECURITY DEFINER (ADR-0015)', () => {
     }
   });
 
-  it('PUBLIC não executa as funções de app; app_user e app_operator só as que receberam', async () => {
-    const { rows } = await admin.query<{ name: string; pub: boolean; usr: boolean; op: boolean }>(
+  it('PUBLIC não executa as funções de app; app_user, app_worker e app_operator só as que receberam', async () => {
+    const { rows } = await admin.query<{
+      name: string;
+      pub: boolean;
+      usr: boolean;
+      wrk: boolean;
+      op: boolean;
+    }>(
       `SELECT p.proname AS name,
               has_function_privilege('public', p.oid, 'EXECUTE') AS pub,
               has_function_privilege('app_user', p.oid, 'EXECUTE') AS usr,
+              has_function_privilege('app_worker', p.oid, 'EXECUTE') AS wrk,
               has_function_privilege('app_operator', p.oid, 'EXECUTE') AS op
          FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'app'`,
     );
-    // Atendimento manual (ADR-0034): o operador só executa as funções `operator_*`, e o runtime nenhuma delas.
+    // Atendimento manual (ADR-0034/0037): o operador só executa as funções `operator_*`, e o runtime nenhuma.
     const operatorOnly = (name: string) => name.startsWith('operator_');
+    // Jobs (ADR-0036 D5, ADR-0037): varreduras, expurgos, fila e purga só no app_worker, nunca no web.
+    const workerOnly = new Set([
+      'auth_purge_expired',
+      'reminders_active',
+      'privacy_purge_access_logs',
+      'privacy_purge_proofs',
+      'privacy_purge_reauth_proofs',
+      'privacy_due_health_eliminations',
+      'privacy_request_deadlines',
+      'account_purge',
+      'account_purge_due',
+      'exports_cleanup_due',
+      'exports_purge_rows',
+      'jobs_claim',
+      'jobs_complete',
+      'jobs_fail',
+      'onboarding_expiry_notices_due',
+      'onboarding_expiry_notice_mark',
+      'onboarding_expired_purge',
+    ]);
     expect(
       rows
         .filter((fn) => fn.op)
         .map((fn) => fn.name)
         .sort(),
-    ).toEqual(['operator_request_close', 'operator_request_contact', 'operator_requests_due']);
+    ).toEqual([
+      'operator_account_delete',
+      'operator_request_close',
+      'operator_request_contact',
+      'operator_request_register',
+      'operator_requests_due',
+      'operator_role',
+    ]);
+    expect(rows.filter((fn) => workerOnly.has(fn.name))).toHaveLength(workerOnly.size);
     for (const fn of rows) {
       expect(fn.pub, fn.name).toBe(false);
-      expect(fn.usr, fn.name).toBe(!operatorOnly(fn.name));
+      expect(fn.usr, fn.name).toBe(!operatorOnly(fn.name) && !workerOnly.has(fn.name));
+      // O worker herda o app_user (jobs por pessoa) e executa as próprias; nunca as do operador.
+      expect(fn.wrk, fn.name).toBe(!operatorOnly(fn.name));
     }
+  });
+
+  it('o runtime não grava deleted_at nem colunas de sessão fora da lista (P7-B1, PR1a-R2-B5)', async () => {
+    const { rows } = await admin.query<{ col: string; usr: boolean }>(
+      `SELECT c.table_name || '.' || c.column_name AS col,
+              has_column_privilege('app_user', format('public.%I', c.table_name), c.column_name, 'UPDATE') AS usr
+         FROM information_schema.columns c
+        WHERE c.table_schema = 'public' AND c.table_name IN ('users', 'sessions')`,
+    );
+    const updatable = rows.filter((r) => r.usr).map((r) => r.col);
+    expect(updatable).not.toContain('users.deleted_at');
+    expect(updatable.filter((c) => c.startsWith('sessions.')).sort()).toEqual([
+      'sessions.idle_expires_at',
+      'sessions.last_seen_at',
+      'sessions.mfa_attempts',
+      'sessions.revoked_at',
+      'sessions.updated_at',
+    ]);
   });
 
   it('auth_resolve_session devolve só o mínimo (sem hash de senha)', async () => {

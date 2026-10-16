@@ -3,7 +3,8 @@ import type { Tx } from './rls';
 /**
  * Trilha de auditoria (LEG-S06): quem, quando e qual recurso. SEM conteúdo — só enums e IDs; a tabela não
  * tem coluna de texto livre. Grava via `app.audit_append` na MESMA transação da mudança auditada (contexto
- * `app.user_id` obrigatório). `system`: ação feita por job em nome do titular (sem ator humano).
+ * `app.user_id` obrigatório). `system`: ação feita por job ou aviso automático em nome do titular (sem ator
+ * humano), por `app.audit_append_system`, que só aceita a lista fechada de ações do sistema (PR1b-B2).
  * Os valores precisam existir nos enums `audit_action`/`audit_resource_type` do banco.
  */
 export type AuditAction =
@@ -27,7 +28,14 @@ export type AuditAction =
   | 'account_deletion_requested'
   | 'account_deleted'
   | 'account_deletion_notice_sent'
-  | 'account_purged';
+  | 'account_purged'
+  | 'onboarding_expiry_notice_sent'
+  | 'account_expired_onboarding'
+  | 'privacy_request_registered';
+
+/** Ações aceitas por `app.audit_append_system` (lista igual à da função no banco). */
+export type SystemAuditAction =
+  'health_data_eliminated' | 'account_deletion_notice_sent' | 'data_export_health_read';
 
 export type AuditResourceType =
   | 'user'
@@ -43,8 +51,17 @@ export async function auditAppend(
   action: AuditAction,
   resourceType: AuditResourceType,
   resourceId: string | null = null,
-  options: { system?: boolean } = {},
 ): Promise<void> {
   await tx.$executeRaw`SELECT app.audit_append(${action}::public.audit_action,
-    ${resourceType}::public.audit_resource_type, ${resourceId}::uuid, ${options.system ?? false})`;
+    ${resourceType}::public.audit_resource_type, ${resourceId}::uuid)`;
+}
+
+export async function auditAppendSystem(
+  tx: Tx,
+  action: SystemAuditAction,
+  resourceType: AuditResourceType,
+  resourceId: string | null = null,
+): Promise<void> {
+  await tx.$executeRaw`SELECT app.audit_append_system(${action}::public.audit_action,
+    ${resourceType}::public.audit_resource_type, ${resourceId}::uuid)`;
 }

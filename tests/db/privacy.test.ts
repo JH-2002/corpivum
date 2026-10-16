@@ -3,7 +3,7 @@ import type pg from 'pg';
 import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import type { Db } from '@/lib/db/client';
 import { withUserOn } from '@/lib/db/rls';
-import { createLogger } from '@/lib/logger';
+import { createLogger, type LogRecord } from '@/lib/logger';
 import { HEALTH_DATA_ERASERS } from '@/modules/health/erasers';
 import { createHealthDataEliminator } from '@/modules/privacy/health-data';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
@@ -16,9 +16,10 @@ import {
   META,
   PASSWORD,
   runtimeDb,
+  type TestAuth,
   truncateAll,
   uniqueEmail,
-  type TestAuth,
+  workerDb,
 } from './helpers';
 
 /**
@@ -30,10 +31,11 @@ let db: Db;
 let t: TestAuth;
 const silent = createLogger({ sink: () => {} });
 
-function privacy() {
+function privacy(logs?: LogRecord[]) {
   return createPrivacyService({
     db,
-    logger: silent,
+    workerDb,
+    logger: logs ? createLogger({ minLevel: 'debug', sink: (r) => logs.push(r) }) : silent,
     reauthenticate: (userId, password) =>
       t.service.issueReauthProof(userId, password, 'minor_closure'),
     accessLogRetentionDays: 180,
@@ -204,20 +206,35 @@ describe('LEG-F04: encerramento de conta de quem se descobre menor', () => {
     expect(rows[0].n).toBe(1);
   });
 
-  it('teto global atingido: nada é apagado e o serviço responde "indisponível" (ADR-0020)', async () => {
+  it('teto global atingido: o acesso é cortado e a purga fica para o job, sem bloquear (D4, ADR-0037)', async () => {
     const u = await createVerifiedUser(t);
     await admin.query(
       `INSERT INTO audit_logs (id, action, resource_type, created_at, updated_at)
        SELECT gen_random_uuid(), 'account_closed_minor', 'user', now(), now() FROM generate_series(1, 50)`,
     );
     try {
-      expect(await privacy().closeMinorAccount(u.userId, PASSWORD)).toBe('unavailable');
+      const logs: LogRecord[] = [];
+      expect(await privacy(logs).closeMinorAccount(u.userId, PASSWORD)).toBe('pending');
+      expect(logs.map((l) => l.event)).toContain('privacy.minor_closure_deferred');
+      expect(JSON.stringify(logs)).not.toContain(u.userId);
       const { rows } = await admin.query(
-        `SELECT (SELECT count(*) FROM users WHERE id = $1)::int AS users,
-                (SELECT count(*) FROM privacy_requests WHERE user_id = $1)::int AS requests`,
+        `SELECT (SELECT deleted_at IS NOT NULL FROM users WHERE id = $1) AS cut,
+                (SELECT count(*) FROM sessions WHERE user_id = $1 AND revoked_at IS NULL)::int AS live,
+                (SELECT status FROM privacy_requests WHERE user_id = $1 AND kind = 'minor_closure') AS status`,
         [u.userId],
       );
-      expect(rows[0]).toEqual({ users: 1, requests: 0 });
+      expect(rows[0]).toEqual({ cut: true, live: 0, status: 'in_progress' });
+      expect(await t.service.resolveSession(u.token)).toBeNull();
+      // A varredura da purga encontra e conclui o encerramento.
+      const service = privacy();
+      expect(await service.duePurges()).toContain(u.userId);
+      expect(await service.purgeAccount(u.userId)).toBe('purged');
+      const after = await admin.query(
+        `SELECT (SELECT count(*) FROM users WHERE id = $1)::int AS users,
+                (SELECT status FROM privacy_requests WHERE user_id = $1 AND kind = 'minor_closure') AS status`,
+        [u.userId],
+      );
+      expect(after.rows[0]).toEqual({ users: 0, status: 'completed' });
     } finally {
       await admin.query(
         `DELETE FROM audit_logs WHERE action = 'account_closed_minor' AND subject_user_id IS NULL`,

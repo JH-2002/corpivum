@@ -21,43 +21,46 @@ datasource db {
 
 /// Conta. Dados não sensíveis (base: execução de contrato). Para 18+ guarda só a declaração (LEG-F01).
 model User {
-  id                     String    @id @default(uuid(7)) @db.Uuid
+  id                       String    @id @default(uuid(7)) @db.Uuid
   /// Normalizado (trim + minúsculas) pela aplicação.
-  email                  String    @unique
-  emailVerifiedAt        DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  email                    String    @unique
+  emailVerifiedAt          DateTime? @map("email_verified_at") @db.Timestamptz(3)
   /// Argon2id em formato PHC.
-  passwordHash           String    @map("password_hash")
-  adultAttestedAt        DateTime  @map("adult_attested_at") @db.Timestamptz(3)
-  ageGateVersion         String    @map("age_gate_version")
-  mfaEnabledAt           DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
+  passwordHash             String    @map("password_hash")
+  adultAttestedAt          DateTime  @map("adult_attested_at") @db.Timestamptz(3)
+  ageGateVersion           String    @map("age_gate_version")
+  mfaEnabledAt             DateTime? @map("mfa_enabled_at") @db.Timestamptz(3)
   /// Segredo TOTP cifrado (envelope ADR-0016, contexto users.totp_secret).
-  totpSecret             Bytes?    @map("totp_secret")
+  totpSecret               Bytes?    @map("totp_secret")
   /// Último passo TOTP aceito: códigos de passo <= este são recusados (anti-reuso).
-  totpLastUsedStep       BigInt?   @map("totp_last_used_step")
+  totpLastUsedStep         BigInt?   @map("totp_last_used_step")
   /// Início da ativação do TOTP (segredo pendente). Pendente vence em 15 min e é apagado em 1 dia.
-  totpSetupStartedAt     DateTime? @map("totp_setup_started_at") @db.Timestamptz(3)
-  deletedAt              DateTime? @map("deleted_at") @db.Timestamptz(3)
+  totpSetupStartedAt       DateTime? @map("totp_setup_started_at") @db.Timestamptz(3)
+  deletedAt                DateTime? @map("deleted_at") @db.Timestamptz(3)
   /// Fim do onboarding (§52): termos aceitos e escolhas de consentimento feitas.
-  onboardingCompletedAt  DateTime? @map("onboarding_completed_at") @db.Timestamptz(3)
+  onboardingCompletedAt    DateTime? @map("onboarding_completed_at") @db.Timestamptz(3)
+  /// Aviso de exclusão por onboarding não concluído (P7-M2, ADR-0037): a conta sai 30 dias após o cadastro e
+  /// pelo menos 7 dias depois deste aviso. Gravado só pela função do banco.
+  onboardingExpiryNoticeAt DateTime? @map("onboarding_expiry_notice_at") @db.Timestamptz(3)
   /// Eliminação agendada dos dados de saúde após revogar o consentimento (ADR-0019). NULL = nada agendado.
-  healthDataPurgeAt      DateTime? @map("health_data_purge_at") @db.Timestamptz(3)
+  healthDataPurgeAt        DateTime? @map("health_data_purge_at") @db.Timestamptz(3)
   /// Escolha do passo 5 do onboarding (§52.5). NULL = ainda não escolheu. `demo` = dados fictícios gerados
   /// em memória, nada gravado nas tabelas de saúde (ADR-0021).
-  dataMode               DataMode? @map("data_mode")
+  dataMode                 DataMode? @map("data_mode")
   /// Sequências (streaks) de hábitos visíveis. Desativável (LEG-F05).
-  streaksEnabled         Boolean   @default(true) @map("streaks_enabled")
+  streaksEnabled           Boolean   @default(true) @map("streaks_enabled")
   /// Tour do painel concluído ou pulado (ADR-0025). Booleano, sem data: só o necessário (minimização).
-  tourSeen               Boolean   @default(false) @map("tour_seen")
+  tourSeen                 Boolean   @default(false) @map("tour_seen")
   /// Estimativa de calorias nas refeições. Desligada por padrão; só a pessoa liga (LEG-M07, §25).
-  calorieEstimateEnabled Boolean   @default(false) @map("calorie_estimate_enabled")
+  calorieEstimateEnabled   Boolean   @default(false) @map("calorie_estimate_enabled")
   /// Lembretes por tipo (§33, §46). Sem insistência: no máximo um envio por lembrete por dia (LEG-F05).
-  remindHabits           Boolean   @default(true) @map("remind_habits")
-  remindDailyLog         Boolean   @default(true) @map("remind_daily_log")
+  remindHabits             Boolean   @default(true) @map("remind_habits")
+  remindDailyLog           Boolean   @default(true) @map("remind_daily_log")
   /// Horário silencioso em minutos do dia (0–1439, fuso da pessoa). Ambos nulos = sem horário silencioso.
-  quietStartMin          Int?      @map("quiet_start_min") @db.SmallInt
-  quietEndMin            Int?      @map("quiet_end_min") @db.SmallInt
-  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  quietStartMin            Int?      @map("quiet_start_min") @db.SmallInt
+  quietEndMin              Int?      @map("quiet_end_min") @db.SmallInt
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   sessions      Session[]
   recoveryCodes RecoveryCode[]
@@ -312,6 +315,9 @@ enum AuditAction {
   account_deleted
   account_deletion_notice_sent
   account_purged
+  onboarding_expiry_notice_sent
+  account_expired_onboarding
+  privacy_request_registered
 
   @@map("audit_action")
 }
@@ -337,6 +343,8 @@ model AuditLog {
   action        AuditAction
   resourceType  AuditResourceType @map("resource_type")
   resourceId    String?           @map("resource_id") @db.Uuid
+  /// Papel de login de quem atendeu um pedido fora do app (`operador_<nome>`, ADR-0037). Nulo nos demais.
+  operatorRole  String?           @map("operator_role")
   createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 

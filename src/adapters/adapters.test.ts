@@ -28,10 +28,12 @@ describe('createAdapters', () => {
       APP_ENV: 'test',
       APP_REGION: 'gru1',
       DATABASE_URL: 'postgresql://app_user:x@localhost/db',
+      WORKER_DATABASE_URL: 'postgresql://app_worker:x@localhost/db',
       KMS_LOCAL_MASTER_KEY: masterKey,
       APP_URL: 'http://localhost:3000',
       SESSION_SECRET: Buffer.alloc(32, 1).toString('base64'),
       RATE_LIMIT_SECRET: Buffer.alloc(32, 2).toString('base64'),
+      RECOVERY_CODE_PEPPER: Buffer.alloc(32, 3).toString('base64'),
     });
     const adapters = createAdapters(env);
     expect(Object.fromEntries(Object.entries(adapters).map(([k, v]) => [k, v.id]))).toEqual({

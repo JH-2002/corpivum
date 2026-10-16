@@ -1,6 +1,11 @@
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/ui/SkipLink';
+import {
+  ONBOARDING_EXPIRY_DAYS,
+  ONBOARDING_EXPIRY_NOTICE_DAYS,
+} from '@/modules/privacy/onboarding-expiry';
 
 /** Layout do onboarding (§52) e do reconsentimento: cartão central, sem a navegação do app. */
 export default function OnboardingLayout({ children }: { children: ReactNode }) {
@@ -20,7 +25,18 @@ export default function OnboardingLayout({ children }: { children: ReactNode }) 
         >
           {children}
         </main>
-        <footer className="mt-6 max-w-2xl text-center text-xs text-fg-muted">
+        <footer className="mt-6 flex max-w-2xl flex-col gap-3 text-center text-xs text-fg-muted">
+          {/* Saída da conta sempre à vista, antes de qualquer aceite (P7-M2, LEG-D04, LEG-F04). */}
+          <Link href="/boas-vindas/encerrar-conta" className="text-sm text-fg underline">
+            {t('onboarding.exitLink')}
+          </Link>
+          {/* O prazo das contas sem onboarding à vista desde a primeira tela (revisão da 7b). */}
+          <p>
+            {t('onboarding.exit.expiry', {
+              days: ONBOARDING_EXPIRY_DAYS,
+              noticeDays: ONBOARDING_EXPIRY_NOTICE_DAYS,
+            })}
+          </p>
           <p>{t('disclaimer.wellbeingOnly')}</p>
         </footer>
       </div>

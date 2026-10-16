@@ -7,14 +7,22 @@ export type MailTemplateId =
   | 'password-reset'
   /** Cadastro tentado com e-mail já existente (anti-enumeração, ADR-0014). */
   | 'account-exists'
-  /** Aviso de mudança de segurança (MFA ligado/desligado, senha trocada). Só o tipo do evento. */
+  /**
+   * Aviso de mudança de segurança (MFA ligado/desligado/bloqueado, senha trocada ou redefinida, códigos de
+   * recuperação novos). Só o tipo do evento.
+   */
   | 'security-alert'
   | 'reminder'
   | 'export-ready'
   /** Recibo de pedido do titular (LEG-D07): protocolo, tipo, data e prazo. Sem conteúdo de saúde. */
   | 'privacy-request-received'
   /** Aviso de exclusão de conta (LEG-D04): data, o que fica e por quanto tempo, canal do encarregado. */
-  | 'account-deleted';
+  | 'account-deleted'
+  /**
+   * Aviso de exclusão da conta que não concluiu o cadastro (P7-M2, ADR-0037): a data mínima da exclusão e os
+   * links para concluir ou sair. Sem conteúdo de saúde (não há registro antes do onboarding).
+   */
+  | 'onboarding-expiry-notice';
 
 export interface MailMessage {
   to: string;

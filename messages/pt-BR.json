@@ -200,7 +200,9 @@
       "too_common": "Essa senha é fácil de adivinhar. Escolha outra.",
       "invalidCredentials": "E-mail ou senha incorretos. Se tentou várias vezes, aguarde alguns minutos.",
       "invalidCode": "Código inválido ou já usado. Tente o próximo código do app.",
-      "mfaLocked": "Muitas tentativas. Por segurança, entre novamente com e-mail e senha.",
+      "mfaLocked": "Muitas tentativas. Por segurança, entre novamente com e-mail e senha. Se continuar bloqueado, tente de novo em até 1 hora.",
+      "setupExpired": "A ativação expirou (vale 15 minutos). Comece de novo, com a sua senha.",
+      "mfaSetupLocked": "Muitos códigos errados. Por segurança, tente de novo em até 1 hora.",
       "noPendingSession": "Sua verificação expirou. Entre novamente com e-mail e senha.",
       "birthDateInvalid": "Digite uma data válida.",
       "ageRequired": "Comece confirmando sua data de nascimento.",
@@ -236,7 +238,7 @@
       "unavailableBody": "O HealthMind 360 é destinado a pessoas com 18 anos ou mais. Nenhuma informação que você digitou foi guardada.",
       "unavailableSupport": "Se quiser conversar com alguém, o CVV atende 24 horas pelo telefone 188, de graça.",
       "checkEmailTitle": "Confira seu e-mail",
-      "checkEmailBody": "Se o endereço puder ser usado, enviamos um link para confirmar o cadastro. Ele vale por 24 horas."
+      "checkEmailBody": "Se o endereço puder ser usado, enviamos um link para confirmar o cadastro. Ele vale por 24 horas. Se o e-mail não for confirmado em 7 dias, o cadastro é excluído."
     },
     "verify": {
       "title": "Confirmar e-mail",
@@ -244,7 +246,7 @@
       "confirm": "Confirmar e-mail",
       "done": "E-mail confirmado. Você já pode entrar.",
       "pendingTitle": "Confirme seu e-mail para continuar",
-      "pendingBody": "Enviamos um link de confirmação quando você criou a conta. Não encontrou? Peça outro abaixo.",
+      "pendingBody": "Enviamos um link de confirmação quando você criou a conta. Não encontrou? Peça outro abaixo. Sem a confirmação, o cadastro é excluído 7 dias depois de criado.",
       "resend": "Reenviar link",
       "resent": "Se houver uma conta pendente com esse e-mail, enviamos um novo link."
     },
@@ -350,6 +352,14 @@
       "demoTitle": "Explorar com dados de demonstração",
       "demoBody": "Você vê o app preenchido com 90 dias de dados fictícios, marcados como DEMO. Nada disso é gravado na sua conta nem misturado aos seus registros.",
       "demoCta": "Ver a demonstração"
+    },
+    "exitLink": "Desistiu do cadastro? Excluir a conta ou encerrar por ter menos de 18 anos",
+    "exit": {
+      "title": "Excluir ou encerrar a conta",
+      "intro": "Você pode sair agora, sem aceitar os Termos nem fazer as escolhas de privacidade. Para confirmar, pedimos a sua senha.",
+      "expiry": "Se o cadastro não for concluído, a conta é apagada automaticamente {days} dias depois de criada. Avisamos por e-mail {noticeDays} dias antes.",
+      "erased": "Em poucos minutos, a conta e as preferências são apagadas. Até concluir o cadastro, não há registros de bem-estar guardados.",
+      "back": "Voltar ao cadastro"
     }
   },
   "consent": {
@@ -458,18 +468,17 @@
       "rejected": "Recusado"
     },
     "minorTitle": "Tenho menos de 18 anos",
-    "minorDescription": "O HealthMind 360 é só para pessoas com 18 anos ou mais. Se você tem menos de 18, encerre a conta: a conta, as sessões e o que foi registrado são apagados na hora.",
+    "minorDescription": "O HealthMind 360 é só para pessoas com 18 anos ou mais. Se você tem menos de 18, encerre a conta: a conta, as sessões e o que foi registrado são apagados na hora (em momentos de muito movimento, em até 1 hora, com o acesso já encerrado).",
     "minorStart": "Encerrar minha conta",
     "minorConfirmTitle": "Encerrar e apagar a conta agora?",
-    "minorConfirmBody": "A conta, as sessões e tudo o que foi registrado são apagados agora, sem prazo de espera. Ficam guardados, sem seu e-mail e sem o conteúdo dos registros: a prova do encerramento e das suas escolhas de privacidade, por até {proofDays} dias, e os registros de acesso (IP, data e hora), por até {accessDays} dias. Cópias de segurança são substituídas em até {backupDays} dias.",
+    "minorConfirmBody": "O acesso é encerrado agora, e a conta, as sessões e tudo o que foi registrado são apagados na hora, sem prazo de espera (em momentos de muito movimento, em até 1 hora). Ficam guardados, sem seu e-mail e sem o conteúdo dos registros: a prova do encerramento e das suas escolhas de privacidade, por até {proofDays} dias, e os registros de acesso (IP, data e hora), por até {accessDays} dias. Cópias de segurança são substituídas em até {backupDays} dias.",
     "minorPassword": "Digite sua senha para confirmar",
     "minorConfirm": "Encerrar e apagar agora",
     "minorCancel": "Cancelar",
     "minorError": "Não foi possível confirmar. Verifique a senha ou tente de novo em alguns minutos.",
     "closedTitle": "Conta encerrada",
-    "closedBody": "Sua conta e o que foi registrado nela foram apagados. Ficam só os registros mínimos informados antes da confirmação (prova do encerramento e registros de acesso, sem seu e-mail), pelos prazos indicados.",
+    "closedBody": "Sua conta foi encerrada e o acesso, cortado. A conta e o que foi registrado nela são apagados na hora ou, em momentos de muito movimento, em até 1 hora. Ficam só os registros mínimos informados antes da confirmação (prova do encerramento e registros de acesso, sem seu e-mail), pelos prazos indicados.",
     "closedSupport": "Se quiser conversar com alguém, o CVV atende 24 horas pelo telefone 188, de graça.",
-    "minorUnavailable": "Não foi possível encerrar a conta agora. Tente de novo em alguns minutos ou fale com o encarregado pelo contato em Documentos › Encarregado e contato.",
     "documentsAcknowledged": "Ciência da versão {version} em {date}",
     "data": {
       "title": "Seus dados",

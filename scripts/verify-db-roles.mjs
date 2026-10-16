@@ -6,8 +6,9 @@ import pg from 'pg';
 
 const migratorUrl = process.env.MIGRATION_DATABASE_URL;
 const userUrl = process.env.DATABASE_URL;
-// Opcional: conexão do atendimento manual (ADR-0034), conferida só se definida.
+// Opcionais: conexões do atendimento manual (ADR-0034/0037) e dos jobs (ADR-0037), conferidas se definidas.
 const operatorUrl = process.env.OPERATOR_DATABASE_URL;
+const workerUrl = process.env.WORKER_DATABASE_URL;
 if (!migratorUrl || !userUrl) {
   console.error('MIGRATION_DATABASE_URL e DATABASE_URL precisam estar definidos.');
   process.exit(1);
@@ -24,12 +25,13 @@ try {
   await runtime.connect();
 
   const { rows: roles } = await migrator.query(
-    `SELECT rolname, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole
-       FROM pg_roles WHERE rolname IN ('app_user', 'app_migrator', 'app_operator')`,
+    `SELECT rolname, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole, rolcanlogin
+       FROM pg_roles WHERE rolname IN ('app_user', 'app_migrator', 'app_operator', 'app_worker')`,
   );
   const appUser = roles.find((r) => r.rolname === 'app_user');
   const appMigrator = roles.find((r) => r.rolname === 'app_migrator');
   const appOperator = roles.find((r) => r.rolname === 'app_operator');
+  const appWorker = roles.find((r) => r.rolname === 'app_worker');
 
   check('app_user existe', appUser);
   check('app_user não é superusuário', appUser && !appUser.rolsuper);
@@ -49,6 +51,21 @@ try {
     'app_operator sem CREATEDB/CREATEROLE',
     appOperator && !appOperator.rolcreatedb && !appOperator.rolcreaterole,
   );
+  // ADR-0037: app_operator é só grupo; quem atende entra com o próprio papel de login.
+  check('app_operator é grupo (NOLOGIN)', appOperator && !appOperator.rolcanlogin);
+  // ADR-0036 D5 / ADR-0037: jobs em segundo plano.
+  check('app_worker existe', appWorker);
+  check('app_worker não é superusuário', appWorker && !appWorker.rolsuper);
+  check('app_worker sem BYPASSRLS', appWorker && !appWorker.rolbypassrls);
+  check(
+    'app_worker sem CREATEDB/CREATEROLE',
+    appWorker && !appWorker.rolcreatedb && !appWorker.rolcreaterole,
+  );
+  const { rows: workerOf } = await migrator.query(
+    `SELECT coalesce(array_agg(pg_get_userbyid(roleid)::text ORDER BY 1), '{}') AS r
+       FROM pg_auth_members WHERE member = 'app_worker'::regrole`,
+  );
+  check('app_worker só é membro do app_user', (workerOf[0]?.r ?? []).join(',') === 'app_user');
 
   // NOINHERIT não impede SET ROLE: app_user não pode ser membro de nenhum outro papel.
   const { rows: memberships } = await migrator.query(
@@ -56,10 +73,20 @@ try {
   );
   check('app_user não é membro de outros papéis', memberships[0]?.n === 0);
   const { rows: opMemberships } = await migrator.query(
-    `SELECT count(*)::int AS n FROM pg_auth_members
-      WHERE member = 'app_operator'::regrole OR roleid = 'app_operator'::regrole`,
+    `SELECT count(*)::int AS n FROM pg_auth_members WHERE member = 'app_operator'::regrole`,
   );
   check('app_operator fora de outros papéis', opMemberships[0]?.n === 0);
+  // Membros do grupo: papéis de login de pessoas, sem atributos e sem pertencer a outro papel.
+  const { rows: opPeople } = await migrator.query(
+    `SELECT r.rolname, r.rolsuper OR r.rolbypassrls OR r.rolcreatedb OR r.rolcreaterole AS power,
+            (SELECT count(*) FROM pg_auth_members o WHERE o.member = r.oid)::int AS groups
+       FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member
+      WHERE m.roleid = 'app_operator'::regrole`,
+  );
+  check(
+    'membros do app_operator são operador_<nome>, sem atributos e só nesse grupo',
+    opPeople.every((r) => /^operador_[a-z0-9_]+$/.test(r.rolname) && !r.power && r.groups === 1),
+  );
   const { rows: opTables } = await migrator.query(
     `SELECT count(*)::int AS n FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relkind IN ('r', 'v', 'm')
@@ -78,7 +105,8 @@ try {
   check(
     'app_operator executa só app.operator_*',
     (opFunctions[0]?.names ?? []).join(',') ===
-      'operator_request_close,operator_request_contact,operator_requests_due',
+      'operator_account_delete,operator_request_close,operator_request_contact,' +
+        'operator_request_register,operator_requests_due,operator_role',
   );
 
   const { rows: owners } = await migrator.query(
@@ -148,6 +176,19 @@ try {
                          WHERE c LIKE 'search_path=%')`,
   );
   check('funções SECURITY DEFINER com search_path fixo', definers[0]?.n === 0);
+  // ADR-0037 (D5): varreduras, expurgos, fila e purga só no app_worker; o runtime web não executa nenhuma.
+  const { rows: sweeps } = await migrator.query(
+    `SELECT count(*)::int AS n FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'app'
+        AND p.proname IN ('auth_purge_expired', 'account_purge', 'account_purge_due', 'jobs_claim',
+                          'jobs_complete', 'jobs_fail', 'exports_cleanup_due', 'exports_purge_rows',
+                          'privacy_purge_access_logs', 'privacy_purge_proofs', 'privacy_purge_reauth_proofs',
+                          'privacy_due_health_eliminations', 'privacy_request_deadlines',
+                          'onboarding_expiry_notices_due', 'onboarding_expiry_notice_mark',
+                          'onboarding_expired_purge', 'reminders_active')
+        AND has_function_privilege('app_user', p.oid, 'EXECUTE')`,
+  );
+  check('app_user não executa varreduras nem purgas (só app_worker)', sweeps[0]?.n === 0);
 
   const { rows: who } = await runtime.query('SELECT current_user AS u');
   check('DATABASE_URL conecta como app_user', who[0]?.u === 'app_user');
@@ -156,10 +197,25 @@ try {
     const operator = new pg.Client({ connectionString: operatorUrl });
     try {
       await operator.connect();
-      const { rows: op } = await operator.query('SELECT current_user AS u');
-      check('OPERATOR_DATABASE_URL conecta como app_operator', op[0]?.u === 'app_operator');
+      const { rows: op } = await operator.query(
+        `SELECT current_user AS u, pg_has_role(current_user, 'app_operator', 'MEMBER') AS member`,
+      );
+      check(
+        'OPERATOR_DATABASE_URL conecta com operador_<nome> do grupo app_operator',
+        /^operador_/.test(op[0]?.u ?? '') && op[0]?.member,
+      );
     } finally {
       await operator.end().catch(() => {});
+    }
+  }
+  if (workerUrl) {
+    const worker = new pg.Client({ connectionString: workerUrl });
+    try {
+      await worker.connect();
+      const { rows: wk } = await worker.query('SELECT current_user AS u');
+      check('WORKER_DATABASE_URL conecta como app_worker', wk[0]?.u === 'app_worker');
+    } finally {
+      await worker.end().catch(() => {});
     }
   }
 } catch (error) {

@@ -1,4 +1,4 @@
-import { auditAppend } from '@/lib/db/audit';
+import { auditAppendSystem } from '@/lib/db/audit';
 import type { Db } from '@/lib/db/client';
 import { withUserOn, type Tx } from '@/lib/db/rls';
 import type { Logger } from '@/lib/logger';
@@ -52,7 +52,7 @@ export function createHealthDataEliminator(deps: {
         let rows = 0;
         for (const eraser of erasers) rows += await eraser(tx);
         await tx.user.update({ where: { id: userId }, data: { healthDataPurgeAt: null } });
-        await auditAppend(tx, 'health_data_eliminated', 'health_data', null, { system: true });
+        await auditAppendSystem(tx, 'health_data_eliminated', 'health_data');
         // Sem userId: o log não liga uma conta à revogação de dados de saúde (B5).
         deps.logger.info('privacy.health_data_eliminated', { count: rows });
         return 'eliminated';

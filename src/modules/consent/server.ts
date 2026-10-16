@@ -93,6 +93,17 @@ export async function requireOnboardingSession(): Promise<ResolvedSession> {
   return session;
 }
 
+/**
+ * Guarda da tela mínima de saída da conta no onboarding (P7-M2, ADR-0037): só e-mail confirmado. Quem já
+ * concluiu o onboarding usa a Central de Privacidade (acessível mesmo com atualização pendente).
+ */
+export async function requireOnboardingExitSession(): Promise<ResolvedSession> {
+  const session = await requireVerifiedSession();
+  const state = await getConsentState(session.userId);
+  if (state.onboardingCompleted) redirect('/privacidade#excluir-conta');
+  return session;
+}
+
 /** Guarda da tela de atualização: só com algo pendente (LEG-C06). */
 export async function requireUpdateSession(): Promise<{
   session: ResolvedSession;

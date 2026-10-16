@@ -8,8 +8,10 @@ const days = z.coerce.number().int().positive();
 /** Regiões aceitas em produção: todas no Brasil (LEG-S10). Incluir nova região exige registro em DECISIONS. */
 export const BRAZIL_REGIONS = ['gru1', 'sa-east-1', 'brazilsouth', 'southamerica-east1'] as const;
 
-/** Papéis que nunca podem ser usados pelo runtime (LEG-S03). */
-const FORBIDDEN_RUNTIME_DB_USERS = ['app_migrator', 'app_operator', 'postgres'];
+/** Papéis que nunca podem ser usados pelo runtime web (LEG-S03). */
+const FORBIDDEN_RUNTIME_DB_USERS = ['app_migrator', 'app_operator', 'app_worker', 'postgres'];
+/** Papéis de login de quem atende pedidos fora do app (ADR-0037): nunca no runtime. */
+const OPERATOR_LOGIN_ROLE = /^operador_/;
 
 function dbUser(url: string): string {
   try {
@@ -26,18 +28,33 @@ const envSchema = z
     APP_REGION: z.string().min(1),
     DATABASE_URL: z.url(),
     MIGRATION_DATABASE_URL: z.url().optional(),
+    /**
+     * Jobs em segundo plano (ADR-0036 D5, ADR-0037): papel `app_worker`, o único que executa varreduras,
+     * expurgos, a fila e a purga de conta. Obrigatório onde a fila é consumida (fila em memória ou
+     * JOB_WORKER=inline); instâncias web com JOB_WORKER=off não usam.
+     */
+    WORKER_DATABASE_URL: z.url().optional(),
     /** Só para `pnpm privacy:requests` (papel app_operator, ADR-0034). Recusada no runtime de produção. */
     OPERATOR_DATABASE_URL: z.url().optional(),
     /** Base dos links enviados por e-mail (verificação, redefinição). https obrigatório em produção. */
     APP_URL: z.url(),
-    /** Segredos de auth (ADR-0014), 32+ bytes em base64. Cookies do fluxo e pepper dos códigos de recuperação. */
+    /** Segredos de auth (ADR-0014), 32+ bytes em base64. Assina os cookies do fluxo e o de aparelho conhecido. */
     SESSION_SECRET: z.string(),
     /** Pepper das chaves HMAC de limite de tentativas (IP/e-mail nunca em claro). */
     RATE_LIMIT_SECRET: z.string(),
-    /** Cabeçalho com o IP do cliente escrito pela hospedagem (ex.: x-real-ip). Obrigatório em produção. */
+    /**
+     * Pepper dos códigos de recuperação do MFA (PR1a-B3, ADR-0037): segredo próprio, para girar o
+     * `SESSION_SECRET` sem invalidar os códigos de quem tem MFA.
+     */
+    RECOVERY_CODE_PEPPER: z.string(),
+    /**
+     * Cabeçalho com o IP do cliente escrito pela hospedagem (ex.: x-real-ip). Obrigatório em produção.
+     * `x-forwarded-for` é recusado (PR1a-R2-B3): o 1º valor vem do cliente onde a hospedagem só acrescenta.
+     */
     CLIENT_IP_HEADER: z
       .string()
       .regex(/^[a-z0-9-]{1,64}$/)
+      .refine((h) => h !== 'x-forwarded-for', 'x-forwarded-for é controlado pelo cliente')
       .optional(),
 
     PURGE_DAYS: days.default(30),
@@ -89,17 +106,37 @@ const envSchema = z
     }
 
     // LEG-S03: o runtime conecta como app_user, nunca como dono das tabelas ou superusuário.
-    if (FORBIDDEN_RUNTIME_DB_USERS.includes(dbUser(env.DATABASE_URL))) {
+    const runtimeUser = dbUser(env.DATABASE_URL);
+    if (FORBIDDEN_RUNTIME_DB_USERS.includes(runtimeUser) || OPERATOR_LOGIN_ROLE.test(runtimeUser)) {
       issue('DATABASE_URL', 'o runtime deve usar o papel app_user (LEG-S03)');
     }
+    // Os jobs conectam como app_worker; quem consome a fila precisa da credencial (ADR-0037).
+    if (env.WORKER_DATABASE_URL) {
+      if (dbUser(env.WORKER_DATABASE_URL) !== 'app_worker') {
+        issue('WORKER_DATABASE_URL', 'os jobs devem usar o papel app_worker (LEG-S03)');
+      }
+    } else if (env.JOB_QUEUE === 'memory' || env.JOB_WORKER === 'inline') {
+      issue('WORKER_DATABASE_URL', 'obrigatório onde a fila é consumida (JOB_WORKER=inline)');
+    }
+    // Revisão M1 da 7b: a instância web (JOB_WORKER=off) nunca leva a credencial dos jobs em produção. A
+    // separação do D5 só vale por inteiro com o worker dedicado (OI-14 a, CHECKLIST_GO_LIVE).
+    if (env.APP_ENV === 'production' && env.JOB_WORKER === 'off' && env.WORKER_DATABASE_URL) {
+      issue(
+        'WORKER_DATABASE_URL',
+        'a instância web (JOB_WORKER=off) não usa a credencial dos jobs',
+      );
+    }
 
-    for (const key of ['SESSION_SECRET', 'RATE_LIMIT_SECRET'] as const) {
+    for (const key of ['SESSION_SECRET', 'RATE_LIMIT_SECRET', 'RECOVERY_CODE_PEPPER'] as const) {
       if (Buffer.from(env[key], 'base64').length < 32) {
         issue(key, 'precisa ter pelo menos 32 bytes em base64');
       }
     }
     if (env.SESSION_SECRET === env.RATE_LIMIT_SECRET) {
       issue('RATE_LIMIT_SECRET', 'deve ser diferente de SESSION_SECRET');
+    }
+    if ([env.SESSION_SECRET, env.RATE_LIMIT_SECRET].includes(env.RECOVERY_CODE_PEPPER)) {
+      issue('RECOVERY_CODE_PEPPER', 'deve ser diferente de SESSION_SECRET e de RATE_LIMIT_SECRET');
     }
 
     if (env.KMS_PROVIDER === 'local') {

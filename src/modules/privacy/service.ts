@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { JobQueue } from '@/adapters/jobs/types';
 import type { MailProvider } from '@/adapters/mail/types';
-import { auditAppend } from '@/lib/db/audit';
+import { auditAppendSystem } from '@/lib/db/audit';
 import type { Db } from '@/lib/db/client';
 import { withUserOn } from '@/lib/db/rls';
 import { AppError } from '@/lib/errors';
@@ -41,6 +41,11 @@ export interface PrivacyDeps {
   requestFullExport: (userId: string) => Promise<boolean>;
   appUrl: string;
   timeZone: string;
+  /**
+   * Client dos jobs (`app_worker`, ADR-0036 D5, ADR-0037): varreduras, expurgos e a purga de conta só rodam
+   * nesse papel. Padrão: `db` (testes que não chamam esses métodos).
+   */
+  workerDb?: () => Db;
 }
 
 export type PrivacyRequestKind =
@@ -71,6 +76,7 @@ export type OpenRequestResult =
 export type DeleteAccountResult = 'deleted' | 'invalid_credentials';
 
 export const ACCOUNT_PURGE_JOB = 'privacy.account_purge';
+export type MinorClosureResult = 'closed' | 'pending' | 'invalid_password';
 export const accountPurgeKey = (userId: string) => `account-purge:${userId}`;
 
 const sha = (value: string) => new Uint8Array(createHash('sha256').update(value).digest());
@@ -80,11 +86,12 @@ export function createPrivacyService(deps: PrivacyDeps) {
   const erasers = Object.values(deps.erasers);
   if (erasers.length === 0) throw new AppError('VALIDATION', 'nenhum eliminador de dados de saúde');
   const longDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: deps.timeZone });
+  const worker = () => deps.workerDb?.() ?? db;
 
   /** E-mail transacional sem conteúdo de saúde. Falha não interrompe o fluxo; o log leva só o modelo. */
   async function sendMail(
     to: string,
-    template: 'privacy-request-received' | 'account-deleted',
+    template: 'privacy-request-received' | 'account-deleted' | 'onboarding-expiry-notice',
     params: Record<string, string>,
   ): Promise<boolean> {
     try {
@@ -222,7 +229,7 @@ export function createPrivacyService(deps: PrivacyDeps) {
       });
       if (sent) {
         await withUserOn(db, userId, (tx) =>
-          auditAppend(tx, 'account_deletion_notice_sent', 'user', null, { system: true }),
+          auditAppendSystem(tx, 'account_deletion_notice_sent', 'user'),
         );
       }
       await deps.queue
@@ -238,7 +245,7 @@ export function createPrivacyService(deps: PrivacyDeps) {
      * desfaz tudo e o job tenta de novo. O aviso por e-mail já saiu na exclusão.
      */
     async purgeAccount(userId: string): Promise<'purged' | 'skipped'> {
-      const outcome = await withUserOn(db, userId, async (tx) => {
+      const outcome = await withUserOn(worker(), userId, async (tx) => {
         await tx.$queryRaw`SELECT 1 FROM public.users WHERE id = ${userId}::uuid FOR UPDATE`;
         const still = await tx.user.findUnique({
           where: { id: userId },
@@ -256,58 +263,110 @@ export function createPrivacyService(deps: PrivacyDeps) {
 
     /** Contas excluídas que ainda existem (rede de segurança do enfileiramento da purga). */
     async duePurges(limit = 500): Promise<string[]> {
-      const rows = await db.$queryRaw<Array<{ user_id: string }>>`
+      const rows = await worker().$queryRaw<Array<{ user_id: string }>>`
         SELECT user_id FROM app.account_purge_due(${limit}::int)`;
       return rows.map((r) => r.user_id);
     },
 
-    /** Prazos dos pedidos (job diário): só contagens no log, sem IDs nem pessoas. */
-    async requestDeadlines(): Promise<{ dueSoon: number; overdue: number }> {
-      const rows = await db.$queryRaw<Array<{ due_soon: number; overdue: number }>>`
-        SELECT due_soon, overdue FROM app.privacy_request_deadlines()`;
+    /**
+     * Prazos dos pedidos (job diário): só contagens no log, sem IDs nem pessoas. `stalled`: exclusões e
+     * encerramentos com o acesso cortado e a purga parada há mais de 1 hora (revisão B4 da 7b; runbook
+     * DATA_SUBJECT_REQUEST.md).
+     */
+    async requestDeadlines(): Promise<{ dueSoon: number; overdue: number; stalled: number }> {
+      const rows = await worker().$queryRaw<
+        Array<{ due_soon: number; overdue: number; stalled_closures: number }>
+      >`SELECT due_soon, overdue, stalled_closures FROM app.privacy_request_deadlines()`;
       const dueSoon = rows[0]?.due_soon ?? 0;
       const overdue = rows[0]?.overdue ?? 0;
+      const stalled = rows[0]?.stalled_closures ?? 0;
       logger.info('privacy.requests_due_soon', { count: dueSoon });
       if (overdue > 0) logger.warn('privacy.requests_overdue', { count: overdue });
-      return { dueSoon, overdue };
+      if (stalled > 0) logger.warn('privacy.closures_stalled', { count: stalled });
+      return { dueSoon, overdue, stalled };
     },
 
     /**
      * Encerramento para quem se descobre menor (LEG-F04). Confirmação reforçada: senha atual e, com MFA, o 2º
-     * fator. A conta, os
-     * dados e os arquivos saem na hora; fica só a prova mínima (pedido e AuditLog, sem e-mail; LEG-R03).
-     * `unavailable`: teto global de encerramentos por hora atingido no banco (ADR-0020). A pessoa recebe uma
-     * mensagem com o caminho alternativo (encarregado), nunca uma página de erro.
+     * fator. Abaixo do teto global (ADR-0020), a conta, os dados e os arquivos saem na hora; fica só a prova
+     * mínima (pedido e AuditLog, sem e-mail; LEG-R03). Acima do teto (D4, ADR-0037), o acesso é cortado na hora
+     * e o pedido fica pendente: a purga roda no job `privacy.account_purge_sweep`. Nos dois casos a pessoa sai
+     * da conta; nunca recebe uma página de erro.
      */
     async closeMinorAccount(
       userId: string,
       password: string,
       mfaCode?: string,
-    ): Promise<'closed' | 'invalid_password' | 'unavailable'> {
+    ): Promise<MinorClosureResult> {
       const proof = await deps.reauthenticate(userId, password, 'minor_closure', mfaCode);
       if (!proof) return 'invalid_password';
       const proofHash = sha(proof);
-      try {
-        await withUserOn(db, userId, async (tx) => {
-          await tx.$queryRaw`SELECT app.account_close_minor(${proofHash})::text`;
-          // Arquivos de exportação ainda na transação (PR1b-B9): se o storage falhar, nada é confirmado.
-          await deps.eraseObjects(userId);
-        });
-      } catch (error) {
-        if (error instanceof Error && /closure rate exceeded/.test(error.message)) {
-          logger.warn('privacy.minor_closure_rate_exceeded');
-          return 'unavailable';
-        }
-        throw error;
+      const pending = await withUserOn(db, userId, async (tx) => {
+        const rows = await tx.$queryRaw<Array<{ pending: boolean }>>`
+          SELECT pending FROM app.account_close_minor(${proofHash})`;
+        const deferred = rows[0]?.pending === true;
+        // Arquivos de exportação ainda na transação (PR1b-B9): se o storage falhar, nada é confirmado. No
+        // pendente, os arquivos saem na purga (os links já venceram).
+        if (!deferred) await deps.eraseObjects(userId);
+        return deferred;
+      });
+      // Sem userId: o log não liga uma conta a "é menor" (B5). A prova é o AuditLog. O pendente é o sinal de
+      // abuso em massa a acompanhar (alerta na 7c).
+      if (pending) {
+        logger.warn('privacy.minor_closure_deferred');
+        return 'pending';
       }
-      // Sem userId: o log não liga uma conta a "é menor" (B5). A prova é o AuditLog.
       logger.info('privacy.minor_account_closed');
       return 'closed';
     },
 
+    /**
+     * Aviso de exclusão das contas que não concluíram o onboarding (P7-M2, ADR-0037), no 23º dia: e-mail com a
+     * data mínima da exclusão e o link para concluir ou sair. Marca o aviso só depois do envio; a exclusão
+     * espera 7 dias depois do aviso. Log só com contagens.
+     */
+    async sendOnboardingExpiryNotices(limit = 500): Promise<number> {
+      const due = await worker().$queryRaw<Array<{ user_id: string; purge_after: Date }>>`
+        SELECT user_id, purge_after FROM app.onboarding_expiry_notices_due(${limit}::int)`;
+      let sent = 0;
+      for (const row of due) {
+        const user = await withUserOn(worker(), row.user_id, (tx) =>
+          tx.user.findFirst({
+            where: { id: row.user_id, deletedAt: null, onboardingCompletedAt: null },
+            select: { email: true },
+          }),
+        );
+        if (!user) continue;
+        const ok = await sendMail(user.email, 'onboarding-expiry-notice', {
+          date: longDate.format(row.purge_after),
+          url: `${deps.appUrl}/entrar`,
+          exitUrl: `${deps.appUrl}/boas-vindas/encerrar-conta`,
+        });
+        if (!ok) continue;
+        const marked = await withUserOn(
+          worker(),
+          row.user_id,
+          (tx) =>
+            tx.$queryRaw<Array<{ ok: boolean }>>`SELECT app.onboarding_expiry_notice_mark() AS ok`,
+        );
+        if (marked[0]?.ok === true) sent += 1;
+      }
+      logger.info('privacy.onboarding_expiry_notices', { count: sent });
+      return sent;
+    },
+
+    /** Exclui as contas sem onboarding 30 dias após o cadastro e 7 dias após o aviso (P7-M2, ADR-0037). */
+    async purgeExpiredOnboarding(limit = 500): Promise<number> {
+      const rows = await worker().$queryRaw<Array<{ n: number }>>`
+        SELECT app.onboarding_expired_purge(${limit}::int) AS n`;
+      const n = rows[0]?.n ?? 0;
+      logger.info('privacy.onboarding_expired_purged', { count: n });
+      return n;
+    },
+
     /** Registros de acesso além de ACCESS_LOG_RETENTION_DAYS (LEG-R02). */
     async purgeAccessLogs(): Promise<number> {
-      const rows = await db.$queryRaw<Array<{ n: number }>>`
+      const rows = await worker().$queryRaw<Array<{ n: number }>>`
         SELECT app.privacy_purge_access_logs(${deps.accessLogRetentionDays}::int) AS n`;
       const n = rows[0]?.n ?? 0;
       logger.info('privacy.access_logs_purged', { count: n });
@@ -316,7 +375,7 @@ export function createPrivacyService(deps: PrivacyDeps) {
 
     /** Provas além de PROOF_RETENTION_DAYS (LEG-R03, LEGAL-REVIEW OI-04). */
     async purgeProofs(): Promise<number> {
-      const rows = await db.$queryRaw<Array<{ n: number }>>`
+      const rows = await worker().$queryRaw<Array<{ n: number }>>`
         SELECT app.privacy_purge_proofs(${deps.proofRetentionDays}::int) AS n`;
       const n = rows[0]?.n ?? 0;
       logger.info('privacy.proofs_purged', { count: n });
@@ -325,7 +384,7 @@ export function createPrivacyService(deps: PrivacyDeps) {
 
     /** Provas de reautenticação vencidas ou já usadas, de todas as contas (PR1b-R2-B1, ADR-0035). */
     async purgeReauthProofs(): Promise<number> {
-      const rows = await db.$queryRaw<Array<{ n: number }>>`
+      const rows = await worker().$queryRaw<Array<{ n: number }>>`
         SELECT app.privacy_purge_reauth_proofs() AS n`;
       const n = rows[0]?.n ?? 0;
       logger.info('privacy.reauth_proofs_purged', { count: n });
@@ -334,7 +393,7 @@ export function createPrivacyService(deps: PrivacyDeps) {
 
     /** Contas com eliminação de dados de saúde vencida (rede de segurança do agendamento). */
     async dueHealthEliminations(limit = 500): Promise<string[]> {
-      const rows = await db.$queryRaw<Array<{ user_id: string }>>`
+      const rows = await worker().$queryRaw<Array<{ user_id: string }>>`
         SELECT user_id FROM app.privacy_due_health_eliminations(${limit}::int)`;
       return rows.map((r) => r.user_id);
     },

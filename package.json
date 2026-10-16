@@ -22,6 +22,7 @@
     "db:down": "docker compose down",
     "db:test:init": "docker compose exec -T db sh /docker-entrypoint-initdb.d/02-test-db.sh",
     "db:operator:init": "docker compose exec -T db sh /docker-entrypoint-initdb.d/03-operator-role.sh",
+    "db:worker:init": "docker compose exec -T db sh /docker-entrypoint-initdb.d/04-worker-role.sh",
     "privacy:requests": "node scripts/privacy-requests.mjs",
     "mail:up": "docker compose up -d mailpit",
     "db:verify-roles": "node scripts/verify-db-roles.mjs",

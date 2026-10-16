@@ -53,12 +53,24 @@ export function runtimeDb(): Db {
   return createDbClient(process.env.DATABASE_URL ?? '');
 }
 
+/**
+ * Client dos jobs: app_worker (ADR-0037), o único que executa varreduras, expurgos, a fila e a purga. Um por
+ * processo de teste (as suítes que varrem compartilham).
+ */
+let worker: Db | undefined;
+export function workerDb(): Db {
+  worker ??= createDbClient(process.env.WORKER_DATABASE_URL ?? '');
+  return worker;
+}
+
 export interface TestAuth {
   service: AuthService;
   mail: ConsoleMailProvider;
   logs: LogRecord[];
   clock: { now: Date };
   sessionSecret: Uint8Array;
+  rateLimitSecret: Uint8Array;
+  recoveryPepper: Uint8Array;
 }
 
 export function createTestAuth(
@@ -69,6 +81,8 @@ export function createTestAuth(
     mailDelayMs?: number;
     /** Coleta tarefas adiadas em vez de rodar em linha (como o `after()` do Next). */
     deferred?: Array<Promise<void>>;
+    /** Pepper dos códigos de recuperação (padrão: aleatório). */
+    recoveryPepper?: Uint8Array;
   } = {},
 ): TestAuth {
   const logs: LogRecord[] = [];
@@ -85,21 +99,25 @@ export function createTestAuth(
   // Longe da virada da hora: janelas fixas de 1 h não zeram no meio do teste (PR1a-R3-B5).
   const clock = { now: stableTestClock() };
   const sessionSecret = randomBytes(32);
+  const rateLimitSecret = randomBytes(32);
+  const recoveryPepper = opts.recoveryPepper ?? randomBytes(32);
   const service = createAuthService({
     db,
+    workerDb,
     kms: new LocalKmsProvider(randomBytes(32).toString('base64')),
     mail,
     ageSignal: opts.ageSignal ?? new NoAgeSignalProvider(),
     logger,
     sessionSecret,
-    rateLimitSecret: randomBytes(32),
+    rateLimitSecret,
+    recoveryPepper,
     appUrl: 'http://localhost:3000',
     now: () => clock.now,
     ...(opts.deferred
       ? { defer: (task: () => Promise<void>) => void opts.deferred?.push(task()) }
       : {}),
   });
-  return { service, mail, logs, clock, sessionSecret };
+  return { service, mail, logs, clock, sessionSecret, rateLimitSecret, recoveryPepper };
 }
 
 export const META = { ip: '203.0.113.10', userAgent: 'Mozilla/5.0 (Windows NT 10.0) Chrome/140.0' };
@@ -110,7 +128,8 @@ export function lastMailToken(t: TestAuth, to: string, template: string): string
   const msg = [...t.mail.outbox].reverse().find((m) => m.to === to && m.template === template);
   const url = msg?.params.url;
   if (!url) throw new Error(`nenhum e-mail ${template}`);
-  return new URL(url).searchParams.get('token') ?? '';
+  // Token no fragmento (TM-01).
+  return new URLSearchParams(new URL(url).hash.slice(1)).get('token') ?? '';
 }
 
 let counter = 0;

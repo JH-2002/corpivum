@@ -1,5 +1,5 @@
 import 'server-only';
-import { getDb } from '@/lib/db/client';
+import { getDb, getWorkerDb } from '@/lib/db/client';
 import { APP_TIME_ZONE } from '@/lib/dates';
 import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
@@ -22,6 +22,7 @@ export function getPrivacyService(): PrivacyService {
     const adapters = getAdapters();
     service = createPrivacyService({
       db: getDb(),
+      workerDb: getWorkerDb,
       logger,
       reauthenticate: (userId, password, purpose, mfaCode) =>
         getAuthService().issueReauthProof(userId, password, purpose, mfaCode),

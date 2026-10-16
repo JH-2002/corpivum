@@ -36,8 +36,9 @@ export function assertDisposableDatabase(url: string | undefined): void {
 }
 
 /**
- * Aponta este processo (e os filhos) para o banco de testes: copia `TEST_DATABASE_URL` e
- * `TEST_MIGRATION_DATABASE_URL` para as variáveis que o código lê, e confere as duas com a trava acima.
+ * Aponta este processo (e os filhos) para o banco de testes: copia `TEST_DATABASE_URL`,
+ * `TEST_MIGRATION_DATABASE_URL` e `TEST_WORKER_DATABASE_URL` para as variáveis que o código lê, e confere as
+ * três com a trava acima.
  * Chamado pelo setup do `test:db` e pela configuração do Playwright, antes de qualquer conexão.
  */
 export function pointToTestDatabase(): void {
@@ -58,4 +59,14 @@ export function pointToTestDatabase(): void {
   }
   process.env.DATABASE_URL = user;
   process.env.MIGRATION_DATABASE_URL = migrator;
+  // Jobs em segundo plano (ADR-0037): papel app_worker no mesmo banco de testes.
+  const worker = process.env.TEST_WORKER_DATABASE_URL;
+  if (!worker) {
+    throw new Error('Defina TEST_WORKER_DATABASE_URL no .env (papel app_worker; LOCAL_DEV.md).');
+  }
+  assertDisposableDatabase(worker);
+  if (databaseName(worker) !== databaseName(user)) {
+    throw new Error('TEST_WORKER_DATABASE_URL aponta para outro banco.');
+  }
+  process.env.WORKER_DATABASE_URL = worker;
 }

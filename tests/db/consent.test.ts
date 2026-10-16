@@ -691,11 +691,18 @@ describe('integridade das provas (LEG-R03, LEG-S06)', () => {
       `SELECT column_name, data_type FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'audit_logs'`,
     );
-    for (const c of cols) {
+    // Única coluna de texto: o papel de login de quem atendeu (ADR-0037), restrito a um nome técnico.
+    for (const c of cols.filter((col) => col.column_name !== 'operator_role')) {
       expect(['text', 'character varying', 'json', 'jsonb'], c.column_name).not.toContain(
         c.data_type,
       );
     }
+    await expect(
+      admin.query(
+        `INSERT INTO audit_logs (id, action, resource_type, operator_role, created_at, updated_at)
+         VALUES (gen_random_uuid(), 'privacy_request_closed', 'privacy_request', 'Maria@Exemplo', now(), now())`,
+      ),
+    ).rejects.toThrow(/audit_logs_operator_role/);
     const u = await onboarded(['health_data', 'marketing']);
     await u.service.revoke(u.userId, 'marketing');
     const { rows } = await admin.query(`SELECT * FROM audit_logs WHERE subject_user_id = $1`, [

@@ -36,8 +36,9 @@ import {
   META,
   PASSWORD,
   runtimeDb,
-  truncateAll,
   type TestAuth,
+  truncateAll,
+  workerDb,
 } from './helpers';
 import { assertDisposableDatabase } from './safety';
 
@@ -70,6 +71,7 @@ const KEPT_AFTER_PURGE = new Set([
 function reports() {
   return createReportsService({
     db,
+    workerDb,
     kms,
     storage,
     queue: { enqueue: async () => 'job' },
@@ -98,6 +100,7 @@ function privacy(overrides: Partial<PrivacyDeps> = {}, logs?: LogRecord[]) {
   const logger = logs ? createLogger({ minLevel: 'debug', sink: (r) => logs.push(r) }) : silent;
   return createPrivacyService({
     db,
+    workerDb,
     logger,
     reauthenticate: (userId, password, purpose, mfaCode) =>
       t.service.issueReauthProof(userId, password, purpose, mfaCode),
@@ -662,7 +665,7 @@ describe('purga da conta excluída (LEG-D04, LEG-R03)', () => {
     expect(await privacy().purgeAccount(u.userId)).toBe('skipped');
     expect((await rowsOf(u.userId)).users).toBe(1);
     await expect(
-      withUserOn(db, u.userId, (tx) => tx.$queryRaw`SELECT app.account_purge()`),
+      withUserOn(workerDb(), u.userId, (tx) => tx.$queryRaw`SELECT app.account_purge()`),
     ).resolves.toEqual([{ account_purge: false }]);
   });
 

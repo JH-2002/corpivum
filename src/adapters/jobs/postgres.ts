@@ -16,6 +16,11 @@ export interface PgJobQueueOptions {
   /** Tempo de reserva de um job; depois disso, outro worker pode retomá-lo. */
   lockSeconds?: number;
   batchSize?: number;
+  /**
+   * Client do consumo (reservar, concluir, falhar): papel `app_worker` (ADR-0037). Só é pedido quando a fila é
+   * consumida; quem só enfileira (web com JOB_WORKER=off) não precisa da credencial. Padrão: o mesmo client.
+   */
+  workerDb?: () => Db;
 }
 
 /** Atraso exponencial entre tentativas: 1 min, 2 min, 4 min... até 1 h. */
@@ -28,13 +33,17 @@ export function retryDelaySeconds(attempt: number): number {
  * Acesso só pelas funções SECURITY DEFINER `app.jobs_*`: o runtime não lê a tabela.
  * - `FOR UPDATE SKIP LOCKED`: vários workers (instâncias) nunca executam o mesmo job ao mesmo tempo.
  * - `singletonKey`: no máximo um job na fila por chave (jobs recorrentes não duplicam; PR1a-R2-B6).
- * - Job travado (worker morreu) volta a ser executável quando a reserva vence.
+ * - Job travado (worker morreu) volta a ser executável quando a reserva vence: os handlers precisam ser
+ *   idempotentes (rodar duas vezes não pode duplicar efeito), porque um handler acima de `lockSeconds` pode ser
+ *   retomado por outro worker (PR1b-B8 a).
+ * - Enfileirar usa o `app_user`; reservar, concluir e falhar só o `app_worker` (ADR-0037).
  * Logs só com nome, id, tentativa e código do erro (LEG-R04).
  */
 export class PgJobQueue implements JobQueue {
   readonly id = 'postgres';
   readonly workerId = `w-${randomUUID()}`;
   readonly #db: Db;
+  readonly #workerDb: () => Db;
   readonly #handlers = new Map<string, JobHandler>();
   readonly #logger: Logger;
   readonly #pollMs: number;
@@ -45,6 +54,7 @@ export class PgJobQueue implements JobQueue {
 
   constructor(db: Db, options: PgJobQueueOptions = {}) {
     this.#db = db;
+    this.#workerDb = options.workerDb ?? (() => db);
     this.#logger = options.logger ?? defaultLogger;
     this.#pollMs = options.pollMs ?? 30_000;
     this.#lockSeconds = options.lockSeconds ?? 300;
@@ -69,7 +79,8 @@ export class PgJobQueue implements JobQueue {
   async runOnce(): Promise<number> {
     const names = [...this.#handlers.keys()];
     if (names.length === 0) return 0;
-    const jobs = await this.#db.$queryRaw<
+    const worker = this.#workerDb();
+    const jobs = await worker.$queryRaw<
       Array<{ id: string; name: string; payload: unknown; attempts: number }>
     >`SELECT * FROM app.jobs_claim(${this.workerId}, ${names}::text[], ${this.#batchSize}::int,
         ${this.#lockSeconds}::int)`;
@@ -80,7 +91,7 @@ export class PgJobQueue implements JobQueue {
       try {
         if (!handler || !payload.success) throw new TypeError('invalid job');
         await handler(payload.data, { jobId: job.id, attempt: job.attempts });
-        await this.#db.$queryRaw`SELECT app.jobs_complete(${job.id}::uuid, ${this.workerId})`;
+        await worker.$queryRaw`SELECT app.jobs_complete(${job.id}::uuid, ${this.workerId})`;
         completed += 1;
       } catch (error) {
         const errorCode = error instanceof Error ? error.name : 'unknown';
@@ -91,8 +102,7 @@ export class PgJobQueue implements JobQueue {
           attempt: job.attempts,
           errorCode,
         });
-        await this.#db
-          .$queryRaw`SELECT app.jobs_fail(${job.id}::uuid, ${this.workerId}, ${errorCode},
+        await worker.$queryRaw`SELECT app.jobs_fail(${job.id}::uuid, ${this.workerId}, ${errorCode},
           ${retryDelaySeconds(job.attempts)}::int)`;
       }
     }

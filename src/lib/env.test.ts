@@ -7,10 +7,12 @@ const base = {
   APP_ENV: 'development',
   APP_REGION: 'gru1',
   DATABASE_URL: 'postgresql://app_user:x@localhost:5432/healthmind',
+  WORKER_DATABASE_URL: 'postgresql://app_worker:x@localhost:5432/healthmind',
   KMS_LOCAL_MASTER_KEY: validKey,
   APP_URL: 'http://localhost:3000',
   SESSION_SECRET: Buffer.alloc(32, 1).toString('base64'),
   RATE_LIMIT_SECRET: Buffer.alloc(32, 2).toString('base64'),
+  RECOVERY_CODE_PEPPER: Buffer.alloc(32, 3).toString('base64'),
 };
 
 function issuesOf(source: Record<string, string | undefined>): readonly string[] {
@@ -72,7 +74,7 @@ describe('parseEnv', () => {
     expect(hasIssue({ ...base, KMS_LOCAL_MASTER_KEY: 'curta' }, 'KMS_LOCAL_MASTER_KEY')).toBe(true);
   });
 
-  it.each(['app_migrator', 'app_operator', 'postgres'])(
+  it.each(['app_migrator', 'app_operator', 'app_worker', 'operador_maria', 'postgres'])(
     'recusa runtime conectando como %s (LEG-S03)',
     (user) => {
       expect(
@@ -80,6 +82,20 @@ describe('parseEnv', () => {
       ).toBe(true);
     },
   );
+
+  it('jobs: exige WORKER_DATABASE_URL com app_worker onde a fila é consumida (ADR-0037)', () => {
+    const { WORKER_DATABASE_URL: _omit, ...noWorker } = base;
+    expect(hasIssue(noWorker, 'WORKER_DATABASE_URL')).toBe(true);
+    expect(
+      hasIssue({ ...noWorker, JOB_QUEUE: 'postgres', JOB_WORKER: 'off' }, 'WORKER_DATABASE_URL'),
+    ).toBe(false);
+    expect(
+      hasIssue(
+        { ...base, WORKER_DATABASE_URL: 'postgresql://app_user:x@localhost/db' },
+        'WORKER_DATABASE_URL',
+      ),
+    ).toBe(true);
+  });
 
   it.each(['public', 'public/exports', './public'])(
     'recusa storage local em %s (LEG-D03)',
@@ -144,6 +160,30 @@ describe('parseEnv', () => {
     expect(hasIssue({ ...base, RATE_LIMIT_SECRET: base.SESSION_SECRET }, 'RATE_LIMIT_SECRET')).toBe(
       true,
     );
+  });
+
+  it('exige pepper próprio dos códigos de recuperação, diferente dos outros segredos (PR1a-B3)', () => {
+    expect(hasIssue({ ...base, RECOVERY_CODE_PEPPER: undefined }, 'RECOVERY_CODE_PEPPER')).toBe(
+      true,
+    );
+    expect(hasIssue({ ...base, RECOVERY_CODE_PEPPER: 'curto' }, 'RECOVERY_CODE_PEPPER')).toBe(true);
+    expect(
+      hasIssue({ ...base, RECOVERY_CODE_PEPPER: base.SESSION_SECRET }, 'RECOVERY_CODE_PEPPER'),
+    ).toBe(true);
+    expect(hasIssue(base, 'RECOVERY_CODE_PEPPER')).toBe(false);
+  });
+
+  it('em produção, a instância web (JOB_WORKER=off) não leva a credencial dos jobs (revisão M1 da 7b)', () => {
+    const web = { ...base, APP_ENV: 'production', JOB_QUEUE: 'postgres', JOB_WORKER: 'off' };
+    expect(hasIssue(web, 'WORKER_DATABASE_URL')).toBe(true);
+    expect(hasIssue({ ...web, WORKER_DATABASE_URL: undefined }, 'WORKER_DATABASE_URL')).toBe(false);
+  });
+
+  it('recusa x-forwarded-for como CLIENT_IP_HEADER (PR1a-R2-B3)', () => {
+    expect(hasIssue({ ...base, CLIENT_IP_HEADER: 'x-forwarded-for' }, 'CLIENT_IP_HEADER')).toBe(
+      true,
+    );
+    expect(hasIssue({ ...base, CLIENT_IP_HEADER: 'x-real-ip' }, 'CLIENT_IP_HEADER')).toBe(false);
   });
 
   it('exige CLIENT_IP_HEADER em produção (LEG-S05)', () => {
