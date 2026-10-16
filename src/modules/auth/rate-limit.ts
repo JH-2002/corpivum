@@ -22,7 +22,16 @@ export const RATE_LIMITS = {
    */
   registerAccount: { windowSeconds: 60 * 60, max: 3 },
   resendAccount: { windowSeconds: 60 * 60, max: 3 },
-  /** Tentativas de 2º fator por CONTA (somadas entre sessões pendentes): barra força bruta do TOTP. */
+  /**
+   * Teto diário por destinatário, somado entre cadastro e reenvio (PR1a-R3-B1): os baldes de 1 h sozinhos
+   * deixavam ~144 e-mails por dia. A redefinição fica de fora (revisão M3 da 7b): senão um terceiro gastaria o
+   * teto e deixaria o titular 24 h sem o link (OI-15); ela segue com o limite de 3 por hora.
+   */
+  mailRecipientDay: { windowSeconds: 24 * 60 * 60, max: 10 },
+  /**
+   * FALHAS de 2º fator por CONTA (somadas entre sessões pendentes): barra força bruta do TOTP. Conta só
+   * falhas (PR1a-R2-B2): entrar certo várias vezes não bloqueia.
+   */
   mfaAccount: { windowSeconds: 60 * 60, max: 10 },
   /** Reautenticação (senha atual) em ações da conta, por usuário. */
   reauthUser: { windowSeconds: 15 * 60, max: 10 },
@@ -39,6 +48,24 @@ export interface RateLimitResult {
   hits: number;
   /** Esta tentativa foi a primeira acima do limite (o bloqueio começou agora). */
   justLocked: boolean;
+}
+
+/**
+ * Tentativas já contadas na janela atual, sem contar esta (`app.rate_limit_peek`). Para limites que contam só
+ * falhas (`mfaAccount`, PR1a-R2-B2): consulta antes, registra com `rateLimitHit` só quando a tentativa falha.
+ */
+export async function rateLimitPeek(
+  db: Db,
+  secret: Uint8Array,
+  name: RateLimitName,
+  subject: string,
+  now: Date,
+): Promise<number> {
+  const { windowSeconds } = RATE_LIMITS[name];
+  const key = hmac(secret, 'rate-limit', `${name}:${subject}`);
+  const rows = await db.$queryRaw<Array<{ hits: number }>>`
+    SELECT app.rate_limit_peek(${key}, ${windowSeconds}::int, ${now}::timestamptz) AS hits`;
+  return rows[0]?.hits ?? Number.MAX_SAFE_INTEGER;
 }
 
 export async function rateLimitHit(

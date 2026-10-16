@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { after } from 'next/server';
 import { cache } from 'react';
 import { getAdapters } from '@/adapters';
-import { getDb } from '@/lib/db/client';
+import { getDb, getWorkerDb } from '@/lib/db/client';
 import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { clientIp } from './client-ip';
@@ -30,12 +30,14 @@ export function getAuthService(): AuthService {
     const adapters = getAdapters();
     service = createAuthService({
       db: getDb(),
+      workerDb: getWorkerDb,
       kms: adapters.kms,
       mail: adapters.mail,
       ageSignal: adapters.ageSignal,
       logger,
       sessionSecret: Buffer.from(env.SESSION_SECRET, 'base64'),
       rateLimitSecret: Buffer.from(env.RATE_LIMIT_SECRET, 'base64'),
+      recoveryPepper: Buffer.from(env.RECOVERY_CODE_PEPPER, 'base64'),
       appUrl: env.APP_URL,
       // Token + e-mail depois da resposta: tempo igual com ou sem conta (anti-enumeração).
       defer: (task) => after(task),
@@ -51,8 +53,11 @@ export function getAuthService(): AuthService {
 export async function requestMeta(): Promise<RequestMeta> {
   const h = await headers();
   const knownDevice = (await cookies()).get(KNOWN_DEVICE_COOKIE)?.value;
+  const ip = clientIp(h, getEnv().CLIENT_IP_HEADER);
+  // Cabeçalho da hospedagem ausente: todo mundo cairia no mesmo balde de limite (PR1a-R2-B3). Só o fato.
+  if (ip === 'unknown') logger.warn('auth.client_ip_missing');
   return {
-    ip: clientIp(h, getEnv().CLIENT_IP_HEADER),
+    ip,
     userAgent: h.get('user-agent'),
     ...(knownDevice ? { knownDevice } : {}),
   };

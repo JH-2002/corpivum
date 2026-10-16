@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { randomBytes } from 'node:crypto';
 import { canonicalMailbox, normalizeEmail } from './email';
-import { signKnownDevice, verifyKnownDevice } from './known-device';
+import { passwordFingerprint, signKnownDevice, verifyKnownDevice } from './known-device';
 
 describe('canonicalMailbox (PR1a-R3-M1)', () => {
   it.each([
@@ -25,7 +25,7 @@ describe('canonicalMailbox (PR1a-R3-M1)', () => {
 
 describe('cookie de aparelho conhecido (OI-15)', () => {
   const secret = randomBytes(32);
-  const H = '$argon2id$v=19$m=19456,t=2,p=1$sal$hash-sintetico';
+  const H = passwordFingerprint('$argon2id$v=19$m=19456,t=2,p=1$sal$hash-sintetico');
 
   it('vale só para o e-mail assinado (normalizado) e a senha atual, e devolve o nonce', () => {
     const v = signKnownDevice(secret, 'Pessoa@Exemplo.test', H);
@@ -33,7 +33,8 @@ describe('cookie de aparelho conhecido (OI-15)', () => {
     expect(verifyKnownDevice(secret, v, 'outra@exemplo.test', H)).toBeNull();
     expect(verifyKnownDevice(randomBytes(32), v, 'pessoa@exemplo.test', H)).toBeNull();
     // Senha trocada ou conta inexistente: inválido (revisão B4).
-    expect(verifyKnownDevice(secret, v, 'pessoa@exemplo.test', `${H}-nova`)).toBeNull();
+    const nova = passwordFingerprint('$argon2id$v=19$m=19456,t=2,p=1$sal$hash-novo');
+    expect(verifyKnownDevice(secret, v, 'pessoa@exemplo.test', nova)).toBeNull();
     expect(verifyKnownDevice(secret, v, 'pessoa@exemplo.test', null)).toBeNull();
   });
 
@@ -41,7 +42,8 @@ describe('cookie de aparelho conhecido (OI-15)', () => {
     const v = signKnownDevice(secret, 'pessoa@exemplo.test', H);
     expect(v).not.toContain('pessoa');
     expect(v).not.toContain('argon2');
-    for (const bad of [undefined, '', 'v1.x.y', `${v}x`, v.replace('v1', 'v2')]) {
+    // `v1` (formato antigo, assinado sobre o hash) deixa de valer.
+    for (const bad of [undefined, '', 'v2.x.y', `${v}x`, v.replace('v2', 'v1')]) {
       expect(verifyKnownDevice(secret, bad, 'pessoa@exemplo.test', H)).toBeNull();
     }
   });
