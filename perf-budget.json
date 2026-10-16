@@ -22,7 +22,13 @@
     "maxTotalKiB": 320
   },
   "dashboard": {
-    "$comment": "Medido por e2e/perf.spec.ts no build de produção, com rede 4G lenta (150 ms, 1,6 Mbit/s) e CPU 4× mais lenta.",
-    "maxInteractiveMs": 2500
+    "$comment": "Medido por e2e/perf.spec.ts no build de produção, com rede 4G lenta (150 ms, 1,6 Mbit/s) e CPU 4× mais lenta que a máquina de referência. `cpu.referenceMs` é o tempo do teste fixo de JavaScript (`benchmarkMs`) na máquina de referência (computador do desenvolvimento, Chromium do Playwright, 2026-10-16); antes de cada carga o teste mede a máquina atual e aplica baseRate × referenceMs / medido, dentro de [minRate, maxRate] (ADR-0039).",
+    "maxInteractiveMs": 2500,
+    "cpu": {
+      "baseRate": 4,
+      "referenceMs": 270,
+      "minRate": 1,
+      "maxRate": 8
+    }
   }
 }

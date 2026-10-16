@@ -1386,7 +1386,7 @@ responsável pelo produto) e o 7c-R3, fechado na mesma branch por pedido do resp
   cada `.glb` e do total. `scripts/route-js.mjs` passa a exportar a medição.
 - `e2e/perf.spec.ts` (projeto `perf`, job próprio na CI, só no build de produção): cache frio, rede 4G lenta
   (RTT 150 ms, 1,6 Mbit/s, 750 kbit/s; referência do Lighthouse para celular), CPU 4×, viewport de celular;
-  "interativo" = o botão do modo privacidade responde (antes da hidratação o toque não faz nada); mediana de 3
+  "interativo" = o botão do modo privacidade responde (antes da hidratação o toque não faz nada); mediana de 5
   cargas ≤ 2.500 ms em `/inicio` (pessoa com 90 dias sintéticos) e `/demo`. O atraso de rede emulado pelo CDP não
   vale para a requisição da navegação, então o que faltou dos 150 ms é somado à medida.
 - Medição inicial: 3,4 s (379 KiB gzip). Corrigido (7d-P1): o recharts sai da entrada (`TimeChartPlot` e
@@ -1397,6 +1397,14 @@ responsável pelo produto) e o 7c-R3, fechado na mesma branch por pedido do resp
   173 KiB; na CI, mediana de 5 cargas de 2,48 s em `/inicio` e 2,14 s em `/demo`. A folga do `/inicio` é muito
   pequena (cargas até 2,9 s): o próximo corte é escopar as traduções enviadas ao navegador (hoje o catálogo inteiro
   vai no HTML), registrado em 7d-P1.
+- **CPU calibrada (decisão do responsável pelo produto, 2026-10-16).** Com o mesmo código, o runner da CI dava de
+  2,4 a 3,2 s: o 4× vinha em cima de uma máquina compartilhada, mais lenta e variável (cargas com o JS pronto em
+  2,0 s e interativas só em 3,2 s). Como o Lighthouse, "4×" passa a ser 4× mais lento que a **máquina de
+  referência** (o computador do desenvolvimento, onde a meta foi medida): antes de cada carga, um teste fixo de
+  JavaScript (`benchmarkMs`, ~270 ms na referência) mede a máquina, e o multiplicador é `4 × 270 / medido`, entre
+  1× e 8× (`perf-budget.json`, `dashboard.cpu`). O log mostra o multiplicador e o teste de cada carga. Trocar de
+  máquina de referência exige medir de novo e registrar aqui. Tentativa descartada: adiar o desenho dos gráficos
+  até o navegador ficar ocioso não mudou as medianas na CI e foi revertida.
 **Revisão do `privacy-reviewer` (7d).** Nada crítico, alto nem médio. Corrigido: **B1** buracos do teste
 estático (import padrão e namespace, apelido e desestruturação de `process`, `node:console`, `require`,
 `emitWarning`/`_rawDebug`, `writeSync(1|2)`, arquivos `.js`); **B2** o relatório de erro de job vem depois do
