@@ -30,7 +30,12 @@ export default defineConfig({
     { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/pessoa.json' },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/pessoa.json',
+        // Campos de data e hora no formato brasileiro também no Chromium da CI (Linux).
+        launchOptions: { args: ['--lang=pt-BR'] },
+      },
       dependencies: ['setup'],
       testIgnore: /perf\.spec\.ts/,
     },

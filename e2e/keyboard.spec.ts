@@ -53,7 +53,12 @@ async function typeDateTime(page: Page, field: Locator, iso: string) {
   if ((await field.inputValue()) === iso) return;
   const hour = Number(hh);
   const h12 = String(hour % 12 === 0 ? 12 : hour % 12).padStart(2, '0');
-  await field.focus();
+  // Volta à primeira parte do campo: Shift+Tab até sair dele e Tab para entrar de novo.
+  for (let i = 0; i < 8 && (await field.evaluate((el) => el === document.activeElement)); i += 1) {
+    await page.keyboard.press('Shift+Tab');
+  }
+  await page.keyboard.press('Tab');
+  await expect(field).toBeFocused();
   await page.keyboard.type(m + d + y + h12 + mm + (hour < 12 ? 'A' : 'P'));
   await expect(field).toHaveValue(iso);
 }
