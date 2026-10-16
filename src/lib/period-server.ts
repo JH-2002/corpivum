@@ -1,7 +1,8 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 import { APP_TIME_ZONE, localDay } from './dates';
-import { resolveRange, sanitizePeriod, type DateRange, type Period } from './period';
+import { resolveRange, type DateRange, type Period } from './period';
+import { sanitizePeriod } from './period-schema';
 
 /**
  * Período global no servidor (§10, ADR-0021). Cookie de sessão (sem `maxAge`: some ao fechar o

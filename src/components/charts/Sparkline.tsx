@@ -1,8 +1,12 @@
 'use client';
 
-import { Line, LineChart, ResponsiveContainer, YAxis } from 'recharts';
+import dynamic from 'next/dynamic';
 import { hasValues } from './format';
-import { usePrefersReducedMotion } from './reduced-motion';
+
+/** O recharts vem num chunk próprio, depois da hidratação (§41, orçamento da 7d); o espaço fica reservado. */
+const LazySparklinePlot = dynamic(() => import('./SparklinePlot').then((m) => m.SparklinePlot), {
+  ssr: false,
+});
 
 /**
  * Mini-gráfico dos cards (§12). Decorativo (`aria-hidden`): o card traz o valor e a variação em texto.
@@ -15,27 +19,10 @@ export function Sparkline({
   data: ReadonlyArray<{ day: string; value: number | null }>;
   color: string;
 }) {
-  const reduced = usePrefersReducedMotion();
   if (!hasValues(data, ['value'])) return null;
   return (
     <div aria-hidden="true" className="h-10 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={[...data]}
-          margin={{ top: 4, right: 2, bottom: 4, left: 2 }}
-          accessibilityLayer={false}
-        >
-          <YAxis hide domain={['dataMin', 'dataMax']} />
-          <Line
-            dataKey="value"
-            stroke={color}
-            strokeWidth={2}
-            dot={false}
-            connectNulls
-            isAnimationActive={!reduced}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <LazySparklinePlot data={data} color={color} />
     </div>
   );
 }

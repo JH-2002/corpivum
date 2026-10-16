@@ -1,7 +1,7 @@
 'use server';
 
 import { APP_TIME_ZONE, localDay } from '@/lib/dates';
-import { sanitizePeriod } from '@/lib/period';
+import { sanitizePeriod } from '@/lib/period-schema';
 import { writePeriod } from '@/lib/period-server';
 
 /**

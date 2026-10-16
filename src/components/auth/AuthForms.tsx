@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import {
   checkAgeAction,
   forgotPasswordAction,
@@ -22,6 +22,9 @@ const linkClass = 'font-semibold text-primary underline underline-offset-2';
 export function LoginForm({ notice }: { notice?: string }) {
   const t = useTranslations('auth');
   const [state, action] = useActionState(loginAction, INITIAL_FORM_STATE);
+  // Depois da action o React reinicia o formulário: o e-mail volta como estava (WCAG 3.3.7, 7d-N1). Fica só no
+  // navegador; a senha sempre volta vazia.
+  const [email, setEmail] = useState('');
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       {notice && state.status === 'idle' ? (
@@ -35,6 +38,8 @@ export function LoginForm({ notice }: { notice?: string }) {
         type="email"
         label={t('fields.email')}
         autoComplete="email"
+        defaultValue={email}
+        onChange={(e) => setEmail(e.currentTarget.value)}
         required
       />
       <TextField

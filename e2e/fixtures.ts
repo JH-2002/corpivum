@@ -104,6 +104,41 @@ export async function createVerifiedUser(
 }
 
 /**
+ * Conta de antes da v2 do consentimento de bem-estar (ADR-0027): a prova aponta para a v1, então o login leva à
+ * reorientação (`/boas-vindas/atualizacao`, LEG-C06). O gatilho só aceita a versão vigente, então a linha entra
+ * com os gatilhos desligados numa transação (banco local de teste).
+ */
+export async function createUserWithOutdatedHealthConsent(email: string): Promise<string> {
+  const userId = await createVerifiedUser(email, E2E_PASSWORD, { purposes: [] });
+  await withAdmin(async (db) => {
+    await db.query('BEGIN');
+    try {
+      await db.query('ALTER TABLE consent_records DISABLE TRIGGER USER');
+      await db.query(
+        `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at,
+                                      updated_at)
+         SELECT gen_random_uuid(), $1, 'health_data', v.id, v.text_hash, now() - interval '1 day', now()
+           FROM policy_versions v WHERE v.document = 'consent_health_data' AND v.version = 1`,
+        [userId],
+      );
+      await db.query('ALTER TABLE consent_records ENABLE TRIGGER USER');
+      await db.query('COMMIT');
+    } catch (error) {
+      await db.query('ROLLBACK');
+      throw error;
+    }
+  });
+  return userId;
+}
+
+/** Liga o 2º fator direto no banco: o login para em `/entrar/verificacao` (a tela não lê o segredo). */
+export async function enableMfaFlag(userId: string): Promise<void> {
+  await withAdmin((db) =>
+    db.query('UPDATE users SET mfa_enabled_at = now() WHERE id = $1', [userId]),
+  );
+}
+
+/**
  * Linhas por tabela. `access_logs` e `job_queue` ficam de fora: outros testes em paralelo (sessões
  * existentes, jobs do servidor) escrevem nelas, nunca para quem não tem conta.
  */
@@ -187,7 +222,12 @@ let ipCounter = 0;
  * Login pela interface com um IP de documentação próprio (RFC 5737), para os testes não esgotarem o
  * limite de logins por IP (LEG-S05) uns dos outros. Em dev/test vale o último salto do X-Forwarded-For.
  */
-export async function loginWithOwnIp(page: Page, email: string, password = E2E_PASSWORD) {
+export async function loginWithOwnIp(
+  page: Page,
+  email: string,
+  password = E2E_PASSWORD,
+  landing: RegExp = /\/(inicio|boas-vindas\/[a-z]+)$/,
+) {
   ipCounter += 1;
   const ip = `203.0.113.${((process.pid * 7 + ipCounter) % 250) + 1}`;
   await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': ip });
@@ -195,5 +235,5 @@ export async function loginWithOwnIp(page: Page, email: string, password = E2E_P
   await page.getByLabel('E-mail').fill(email);
   await page.getByLabel('Senha', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.waitForURL(/\/(inicio|boas-vindas\/[a-z]+)$/);
+  await page.waitForURL(landing);
 }

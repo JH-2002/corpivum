@@ -1,6 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { createVerifiedUser, E2E_PASSWORD, e2eEmail, withAdmin } from './fixtures';
+import {
+  createUserWithOutdatedHealthConsent,
+  createVerifiedUser,
+  E2E_PASSWORD,
+  e2eEmail,
+  withAdmin,
+} from './fixtures';
 
 /**
  * Fase 1b (ADR-0019): Central de Privacidade, revogação imediata (LEG-C04), encerramento de conta de menor
@@ -76,27 +82,7 @@ test('reorientação: quem autorizou a v1 da saúde revê o texto novo antes de 
   page,
 }) => {
   const email = e2eEmail('reconsente-v2');
-  const userId = await createVerifiedUser(email, E2E_PASSWORD, { purposes: [] });
-  // Conta de antes da v2 (ADR-0027): a prova aponta para a v1. O gatilho só aceita a versão vigente,
-  // então a linha entra com os gatilhos desligados numa transação (banco local de teste).
-  await withAdmin(async (db) => {
-    await db.query('BEGIN');
-    try {
-      await db.query('ALTER TABLE consent_records DISABLE TRIGGER USER');
-      await db.query(
-        `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at,
-                                      updated_at)
-         SELECT gen_random_uuid(), $1, 'health_data', v.id, v.text_hash, now() - interval '1 day', now()
-           FROM policy_versions v WHERE v.document = 'consent_health_data' AND v.version = 1`,
-        [userId],
-      );
-      await db.query('ALTER TABLE consent_records ENABLE TRIGGER USER');
-      await db.query('COMMIT');
-    } catch (error) {
-      await db.query('ROLLBACK');
-      throw error;
-    }
-  });
+  await createUserWithOutdatedHealthConsent(email);
 
   await login(page, email);
   await expect(page).toHaveURL(/\/boas-vindas\/atualizacao/);

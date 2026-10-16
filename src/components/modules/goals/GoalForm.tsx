@@ -1,10 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { saveGoalAction } from '@/app/(app)/metas/actions';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
-import { INITIAL_FORM_STATE } from '@/components/forms/form-state';
+import { INITIAL_FORM_STATE, type FormState } from '@/components/forms/form-state';
 import { SelectField } from '@/components/forms/HealthFields';
 import { GuardrailNotice } from '@/components/health/GuardrailNotice';
 import { GOAL_METRICS, type GoalMetric } from '@/modules/goals';
@@ -20,6 +20,27 @@ export interface GoalFormValues {
 
 const isReason = (v: string): v is GuardrailReason =>
   (GUARDRAIL_REASONS as readonly string[]).includes(v);
+
+/**
+ * Bloqueio do guardrail como resultado do envio (7d, LEG-X01, WCAG 4.1.3): como o `FormMessage`, recebe o foco e
+ * é anunciado pelo leitor de tela; sem isso, quem não vê a tela não saberia que a meta não foi criada.
+ */
+function BlockedNotice({ reasons, state }: { reasons: GuardrailReason[]; state: FormState }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, [state]);
+  return (
+    <div
+      ref={ref}
+      tabIndex={-1}
+      role="alert"
+      className="rounded-lg outline-none focus-visible:ring-2"
+    >
+      <GuardrailNotice reasons={reasons} />
+    </div>
+  );
+}
 
 /**
  * Meta (§30). O servidor decide com `checkGoal` e os dados do banco (LEG-M04, LEG-M07). Quando bloqueia, o
@@ -98,7 +119,11 @@ export function GoalForm({
         />
       </div>
       {!estimateEnabled ? <p className="text-sm text-fg-muted">{t('form.kcalHidden')}</p> : null}
-      {reasons.length > 0 ? <GuardrailNotice reasons={reasons} /> : <FormMessage state={state} />}
+      {reasons.length > 0 ? (
+        <BlockedNotice reasons={reasons} state={state} />
+      ) : (
+        <FormMessage state={state} />
+      )}
       <SubmitButton className="self-start">
         {values.id ? t('form.update') : t('form.save')}
       </SubmitButton>

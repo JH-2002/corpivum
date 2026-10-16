@@ -1,0 +1,34 @@
+{
+  "$comment": "Orçamento de performance (§41, ADR-0039). KiB = gzip do JS de entrada da rota (rootMainFiles + entryJSFiles); conferido na CI por `pnpm check:perf-budget` depois do build. Subir um teto exige justificativa no PR e no ADR.",
+  "routes": {
+    "(app)/inicio": 200,
+    "(app)/sono": 320,
+    "(app)/corpo": 300,
+    "(app)/metas": 300,
+    "(app)/privacidade": 200,
+    "(app)/relatorios": 200,
+    "(app)/twin": 300,
+    "(presentation)/apresentacao": 300,
+    "demo/(shell)": 200,
+    "demo/(shell)/twin": 300,
+    "demo/apresentacao": 300,
+    "(auth)/entrar": 175,
+    "(auth)/cadastro": 175
+  },
+  "maxChunkKiB": 180,
+  "models": {
+    "dir": "public/models",
+    "maxFileKiB": 160,
+    "maxTotalKiB": 320
+  },
+  "dashboard": {
+    "$comment": "Medido por e2e/perf.spec.ts no build de produção, com rede 4G lenta (150 ms, 1,6 Mbit/s) e CPU 4× mais lenta que a máquina de referência. `cpu.referenceMs` é o tempo do teste fixo de JavaScript (`benchmarkMs`) na máquina de referência (computador do desenvolvimento, Chromium do Playwright, 2026-10-16); antes de cada carga o teste mede a máquina atual e aplica baseRate × referenceMs / medido, dentro de [minRate, maxRate] (ADR-0039).",
+    "maxInteractiveMs": 2500,
+    "cpu": {
+      "baseRate": 4,
+      "referenceMs": 270,
+      "minRate": 1,
+      "maxRate": 8
+    }
+  }
+}

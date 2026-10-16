@@ -9,6 +9,7 @@
 | Evento | Nível | Campos | Origem |
 |---|---|---|---|
 | `error.request` | error | `reportId`, `errorName`, `errorCode`, `digest`, `frame`, `route`, `routeType`, `method` | `onRequestError` (render, route handler, server action, proxy) |
+| `error.job` | error | `reportId`, `errorName`, `errorCode`, `frame`, `adapter`, `jobName`, `jobId`, `attempt` | handler de job que lançou (7c-R3, ADR-0039); vem junto do `job.failed` |
 | `error.report_failed` | error | nenhum | falha ao montar ou entregar o relatório |
 | `observability.volume_checked` | info | `count` (tuplas lidas), `threshold` | job `observability.volume_check`, de hora em hora |
 | `alert.read_volume_anomaly` | warn | `count`, `threshold` | leitura das tabelas de saúde acima do teto (P7-M1) |
@@ -16,6 +17,13 @@
 
 Nenhum deles leva mensagem de erro, corpo, query, cabeçalhos, cookies, pessoa, e-mail ou papel do operador. Não
 copie dado pessoal para o ticket ou o chat (`INCIDENT.md`, seção 1).
+
+## `error.job`
+1. `jobName` e `attempt` dizem qual job e em que tentativa; o `job.failed` da mesma hora tem o mesmo `jobId`. O
+   payload (ids de pessoa e de recurso) nunca vai ao relatório.
+2. Na última tentativa o job fica `failed` em `job_queue` (`last_error_code` é o nome reduzido do erro). Corrija a
+   causa e se for purga, reenfileire como no passo do `privacy.closures_stalled` (`DATA_SUBJECT_REQUEST.md`).
+3. Reproduza em desenvolvimento com dados sintéticos, como no `error.request`.
 
 ## `error.request`
 1. O `digest` é o mesmo que a página de erro mostra a quem foi afetado: use-o para ligar o relato ao log.

@@ -1,25 +1,22 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
-import {
-  Bar,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  type TooltipContentProps,
-  type TooltipValueType,
-} from 'recharts';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { cn } from '@/lib/cn';
 import { ChartGuide, type ChartGuideId } from './ChartGuide';
-import { formatNumber, hasValues, shortDay, valueOf } from './format';
-import { usePrefersReducedMotion } from './reduced-motion';
+import { formatNumber, hasValues, valueOf } from './format';
+
+/**
+ * O desenho (recharts, ~119 KiB gzip) vem num chunk próprio, depois da hidratação (§41, orçamento da 7d): o
+ * `ResponsiveContainer` não desenha nada no servidor (precisa medir a largura), então o HTML inicial é o mesmo.
+ * Título, selo, legenda e tabela alternativa ficam aqui e funcionam antes do desenho chegar.
+ */
+const LazyTimeChartPlot = dynamic(() => import('./TimeChartPlot').then((m) => m.TimeChartPlot), {
+  ssr: false,
+});
 
 export interface ChartSeries {
   key: string;
@@ -74,9 +71,7 @@ export function TimeChart<T extends ChartRow>({
   describedBy,
 }: TimeChartProps<T>) {
   const t = useTranslations('charts');
-  const tb = useTranslations('badges');
   const format = useFormatter();
-  const reduced = usePrefersReducedMotion();
   const headingId = useId();
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const visible = series.filter((s) => !hidden.has(s.key));
@@ -98,32 +93,6 @@ export function TimeChart<T extends ChartRow>({
 
   const longDate = (iso: string) =>
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'medium', timeZone: 'UTC' });
-
-  function TooltipBody({
-    active,
-    payload,
-    label,
-  }: TooltipContentProps<TooltipValueType, string | number>) {
-    if (!active || !payload?.length || typeof label !== 'string') return null;
-    return (
-      <div className="rounded-md border border-border bg-surface p-2 text-xs text-fg shadow-md">
-        <p className="font-semibold">{longDate(label)}</p>
-        <ul className="mt-1 flex flex-col gap-0.5">
-          {payload.map((p) => {
-            const s = series.find((x) => x.key === p.dataKey);
-            if (!s || typeof p.value !== 'number') return null;
-            return (
-              <li key={s.key} className="tabular">
-                {s.label}: <strong>{formatNumber(p.value, s.decimals)}</strong>
-                {s.unit ? ` ${s.unit}` : ''}
-              </li>
-            );
-          })}
-        </ul>
-        <p className="mt-1 text-fg-muted">{t('origin', { badge: tb(badge) })}</p>
-      </div>
-    );
-  }
 
   return (
     <section
@@ -189,61 +158,15 @@ export function TimeChart<T extends ChartRow>({
 
           {/* O desenho é complementar: a tabela abaixo traz os mesmos valores para leitor de tela. */}
           <div aria-hidden="true" style={{ height }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={[...data]}
-                margin={{ top: 8, right: 8, bottom: 0, left: -12 }}
-                accessibilityLayer={false}
-              >
-                <CartesianGrid stroke="var(--hm-border)" strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="day"
-                  tickFormatter={shortDay}
-                  tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}
-                  minTickGap={16}
-                />
-                <YAxis
-                  yAxisId="left"
-                  domain={leftDomain ?? ['auto', 'auto']}
-                  tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}
-                  width={44}
-                />
-                {hasRight ? (
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    domain={rightDomain ?? ['auto', 'auto']}
-                    tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}
-                    width={36}
-                  />
-                ) : null}
-                <Tooltip content={TooltipBody} cursor={{ stroke: 'var(--hm-border-strong)' }} />
-                {visible.map((s) =>
-                  s.kind === 'bar' ? (
-                    <Bar
-                      key={s.key}
-                      dataKey={s.key}
-                      yAxisId={s.axis ?? 'left'}
-                      fill={s.color}
-                      radius={[3, 3, 0, 0]}
-                      isAnimationActive={!reduced}
-                    />
-                  ) : (
-                    <Line
-                      key={s.key}
-                      dataKey={s.key}
-                      yAxisId={s.axis ?? 'left'}
-                      stroke={s.color}
-                      strokeWidth={2}
-                      strokeDasharray={s.dash}
-                      dot={{ r: 2 }}
-                      connectNulls
-                      isAnimationActive={!reduced}
-                    />
-                  ),
-                )}
-              </ComposedChart>
-            </ResponsiveContainer>
+            <LazyTimeChartPlot
+              data={data}
+              series={series}
+              visible={visible}
+              badge={badge}
+              hasRight={hasRight}
+              leftDomain={leftDomain}
+              rightDomain={rightDomain}
+            />
           </div>
 
           <ChartTable title={title} data={data} series={series} longDate={longDate} />

@@ -1,16 +1,21 @@
-import { z } from 'zod';
-
 /** Seletor de período global (§10). Datas como `YYYY-MM-DD` no fuso local, sem horário. */
 export const PERIOD_PRESETS = ['7d', '30d', '90d', '12m'] as const;
 export type PeriodPreset = (typeof PERIOD_PRESETS)[number];
 
-const isoDate = z.iso.date();
+/**
+ * Este módulo vai ao navegador com o seletor de período do cabeçalho e fica sem Zod: o núcleo do Zod 4 custava
+ * ~24 KiB gzip em toda tela do app (orçamento da 7d, §41). A validação com Zod do que chega do navegador fica em
+ * `period-schema.ts`, só no servidor.
+ */
+export type Period = { preset: PeriodPreset } | { preset: 'custom'; from: string; to: string };
 
-export const periodSchema = z.discriminatedUnion('preset', [
-  z.object({ preset: z.enum(PERIOD_PRESETS) }),
-  z.object({ preset: z.literal('custom'), from: isoDate, to: isoDate }),
-]);
-export type Period = z.infer<typeof periodSchema>;
+/** `YYYY-MM-DD` que existe no calendário (mesma regra do `z.iso.date()`). */
+export function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number) as [number, number, number];
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
 
 export const DEFAULT_PERIOD: Period = { preset: '30d' };
 
@@ -57,7 +62,7 @@ export function validateCustomRange(
   to: string,
   today: string,
 ): CustomRangeError | null {
-  if (!isoDate.safeParse(from).success || !isoDate.safeParse(to).success) return 'invalid';
+  if (!isIsoDate(from) || !isIsoDate(to)) return 'invalid';
   if (from > to) return 'inverted';
   if (to > today) return 'future';
   const days = Math.round(
@@ -65,31 +70,6 @@ export function validateCustomRange(
   );
   if (days + 1 > MAX_CUSTOM_DAYS) return 'too_long';
   return null;
-}
-
-/**
- * Período vindo do navegador (cookie), revalidado contra `today`: qualquer valor inválido, invertido,
- * futuro ou longo demais vira o padrão.
- */
-export function sanitizePeriod(raw: string | null | undefined, today: string): Period {
-  const period = parseStoredPeriod(raw ?? null);
-  if (period.preset === 'custom' && validateCustomRange(period.from, period.to, today)) {
-    return DEFAULT_PERIOD;
-  }
-  return period;
-}
-
-/** Lê um período salvo (ex.: sessionStorage), descartando qualquer valor inválido. */
-export function parseStoredPeriod(raw: string | null): Period {
-  if (!raw) return DEFAULT_PERIOD;
-  try {
-    const parsed = periodSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) return DEFAULT_PERIOD;
-    if (parsed.data.preset === 'custom' && parsed.data.from > parsed.data.to) return DEFAULT_PERIOD;
-    return parsed.data;
-  } catch {
-    return DEFAULT_PERIOD;
-  }
 }
 
 export function formatIsoDate(iso: string): string {

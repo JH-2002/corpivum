@@ -1351,3 +1351,66 @@ por dicionário quando a mensagem tem poucos valores possíveis (os erros da apl
 operador) e que nenhum deles lê ou altera as amostras. Preparação da sub-fase: `.gitattributes` força LF em `prisma/migrations/**` e `*.sql` (checksum das
 migrações no Windows) e `pnpm db:resync-migration` reaplica funções de uma migração da branch já aplicada nos bancos
 locais (`LOCAL_DEV.md`).
+
+## ADR-0039 — Fase 7d: qualidade (fechamento do 7c-R3, e2e, acessibilidade e performance)
+**Contexto.** ADR-0036 (7d: LEG-X01, §41, §42; D7: rodada manual com leitor de tela e celular feita pelo
+responsável pelo produto) e o 7c-R3, fechado na mesma branch por pedido do responsável pelo produto.
+**Decisão — 7c-R3 (LEG-R04).**
+- Erros de job passam pelo mesmo `ErrorReporter` e pela mesma lista de campos do `onRequestError`:
+  `buildJobErrorReport` (nome, código, quadros e causa reduzidos; do job só nome `dominio.acao`, id, tentativa e
+  adaptador; o payload nunca é lido) e `createJobErrorSink`, ligado às duas filas por `createAdapters`. O
+  `job.failed` e a coluna `last_error_code` levam só o nome reduzido (antes, `error.name` cru). Teste de injeção
+  na fila em memória e na Postgres.
+- `tests/security/no-console-output.test.ts` lê a árvore sintática de `src/` (comentário não conta;
+  `eslint-disable`, alias, `globalThis.console`, desestruturação e import de `node:process` não escapam) e recusa
+  `console` e `process.stdout`/`stderr` fora do logger e da guarda do console; o ESLint ganha
+  `no-restricted-properties` para o editor. Saída de dependências continua fora (residual no 7c-R3, 7e).
+**Decisão — e2e e acessibilidade (LEG-X01, §42).**
+- Inventário de todas as páginas (`PAGES` em `e2e/routes.ts`), com o jeito de chegar em cada uma; o axe roda em
+  todas nos temas claro e escuro (`a11y.spec.ts`), e um teste unitário falha se uma `page.tsx` ficar fora. Os
+  laços de axe duplicados do demo e das telas de conta saíram.
+- Lacunas dos fluxos críticos (`critical-flows.spec.ts`): consentimento dado na interface do onboarding seguido
+  de registro, saída da conta no onboarding (P7-M2) e os guardrails de ritmo e de calorias. Mapa completo em
+  `docs/qa/COBERTURA_E2E.md`.
+- Fluxos críticos só com teclado (`keyboard.spec.ts`), com contorno de foco conferido a cada Tab. Achados e
+  corrigidos: bloqueio de meta sem anúncio (7d-A1, agora `role="alert"` com foco), foco que voltava ao topo
+  depois do registro rápido (7d-A2, agora vai ao primeiro campo de `#novo`) e e-mail apagado depois de erro de
+  login (7d-A3, WCAG 3.3.7). O botão nativo do calendário dentro dos campos de data recebe o foco do navegador e
+  fica para a conferência visual do roteiro.
+- Roteiro manual em português simples para NVDA e celular (`docs/qa/ROTEIRO_MANUAL.md`), com tabela OK/Problema.
+  No celular, o acesso ao app local é pelo redirecionamento de porta USB do Chrome no Android (os cookies
+  `__Host-` exigem `https` ou `localhost`); iPhone fica para `https` local se for preciso (7d-N3).
+**Decisão — performance (§41).**
+- `perf-budget.json` é a fonte dos tetos; `pnpm check:perf-budget` (job de qualidade, depois do build) confere o
+  JS de entrada por rota em gzip, o three.js fora da entrada (ADR-0026), o maior chunk do cliente e o tamanho de
+  cada `.glb` e do total. `scripts/route-js.mjs` passa a exportar a medição.
+- `e2e/perf.spec.ts` (projeto `perf`, job próprio na CI, só no build de produção): cache frio, rede 4G lenta
+  (RTT 150 ms, 1,6 Mbit/s, 750 kbit/s; referência do Lighthouse para celular), CPU 4×, viewport de celular;
+  "interativo" = o botão do modo privacidade responde (antes da hidratação o toque não faz nada); mediana de 5
+  cargas ≤ 2.500 ms em `/inicio` (pessoa com 90 dias sintéticos) e `/demo`. O atraso de rede emulado pelo CDP não
+  vale para a requisição da navegação, então o que faltou dos 150 ms é somado à medida.
+- Medição inicial: 3,4 s (379 KiB gzip). Corrigido (7d-P1): o recharts sai da entrada (`TimeChartPlot` e
+  `SparklinePlot` por `next/dynamic` sem SSR; o `ResponsiveContainer` não desenha nada no servidor, então o HTML
+  inicial não muda, e título, selo, legenda e tabela alternativa continuam fora do chunk) e `src/lib/period.ts` fica
+  sem Zod (o seletor de período do cabeçalho levava o núcleo do Zod 4 a toda tela; até o `zod/mini` custava ~24 KiB
+  gzip): a validação com Zod do período vindo do navegador fica em `period-schema.ts`, só no servidor. Resultado:
+  173 KiB; na CI, mediana de 5 cargas de 2,48 s em `/inicio` e 2,14 s em `/demo`. A folga do `/inicio` é muito
+  pequena (cargas até 2,9 s): o próximo corte é escopar as traduções enviadas ao navegador (hoje o catálogo inteiro
+  vai no HTML), registrado em 7d-P1.
+- **CPU calibrada (decisão do responsável pelo produto, 2026-10-16).** Com o mesmo código, o runner da CI dava de
+  2,4 a 3,2 s: o 4× vinha em cima de uma máquina compartilhada, mais lenta e variável (cargas com o JS pronto em
+  2,0 s e interativas só em 3,2 s). Como o Lighthouse, "4×" passa a ser 4× mais lento que a **máquina de
+  referência** (o computador do desenvolvimento, onde a meta foi medida): antes de cada carga, um teste fixo de
+  JavaScript (`benchmarkMs`, ~270 ms na referência) mede a máquina, e o multiplicador é `4 × 270 / medido`, entre
+  1× e 8× (`perf-budget.json`, `dashboard.cpu`). O log mostra o multiplicador e o teste de cada carga. Trocar de
+  máquina de referência exige medir de novo e registrar aqui. Tentativa descartada: adiar o desenho dos gráficos
+  até o navegador ficar ocioso não mudou as medianas na CI e foi revertida.
+**Revisão do `privacy-reviewer` (7d).** Nada crítico, alto nem médio. Corrigido: **B1** buracos do teste
+estático (import padrão e namespace, apelido e desestruturação de `process`, `node:console`, `require`,
+`emitWarning`/`_rawDebug`, `writeSync(1|2)`, arquivos `.js`); **B2** o relatório de erro de job vem depois do
+`jobs_fail`, protegido e com teto de 3 s (`notifyJobError`), para não segurar o lock nem pular o backoff; **B3**
+roteiro com janela anônima, sem salvar senha, `pnpm dev -H localhost` e desligamento do redirecionamento e da
+Depuração USB. Nota aberta em 7d-N4 (formato aberto dos nomes de erro).
+**Consequências.** Scripts `test:perf` e `check:perf-budget`; o job de e2e roda só o projeto `chromium`;
+`E2E_PROD=1` usa o build de produção também fora da CI. Os testes do twin com WebGL real não rodam de forma
+estável no Windows local (7d-N2); a CI é a referência.

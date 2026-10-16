@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Db } from '@/lib/db/client';
 import { logger as defaultLogger, type Logger } from '@/lib/logger';
+import { notifyJobError, sanitizeError, type JobErrorSink } from '@/lib/observability/error-report';
 import type { EnqueueOptions, JobHandler, JobPayload, JobQueue } from './types';
 
 const payloadSchema = z.record(
@@ -21,6 +22,8 @@ export interface PgJobQueueOptions {
    * consumida; quem só enfileira (web com JOB_WORKER=off) não precisa da credencial. Padrão: o mesmo client.
    */
   workerDb?: () => Db;
+  /** Erro do handler vai ao `ErrorReporter` pela lista de campos permitidos (7c-R3, ADR-0039). */
+  onError?: JobErrorSink;
 }
 
 /** Atraso exponencial entre tentativas: 1 min, 2 min, 4 min... até 1 h. */
@@ -37,7 +40,7 @@ export function retryDelaySeconds(attempt: number): number {
  *   idempotentes (rodar duas vezes não pode duplicar efeito), porque um handler acima de `lockSeconds` pode ser
  *   retomado por outro worker (PR1b-B8 a).
  * - Enfileirar usa o `app_user`; reservar, concluir e falhar só o `app_worker` (ADR-0037).
- * Logs só com nome, id, tentativa e código do erro (LEG-R04).
+ * Logs só com nome, id, tentativa e nome do erro; o erro vai ao `ErrorReporter` já reduzido (LEG-R04, 7c-R3).
  */
 export class PgJobQueue implements JobQueue {
   readonly id = 'postgres';
@@ -46,6 +49,7 @@ export class PgJobQueue implements JobQueue {
   readonly #workerDb: () => Db;
   readonly #handlers = new Map<string, JobHandler>();
   readonly #logger: Logger;
+  readonly #onError: JobErrorSink | undefined;
   readonly #pollMs: number;
   readonly #lockSeconds: number;
   readonly #batchSize: number;
@@ -56,6 +60,7 @@ export class PgJobQueue implements JobQueue {
     this.#db = db;
     this.#workerDb = options.workerDb ?? (() => db);
     this.#logger = options.logger ?? defaultLogger;
+    this.#onError = options.onError;
     this.#pollMs = options.pollMs ?? 30_000;
     this.#lockSeconds = options.lockSeconds ?? 300;
     this.#batchSize = options.batchSize ?? 10;
@@ -94,7 +99,8 @@ export class PgJobQueue implements JobQueue {
         await worker.$queryRaw`SELECT app.jobs_complete(${job.id}::uuid, ${this.workerId})`;
         completed += 1;
       } catch (error) {
-        const errorCode = error instanceof Error ? error.name : 'unknown';
+        // Só o nome reduzido (formato fechado) vai ao log e à coluna `last_error_code` (7c-R3).
+        const errorCode = sanitizeError(error).name;
         this.#logger.warn('job.failed', {
           adapter: this.id,
           jobName: job.name,
@@ -104,6 +110,13 @@ export class PgJobQueue implements JobQueue {
         });
         await worker.$queryRaw`SELECT app.jobs_fail(${job.id}::uuid, ${this.workerId}, ${errorCode},
           ${retryDelaySeconds(job.attempts)}::int)`;
+        // Só depois de liberar o job: o relatório não segura o lock nem o backoff.
+        await notifyJobError(this.#onError, error, {
+          name: job.name,
+          id: job.id,
+          attempt: job.attempts,
+          adapter: this.id,
+        });
       }
     }
     return completed;

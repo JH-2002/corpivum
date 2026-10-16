@@ -158,6 +158,10 @@ describe('formulários (LEG-M07)', () => {
     expect(notice).toHaveTextContent('188');
     expect(notice).toHaveTextContent('192');
     expect(notice.querySelector('section')?.textContent).not.toMatch(/\d/);
+    // Anunciado e com foco, como os erros de formulário (7d, WCAG 4.1.3).
+    const alert = screen.getByRole('alert');
+    expect(alert).toContainElement(notice);
+    await waitFor(() => expect(alert).toHaveFocus());
     expectClean(container.textContent ?? '');
     // A meta de calorias não é oferecida com a estimativa desligada.
     expect(

@@ -12,8 +12,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useEffect, useId, useRef } from 'react';
+import { useCallback, useEffect, useId, useRef } from 'react';
 import { useDialogFocusLoop } from '@/components/ui/dialog-focus';
 import { IconButton } from '@/components/ui/IconButton';
 import { useShell } from './ShellProvider';
@@ -29,10 +30,40 @@ const ITEMS: ReadonlyArray<{ key: QuickLogKey; href: Route; icon: LucideIcon; to
   { key: 'activity', href: '/atividade#novo', icon: Activity, tone: 'text-activity' },
 ];
 
+const FIELD =
+  'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
+/** Até ~2 s de quadros esperando a tela nova aparecer (navegação pelo cliente com streaming). */
+const MAX_FRAMES = 120;
+
+/**
+ * Depois de escolher o tipo, o foco vai ao primeiro campo do formulário (`#novo`) ou ao conteúdo principal,
+ * e não volta ao botão "Registrar" do topo (7d, WCAG 2.4.3): sem isso, quem usa teclado ou leitor de tela
+ * recomeçava do cabeçalho e precisava atravessar a página inteira até o formulário.
+ */
+function focusTarget(hash: string | null): () => void {
+  let frame = 0;
+  let tries = 0;
+  const attempt = () => {
+    // O <dialog> devolve o foco a quem o abriu ao fechar: só move depois disso.
+    const closed = !document.querySelector('dialog[open]');
+    const scope = hash ? document.getElementById(hash) : null;
+    const field = scope?.querySelector<HTMLElement>(FIELD);
+    const target = field ?? (hash && !scope ? null : document.querySelector<HTMLElement>('main'));
+    if (closed && target) {
+      target.focus();
+      return;
+    }
+    tries += 1;
+    if (tries < MAX_FRAMES) frame = requestAnimationFrame(attempt);
+  };
+  frame = requestAnimationFrame(attempt);
+  return () => cancelAnimationFrame(frame);
+}
+
 /**
  * Seletor rápido do tipo de registro (§7). <dialog> nativo em modo modal: foco preso, fundo inerte,
- * Esc fecha e o foco volta ao elemento que abriu. Sono, hábitos e corpo levam direto ao
- * formulário do módulo (≤ 3 cliques, §3); os demais chegam nas fases seguintes.
+ * Esc fecha e o foco volta ao elemento que abriu. Escolher um tipo leva direto ao formulário do módulo
+ * (≤ 3 cliques, §3), com o foco no primeiro campo.
  */
 export function QuickLogDialog() {
   const t = useTranslations('quickLog');
@@ -41,6 +72,30 @@ export function QuickLogDialog() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
+  const pathname = usePathname();
+  /** Destino escolhido; o foco é movido quando a rota nova estiver na tela. */
+  const pending = useRef<{ path: string; hash: string | null } | null>(null);
+
+  useEffect(() => {
+    const target = pending.current;
+    if (!target || target.path !== pathname) return;
+    pending.current = null;
+    return focusTarget(target.hash);
+  }, [pathname]);
+
+  const choose = useCallback(
+    (href: string) => {
+      const [path = '', hash] = href.split('#');
+      closeQuickLog();
+      if (path === pathname) {
+        // Mesma rota: a navegação não muda o `pathname`; move o foco depois de o diálogo devolver o dele.
+        focusTarget(hash ?? null);
+      } else {
+        pending.current = { path, hash: hash ?? null };
+      }
+    },
+    [closeQuickLog, pathname],
+  );
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -77,7 +132,7 @@ export function QuickLogDialog() {
           <li key={key}>
             <Link
               href={href}
-              onClick={closeQuickLog}
+              onClick={() => choose(href)}
               className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-md border border-border p-3 text-center text-sm font-medium hover:bg-surface-muted"
             >
               <Icon className={`size-6 ${tone}`} aria-hidden="true" />
