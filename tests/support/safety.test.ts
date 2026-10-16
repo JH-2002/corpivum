@@ -37,7 +37,12 @@ describe('trava do banco de testes', () => {
     process.env.TEST_DATABASE_URL = 'postgresql://app_user:p@localhost:5432/healthmind_test';
     process.env.TEST_MIGRATION_DATABASE_URL =
       'postgresql://app_migrator:p@localhost:5432/healthmind_test';
+    process.env.TEST_WORKER_DATABASE_URL = 'postgresql://app_worker:p@localhost:5432/healthmind';
+    expect(() => pointToTestDatabase()).toThrow();
+    process.env.TEST_WORKER_DATABASE_URL =
+      'postgresql://app_worker:p@localhost:5432/healthmind_test';
     pointToTestDatabase();
+    expect(process.env.WORKER_DATABASE_URL).toMatch(/\/healthmind_test$/);
     expect(process.env.DATABASE_URL).toMatch(/\/healthmind_test$/);
     expect(process.env.MIGRATION_DATABASE_URL).toMatch(/\/healthmind_test$/);
 

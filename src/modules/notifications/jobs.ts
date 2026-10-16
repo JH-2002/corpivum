@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { JobQueue } from '@/adapters/jobs/types';
 import type { MailProvider } from '@/adapters/mail/types';
 import { localDay } from '@/lib/dates';
+import type { Db } from '@/lib/db/client';
 import { ConsentRequiredError } from '@/lib/errors';
 import { nextOccurrence, willSend } from './schedule';
 import type { RemindersService } from './service';
@@ -16,8 +17,15 @@ import type { ReminderRecord } from './types';
  * - No máximo um e-mail por lembrete por dia (`claimSend`); nada no horário silencioso, com o tipo
  *   desligado ou com mais de `REMINDER_LATE_MS` de atraso.
  * - O e-mail não leva conteúdo de saúde, nem o nome do hábito (ROPA T7): só um link para o app.
+ * - `reminder.reconcile` (diário, PR4-B1, ADR-0037): reagenda a próxima ocorrência de todo lembrete ligado
+ *   de conta com consentimento. Retoma cadeias que pararam em silêncio (reconsentimento depois de revogar,
+ *   falha repetida ao ler o lembrete, falha ao enfileirar logo após salvar). A chave única por ocorrência
+ *   impede cadeia duplicada. A lista vem do papel `app_worker` (só IDs).
  */
 export const REMINDER_JOB = 'reminder.dispatch';
+export const REMINDER_RECONCILE_JOB = 'reminder.reconcile';
+export const REMINDER_RECONCILE_MS = 24 * 60 * 60 * 1000;
+const RECONCILE_PAGE = 500;
 
 /** Atraso máximo para ainda enviar (fila parada por horas não dispara lembretes velhos). */
 export const REMINDER_LATE_MS = 2 * 60 * 60 * 1000;
@@ -56,6 +64,20 @@ export interface ReminderJobDeps {
   appUrl: string;
   timeZone: string;
   now?: () => Date;
+  /** Lembretes ligados de contas com consentimento, por página de id (`app.reminders_active`, app_worker). */
+  listActive: (
+    after: string | null,
+    limit: number,
+  ) => Promise<Array<{ reminderId: string; userId: string }>>;
+}
+
+/** Agenda a reconciliação (idempotente pela `singletonKey`). */
+export async function scheduleReminderJobs(queue: JobQueue, now: Date = new Date()): Promise<void> {
+  await queue.enqueue(
+    REMINDER_RECONCILE_JOB,
+    {},
+    { runAt: now, singletonKey: REMINDER_RECONCILE_JOB },
+  );
 }
 
 export function registerReminderJobs(queue: JobQueue, deps: ReminderJobDeps): void {
@@ -92,4 +114,47 @@ export function registerReminderJobs(queue: JobQueue, deps: ReminderJobDeps): vo
       params: { link: new URL(path, deps.appUrl).toString() },
     });
   });
+
+  queue.register(REMINDER_RECONCILE_JOB, async () => {
+    try {
+      let after: string | null = null;
+      for (;;) {
+        const page = await deps.listActive(after, RECONCILE_PAGE);
+        for (const { reminderId, userId } of page) {
+          let ctx: Awaited<ReturnType<RemindersService['dispatchContext']>>;
+          try {
+            ctx = await deps.service.dispatchContext(userId, reminderId);
+          } catch (error) {
+            // Consentimento revogado entre a lista e a leitura: nada a reagendar (LEG-C04).
+            if (error instanceof ConsentRequiredError) continue;
+            throw error;
+          }
+          if (ctx?.reminder.enabled) {
+            await scheduleReminder(queue, userId, ctx.reminder, now(), deps.timeZone);
+          }
+        }
+        const last = page.at(-1);
+        if (page.length < RECONCILE_PAGE || !last) break;
+        after = last.reminderId;
+      }
+    } finally {
+      await queue.enqueue(
+        REMINDER_RECONCILE_JOB,
+        {},
+        {
+          runAt: new Date(now().getTime() + REMINDER_RECONCILE_MS),
+          singletonKey: REMINDER_RECONCILE_JOB,
+        },
+      );
+    }
+  });
+}
+
+/** `listActive` com o client dos jobs (`app_worker`). */
+export function activeRemindersFrom(worker: () => Db): ReminderJobDeps['listActive'] {
+  return async (after, limit) => {
+    const rows = await worker().$queryRaw<Array<{ reminder_id: string; user_id: string }>>`
+      SELECT reminder_id, user_id FROM app.reminders_active(${after}::uuid, ${limit}::int)`;
+    return rows.map((r) => ({ reminderId: r.reminder_id, userId: r.user_id }));
+  };
 }

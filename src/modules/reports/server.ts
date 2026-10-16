@@ -1,7 +1,7 @@
 import 'server-only';
 import { getAdapters } from '@/adapters';
 import { reportRenderers } from '@/components/reports/render';
-import { getDb } from '@/lib/db/client';
+import { getDb, getWorkerDb } from '@/lib/db/client';
 import { APP_TIME_ZONE } from '@/lib/dates';
 import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
@@ -16,6 +16,7 @@ export function getReportsService(): ReportsService {
     const adapters = getAdapters();
     service = createReportsService({
       db: getDb(),
+      workerDb: getWorkerDb,
       kms: adapters.kms,
       storage: adapters.storage,
       queue: adapters.jobs,

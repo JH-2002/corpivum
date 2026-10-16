@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { ResetPasswordForm } from '@/components/auth/AuthForms';
+import { LinkTokenGate } from '@/components/auth/LinkToken';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.reset');
@@ -15,29 +15,29 @@ export default async function ResetPasswordPage({
 }) {
   const t = await getTranslations('auth');
   const { token } = await searchParams;
-  const hasToken = typeof token === 'string' && token.length > 0;
 
+  // Token do link no fragmento (`#token=`), lido e limpo no navegador (TM-01).
   return (
     <>
       <h1 className="mb-2 text-2xl font-bold">{t('reset.title')}</h1>
-      {hasToken ? (
-        <>
-          <p className="mb-4 text-sm text-fg-muted">{t('reset.description')}</p>
-          <ResetPasswordForm token={token.slice(0, 64)} />
-        </>
-      ) : (
-        <>
-          <p role="status" className="mb-4">
-            {t('reset.missingToken')}
-          </p>
-          <Link
-            href="/recuperar-senha"
-            className="font-semibold text-primary underline underline-offset-2"
-          >
-            {t('forgot.title')}
-          </Link>
-        </>
-      )}
+      <LinkTokenGate
+        kind="reset"
+        {...(typeof token === 'string' ? { fromQuery: token } : {})}
+        withToken={<p className="mb-4 text-sm text-fg-muted">{t('reset.description')}</p>}
+        fallback={
+          <>
+            <p role="status" className="mb-4">
+              {t('reset.missingToken')}
+            </p>
+            <Link
+              href="/recuperar-senha"
+              className="font-semibold text-primary underline underline-offset-2"
+            >
+              {t('forgot.title')}
+            </Link>
+          </>
+        }
+      />
     </>
   );
 }

@@ -15,9 +15,21 @@ export function createDbClient(connectionString: string): Db {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString }), errorFormat: 'minimal' });
 }
 
-const globalForDb = globalThis as unknown as { __hmDb?: Db };
+const globalForDb = globalThis as unknown as { __hmDb?: Db; __hmWorkerDb?: Db };
 
 export function getDb(): Db {
   globalForDb.__hmDb ??= createDbClient(getEnv().DATABASE_URL);
   return globalForDb.__hmDb;
+}
+
+/**
+ * Client dos jobs em segundo plano: `app_worker` (ADR-0036 D5, ADR-0037), o único papel que executa as
+ * varreduras, os expurgos, a fila e a purga de conta. Herda as tabelas do `app_user` (mesmo RLS). Criado só
+ * quando um job roda: instâncias web com JOB_WORKER=off não têm a credencial.
+ */
+export function getWorkerDb(): Db {
+  const url = getEnv().WORKER_DATABASE_URL;
+  if (!url) throw new Error('WORKER_DATABASE_URL não definida: esta instância não consome a fila');
+  globalForDb.__hmWorkerDb ??= createDbClient(url);
+  return globalForDb.__hmWorkerDb;
 }

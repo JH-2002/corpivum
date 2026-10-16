@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useActionState } from 'react';
 import { deleteAccountAction, openPrivacyRequestAction } from '@/app/(app)/privacidade/actions';
+import { deleteAccountFromOnboardingAction } from '@/app/(onboarding)/actions';
 import { Checkbox } from '@/components/forms/Checkbox';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
 import { INITIAL_FORM_STATE, type FormState } from '@/components/forms/form-state';
@@ -125,11 +126,14 @@ export function AccountDeletionDialog({
   mfaEnabled,
   hasExport,
   retention,
+  fromOnboarding = false,
 }: {
   mfaEnabled: boolean;
   /** Há uma cópia completa pronta para baixar agora. */
   hasExport: boolean;
   retention: DeletionRetention;
+  /** Tela mínima do onboarding (P7-M2): sem dado de bem-estar a baixar, sem a escolha da cópia. */
+  fromOnboarding?: boolean;
 }) {
   const t = useTranslations('privacyCenter.deletion');
   return (
@@ -140,6 +144,7 @@ export function AccountDeletionDialog({
           mfaEnabled={mfaEnabled}
           hasExport={hasExport}
           retention={retention}
+          fromOnboarding={fromOnboarding}
         />
       )}
     </ConfirmDialog>
@@ -151,20 +156,25 @@ function AccountDeletionForm({
   mfaEnabled,
   hasExport,
   retention,
+  fromOnboarding,
 }: {
   onCancel: () => void;
   mfaEnabled: boolean;
   hasExport: boolean;
   retention: DeletionRetention;
+  fromOnboarding: boolean;
 }) {
   const t = useTranslations('privacyCenter.deletion');
   const ta = useTranslations('auth.fields');
-  const [state, action] = useActionState(deleteAccountAction, INITIAL_FORM_STATE);
+  const [state, action] = useActionState(
+    fromOnboarding ? deleteAccountFromOnboardingAction : deleteAccountAction,
+    INITIAL_FORM_STATE,
+  );
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <p className="text-sm">{t('confirmBody', { ...retention })}</p>
       <FormMessage state={state} />
-      {hasExport ? (
+      {fromOnboarding ? null : hasExport ? (
         <p className="text-sm">{t('exportReady')}</p>
       ) : (
         <Checkbox

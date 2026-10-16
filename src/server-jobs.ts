@@ -2,13 +2,18 @@ import { getAdapters } from '@/adapters';
 import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import { PgJobQueue } from '@/adapters/jobs/postgres';
 import { APP_TIME_ZONE } from '@/lib/dates';
+import { getWorkerDb } from '@/lib/db/client';
 import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { assertRetentionPolicy } from '@/lib/retention';
 import { registerAuthJobs, scheduleAuthPurge } from '@/modules/auth/jobs';
 import { getAuthService } from '@/modules/auth/server';
 import { getHealthServices } from '@/modules/health/server';
-import { registerReminderJobs } from '@/modules/notifications/jobs';
+import {
+  activeRemindersFrom,
+  registerReminderJobs,
+  scheduleReminderJobs,
+} from '@/modules/notifications/jobs';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
 import { getHealthDataEliminator, getPrivacyService } from '@/modules/privacy/server';
 import { registerReportJobs, scheduleReportJobs } from '@/modules/reports/jobs';
@@ -38,12 +43,14 @@ export async function startJobs(): Promise<void> {
     mail: getAdapters().mail,
     appUrl: getEnv().APP_URL,
     timeZone: APP_TIME_ZONE,
+    listActive: activeRemindersFrom(getWorkerDb),
   });
   // Exportação e relatórios (ADR-0032): geração em segundo plano e expiração dos links (LEG-D03).
   registerReportJobs(jobs, getReportsService());
   await scheduleAuthPurge(jobs);
   await schedulePrivacyJobs(jobs);
   await scheduleReportJobs(jobs);
+  await scheduleReminderJobs(jobs);
   if (jobs instanceof MemoryJobQueue) {
     void jobs.drain().catch(() => logger.warn('job.drain_failed', { adapter: jobs.id }));
     const timer = setInterval(() => {

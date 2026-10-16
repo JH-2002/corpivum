@@ -12,11 +12,15 @@ import { ACCOUNT_PURGE_JOB, accountPurgeKey, type PrivacyService } from './servi
  * - `privacy.reauth_proofs_purge` (diário): provas de reautenticação vencidas ou usadas (PR1b-R2-B1, ADR-0035).
  * - `privacy.health_data_sweep` (diário): reagenda eliminações vencidas cujo job se perdeu.
  * - `privacy.account_purge` ({ userId }): purga da conta excluída, logo depois da exclusão (ADR-0034).
- * - `privacy.account_purge_sweep` (diário): reenfileira a purga de contas excluídas que ainda existem.
+ * - `privacy.account_purge_sweep` (de hora em hora): reenfileira a purga de contas excluídas que ainda existem,
+ *   inclusive encerramentos de menor pendentes (D4) e exclusões feitas pelo encarregado (ADR-0037).
+ * - `privacy.onboarding_expiry` (diário): aviso no 23º dia e exclusão das contas que não concluíram o onboarding
+ *   em 30 dias, pelo menos 7 dias depois do aviso (P7-M2, ADR-0037).
  * - `privacy.request_deadlines` (diário): só a contagem de pedidos que vencem em até 3 dias e dos vencidos.
- * Os recorrentes usam `singletonKey` e se reagendam ao terminar, mesmo após falha.
+ * Os recorrentes usam `singletonKey` e se reagendam ao terminar, mesmo após falha. Todos são idempotentes.
  */
 export const PRIVACY_DAILY_MS = 24 * 60 * 60 * 1000;
+export const PRIVACY_HOURLY_MS = 60 * 60 * 1000;
 export const PRIVACY_RECURRING_JOBS = [
   'privacy.purge_access_logs',
   'privacy.purge_proofs',
@@ -24,8 +28,20 @@ export const PRIVACY_RECURRING_JOBS = [
   'privacy.health_data_sweep',
   'privacy.account_purge_sweep',
   'privacy.request_deadlines',
+  'privacy.onboarding_expiry',
 ] as const;
 type RecurringJob = (typeof PRIVACY_RECURRING_JOBS)[number];
+
+/** Intervalo de cada job recorrente. */
+export const PRIVACY_JOB_INTERVAL_MS: Record<RecurringJob, number> = {
+  'privacy.purge_access_logs': PRIVACY_DAILY_MS,
+  'privacy.purge_proofs': PRIVACY_DAILY_MS,
+  'privacy.reauth_proofs_purge': PRIVACY_DAILY_MS,
+  'privacy.health_data_sweep': PRIVACY_DAILY_MS,
+  'privacy.account_purge_sweep': PRIVACY_HOURLY_MS,
+  'privacy.request_deadlines': PRIVACY_DAILY_MS,
+  'privacy.onboarding_expiry': PRIVACY_DAILY_MS,
+};
 
 const userPayload = z.object({ userId: z.uuid() });
 
@@ -41,6 +57,8 @@ export function registerPrivacyJobs(
       | 'purgeAccount'
       | 'duePurges'
       | 'requestDeadlines'
+      | 'sendOnboardingExpiryNotices'
+      | 'purgeExpiredOnboarding'
     >;
     eliminator: ReturnType<typeof createHealthDataEliminator>;
   },
@@ -78,6 +96,11 @@ export function registerPrivacyJobs(
       }
     },
     'privacy.request_deadlines': () => deps.service.requestDeadlines(),
+    // Exclui primeiro (quem já foi avisado há 7 dias), depois avisa os novos.
+    'privacy.onboarding_expiry': async () => {
+      await deps.service.purgeExpiredOnboarding();
+      await deps.service.sendOnboardingExpiryNotices();
+    },
   };
   for (const name of PRIVACY_RECURRING_JOBS) {
     queue.register(name, async () => {
@@ -87,7 +110,7 @@ export function registerPrivacyJobs(
         await queue.enqueue(
           name,
           {},
-          { runAt: new Date(now().getTime() + PRIVACY_DAILY_MS), singletonKey: name },
+          { runAt: new Date(now().getTime() + PRIVACY_JOB_INTERVAL_MS[name]), singletonKey: name },
         );
       }
     });

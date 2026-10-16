@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useActionState } from 'react';
 import { closeMinorAccountAction, revokeConsentAction } from '@/app/(app)/privacidade/actions';
+import { closeMinorAccountFromOnboardingAction } from '@/app/(onboarding)/actions';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
 import { INITIAL_FORM_STATE } from '@/components/forms/form-state';
 import { Button } from '@/components/ui/Button';
@@ -65,10 +66,13 @@ export interface RetentionDays {
 export function MinorClosureDialog({
   retention,
   mfaEnabled,
+  fromOnboarding = false,
 }: {
   retention: RetentionDays;
   /** Com MFA ligado, o encerramento também pede o 2º fator (revisão M1 da 6b). */
   mfaEnabled: boolean;
+  /** Tela mínima do onboarding (P7-M2): action que exige só o e-mail confirmado. */
+  fromOnboarding?: boolean;
 }) {
   const t = useTranslations('privacyCenter');
   const ta = useTranslations('auth.fields');
@@ -80,6 +84,7 @@ export function MinorClosureDialog({
           passwordLabel={ta('currentPassword')}
           retention={retention}
           mfaEnabled={mfaEnabled}
+          fromOnboarding={fromOnboarding}
         />
       )}
     </ConfirmDialog>
@@ -91,15 +96,20 @@ function MinorClosureForm({
   passwordLabel,
   retention,
   mfaEnabled,
+  fromOnboarding,
 }: {
   onCancel: () => void;
   passwordLabel: string;
   retention: RetentionDays;
   mfaEnabled: boolean;
+  fromOnboarding: boolean;
 }) {
   const t = useTranslations('privacyCenter');
   const td = useTranslations('privacyCenter.deletion');
-  const [state, action] = useActionState(closeMinorAccountAction, INITIAL_FORM_STATE);
+  const [state, action] = useActionState(
+    fromOnboarding ? closeMinorAccountFromOnboardingAction : closeMinorAccountAction,
+    INITIAL_FORM_STATE,
+  );
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <p className="text-sm">{t('minorConfirmBody', { ...retention })}</p>

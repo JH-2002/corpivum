@@ -573,17 +573,28 @@ describe('endurecimento pós-revisão (ADR-0017)', () => {
       `UPDATE auth_tokens SET expires_at = now() - interval '2 days' WHERE user_id = $1`,
       [u.userId],
     );
-    await admin.query(`UPDATE rate_limit_buckets SET expires_at = now() - interval '1 s'`);
+    // PR1a-R2-B7: janela encerrada há menos de 5 min fica (folga para diferença de relógio).
+    const { rows: buckets } = await admin.query<{ key_hash: Buffer }>(
+      'SELECT key_hash FROM rate_limit_buckets',
+    );
+    expect(buckets.length).toBeGreaterThanOrEqual(2);
+    await admin.query(`UPDATE rate_limit_buckets SET expires_at = now() - interval '6 minutes'`);
+    await admin.query(
+      `UPDATE rate_limit_buckets SET expires_at = now() - interval '1 minute' WHERE key_hash = $1`,
+      [buckets[0]?.key_hash],
+    );
 
     const r = await t.service.purgeExpired();
     expect(r.sessions).toBeGreaterThanOrEqual(1);
     expect(r.tokens).toBeGreaterThanOrEqual(1);
     expect(r.buckets).toBeGreaterThanOrEqual(1);
     expect(await t.service.resolveSession(u.token)).not.toBeNull();
-    const left = await admin.query(
-      'SELECT count(*)::int AS n FROM rate_limit_buckets WHERE expires_at <= now()',
+    const left = await admin.query<{ old: number; recent: number }>(
+      `SELECT count(*) FILTER (WHERE expires_at <= now() - interval '5 minutes')::int AS old,
+              count(*) FILTER (WHERE expires_at > now() - interval '5 minutes')::int AS recent
+         FROM rate_limit_buckets`,
     );
-    expect(left.rows[0].n).toBe(0);
+    expect(left.rows[0]).toEqual({ old: 0, recent: 1 });
   });
 
   it('runtime não altera colunas imutáveis de users', async () => {
@@ -772,11 +783,14 @@ describe('segunda revisão: médios M1–M3 (ADR-0018)', () => {
         false,
       );
     }
-    // 11ª: recusada mesmo com o código certo.
+    // 11ª: recusada mesmo com o código certo, com erro próprio e sem aviso por e-mail: a pessoa ainda não
+    // tem MFA (PR1a-R3-B6).
     const right = totpAt(secret, t.clock.now.getTime());
     expect(await t.service.confirmTotpSetup(u.userId, s?.sessionId ?? '', right)).toEqual({
       ok: false,
+      error: 'locked',
     });
+    expect(t.mail.outbox.some((m) => m.template === 'security-alert')).toBe(false);
 
     // Segredo pendente expira em 15 min.
     const t2 = createTestAuth(db);
@@ -788,7 +802,13 @@ describe('segunda revisão: médios M1–M3 (ADR-0018)', () => {
     const late = totpAt(base32Decode(setup2.manualKey), t2.clock.now.getTime());
     expect(await t2.service.confirmTotpSetup(v.userId, s2?.sessionId ?? '', late)).toEqual({
       ok: false,
+      error: 'setup_expired',
     });
+    // O segredo vencido sai na hora (PR1a-R3-B7).
+    const user = await withUserOn(db, v.userId, (tx) =>
+      tx.user.findUniqueOrThrow({ where: { id: v.userId }, select: { totpSecret: true } }),
+    );
+    expect(user.totpSecret).toBeNull();
   });
 
   it('M3: e-mails de cadastro e de verificação têm limite por destinatário, mesmo com IPs diferentes', async () => {

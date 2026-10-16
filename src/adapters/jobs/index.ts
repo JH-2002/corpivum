@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db/client';
+import { getDb, getWorkerDb } from '@/lib/db/client';
 import type { Env } from '@/lib/env';
 import { MemoryJobQueue } from './memory';
 import { PgJobQueue } from './postgres';
@@ -23,6 +23,6 @@ export function createJobQueue(env: Pick<Env, 'JOB_QUEUE'>): JobQueue {
       return g[MEMORY_QUEUE];
     }
     case 'postgres':
-      return new PgJobQueue(getDb());
+      return new PgJobQueue(getDb(), { workerDb: getWorkerDb });
   }
 }

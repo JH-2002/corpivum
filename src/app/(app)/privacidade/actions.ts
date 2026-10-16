@@ -6,17 +6,12 @@ import { after } from 'next/server';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import type { FormState } from '@/components/forms/form-state';
-import {
-  clearKnownDeviceCookie,
-  clearSessionCookie,
-  setAgeBlockCookie,
-} from '@/modules/auth/server';
 import { AVAILABLE_PURPOSES } from '@/modules/consent';
 import { getConsentService, requireAppSession } from '@/modules/consent/server';
-import { isDeletionPhrase } from '@/modules/privacy/deletion';
+import { runAccountDeletion, runMinorClosure } from '@/modules/privacy/account-exit';
 import { getPrivacyService } from '@/modules/privacy/server';
 import { OPENABLE_REQUEST_KINDS } from '@/modules/privacy/requests';
-import { getReportsService, processExportsSoon } from '@/modules/reports/server';
+import { processExportsSoon } from '@/modules/reports/server';
 
 /**
  * Central de Privacidade (LEG-C04, LEG-D04, LEG-D07, LEG-F04). Toda action revalida a sessão no banco. A Central fica
@@ -42,35 +37,14 @@ export async function revokeConsentAction(form: FormData): Promise<void> {
   revalidatePath('/', 'layout');
 }
 
-const passwordSchema = z.object({
-  password: z.string().min(1).max(512),
-  mfaCode: z.string().trim().max(64).optional(),
-});
-
 /** Encerramento de conta de quem se descobre menor (LEG-F04): senha atual + apagamento imediato. */
 export async function closeMinorAccountAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
   const session = await requireAppSession({ allowPendingUpdate: true });
-  const t = await getTranslations('privacyCenter');
-  const parsed = passwordSchema.safeParse({
-    password: form.get('password'),
-    mfaCode: form.get('mfaCode') || undefined,
-  });
-  const result = parsed.success
-    ? await getPrivacyService().closeMinorAccount(
-        session.userId,
-        parsed.data.password,
-        parsed.data.mfaCode,
-      )
-    : 'invalid_password';
-  if (result === 'unavailable') return { status: 'error', message: t('minorUnavailable') };
-  if (result !== 'closed') return { status: 'error', fieldErrors: { password: t('minorError') } };
-  await clearSessionCookie();
-  await clearKnownDeviceCookie();
-  // Desencoraja novo cadastro imediato, sem identificar ninguém (LEG-F01).
-  await setAgeBlockCookie();
+  const failed = await runMinorClosure(session.userId, form);
+  if (failed) return failed;
   redirect('/conta-encerrada');
 }
 
@@ -108,53 +82,15 @@ export async function openPrivacyRequestAction(
   };
 }
 
-const deletionSchema = z.object({
-  password: z.string().min(1).max(512),
-  mfaCode: z.string().trim().max(64).optional(),
-  phrase: z.string().max(200).refine(isDeletionPhrase),
-  skipExport: z.literal('on').optional(),
-});
-
 /**
  * Exclusão de conta (LEG-D04, purga imediata): oferta de baixar os dados antes (ou "não quero baixar"),
- * reautenticação (senha e, com MFA, o 2º fator) e a frase exata, conferida aqui no servidor.
+ * reautenticação (senha e, com MFA, o 2º fator) e a frase exata, conferida no servidor.
  */
 export async function deleteAccountAction(_prev: FormState, form: FormData): Promise<FormState> {
   const session = await requireAppSession({ allowPendingUpdate: true });
-  const t = await getTranslations('privacyCenter.deletion');
-  const raw = {
-    password: form.get('password') ?? '',
-    mfaCode: form.get('mfaCode') || undefined,
-    phrase: form.get('phrase') ?? '',
-    skipExport: form.get('skipExport') || undefined,
-  };
-  const parsed = deletionSchema.safeParse(raw);
-  if (!parsed.success) {
-    const fields = new Set(parsed.error.issues.map((i) => String(i.path[0])));
-    return {
-      status: 'error',
-      fieldErrors: {
-        ...(fields.has('phrase') ? { phrase: t('phraseError') } : {}),
-        ...(fields.has('password') ? { password: t('credentialsError') } : {}),
-      },
-    };
-  }
-  if (!parsed.data.skipExport) {
-    const files = await getReportsService().list(session.userId);
-    if (!files.some((f) => f.kind === 'full_export' && f.downloadable)) {
-      return { status: 'error', fieldErrors: { skipExport: t('exportChoiceError') } };
-    }
-  }
-  const result = await getPrivacyService().deleteAccount(session.userId, {
-    password: parsed.data.password,
-    ...(parsed.data.mfaCode ? { mfaCode: parsed.data.mfaCode } : {}),
-  });
-  if (result !== 'deleted') {
-    return { status: 'error', fieldErrors: { password: t('credentialsError') } };
-  }
+  const failed = await runAccountDeletion(session.userId, form, { offerExport: true });
+  if (failed) return failed;
   // A purga roda na fila; em dev/test, logo depois da resposta.
   after(processExportsSoon);
-  await clearSessionCookie();
-  await clearKnownDeviceCookie();
   redirect('/conta-excluida');
 }

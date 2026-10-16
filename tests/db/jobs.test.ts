@@ -3,7 +3,7 @@ import { PgJobQueue } from '@/adapters/jobs/postgres';
 import type { Db } from '@/lib/db/client';
 import { withUserOn } from '@/lib/db/rls';
 import { createLogger, type LogRecord } from '@/lib/logger';
-import { connectAdmin, runtimeDb, truncateAll } from './helpers';
+import { connectAdmin, runtimeDb, truncateAll, workerDb } from './helpers';
 
 /** Fila de jobs no Postgres (OI-14, ADR-0019; PR1a-R2-B6). */
 let admin: pg.Client;
@@ -30,7 +30,7 @@ afterAll(async () => {
 
 describe('PgJobQueue', () => {
   it('executa o job uma vez e o apaga ao concluir', async () => {
-    const q = new PgJobQueue(db, silent());
+    const q = new PgJobQueue(db, { ...silent(), workerDb });
     const seen: unknown[] = [];
     q.register('test.run', async (payload) => {
       seen.push(payload);
@@ -46,7 +46,7 @@ describe('PgJobQueue', () => {
   it('dois workers concorrentes nunca executam o mesmo job', async () => {
     const counts = new Map<string, number>();
     const make = () => {
-      const q = new PgJobQueue(db, { ...silent(), batchSize: 5 });
+      const q = new PgJobQueue(db, { ...silent(), batchSize: 5, workerDb });
       q.register('test.count', async (payload) => {
         const k = String(payload.k);
         counts.set(k, (counts.get(k) ?? 0) + 1);
@@ -67,8 +67,8 @@ describe('PgJobQueue', () => {
   });
 
   it('singletonKey: N instâncias agendando o mesmo job recorrente criam um só (PR1a-R2-B6)', async () => {
-    const q1 = new PgJobQueue(db, silent());
-    const q2 = new PgJobQueue(db, silent());
+    const q1 = new PgJobQueue(db, { ...silent(), workerDb });
+    const q2 = new PgJobQueue(db, { ...silent(), workerDb });
     const ids = await Promise.all([
       q1.enqueue('test.recurring', {}, { singletonKey: 'test.recurring' }),
       q2.enqueue('test.recurring', {}, { singletonKey: 'test.recurring' }),
@@ -80,7 +80,7 @@ describe('PgJobQueue', () => {
   });
 
   it('um job em execução pode agendar o próximo da mesma chave', async () => {
-    const q = new PgJobQueue(db, silent());
+    const q = new PgJobQueue(db, { ...silent(), workerDb });
     q.register('test.chain', async () => {
       await q.enqueue(
         'test.chain',
@@ -98,7 +98,7 @@ describe('PgJobQueue', () => {
 
   it('falha volta à fila com atraso e, sem tentativas restantes, fica failed (só o código do erro)', async () => {
     const { logs, logger } = silent();
-    const q = new PgJobQueue(db, { logger });
+    const q = new PgJobQueue(db, { logger, workerDb });
     q.register('test.fail', async () => {
       throw new RangeError('conteúdo que não deve ir ao log');
     });
@@ -121,11 +121,12 @@ describe('PgJobQueue', () => {
   });
 
   it('job travado por worker que morreu volta a ser executável quando a reserva vence', async () => {
-    const dead = new PgJobQueue(db, { ...silent(), lockSeconds: 60 });
+    const dead = new PgJobQueue(db, { ...silent(), lockSeconds: 60, workerDb });
     dead.register('test.stuck', async () => {});
     await dead.enqueue('test.stuck', {});
-    await db.$queryRaw`SELECT * FROM app.jobs_claim(${dead.workerId}, ${['test.stuck']}::text[], 1, 60)`;
-    const alive = new PgJobQueue(db, silent());
+    await workerDb()
+      .$queryRaw`SELECT * FROM app.jobs_claim(${dead.workerId}, ${['test.stuck']}::text[], 1, 60)`;
+    const alive = new PgJobQueue(db, { ...silent(), workerDb });
     let ran = 0;
     alive.register('test.stuck', async () => {
       ran += 1;
@@ -137,7 +138,7 @@ describe('PgJobQueue', () => {
   });
 
   it('não há cancelamento genérico: só a eliminação da própria pessoa, no contexto dela (revisão M4)', async () => {
-    const q = new PgJobQueue(db, silent());
+    const q = new PgJobQueue(db, { ...silent(), workerDb });
     const later = new Date(Date.now() + 1e6);
     const a = '00000000-0000-7000-8000-00000000000a';
     const b = '00000000-0000-7000-8000-00000000000b';
@@ -165,7 +166,7 @@ describe('PgJobQueue', () => {
 
   it('o runtime não lê a tabela e o enqueue valida nome e payload', async () => {
     await expect(db.$queryRaw`SELECT * FROM job_queue`).rejects.toThrow(/permission denied/);
-    const q = new PgJobQueue(db, silent());
+    const q = new PgJobQueue(db, { ...silent(), workerDb });
     await expect(q.enqueue('Nome Inválido', {})).rejects.toThrow();
     await expect(q.enqueue('test.big', { x: 'a'.repeat(3000) })).rejects.toThrow();
   });

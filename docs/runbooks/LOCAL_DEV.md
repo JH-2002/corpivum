@@ -7,8 +7,8 @@
 ```sh
 pnpm install
 cp .env.example .env
-# edite .env: troque "troque-localmente" por senhas locais e gere TRÊS valores diferentes
-# (KMS_LOCAL_MASTER_KEY, SESSION_SECRET, RATE_LIMIT_SECRET), cada um com:
+# edite .env: troque "troque-localmente" por senhas locais e gere QUATRO valores diferentes
+# (KMS_LOCAL_MASTER_KEY, SESSION_SECRET, RATE_LIMIT_SECRET, RECOVERY_CODE_PEPPER), cada um com:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 pnpm db:up              # Postgres 17 em 127.0.0.1 (cria app_migrator, app_user, healthmind e healthmind_test)
 pnpm mail:up            # Mailpit: caixa de e-mail local em http://localhost:8025
@@ -77,6 +77,27 @@ docker compose up -d --wait db   # recria o contêiner com a variável nova; o v
 pnpm db:operator:init            # cria o papel e dá CONNECT nos dois bancos (idempotente)
 pnpm db:deploy
 ```
+
+### Papéis `app_worker` e `operador_dev` num volume criado antes da Fase 7b
+A migração `fase_7b_papeis` falha se o papel dos jobs (ADR-0037) não existir. Na 7b, `app_operator` vira grupo
+sem login e quem atende entra com o próprio papel (`operador_dev` em desenvolvimento). Num volume que já existe,
+acrescente ao `.env` (e troque o usuário das URLs do operador):
+```sh
+APP_WORKER_PASSWORD=<senha nova>
+WORKER_DATABASE_URL=postgresql://app_worker:<senha nova>@localhost:<porta>/healthmind
+TEST_WORKER_DATABASE_URL=postgresql://app_worker:<senha nova>@localhost:<porta>/healthmind_test
+OPERATOR_DATABASE_URL=postgresql://operador_dev:<senha do operador>@localhost:<porta>/healthmind
+TEST_OPERATOR_DATABASE_URL=postgresql://operador_dev:<senha do operador>@localhost:<porta>/healthmind_test
+RECOVERY_CODE_PEPPER=<valor novo de 32 bytes em base64>
+```
+e rode:
+```sh
+docker compose up -d --wait db   # recria o contêiner com a variável nova; o volume continua
+pnpm db:operator:init            # grupo app_operator sem login e papel operador_dev (idempotente)
+pnpm db:worker:init              # papel app_worker, membro do app_user (idempotente)
+pnpm db:deploy
+```
+Com o pepper novo, os códigos de recuperação de contas de desenvolvimento com MFA deixam de valer: gere outros.
 
 O `pnpm db:seed` grava no banco de **desenvolvimento** (é para usar o app logado com dados sintéticos).
 

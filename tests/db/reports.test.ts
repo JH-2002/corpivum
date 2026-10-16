@@ -36,8 +36,9 @@ import {
   createTestAuth,
   createVerifiedUser,
   runtimeDb,
-  truncateAll,
   type TestAuth,
+  truncateAll,
+  workerDb,
 } from './helpers';
 
 /**
@@ -64,6 +65,7 @@ const notRendered = async (): Promise<never> => {
 function service(overrides: Partial<ReportsDeps> = {}) {
   return createReportsService({
     db,
+    workerDb,
     kms,
     storage,
     queue: {

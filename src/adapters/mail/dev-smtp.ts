@@ -24,6 +24,7 @@ const SUBJECTS: Record<MailTemplateId, string> = {
   'export-ready': 'Sua exportação está pronta',
   'privacy-request-received': 'Pedido de privacidade recebido',
   'account-deleted': 'Sua conta foi excluída',
+  'onboarding-expiry-notice': 'Seu cadastro não foi concluído',
 };
 
 /** Texto simples da mensagem de desenvolvimento: assunto do template e os parâmetros (links, códigos). */

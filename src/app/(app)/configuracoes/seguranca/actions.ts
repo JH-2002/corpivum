@@ -67,8 +67,16 @@ export async function confirmMfaAction(_prev: FormState, form: FormData): Promis
   const parsed = mfaCodeSchema.safeParse(formToObject(form));
   const result = parsed.success
     ? await getAuthService().confirmTotpSetup(session.userId, session.sessionId, parsed.data.code)
-    : { ok: false as const };
-  if (!result.ok) return { status: 'error', fieldErrors: { code: t('errors.invalidCode') } };
+    : { ok: false as const, error: 'invalid_code' as const };
+  if (!result.ok) {
+    // Erros distintos (PR1a-R3-B6): ativação vencida, bloqueio por tentativas ou código inválido.
+    const key = {
+      setup_expired: 'errors.setupExpired',
+      locked: 'errors.mfaSetupLocked',
+      invalid_code: 'errors.invalidCode',
+    } as const;
+    return { status: 'error', fieldErrors: { code: t(key[result.error]) } };
+  }
   revalidatePath(PATH);
   return {
     status: 'success',

@@ -9,6 +9,7 @@ import {
   type PolicyDocument,
 } from '@/modules/consent/catalog';
 import { createConsentService } from '@/modules/consent/service';
+import { workerDb } from './helpers';
 
 /** Apoio aos testes de consentimento (ADR-0019). Dados 100% sintéticos. */
 export function createTestConsent(
@@ -19,7 +20,8 @@ export function createTestConsent(
 ) {
   const logs: LogRecord[] = [];
   const logger = createLogger({ minLevel: 'debug', sink: (r) => logs.push(r) });
-  const jobs = queue === 'postgres' ? new PgJobQueue(db, { logger }) : new MemoryJobQueue(logger);
+  const jobs =
+    queue === 'postgres' ? new PgJobQueue(db, { logger, workerDb }) : new MemoryJobQueue(logger);
   const service = createConsentService({
     db,
     jobs,

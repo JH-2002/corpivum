@@ -1,12 +1,15 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import type { FormState } from '@/components/forms/form-state';
 import { requireVerifiedSession } from '@/modules/auth/server';
 import { AVAILABLE_PURPOSES, REQUIRED_DOCUMENTS } from '@/modules/consent';
-import { getConsentService } from '@/modules/consent/server';
+import { getConsentService, requireOnboardingExitSession } from '@/modules/consent/server';
+import { runAccountDeletion, runMinorClosure } from '@/modules/privacy/account-exit';
+import { processExportsSoon } from '@/modules/reports/server';
 
 /**
  * Onboarding §52 e reconsentimento (LEG-C01–C06). Toda action revalida a sessão no banco e toda entrada
@@ -89,4 +92,30 @@ export async function resolveUpdateAction(_prev: FormState, form: FormData): Pro
     };
   }
   redirect('/inicio');
+}
+
+/**
+ * Saída da conta antes de concluir o onboarding (P7-M2, ADR-0037; LEG-D04, LEG-F04): exige só o e-mail
+ * confirmado e a reautenticação, nunca o aceite dos Termos nem as escolhas de consentimento. Só para quem não
+ * concluiu: quem concluiu usa a Central, com a oferta de baixar os dados antes (revisão B1 da 7b).
+ */
+export async function deleteAccountFromOnboardingAction(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const session = await requireOnboardingExitSession();
+  const failed = await runAccountDeletion(session.userId, form, { offerExport: false });
+  if (failed) return failed;
+  after(processExportsSoon);
+  redirect('/conta-excluida');
+}
+
+export async function closeMinorAccountFromOnboardingAction(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const session = await requireOnboardingExitSession();
+  const failed = await runMinorClosure(session.userId, form);
+  if (failed) return failed;
+  redirect('/conta-encerrada');
 }

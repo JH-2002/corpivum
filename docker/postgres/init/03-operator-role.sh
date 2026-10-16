@@ -1,7 +1,10 @@
 #!/bin/sh
-# Papel do ATENDIMENTO MANUAL de pedidos do titular (ADR-0034, LEG-D07):
-#   app_operator: LOGIN, sem BYPASSRLS, não é dono de nada e sem acesso a tabelas. Só executa as três
-#   funções `app.operator_*` concedidas pela migração `fase_6b_direitos`.
+# ATENDIMENTO MANUAL de pedidos do titular (ADR-0034, ADR-0036 D5, ADR-0037; LEG-D07, LEG-S06, OI-34 b):
+#   app_operator: GRUPO (NOLOGIN), sem BYPASSRLS, não é dono de nada e sem acesso a tabelas. Recebe das
+#     migrações só o EXECUTE das funções `app.operator_*`.
+#   operador_dev: papel de LOGIN de UMA pessoa (aqui, quem desenvolve), membro do grupo. Cada função grava o
+#     `session_user` no AuditLog, então cada pessoa que atende tem o próprio papel (produção: runbook
+#     docs/runbooks/DATA_SUBJECT_REQUEST.md, papéis `operador_<nome>`).
 # Roda sozinho na criação do volume. Idempotente: num volume que já existe, rode `pnpm db:operator:init`.
 set -eu
 
@@ -11,14 +14,26 @@ test_db="${APP_TEST_DB_NAME:-${app_db}_test}"
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres \
   -v operator_password="$APP_OPERATOR_PASSWORD" -v app_db="$app_db" -v test_db="$test_db" <<'SQL'
-SELECT 'CREATE ROLE app_operator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT'
+SELECT 'CREATE ROLE app_operator NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT'
  WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_operator')
 \gexec
-ALTER ROLE app_operator WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT
+-- Volumes antigos (Fase 6b): o grupo deixa de entrar no banco e perde a senha.
+ALTER ROLE app_operator WITH NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT
+  PASSWORD NULL;
+
+SELECT 'CREATE ROLE operador_dev LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT'
+ WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'operador_dev')
+\gexec
+ALTER ROLE operador_dev WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT
   PASSWORD :'operator_password';
-SELECT format('GRANT CONNECT ON DATABASE %I TO app_operator', datname)
+GRANT app_operator TO operador_dev WITH INHERIT TRUE, SET FALSE;
+
+SELECT format('REVOKE CONNECT ON DATABASE %I FROM app_operator', datname)
+  FROM pg_database WHERE datname IN (:'app_db', :'test_db')
+\gexec
+SELECT format('GRANT CONNECT ON DATABASE %I TO operador_dev', datname)
   FROM pg_database WHERE datname IN (:'app_db', :'test_db')
 \gexec
 SQL
 
-echo "papel app_operator pronto"
+echo "grupo app_operator e papel operador_dev prontos"

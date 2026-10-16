@@ -78,7 +78,7 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 | T | XSS | React com escape; CSP com nonce e `strict-dynamic`, sem origem externa; o único `dangerouslySetInnerHTML` é o script fixo de tema com nonce | Baixa: `style-src 'unsafe-inline'` (injeção de CSS, sem execução) e `'wasm-unsafe-eval'` em todas as páginas quando há modelo 3D (ADR-0028); aceitos |
 | T | Clickjacking | `frame-ancestors 'none'` + `X-Frame-Options: DENY` | — |
 | I | Token de verificação ou reset no endereço (query string) fica nos logs da hospedagem e no histórico | Uso único, vida curta (24 h / 30 min), só o hash no banco, `Referrer-Policy: no-referrer` | Média: **TM-01** |
-| I | Dado de conta em cache compartilhado | `Cache-Control: private, no-store` nas páginas que passam pelo proxy; download com `no-store`. Pedidos de prefetch (`next-router-prefetch`, `purpose: prefetch`) **não** passam pelo proxy (`matcher.missing`): ficam sem CSP e sem `no-store`, e qualquer cliente que mande o cabeçalho pula o proxy (a guarda no servidor continua) | Baixa: **TM-02** (conferir headers em todas as respostas, inclusive prefetch e RSC, erros, 404 e server actions; P7-N1) |
+| I | Dado de conta em cache compartilhado | `Cache-Control: private, no-store` em toda resposta que passa pelo proxy, inclusive prefetch e redirecionamento sem sessão (7b, P7-N1: o matcher não tem mais exceção para prefetch); download com `no-store` | Resolvido na 7b: e2e TM-02 |
 | I | Mensagens de erro com detalhes internos | `errorFormat: 'minimal'` no Prisma; páginas de erro genéricas | Média até a 7c: `onRequestError` sem remoção de PII (PR1a-B5) |
 | I | Leitura do HTML por quem está perto (A5) | Modo privacidade omite os valores no servidor (ADR-0035) | Baixa |
 | D | Esgotamento por geração de PDF ou exportação | Um pedido por vez, 5 por 24 h, trava por pessoa, fila | Baixa |
@@ -90,9 +90,9 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 | STRIDE | Ameaça | Controle atual | Residual |
 |---|---|---|---|
 | E | IDOR entre contas (A2) | RLS por `user_id` com `SET LOCAL app.user_id` em transação; sem o setting, zero linhas; teste de isolamento entre duas contas (LEG-S03) | Baixa |
-| E | Código executando como o runtime (A8, A9) declara qualquer `app.user_id` e passa nas políticas de qualquer conta; com o KMS do runtime, decifra os textos; com `auth_issue_token` (aceita usuário e hash do chamador) toma contas; com `reauth_issue` + `account_delete` exclui contas | O RLS protege contra erro de aplicação (A2), **não** contra quem já executa código no servidor; segredos fora do repositório; dependências fixas e varridas (F9) | **Média**: P7-M1 (7b: avaliar amarrar o contexto à sessão, com `app.current_user_id()` derivado do token conferido em `sessions`; jobs no `app_worker`; alerta de volume anômalo de leitura na 7c). Registrar no RIPD (7f) |
+| E | Código executando como o runtime (A8, A9) declara qualquer `app.user_id` e passa nas políticas de qualquer conta; com o KMS do runtime, decifra os textos; com `auth_issue_token` (aceita usuário e hash do chamador) toma contas; com `reauth_issue` + `account_delete` exclui contas | O RLS protege contra erro de aplicação (A2), **não** contra quem já executa código no servidor; segredos fora do repositório; dependências fixas e varridas (F9) | **Média**: P7-M1. Avaliado na 7b (ADR-0037): amarrar o contexto à sessão não foi feito (custo alto, ganho parcial). Mitigado: varreduras, expurgos e purga só no `app_worker`, `deleted_at` fora do runtime e purga só com pedido de exclusão. Alerta de volume anômalo na 7c; residual no RIPD (7f) |
 | E | Tratamento sem consentimento | `app.has_active_consent('health_data')` nas políticas das tabelas de saúde + guard na aplicação na mesma transação; teste pelo catálogo (ADR-0021) | Baixa |
-| E | Abuso das funções SECURITY DEFINER | `search_path` fixo (teste em `pg_proc`), sem SQL dinâmico, retorno mínimo, `EXECUTE` só para `app_user` | Média: funções de job abertas a qualquer código do runtime (PR1b-M1 residual, PR1b-B3, PR1b-B2) → papel `app_worker` (D5, 7b) |
+| E | Abuso das funções SECURITY DEFINER | `search_path` fixo (teste em `pg_proc`), sem SQL dinâmico, retorno mínimo, `EXECUTE` só para `app_user` | Resolvido na 7b (ADR-0037): funções de job só no `app_worker`; AuditLog do sistema por função própria com lista fechada (PR1b-M1 residual, PR1b-B3, PR1b-B2) |
 | T | Alteração de colunas sensíveis pelo runtime | UPDATE por coluna em `users` | Média: `sessions` aceita UPDATE em todas as colunas (PR1a-R2-B5) |
 | T | SQL injection | Prisma parametrizado; `$queryRaw` com template; nenhum `Unsafe` fora do código gerado | Baixa |
 | I | Runtime lê AuditLog e AccessLog | Sem SELECT para `app_user` | — |
@@ -106,7 +106,7 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 | T | Job duplicado apaga ou envia em dobro | `singletonKey`, `SKIP LOCKED`, reserva com prazo | Baixa: handler acima de 300 s pode rodar em dobro; `jobs_fail` sem conferir `locked_by` (PR1b-B8) |
 | I | Arquivo de exportação órfão | Eliminação apaga o storage dentro da transação; limpeza em duas fases | Baixa: órfão raro depois da purga (OI-35, 7e) |
 | D | Eliminação ou purga não acontece | Varreduras diárias (`health_data_sweep`, `account_purge_sweep`) | Baixa: lembrete para em silêncio (PR4-B1); diferença de relógio app × banco (PR1a-R2-B7) |
-| E | Jobs com o mesmo papel do web | — | Média: **D5** (`app_worker`, 7b) |
+| E | Jobs com o mesmo papel do web | Papel `app_worker` (ADR-0037), `WORKER_DATABASE_URL` só onde a fila é consumida | Resolvido na 7b (D5) |
 
 ### F4 App ↔ KMS
 
@@ -114,7 +114,7 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 |---|---|---|---|
 | I | Vazamento da chave mestra | Envelope por valor com DEK nova e AAD com o contexto (ADR-0016); `KMS_PROVIDER=local` recusado em produção | **Bloqueante para produção**: não há KMS real (CHECKLIST, `{{KMS}}`) |
 | D | Timeout de transação com KMS remoto | — | Média: PR2-N3 (decifrar fora da transação ou timeout explícito, junto com o KMS real) |
-| S | Pepper dos códigos de recuperação é o `SESSION_SECRET` | Rotação documentada em `KEY_ROTATION.md` | Baixa: PR1a-B3 (segredo próprio, 7b) |
+| S | Pepper dos códigos de recuperação era o `SESSION_SECRET` | `RECOVERY_CODE_PEPPER` próprio (ADR-0037); rotação em `KEY_ROTATION.md` | Resolvido na 7b (PR1a-B3) |
 
 ### F5 App ↔ e-mail
 
@@ -134,7 +134,7 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 
 | STRIDE | Ameaça | Controle atual | Residual |
 |---|---|---|---|
-| E | Operador lê dado além do pedido | `app_operator` sem tabelas, só 3 funções; contato só de pedido aberto, com AuditLog | Média: leitura sem identificar a pessoa e sem teto (OI-34 b → D5, 7b); guarda da credencial (OI-34 a, CHECKLIST) |
+| E | Operador lê dado além do pedido | `app_operator` sem tabelas, só 3 funções; contato só de pedido aberto, com AuditLog | Resolvido na 7b: papel de login por pessoa, `operator_role` no AuditLog e teto de 30 leituras do contato por hora (OI-34 b). Aberto: guarda da credencial (OI-34 a, CHECKLIST) |
 
 ### F8 Backups
 
@@ -168,9 +168,9 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 
 | ID | Item | Sub-fase |
 |---|---|---|
-| TM-01 | Tokens de verificação e de reset no endereço ficam nos logs da hospedagem e no histórico. Avaliar trocar por POST (o link abre uma página que envia o token no corpo e limpa a URL com `history.replaceState`) e confirmar que os logs da hospedagem não guardam query string. | 7b |
-| TM-02 | Teste e2e dos headers de segurança e de `Cache-Control` em toda classe de resposta: página pública, autenticada, 404, erro, redirecionamento, download e resposta de server action. | 7b |
-| TM-03 | Limite por IP no demo público e nas actions públicas (período, modo privacidade), na aplicação ou na hospedagem. | 7b (aplicação) / 7e (hospedagem) |
+| TM-01 | Tokens de verificação e de reset no endereço ficam nos logs da hospedagem e no histórico. Avaliar trocar por POST (o link abre uma página que envia o token no corpo e limpa a URL com `history.replaceState`) e confirmar que os logs da hospedagem não guardam query string. **Feito na 7b (ADR-0037):** token no fragmento (`#token=`, não chega ao servidor), limpo com `history.replaceState`, enviado por POST; links antigos com `?token=` também são limpos (e2e). | 7b |
+| TM-02 | Teste e2e dos headers de segurança e de `Cache-Control` em toda classe de resposta: página pública, autenticada, 404, erro, redirecionamento, download e resposta de server action. **Feito na 7b:** `e2e/security-headers.spec.ts` (pública, autenticada, 404, redirecionamentos, route handler, prefetch, server action). A página de erro 500 não tem rota que a provoque; passa pelo mesmo proxy e pelos mesmos cabeçalhos do `next.config`. | 7b |
+| TM-03 | Limite por IP no demo público e nas actions públicas (período, modo privacidade), na aplicação ou na hospedagem. **Aplicação feita na 7b:** limite em memória no proxy (demo 300/min, action sem sessão 60/min, 429). | 7b (aplicação) / 7e (hospedagem) |
 | TM-04 | SPF, DKIM e DMARC no domínio de envio; runbook de provisionamento. | 7e |
 | TM-05 | Proteção da `main`: checagens obrigatórias da CI e revisão antes do merge (limitada pelo plano do GitHub, OI-13). | 7e |
 

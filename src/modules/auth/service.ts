@@ -10,7 +10,7 @@ import { AGE_GATE_VERSION, isAdult, parseBirthDate, signAgeOk, verifyAgeOk } fro
 import { randomToken, sha256 } from './crypto';
 import { deviceLabel } from './device';
 import { canonicalMailbox, normalizeEmail } from './email';
-import { signKnownDevice, verifyKnownDevice } from './known-device';
+import { passwordFingerprint, signKnownDevice, verifyKnownDevice } from './known-device';
 import {
   checkPasswordPolicy,
   hashPassword,
@@ -19,7 +19,13 @@ import {
   type PasswordProblem,
 } from './password';
 import { totpQrSvg } from './qr';
-import { MFA_MAX_ATTEMPTS, rateLimitHit, type RateLimitName } from './rate-limit';
+import {
+  MFA_MAX_ATTEMPTS,
+  RATE_LIMITS,
+  rateLimitHit,
+  rateLimitPeek,
+  type RateLimitName,
+} from './rate-limit';
 import { generateRecoveryCodes, hashRecoveryCode, looksLikeRecoveryCode } from './recovery';
 import { formatManualKey, generateTotpSecret, otpauthUri, verifyTotp } from './totp';
 
@@ -37,9 +43,11 @@ export interface AuthDeps {
   mail: MailProvider;
   ageSignal: AgeSignalProvider;
   logger: Logger;
-  /** Assina cookies do fluxo e serve de pepper dos códigos de recuperação (com separação de domínio). */
+  /** Assina os cookies do fluxo e o de aparelho conhecido (com separação de domínio). */
   sessionSecret: Uint8Array;
   rateLimitSecret: Uint8Array;
+  /** Pepper dos códigos de recuperação (PR1a-B3): girar o `sessionSecret` não invalida os códigos. */
+  recoveryPepper: Uint8Array;
   appUrl: string;
   now?: () => Date;
   /**
@@ -48,6 +56,11 @@ export interface AuthDeps {
    * sem conta (anti-enumeração).
    */
   defer?: (task: () => Promise<void>) => void;
+  /**
+   * Client dos jobs (`app_worker`, ADR-0037): o expurgo só roda nesse papel. Padrão: `db` (testes que não
+   * chamam o expurgo).
+   */
+  workerDb?: () => Db;
 }
 
 export const SESSION_ABSOLUTE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -57,6 +70,15 @@ export const VERIFY_EMAIL_TTL_S = 24 * 60 * 60;
 export const RESET_PASSWORD_TTL_S = 30 * 60;
 const TOTP_ISSUER = 'HealthMind 360';
 export const TOTP_SETUP_TTL_MS = 15 * 60 * 1000;
+
+/** Eventos do aviso `security-alert` (PR1a-R2-B4: redefinição de senha e novos códigos também avisam). */
+export type SecurityEvent =
+  | 'mfa_enabled'
+  | 'mfa_disabled'
+  | 'password_changed'
+  | 'password_reset'
+  | 'recovery_codes_regenerated'
+  | 'mfa_locked';
 
 export interface PurgeResult {
   sessions: number;
@@ -127,20 +149,53 @@ export function createAuthService(deps: AuthDeps) {
     (await limitHit(name, subject)).allowed;
 
   /**
-   * Limite de 2º fator por CONTA (TOTP e códigos de recuperação, somados entre sessões). Ao bloquear,
-   * avisa o titular por e-mail uma vez por janela (bloqueio temporário de 1 h).
+   * Limites por destinatário de e-mail (caixa canônica): o da operação (1 h) e, no cadastro e no reenvio, o
+   * teto diário somado (PR1a-R3-B1; a redefinição fica fora, revisão M3 da 7b). O bloqueio fica no log só com
+   * a operação, sem e-mail (PR1a-R3-B9): uma campanha de assédio aparece no monitoramento.
    */
-  async function mfaAccountAllowed(userId: string): Promise<boolean> {
-    const r = await limitHit('mfaAccount', userId);
-    if (r.justLocked) {
-      logger.warn('auth.mfa_account_locked', { userId });
-      await notifySecurity(userId, 'mfa_locked');
-    }
-    return r.allowed;
+  async function mailAllowed(
+    operation: 'register' | 'resend' | 'reset',
+    perOperation: RateLimitName,
+    mailbox: string,
+  ): Promise<boolean> {
+    const ok =
+      (await limit(perOperation, mailbox)) &&
+      (operation === 'reset' || (await limit('mailRecipientDay', mailbox)));
+    if (!ok) logger.warn('auth.mail_rate_limited', { operation });
+    return ok;
   }
+
+  /**
+   * 2º fator (TOTP sem reuso do passo, ou código de recuperação de uso único) com limite por CONTA, somado
+   * entre sessões: só as FALHAS contam (PR1a-R2-B2), e quem chama confere a senha ANTES (PR1a-R2-B1, P7-B2),
+   * então uma sessão roubada sem a senha não consome o limite do titular. Ao bloquear (1 h), avisa o titular
+   * uma vez por janela, se ele já tem MFA (`notify`; na ativação, não tem: PR1a-R3-B6). Tentativas
+   * simultâneas podem passar um pouco do teto (consulta e registro separados); o limite por sessão continua.
+   */
+  async function checkSecondFactor(
+    userId: string,
+    code: string,
+    notify: boolean,
+  ): Promise<'ok' | 'invalid' | 'locked'> {
+    const { max } = RATE_LIMITS.mfaAccount;
+    if ((await rateLimitPeek(db, deps.rateLimitSecret, 'mfaAccount', userId, now())) >= max) {
+      return 'locked';
+    }
+    const accepted = looksLikeRecoveryCode(code)
+      ? await consumeRecoveryCode(userId, code)
+      : await acceptTotp(userId, code);
+    if (accepted) return 'ok';
+    const r = await limitHit('mfaAccount', userId);
+    if (r.hits === max) {
+      logger.warn('auth.mfa_account_locked', { userId });
+      if (notify) await notifySecurity(userId, 'mfa_locked');
+    }
+    return 'invalid';
+  }
+  /** Token no fragmento (`#token=`): o navegador não o envia ao servidor nem aos logs (TM-01). */
   const link = (path: string, token: string) => {
     const url = new URL(path, deps.appUrl);
-    url.searchParams.set('token', token);
+    url.hash = new URLSearchParams({ token }).toString();
     return url.toString();
   };
   const totpCtx = (userId: string) => ({ userId, table: 'users', column: 'totp_secret' });
@@ -158,10 +213,7 @@ export function createAuthService(deps: AuthDeps) {
   }
 
   /** Aviso ao titular sobre mudança de segurança da conta (só o tipo do evento, sem dados). */
-  async function notifySecurity(
-    userId: string,
-    event: 'mfa_enabled' | 'mfa_disabled' | 'password_changed' | 'mfa_locked',
-  ) {
+  async function notifySecurity(userId: string, event: SecurityEvent) {
     await background(async () => {
       const user = await withUser(userId, (tx) =>
         tx.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } }),
@@ -282,7 +334,7 @@ export function createAuthService(deps: AuthDeps) {
       const row = rows[0];
       await background(async () => {
         // Limite por destinatário dentro do trabalho adiado: não muda resposta nem tempo (anti-enumeração).
-        if (!(await limit('registerAccount', canonicalMailbox(email)))) return;
+        if (!(await mailAllowed('register', 'registerAccount', canonicalMailbox(email)))) return;
         if (row?.created) {
           const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
           await mail.send({
@@ -302,12 +354,18 @@ export function createAuthService(deps: AuthDeps) {
       return { ok: true };
     },
 
+    /**
+     * O link vale até 24 h e nunca além do expurgo da conta não verificada (7 dias, `app.auth_issue_token`).
+     * `updateMany`: se o expurgo apagar a conta no meio, a resposta é "link inválido", não erro 500
+     * (PR1a-R3-B2).
+     */
     async verifyEmail(token: string): Promise<boolean> {
       const userId = await consumeToken(token, 'verify_email');
       if (!userId) return false;
-      await withUser(userId, (tx) =>
-        tx.user.update({ where: { id: userId }, data: { emailVerifiedAt: now() } }),
+      const { count } = await withUser(userId, (tx) =>
+        tx.user.updateMany({ where: { id: userId }, data: { emailVerifiedAt: now() } }),
       );
+      if (count === 0) return false;
       logger.info('auth.email_verified', { userId });
       return true;
     },
@@ -321,7 +379,7 @@ export function createAuthService(deps: AuthDeps) {
           SELECT * FROM app.auth_find_user_id(${email})`;
         const row = rows[0];
         if (!row || row.email_verified) return;
-        if (!(await limit('resendAccount', canonicalMailbox(email)))) return;
+        if (!(await mailAllowed('resend', 'resendAccount', canonicalMailbox(email)))) return;
         const token = await issueToken(row.user_id, 'verify_email', VERIFY_EMAIL_TTL_S);
         await mail.send({
           to: email,
@@ -353,7 +411,7 @@ export function createAuthService(deps: AuthDeps) {
         deps.sessionSecret,
         meta.knownDevice,
         email,
-        row?.password_hash ?? null,
+        row ? passwordFingerprint(row.password_hash) : null,
       );
       const deviceOk = device !== null && (await limit('loginDevice', device));
       const accountOk = deviceOk || (await limit('loginAccount', email));
@@ -382,7 +440,11 @@ export function createAuthService(deps: AuthDeps) {
         ok: true,
         token,
         mfaRequired: false,
-        knownDevice: signKnownDevice(deps.sessionSecret, email, row.password_hash),
+        knownDevice: signKnownDevice(
+          deps.sessionSecret,
+          email,
+          passwordFingerprint(row.password_hash),
+        ),
       };
     },
 
@@ -406,20 +468,19 @@ export function createAuthService(deps: AuthDeps) {
           select: { mfaAttempts: true },
         }),
       );
-      // Limite por conta: abrir novas sessões pendentes não renova as tentativas.
-      const accountOk = await mfaAccountAllowed(userId);
-      if (attempts.mfaAttempts > MFA_MAX_ATTEMPTS || !accountOk) {
+      // Limite por conta (só falhas): abrir novas sessões pendentes não renova as tentativas.
+      const check =
+        attempts.mfaAttempts > MFA_MAX_ATTEMPTS
+          ? 'locked'
+          : await checkSecondFactor(userId, code, true);
+      if (check === 'locked') {
         await withUser(userId, (tx) =>
           tx.session.update({ where: { id: s.session_id }, data: { revokedAt: now() } }),
         );
         logger.warn('auth.mfa_locked', { userId });
         return { ok: false, error: 'locked' };
       }
-
-      const accepted = looksLikeRecoveryCode(code)
-        ? await consumeRecoveryCode(userId, code)
-        : await acceptTotp(userId, code);
-      if (!accepted) {
+      if (check === 'invalid') {
         logger.info('auth.mfa_failed', { userId, errorCode: 'invalid_code' });
         return { ok: false, error: 'invalid_code' };
       }
@@ -438,7 +499,7 @@ export function createAuthService(deps: AuthDeps) {
       return {
         ok: true,
         token,
-        knownDevice: signKnownDevice(deps.sessionSecret, email, passwordHash),
+        knownDevice: signKnownDevice(deps.sessionSecret, email, passwordFingerprint(passwordHash)),
       };
     },
 
@@ -521,17 +582,21 @@ export function createAuthService(deps: AuthDeps) {
       const email = normalizeEmail(rawEmail);
       if (!(await limit('resetIp', meta.ip))) return;
       await background(async () => {
-        const rows = await db.$queryRaw<Array<{ user_id: string; password_hash: string }>>`
-          SELECT user_id, password_hash FROM app.auth_find_login(${email})`;
+        // Só a impressão do hash, nunca o hash (PR1b-R2-B3).
+        const rows = await db.$queryRaw<
+          Array<{ user_id: string; password_fingerprint: Uint8Array }>
+        >`
+          SELECT user_id, password_fingerprint FROM app.auth_find_reset(${email})`;
         const row = rows[0];
         const device = verifyKnownDevice(
           deps.sessionSecret,
           meta.knownDevice,
           email,
-          row?.password_hash ?? null,
+          row ? new Uint8Array(row.password_fingerprint) : null,
         );
         const deviceOk = device !== null && (await limit('resetDevice', device));
-        if (!deviceOk && !(await limit('resetAccount', canonicalMailbox(email)))) return;
+        if (!deviceOk && !(await mailAllowed('reset', 'resetAccount', canonicalMailbox(email))))
+          return;
         if (!row) return;
         const token = await issueToken(row.user_id, 'reset_password', RESET_PASSWORD_TTL_S);
         await mail.send({
@@ -559,6 +624,7 @@ export function createAuthService(deps: AuthDeps) {
       );
       await revokeAllSessions(userId);
       logger.info('auth.password_reset', { userId });
+      await notifySecurity(userId, 'password_reset');
       return { ok: true };
     },
 
@@ -623,26 +689,46 @@ export function createAuthService(deps: AuthDeps) {
       }
     },
 
-    /** Confirma o TOTP com um código válido, ativa o MFA e devolve os códigos de recuperação (uma vez). */
+    /**
+     * Confirma o TOTP com um código válido, ativa o MFA e devolve os códigos de recuperação (uma vez).
+     * Erros distintos (PR1a-R3-B6): ativação vencida ou inexistente (recomeçar com a senha), bloqueio por
+     * tentativas e código inválido.
+     */
     async confirmTotpSetup(
       userId: string,
       currentSessionId: string,
       code: string,
-    ): Promise<{ ok: true; recoveryCodes: string[] } | { ok: false }> {
+    ): Promise<
+      | { ok: true; recoveryCodes: string[] }
+      | { ok: false; error: 'setup_expired' | 'locked' | 'invalid_code' }
+    > {
       const pending = await withUser(userId, (tx) =>
         tx.user.findUniqueOrThrow({
           where: { id: userId },
           select: { mfaEnabledAt: true, totpSetupStartedAt: true },
         }),
       );
-      if (pending.mfaEnabledAt || !pending.totpSetupStartedAt) return { ok: false };
-      // Segredo pendente vale 15 min; depois disso, é preciso recomeçar (com a senha).
-      if (now().getTime() - pending.totpSetupStartedAt.getTime() > TOTP_SETUP_TTL_MS) {
-        return { ok: false };
+      if (pending.mfaEnabledAt || !pending.totpSetupStartedAt) {
+        return { ok: false, error: 'setup_expired' };
       }
-      // Mesmo limite por conta do 2º fator: uma sessão roubada não testa códigos à vontade.
-      if (!(await mfaAccountAllowed(userId))) return { ok: false };
-      if (!(await acceptTotp(userId, code))) return { ok: false };
+      // Segredo pendente vale 15 min; depois disso, é preciso recomeçar (com a senha). O segredo sai na hora
+      // (PR1a-R3-B7), sem esperar o expurgo.
+      if (now().getTime() - pending.totpSetupStartedAt.getTime() > TOTP_SETUP_TTL_MS) {
+        await withUser(userId, (tx) =>
+          tx.user.updateMany({
+            where: { id: userId, mfaEnabledAt: null },
+            data: { totpSecret: null, totpLastUsedStep: null, totpSetupStartedAt: null },
+          }),
+        );
+        return { ok: false, error: 'setup_expired' };
+      }
+      // Mesmo limite por conta do 2º fator: uma sessão roubada não testa códigos à vontade. Sem aviso por
+      // e-mail: a pessoa ainda não tem MFA (PR1a-R3-B6). Só TOTP: ainda não há códigos de recuperação.
+      if (looksLikeRecoveryCode(code)) return { ok: false, error: 'invalid_code' };
+      const check = await checkSecondFactor(userId, code, false);
+      if (check !== 'ok') {
+        return { ok: false, error: check === 'locked' ? 'locked' : 'invalid_code' };
+      }
       const codes = generateRecoveryCodes();
       // Ativação condicional na mesma transação: duas confirmações simultâneas não geram dois conjuntos.
       const activated = await withUser(userId, async (tx) => {
@@ -654,7 +740,7 @@ export function createAuthService(deps: AuthDeps) {
         await replaceRecoveryCodes(tx, userId, codes);
         return true;
       });
-      if (!activated) return { ok: false };
+      if (!activated) return { ok: false, error: 'setup_expired' };
       // Outras sessões abertas sem o 2º fator são encerradas; a atual continua.
       await revokeAllSessions(userId, currentSessionId);
       logger.info('auth.mfa_enabled', { userId });
@@ -679,17 +765,15 @@ export function createAuthService(deps: AuthDeps) {
       });
       if (!done) return { ok: false };
       logger.info('auth.recovery_codes_regenerated', { userId });
+      await notifySecurity(userId, 'recovery_codes_regenerated');
       return { ok: true, recoveryCodes: codes };
     },
 
     /** Desativar o MFA exige senha e um código (TOTP ou recuperação). */
     async disableMfa(userId: string, password: string, code: string): Promise<boolean> {
-      if (!(await mfaAccountAllowed(userId))) return false;
+      // Senha antes do código (PR1a-R2-B1): sem a senha, o limite do 2º fator não é consumido.
       if (!(await checkCurrentPassword(userId, password))) return false;
-      const accepted = looksLikeRecoveryCode(code)
-        ? await consumeRecoveryCode(userId, code)
-        : await acceptTotp(userId, code);
-      if (!accepted) return false;
+      if ((await checkSecondFactor(userId, code, true)) !== 'ok') return false;
       await withUser(userId, async (tx) => {
         await tx.user.update({
           where: { id: userId },
@@ -718,29 +802,27 @@ export function createAuthService(deps: AuthDeps) {
       const mfa = await withUser(userId, (tx) =>
         tx.user.findUniqueOrThrow({ where: { id: userId }, select: { mfaEnabledAt: true } }),
       );
+      // Senha antes do 2º fator (P7-B2): sem a senha, o limite do 2º fator não é consumido.
+      if (!(await checkCurrentPassword(userId, password))) return null;
       if (mfa.mfaEnabledAt) {
         const code = mfaCode?.trim() ?? '';
-        if (!code || !(await mfaAccountAllowed(userId))) return null;
-        if (!(await checkCurrentPassword(userId, password))) return null;
-        const accepted = looksLikeRecoveryCode(code)
-          ? await consumeRecoveryCode(userId, code)
-          : await acceptTotp(userId, code);
-        if (!accepted) return null;
-        return issueProof(userId, purpose);
+        if (!code || (await checkSecondFactor(userId, code, true)) !== 'ok') return null;
       }
-      if (!(await checkCurrentPassword(userId, password))) return null;
       return issueProof(userId, purpose);
     },
 
     /**
      * Expurgo de dados de autenticação vencidos (ROPA T1/T5, job `auth.purge_expired`): sessões e tokens
-     * vencidos há mais de 1 dia, janelas de limite encerradas, contas com e-mail nunca verificado após
-     * 7 dias e segredos TOTP de ativações abandonadas após 1 dia.
+     * vencidos há mais de 1 dia, janelas de limite encerradas há mais de 5 minutos, contas com e-mail nunca
+     * verificado após 7 dias e segredos TOTP de ativações abandonadas após 1 hora. Papel `app_worker`.
      * Apagar contas pressupõe que só tabelas de auth e de dados do usuário têm FK para `users`: as
      * provas (consentimentos, pedidos, AuditLog) e o AccessLog não têm FK e ficam (PR1a-R3-B8).
      */
     async purgeExpired(): Promise<PurgeResult> {
-      const rows = await db.$queryRaw<Array<PurgeResult>>`SELECT * FROM app.auth_purge_expired()`;
+      const worker = deps.workerDb?.() ?? db;
+      const rows = await worker.$queryRaw<
+        Array<PurgeResult>
+      >`SELECT * FROM app.auth_purge_expired()`;
       const r = rows[0] ?? {
         sessions: 0,
         tokens: 0,
@@ -805,7 +887,7 @@ export function createAuthService(deps: AuthDeps) {
 
   /** Código de recuperação: uso único, marcado de forma atômica. */
   async function consumeRecoveryCode(userId: string, code: string): Promise<boolean> {
-    const codeHash = hashRecoveryCode(deps.sessionSecret, code);
+    const codeHash = hashRecoveryCode(deps.recoveryPepper, code);
     const { count } = await withUser(userId, (tx) =>
       tx.recoveryCode.updateMany({ where: { codeHash, usedAt: null }, data: { usedAt: now() } }),
     );
@@ -816,7 +898,7 @@ export function createAuthService(deps: AuthDeps) {
   async function replaceRecoveryCodes(tx: Tx, userId: string, codes: string[]) {
     await tx.recoveryCode.deleteMany({});
     await tx.recoveryCode.createMany({
-      data: codes.map((c) => ({ userId, codeHash: hashRecoveryCode(deps.sessionSecret, c) })),
+      data: codes.map((c) => ({ userId, codeHash: hashRecoveryCode(deps.recoveryPepper, c) })),
     });
   }
 }

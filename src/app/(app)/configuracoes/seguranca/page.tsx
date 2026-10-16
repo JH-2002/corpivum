@@ -40,7 +40,8 @@ function Card({
 
 /** Segurança da conta (§46, LEG-S04): sessões ativas, verificação em duas etapas e senha. */
 export default async function SecurityPage() {
-  const session = await requireAppSession();
+  // Trocar a senha ou mexer no MFA nunca depende de aceitar uma versão nova (P7-B3, LEG-C06).
+  const session = await requireAppSession({ allowPendingUpdate: true });
   const service = getAuthService();
   const [sessions, overview] = await Promise.all([
     service.listSessions(session.userId, session.sessionId),

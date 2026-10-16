@@ -10,5 +10,7 @@
 - [ ] Contratar pentest independente e tratar os achados (escopo em `docs/security/PENTEST_SCOPE.md`, contexto em `docs/security/THREAT_MODEL.md`)
 - [ ] Pedir ao pentest atenção especial ao **módulo de autenticação próprio** (ADR-0014): sessões (fixação e revogação), enumeração de e-mail e diferença de tempo de resposta, contorno dos limites de tentativa (IP, variações de maiúsculas no e-mail), TOTP (reuso e força bruta), códigos de recuperação, tokens de verificação e reset, funções SECURITY DEFINER e RLS, CSRF e CSP, cookie de aparelho conhecido (falsificação, reuso entre contas) e guard de consentimento (`app.has_active_consent`, ADR-0019)
 - [ ] Revisão clínica dos textos de saúde, das fórmulas e dos fluxos de risco por profissionais habilitados
+- [ ] Subir o worker dedicado dos jobs (OI-14 a): só ele com `WORKER_DATABASE_URL`, e as instâncias web com `JOB_WORKER=off` e sem essa credencial. Sem isso, a separação de papéis do ADR-0037 (D5) não vale por inteiro (o `parseEnv` recusa a credencial na web com `JOB_WORKER=off`)
+- [ ] Criar um papel `operador_<nome>` por pessoa que atende pedidos, nunca reutilizar um nome e decidir se exclusões pedidas fora do app exigem conferência de uma segunda pessoa (ADR-0037, OI-34)
 - [ ] Definir canal de suporte e de atendimento a titulares com SLA compatível com 15 dias (LEG-D07)
 - [ ] Lançar primeiro em beta fechado com poucos usuários adultos antes de abrir ao público

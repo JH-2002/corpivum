@@ -13,7 +13,12 @@ import { createGoalsService } from '@/modules/goals/service';
 import { createHabitsService } from '@/modules/habits/service';
 import { createFieldCipher, type HealthDeps } from '@/modules/health/core';
 import { reminderInputSchema } from '@/modules/notifications';
-import { registerReminderJobs, scheduleReminder } from '@/modules/notifications/jobs';
+import {
+  activeRemindersFrom,
+  REMINDER_RECONCILE_JOB,
+  registerReminderJobs,
+  scheduleReminder,
+} from '@/modules/notifications/jobs';
 import { createRemindersService } from '@/modules/notifications/service';
 import { createNutritionService } from '@/modules/nutrition/service';
 import { createTestConsent } from './consent-helpers';
@@ -24,6 +29,7 @@ import {
   runtimeDb,
   truncateAll,
   type TestAuth,
+  workerDb,
 } from './helpers';
 
 /**
@@ -252,6 +258,9 @@ describe('lembretes pela fila (§33, LEG-F05)', () => {
       appUrl: 'http://localhost:3000',
       timeZone: TZ,
       now: () => clock,
+      // Só a pessoa deste teste: o banco de testes tem lembretes de outros casos.
+      listActive: async (after, limit) =>
+        (await activeRemindersFrom(workerDb)(after, limit)).filter((r) => r.userId === a.userId),
     });
     await scheduleReminder(queue, a.userId, created.reminder, NOW, TZ);
     const runAt = async (iso: string) => {
@@ -348,6 +357,28 @@ describe('lembretes pela fila (§33, LEG-F05)', () => {
     expect(await runAt('2026-10-07T23:00:30Z')).toBe(1);
     expect(mail.outbox).toHaveLength(0);
     expect(await runAt('2026-10-08T23:00:30Z')).toBe(0);
+  });
+
+  it('reconsentir depois de revogar: a reconciliação diária retoma a cadeia (PR4-B1)', async () => {
+    const { a, mail, runAt, queue } = await setup();
+    await a.consent.revoke(a.userId, 'health_data');
+    expect(await runAt('2026-10-07T23:00:30Z')).toBe(1);
+    expect(await runAt('2026-10-08T23:00:30Z')).toBe(0);
+    // Sem consentimento, a reconciliação não reagenda nada.
+    await queue.enqueue(REMINDER_RECONCILE_JOB, {}, { runAt: new Date('2026-10-09T12:00:00Z') });
+    expect(await runAt('2026-10-09T12:00:00Z')).toBe(1);
+    expect(await runAt('2026-10-09T23:00:30Z')).toBe(0);
+    expect(await a.consent.grant(a.userId, 'health_data')).toEqual({ ok: true });
+    // A próxima reconciliação (agendada para 24 h depois) reagenda a ocorrência das 20:00.
+    expect(await runAt('2026-10-10T12:00:30Z')).toBe(1);
+    expect(await runAt('2026-10-10T23:00:30Z')).toBe(1);
+    expect(mail.outbox).toHaveLength(1);
+    // Reconciliar de novo com a cadeia viva não duplica: uma ocorrência, um job.
+    await queue.enqueue(REMINDER_RECONCILE_JOB, {}, { runAt: new Date('2026-10-11T12:00:00Z') });
+    // Roda a extra e a agendada (24 h depois da anterior); às 20:00 só um envio está na fila.
+    expect(await runAt('2026-10-11T12:01:00Z')).toBe(2);
+    expect(await runAt('2026-10-11T23:00:30Z')).toBe(1);
+    expect(mail.outbox).toHaveLength(2);
   });
 
   it('fila parada por horas não dispara lembrete velho', async () => {

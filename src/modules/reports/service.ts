@@ -89,6 +89,8 @@ export interface ReportsDeps {
   linkHours: number;
   timeZone: string;
   today(): string;
+  /** Client dos jobs (`app_worker`, ADR-0037): a varredura de arquivos vencidos só roda nesse papel. */
+  workerDb?: () => Db;
 }
 
 const CONTENT_TYPE: Record<ExportFormat, string> = {
@@ -272,8 +274,13 @@ export function createReportsService(deps: ReportsDeps) {
       logger.warn('reports.file_delete_failed', { jobId });
       return false;
     }
-    const marked = await db.$queryRaw<Array<{ ok: boolean }>>`
-      SELECT app.exports_mark_file_deleted(${jobId}::uuid) AS ok`;
+    // No contexto da pessoa: a função só marca exportação dela (revisão B5 da 7b).
+    const marked = await withUserOn(
+      db,
+      userId,
+      (tx) => tx.$queryRaw<Array<{ ok: boolean }>>`
+        SELECT app.exports_mark_file_deleted(${jobId}::uuid) AS ok`,
+    );
     return marked[0]?.ok === true;
   }
 
@@ -527,11 +534,14 @@ export function createReportsService(deps: ReportsDeps) {
      * remove as linhas cujo arquivo saiu há mais de 2 dias. Sem contexto de usuário, só IDs.
      */
     async expireDue(limit = 500): Promise<number> {
-      const rows = await db.$queryRaw<Array<{ id: string; user_id: string }>>`
+      const worker = deps.workerDb?.() ?? db;
+      const rows = await worker.$queryRaw<Array<{ id: string; user_id: string }>>`
         SELECT id, user_id FROM app.exports_cleanup_due(${limit}::int)`;
       let done = 0;
       for (const r of rows) if (await cleanupOne(r.user_id, r.id)) done += 1;
-      const purged = await db.$queryRaw<Array<{ n: number }>>`SELECT app.exports_purge_rows() AS n`;
+      const purged = await worker.$queryRaw<
+        Array<{ n: number }>
+      >`SELECT app.exports_purge_rows() AS n`;
       const rowsPurged = purged[0]?.n ?? 0;
       if (done > 0) logger.info('reports.expired', { count: done });
       if (rowsPurged > 0) logger.info('reports.rows_purged', { count: rowsPurged });
