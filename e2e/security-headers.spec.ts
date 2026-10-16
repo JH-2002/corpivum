@@ -4,11 +4,11 @@ import { expect, test, type APIResponse, type Response } from '@playwright/test'
  * TM-02 (ADR-0037): cabeçalhos de segurança e `Cache-Control` em toda classe de resposta — página pública,
  * autenticada, 404, redirecionamentos (proxy e rotas removidas), download (route handler), prefetch (P7-N1) e
  * resposta de server action. TM-01: o token do link sai do endereço ao abrir a página.
- * No CI roda contra o build de produção: `private` com `no-store` (o proxy manda `private, no-store`; 404 e
- * server actions saem com a forma mais restritiva do Next, `private, no-cache, no-store, max-age=0,
- * must-revalidate`). O dev server troca por `no-cache`.
+ * No CI roda contra o build de produção: sempre `no-store`, que proíbe guardar a resposta em qualquer cache,
+ * inclusive compartilhado. O proxy manda `private, no-store`; 404 e server actions saem com a forma do Next
+ * (`[private, ]no-cache, no-store, max-age=0, must-revalidate`). O dev server troca por `no-cache`.
  */
-const NO_STORE = process.env.CI ? /^private,.*\bno-store\b/ : /no-store|no-cache/;
+const NO_STORE = process.env.CI ? /\bno-store\b/ : /no-store|no-cache/;
 
 function expectSecurityHeaders(res: Response | APIResponse | null) {
   const h = res?.headers() ?? {};
