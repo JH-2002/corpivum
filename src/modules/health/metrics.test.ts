@@ -9,7 +9,8 @@ import {
 } from '@/modules/habits';
 import { centeredMinutes, scheduleSpreadMinutes, sleepInputSchema } from '@/modules/sleep';
 import { bodyInputSchema } from '@/modules/body';
-import { sanitizePeriod, validateCustomRange } from '@/lib/period';
+import { validateCustomRange } from '@/lib/period';
+import { sanitizePeriod } from '@/lib/period-schema';
 
 const habit = (over: Partial<HabitRecord> = {}): HabitRecord => ({
   id: 'h',

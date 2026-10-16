@@ -18,7 +18,7 @@ const SCHEMES = ['light', 'dark'] as const;
  * escuro. O inventário (`PAGES`) é conferido contra `src/app` por `tests/content/page-inventory.test.ts`.
  */
 async function expectNoViolations(page: Page, entry: PageEntry) {
-  await expect(page).toHaveURL(new RegExp(`${entry.path.replace(/[/]/g, '\\/')}(\\?.*)?$`));
+  await expect.poll(() => new URL(page.url()).pathname).toBe(entry.path);
   if (entry.title) {
     await expect(page.getByRole('heading', { level: 1, name: entry.title })).toBeVisible();
   } else {

@@ -2,10 +2,26 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PERIOD,
   formatIsoDate,
-  parseStoredPeriod,
+  isIsoDate,
   resolveRange,
   validateCustomRange,
 } from './period';
+import { parseStoredPeriod } from './period-schema';
+
+describe('isIsoDate (sem Zod no navegador, 7d)', () => {
+  it.each([
+    ['2026-10-16', true],
+    ['2024-02-29', true],
+    ['2026-02-29', false],
+    ['2026-13-01', false],
+    ['2026-04-31', false],
+    ['26-10-16', false],
+    ['2026-10-16T00:00', false],
+    ['', false],
+  ])('%s → %s', (value, expected) => {
+    expect(isIsoDate(value)).toBe(expected);
+  });
+});
 
 describe('resolveRange', () => {
   it.each([

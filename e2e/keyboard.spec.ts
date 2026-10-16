@@ -40,6 +40,24 @@ async function tabTo(page: Page, target: Locator, max = 60) {
   await expect(target).toBeFocused();
 }
 
+/**
+ * Digita data e hora como uma pessoa faria: o campo avança sozinho entre as partes. A ordem das partes segue o
+ * idioma do sistema do navegador (dd/mm/aaaa hh:mm no Windows em pt-BR; mm/dd/aaaa hh:mm AM/PM no Chromium da CI,
+ * em Linux), então tenta a ordem brasileira e, se o valor não bater, a americana a partir da primeira parte.
+ */
+async function typeDateTime(page: Page, field: Locator, iso: string) {
+  const [date = '', time = ''] = iso.split('T');
+  const [y = '', m = '', d = ''] = date.split('-');
+  const [hh = '', mm = ''] = time.split(':');
+  await page.keyboard.type(d + m + y + hh + mm);
+  if ((await field.inputValue()) === iso) return;
+  const hour = Number(hh);
+  const h12 = String(hour % 12 === 0 ? 12 : hour % 12).padStart(2, '0');
+  await field.focus();
+  await page.keyboard.type(m + d + y + h12 + mm + (hour < 12 ? 'A' : 'P'));
+  await expect(field).toHaveValue(iso);
+}
+
 /** Pessoa nova, sem dados, numa sessão própria (os testes que gravam não mexem na pessoa do setup). */
 async function freshPerson(browser: Browser, name: string) {
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
@@ -193,13 +211,10 @@ test.describe('fluxos críticos só com teclado (7d)', () => {
     const bed = page.getByLabel('Deitei em');
     await expect(bed).toBeFocused();
     await expectVisibleFocus(page);
-    // Digitado como uma pessoa faria: o campo (dd/mm/aaaa hh:mm em pt-BR) avança sozinho entre as partes.
-    await page.keyboard.type('011020262300');
-    await expect(bed).toHaveValue('2026-10-01T23:00');
+    await typeDateTime(page, bed, '2026-10-01T23:00');
     const wake = page.getByLabel('Acordei em');
-    await tabTo(page, wake, 4);
-    await page.keyboard.type('021020260700');
-    await expect(wake).toHaveValue('2026-10-02T07:00');
+    await tabTo(page, wake, 6);
+    await typeDateTime(page, wake, '2026-10-02T07:00');
     await tabTo(page, page.getByRole('button', { name: 'Salvar registro' }), 15);
     await page.keyboard.press('Enter');
     await expect(page.getByRole('status').getByText('Registro salvo.')).toBeVisible();

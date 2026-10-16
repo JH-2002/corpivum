@@ -9,12 +9,12 @@ import { DEMO_TOUR_SEEN_STATE, STORAGE_STATE } from './fixtures';
  *
  * "Interativo" = um controle do cabeçalho responde: o teste toca no botão do modo privacidade (presente no app e no
  * demo, em qualquer largura) até o `aria-pressed` mudar (antes da hidratação o toque não faz nada) e mede o tempo
- * desde o início da navegação. Mediana de 3 cargas.
+ * desde o início da navegação. Mediana de 5 cargas.
  */
 const budget = JSON.parse(readFileSync('perf-budget.json', 'utf8')) as {
   dashboard: { maxInteractiveMs: number };
 };
-const RUNS = 3;
+const RUNS = 5;
 const KBIT = 1000 / 8;
 
 test.skip(
