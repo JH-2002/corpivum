@@ -1,9 +1,10 @@
 'use client';
 
 import { Eye, EyeOff } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import type { Route } from 'next';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/cn';
 import { usePrivacyMode } from './PrivacyModeProvider';
 
@@ -35,11 +36,33 @@ export function PrivacyModeToggle() {
   );
 }
 
-/** Depois de sair da apresentação: o modo continua ligado de propósito (OI-36 d). */
+/**
+ * Depois de sair da apresentação: o modo continua ligado de propósito (OI-36 d). Aparece uma vez: o parâmetro
+ * sai da URL (recarregar ou religar o modo não repete o aviso) e o foco vem para cá, porque o botão "Sair"
+ * deixou de existir (revisão B1, B2).
+ */
 function LeftPresentationNote() {
   const t = useTranslations('privacyMode');
-  const left = useSearchParams().get('apresentacao') === 'encerrada';
-  return left ? <span className="basis-full font-semibold">{t('afterPresentation')}</span> : null;
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [left] = useState(() => params.get('apresentacao') === 'encerrada');
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!left) return;
+    ref.current?.focus();
+    router.replace(pathname as Route, { scroll: false });
+  }, [left, pathname, router]);
+  if (!left) return null;
+  return (
+    <span
+      ref={ref}
+      tabIndex={-1}
+      className="basis-full font-semibold outline-none focus-visible:ring-2"
+    >
+      {t('afterPresentation')}
+    </span>
+  );
 }
 
 /**

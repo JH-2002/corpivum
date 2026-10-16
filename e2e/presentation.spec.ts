@@ -51,6 +51,12 @@ test.describe('demo público', () => {
       page.getByRole('button', { name: 'Modo privacidade', exact: true }),
     ).toHaveAttribute('aria-pressed', 'true');
     expect(await privacyCookie(page)).toBe('on');
+    // Marca da apresentação: cookie de sessão, sem identificador (o prazo de 4 h vai no valor).
+    const presenting = (await page.context().cookies()).find(
+      (c) => c.name === '__Host-hm_presenting',
+    );
+    expect(presenting?.expires).toBe(-1);
+    expect(presenting?.value).toMatch(/^on\.\d+$/);
     await expect(page.getByRole('banner').getByText(/^DEMO:/)).toBeVisible();
 
     await expectScreen(page, 'Painel', 1);
@@ -69,7 +75,11 @@ test.describe('demo público', () => {
     await expectScreen(page, 'Corpo 3D', 2);
 
     await page.keyboard.press('Escape');
-    await expect(page).toHaveURL(/\/demo\?apresentacao=encerrada$/);
+    // O aviso aparece uma vez, recebe o foco e o parâmetro sai da URL.
+    await expect(
+      page.getByText('Você saiu da apresentação. O modo privacidade continua ligado'),
+    ).toBeFocused();
+    await expect(page).toHaveURL(/\/demo$/);
     // Antes estava desligado, mas ao sair o modo CONTINUA ligado, com aviso e botão para desligar (OI-36 d).
     expect(await privacyCookie(page)).toBe('on');
     await expect(
@@ -169,15 +179,18 @@ test.describe('conta', () => {
     await page.getByRole('button', { name: 'Modo privacidade', exact: true }).click();
     await expect.poll(() => privacyCookie(page)).toBe('off');
     await page.getByRole('button', { name: 'Sair da apresentação' }).click();
-    await expect(page).toHaveURL(/\/inicio\?apresentacao=encerrada$/);
+    await expect(
+      page.getByText('Você saiu da apresentação. O modo privacidade continua ligado'),
+    ).toBeFocused();
+    await expect(page).toHaveURL(/\/inicio$/);
     expect(await privacyCookie(page)).toBe('on');
     await expect(page.getByText('Modo privacidade ativo.')).toBeVisible();
     await expect(
       page.getByText('Você saiu da apresentação. O modo privacidade continua ligado'),
     ).toBeVisible();
     expect(await page.locator('main').innerText()).not.toMatch(UNIT_VALUE);
-    // Sem o aviso de saída fora da volta da apresentação.
-    await page.goto('/inicio');
+    // Recarregar não repete o aviso.
+    await page.reload();
     await expect(page.getByText('Modo privacidade ativo.')).toBeVisible();
     await expect(
       page.getByText('Você saiu da apresentação. O modo privacidade continua ligado'),

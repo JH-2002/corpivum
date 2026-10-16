@@ -1134,7 +1134,7 @@ peso, medidas, altura e calorias; o modo apresentação usa dados de demonstraç
   `hidden`, telas da apresentação); banco (purga das provas de reautenticação); e2e `e2e/privacy-mode.spec.ts`
   (nenhum valor kg/cm/kcal no texto e nenhum valor gravado da pessoa no HTML de início, corpo, twin, metas, timeline,
   alimentação e relatórios, com controle positivo; demo; cookie de sessão; axe) e `e2e/presentation.spec.ts`
-  (teclado, foco, Esc, privacidade ligada na entrada e restaurada na saída, "meus dados", sem consentimento, axe, sem
+  (teclado, foco, Esc, privacidade ligada na entrada e mantida ligada na saída (OI-36 d), "meus dados", sem consentimento, axe, sem
   IMC, 320 e 1920 px). A CI mede o JS de entrada das rotas da apresentação (o three.js segue sob demanda) e migra o
   banco de testes antes de subir o servidor do e2e (os jobs da subida falhavam contra um banco vazio).
 **Revisão de privacidade (nada crítico nem alto; 2 médios, 5 baixos, 8 notas).** Corrigido, com teste:
@@ -1153,7 +1153,10 @@ peso, medidas, altura e calorias; o modo apresentação usa dados de demonstraç
 tela cheia): **resolvido por decisão do produto (2026-10-15, OI-36 d), substituindo o "volta ao estado anterior" do
 plano**: ao sair, o modo privacidade continua ligado; o destino (`/inicio` ou `/demo`, com `?apresentacao=encerrada`)
 mostra no indicador "Você saiu da apresentação. O modo privacidade continua ligado..." e o botão para desligar.
-`__Host-hm_presenting` passa a guardar só `on` (apresentação em curso), sem o estado anterior. e2e na conta e no demo.
+`__Host-hm_presenting` passa a guardar só `on.<expiração>` (apresentação em curso, cookie de sessão com o prazo de 4 h
+no valor), sem o estado anterior; o aviso aparece uma vez, leva o foco e o parâmetro sai da URL. Exceção aceita: quem
+desliga o modo dentro do deck e sai pelo voltar do navegador chega com o modo desligado (escolheu mostrar os valores;
+OI-36 d). e2e na conta e no demo.
 **Não alterado.** **B1** (no demo, as medidas fictícias vão ao twin com o modo ligado, para a forma fictícia
 continuar): dado sintético, decisão registrada acima; o e2e confere só dados próprios no HTML.
 **Consequências.** PR4-B8 e PR1b-R2-B1 fechados; OI-23(e) feito na parte técnica. Os cookies de preferência e os
