@@ -2,8 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import { hasValues } from './format';
+import { useAfterIdle } from './idle';
 
-/** O recharts vem num chunk próprio, depois da hidratação (§41, orçamento da 7d); o espaço fica reservado. */
+/** O recharts vem num chunk próprio, depois da carga e com o navegador ocioso (§41, `idle.ts`); o espaço fica reservado. */
 const LazySparklinePlot = dynamic(() => import('./SparklinePlot').then((m) => m.SparklinePlot), {
   ssr: false,
 });
@@ -19,10 +20,11 @@ export function Sparkline({
   data: ReadonlyArray<{ day: string; value: number | null }>;
   color: string;
 }) {
+  const idle = useAfterIdle();
   if (!hasValues(data, ['value'])) return null;
   return (
     <div aria-hidden="true" className="h-10 w-full">
-      <LazySparklinePlot data={data} color={color} />
+      {idle ? <LazySparklinePlot data={data} color={color} /> : null}
     </div>
   );
 }

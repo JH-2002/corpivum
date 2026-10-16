@@ -1397,6 +1397,9 @@ responsável pelo produto) e o 7c-R3, fechado na mesma branch por pedido do resp
   173 KiB; na CI, mediana de 5 cargas de 2,48 s em `/inicio` e 2,14 s em `/demo`. A folga do `/inicio` é muito
   pequena (cargas até 2,9 s): o próximo corte é escopar as traduções enviadas ao navegador (hoje o catálogo inteiro
   vai no HTML), registrado em 7d-P1.
+- Na CI, metade das cargas do `/inicio` terminava o JS ~1 s depois: o chunk do recharts era pedido durante a
+  hidratação e disputava rede e CPU. Os desenhos passam a ser pedidos só depois do `load` e do primeiro momento
+  ocioso do navegador (`src/components/charts/idle.ts`); título, selo, legenda e tabela alternativa não esperam.
 **Revisão do `privacy-reviewer` (7d).** Nada crítico, alto nem médio. Corrigido: **B1** buracos do teste
 estático (import padrão e namespace, apelido e desestruturação de `process`, `node:console`, `require`,
 `emitWarning`/`_rawDebug`, `writeSync(1|2)`, arquivos `.js`); **B2** o relatório de erro de job vem depois do
