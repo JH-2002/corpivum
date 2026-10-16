@@ -201,6 +201,9 @@ com o contexto `{ userId, table, column }`. O mesmo contexto canônico entra com
 dado. Formato em `bytea`:
 `0x01 | len(keyId) u8 | keyId | len(encDEK) u16 | encDEK | iv(12) | tag(16) | ciphertext`.
 A DEK em claro é zerada após o uso.
+**Limite (P7-B5, ADR-0037).** O id da linha não faz parte do contexto: o envelope prende o texto à pessoa, à
+tabela e à coluna, não ao registro. Quem escreve no banco troca textos cifrados entre registros da mesma pessoa
+e coluna sem detecção (integridade, não sigilo).
 **Consequências.** Uma chamada ao KMS por escrita e por leitura. Avaliar cache de DEK quando houver KMS real
 (Fase 7). A rotação de chave usa o `keyId` do envelope (docs/runbooks/KEY_ROTATION.md).
 
@@ -1202,3 +1205,93 @@ que é documento da própria entrega: o threat model passa a tratar o código qu
 pedidos de prefetch fora do proxy (P7-N1) e o AuditLog do download (P7-N5); status do PR-IA-M1 (P7-N4).
 **Pendente de decisão do produto antes da 7b:** P7-M2 (conta verificada sem onboarding não tem como ser excluída nem
 encerrada e não tem prazo de retenção).
+
+## ADR-0037 — Fase 7b: endurecimento de segurança (papéis, saída sem onboarding, achados D3)
+**Contexto.** ADR-0036 D3, D4 e D5 e o P7-M2, decidido pelo responsável pelo produto antes da 7b: **opção (c)**,
+os três caminhos juntos (autoatendimento no onboarding, prazo para contas sem onboarding e registro de pedido
+recebido fora do app pelo encarregado).
+**Decisão — papéis (D5).**
+- `app_worker` (LOGIN, sem BYPASSRLS, membro do `app_user` com `INHERIT TRUE, SET FALSE`) é o **único** que
+  executa varreduras, expurgos, fila e purga de conta (`fase_7b_papeis`): o runtime web deixa de alcançá-las
+  (PR1b-M1 residual, PR1b-B3, P7-N6). `WORKER_DATABASE_URL` é obrigatória onde a fila é consumida; o `parseEnv`
+  recusa `app_worker` e `operador_*` como papel do runtime. Criado fora das migrações (`04-worker-role.sh`,
+  `pnpm db:worker:init`); a migração falha se o papel não existir.
+- `app_operator` vira grupo NOLOGIN; cada pessoa que atende tem o próprio papel de login `operador_<nome>`
+  (`operador_dev` em dev). Toda função `app.operator_*` grava o `session_user` em `audit_logs.operator_role` (só o
+  nome técnico) e a leitura do contato tem teto de 30 por hora por pessoa (OI-34 b).
+- `UPDATE (deleted_at)` revogado do runtime; `account_purge` exige pedido `deletion`/`minor_closure` em andamento e
+  apaga também os jobs da pessoa (P7-B1, P7-N2). `UPDATE` em `sessions` só nas colunas que o runtime muda
+  (PR1a-R2-B5). AuditLog "do sistema" só por `audit_append_system`, com lista fechada (PR1b-B2). Fila: `jobs_fail`
+  só apaga o job do próprio worker e as varreduras pulam contas com job falho (PR1b-B8 b/c; a idempotência dos
+  handlers, item a, fica documentada no adaptador).
+**Decisão — P7-M2 (opção c).**
+- Tela mínima `/boas-vindas/encerrar-conta`, com link no rodapé de todo o onboarding: excluir a conta ou encerrá-la
+  por ser menor exige só o e-mail confirmado (`requireOnboardingExitSession`) e a mesma reautenticação da Central,
+  nunca o aceite dos Termos nem as escolhas de consentimento.
+- Conta verificada que não conclui o onboarding: aviso por e-mail no 23º dia (`onboarding-expiry-notice`) e
+  exclusão 30 dias após o cadastro **e** 7 dias após o aviso (sem aviso enviado, nada sai), no job diário
+  `privacy.onboarding_expiry` (`app_worker`). AuditLog sem pessoa nem recurso.
+- `pnpm privacy:requests register <tipo> <data>` registra pedido recebido fora do app (prazo de 15 dias a partir do
+  recebimento; e-mail lido do terminal) e `delete <id>` corta o acesso na exclusão ou encerramento pedidos assim; a
+  purga é do job de hora em hora.
+**Decisão — D4.** Acima do teto de 50 encerramentos por hora, o encerramento de menor corta o acesso na hora e fica
+como pedido `minor_closure` em andamento; `privacy.account_purge_sweep` passa a rodar de hora em hora.
+**Decisão — achados D3 (autenticação).**
+- Pepper próprio dos códigos de recuperação, `RECOVERY_CODE_PEPPER` (PR1a-B3): girar o `SESSION_SECRET` não
+  invalida os códigos. Sem migração de dados: produção não subiu; em dev, quem tem MFA gera códigos novos.
+- Limite `mfaAccount` conta só falhas (`app.rate_limit_peek` + registro na falha), e a senha é conferida antes do
+  código ao desligar o MFA, excluir a conta e encerrar como menor (PR1a-R2-B1/B2, P7-B2). Ativação do TOTP com
+  erros distintos e sem aviso `mfa_locked` a quem ainda não tem MFA; segredo vencido sai na hora (PR1a-R3-B6/B7).
+- `security-alert` também na redefinição de senha e nos códigos novos (PR1a-R2-B4). Teto diário de 10 e-mails por
+  destinatário somando cadastro, reenvio e redefinição (a redefinição de aparelho conhecido não conta), com log
+  `auth.mail_rate_limited` só com a operação (PR1a-R3-B1/B9).
+- Link de verificação nunca vale além do expurgo de 7 dias e `verifyEmail` usa `updateMany` (PR1a-R3-B2); o prazo
+  de 7 dias aparece nas telas de cadastro (PR1a-R3-B3); casos negativos do expurgo testados (PR1a-R3-B4).
+- `CLIENT_IP_HEADER` recusa `x-forwarded-for`, e o cabeçalho ausente gera `auth.client_ip_missing` (sem dado),
+  porque todos cairiam no mesmo balde de limite (PR1a-R2-B3).
+- Cookie de aparelho conhecido `v2`, assinado sobre a impressão SHA-256 do hash de senha: o pedido de redefinição
+  usa `app.auth_find_reset`, que nunca devolve o hash (PR1b-R2-B3), e o HMAC é calculado também sem conta
+  (PR1b-R2-B2). Cookies `v1` deixam de valer (efeito só de disponibilidade).
+- Tokens de verificação e de redefinição no fragmento (`#token=`): não chegam ao servidor nem aos logs da
+  hospedagem; a página lê o token, limpa o endereço com `history.replaceState` e envia por POST. Links antigos com
+  `?token=` continuam valendo e também são limpos (TM-01).
+**Decisão — headers, CSP e borda.**
+- Prefetch passa pelo proxy (sem `missing` no matcher): CSP e `no-store` em toda resposta, inclusive
+  redirecionamento sem sessão (P7-N1). E2E dos cabeçalhos por classe de resposta: pública, autenticada, 404,
+  redirecionamentos do proxy (sem sessão e rotas removidas, que saem do `next.config` para levar CSP), route handler, prefetch e server action (TM-02).
+- Limite por IP em memória no proxy para o demo (300/min) e para server actions sem cookie de sessão (60/min),
+  com 429, CSP e `no-store`; fora de produção a própria máquina não é limitada (TM-03, parte da aplicação; a
+  hospedagem fica para a 7e). O IP fica só na memória da instância, durante a janela.
+**Decisão — outros achados.** Segurança da conta sem exigir aceite de versão nova (P7-B3); teste de guarda varre
+todo `'use server'` dos grupos autenticados, inclusive `(presentation)`, e recusa exports fora de
+`export async function` (P7-B4, PR1a-R2-B8). Reconciliação diária dos lembretes (`reminder.reconcile`, lista
+`app.reminders_active` só no `app_worker`): cadeias paradas voltam (PR4-B1).
+**Não corrigido em código.**
+- **P7-B5:** o id do registro fica fora da AAD; documentado em `field.ts` e no ADR-0016. Quem troca textos
+  cifrados entre registros já escreve no banco (ator do P7-M1); incluir o id exigiria envelope novo e recifrar tudo.
+- **P7-M1 (avaliado):** amarrar `app.current_user_id()` ao token conferido em `sessions` exigiria mover para funções
+  SECURITY DEFINER todos os fluxos antes da sessão (cadastro, verificação, login, MFA, redefinição), um caminho
+  próprio para os jobs e uma busca por linha em todas as políticas RLS, e o ganho é parcial: código como o runtime
+  ainda vê os tokens das requisições em curso e usa o KMS. Fica como residual, mitigado na 7b (jobs e purga fora do
+  runtime, operador por pessoa, `deleted_at` e purga amarrados ao pedido), com alerta de volume anômalo na 7c e
+  registro no RIPD na 7f.
+- **Política v2:** o prazo das contas sem onboarding entra no texto da Política na 7f (mudança de texto versionado,
+  com aviso), junto do `RETENTION.md` (P7-N2). Até lá, a tela de saída e o e-mail de aviso informam o prazo.
+**Revisão do `privacy-reviewer` (7b).** Nada crítico nem alto. Corrigido: **M1** a separação do D5 só vale por
+inteiro com o worker dedicado (OI-14 a): o `parseEnv` recusa em produção `WORKER_DATABASE_URL` numa instância web
+(`JOB_WORKER=off`) e o go-live exige o worker (CHECKLIST_GO_LIVE); **M2** só um cookie de sessão com o formato do
+token tira a action do balde anônimo; **M3** o teto diário vale só para cadastro e reenvio (a redefinição fica fora,
+senão um terceiro bloquearia a recuperação por 24 h); **B1** as actions da saída no onboarding usam
+`requireOnboardingExitSession` (quem concluiu vai à Central, com a oferta de baixar os dados); **B3** pedido do
+titular aberto segura a exclusão automática da conta sem onboarding; **B4** `privacy.closures_stalled` conta
+exclusões e encerramentos com a purga parada há mais de 1 hora, com passo de runbook para reenfileirar; **B5**
+`exports_mark_file_deleted` só marca exportação da pessoa do contexto; notas: data de recebimento do pedido ao
+meio-dia de Brasília, prazo de 30 dias no rodapé de todo o onboarding e `db:verify-roles` confere que o `app_user`
+não executa varreduras (migração `fase_7b_revisao`). Aceito e registrado (OPEN_ISSUES 7b-R*): **B2** rajada de
+tentativas simultâneas do 2º fator pode passar um pouco do teto (consulta e registro separados; o limite por
+sessão e o de login seguem); **B6** `audit_append_system` continua no `app_user` porque o aviso de exclusão é
+gravado na web e o efeito se limita à própria conta.
+**Consequências.** `.env` ganha `APP_WORKER_PASSWORD`, `WORKER_DATABASE_URL`, `TEST_WORKER_DATABASE_URL` e
+`RECOVERY_CODE_PEPPER`; o `OPERATOR_DATABASE_URL` passa a usar `operador_dev`. Volumes antigos: `pnpm
+db:operator:init && pnpm db:worker:init` antes de `pnpm db:deploy`. Migrações `fase_7b_papeis`, `fase_7b_direitos`,
+`fase_7b_auth`, `fase_7b_lembretes`, `fase_7b_revisao`.
