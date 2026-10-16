@@ -8,7 +8,6 @@ import { StateView } from '@/components/ui/StateView';
 import { cn } from '@/lib/cn';
 import { ChartGuide, type ChartGuideId } from './ChartGuide';
 import { formatNumber, hasValues, valueOf } from './format';
-import { useAfterIdle } from './idle';
 
 /**
  * O desenho (recharts, ~119 KiB gzip) vem num chunk próprio, depois da hidratação (§41, orçamento da 7d): o
@@ -73,7 +72,6 @@ export function TimeChart<T extends ChartRow>({
 }: TimeChartProps<T>) {
   const t = useTranslations('charts');
   const format = useFormatter();
-  const idle = useAfterIdle();
   const headingId = useId();
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const visible = series.filter((s) => !hidden.has(s.key));
@@ -160,17 +158,15 @@ export function TimeChart<T extends ChartRow>({
 
           {/* O desenho é complementar: a tabela abaixo traz os mesmos valores para leitor de tela. */}
           <div aria-hidden="true" style={{ height }}>
-            {idle ? (
-              <LazyTimeChartPlot
-                data={data}
-                series={series}
-                visible={visible}
-                badge={badge}
-                hasRight={hasRight}
-                leftDomain={leftDomain}
-                rightDomain={rightDomain}
-              />
-            ) : null}
+            <LazyTimeChartPlot
+              data={data}
+              series={series}
+              visible={visible}
+              badge={badge}
+              hasRight={hasRight}
+              leftDomain={leftDomain}
+              rightDomain={rightDomain}
+            />
           </div>
 
           <ChartTable title={title} data={data} series={series} longDate={longDate} />
