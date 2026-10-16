@@ -246,5 +246,19 @@ Revisão do `privacy-reviewer`: nada crítico; A1, M1, M2 e B1–B4 corrigidos (
 |---|---|---|---|---|---|
 | 7c-R1 | Média | O alerta de leitura compara com a mediana dos 7 dias anteriores: quem lê pouco por hora (poucas contas) ou sobe a leitura devagar ao longo de dias não dispara. Com a credencial do worker na web (OI-14 a), quem executa como o runtime também lê a amostra. | P7-M1, LEG-S03 | 7e, 7f, CHECKLIST | Aberto: worker dedicado (OI-14 a), log do banco (pgaudit) num canal externo e calibração com o beta; residual no RIPD (7f) |
 | 7c-R2 | Baixa | O encarregado consulta até 20 e-mails por hora sem alerta; o rastro que não é desfeito é o `RAISE LOG`, que só vale com o log do servidor do banco guardado fora do banco. | 7b-R3, LEG-S06 | CHECKLIST | Aberto: log do banco no canal externo; duplo controle (OI-34) |
-| 7c-R3 | Baixa | Fora da guarda e do `ErrorReporter`: `console.log`/`info` de dependências, escrita direta em `process.stderr` e erros de job (só `job.failed` com o nome do erro). Nenhum imprime dado de usuário hoje. | PR1a-B5, LEG-R04 | 7e | Aberto: revisar com o fornecedor da ferramenta de erros |
+| 7c-R3 | Baixa | Fora da guarda e do `ErrorReporter`: `console.log`/`info` de dependências, escrita direta em `process.stderr` e erros de job (só `job.failed` com o nome do erro). Nenhum imprime dado de usuário hoje. | PR1a-B5, LEG-R04 | 7d, 7e | **Parcial (7d, ADR-0039)**: erros de job pelo mesmo `ErrorReporter` e a mesma lista de campos (teste de injeção na fila em memória e na Postgres; `last_error_code` e `job.failed` só com o nome reduzido); teste estático pela árvore sintática e regra do ESLint barram `console` e `process.stdout`/`stderr` em `src/` fora do logger e da guarda. Aberto: saída de **dependências** (`console.log`/`info`, `process.stderr` do Next e do Prisma) continua fora da guarda; revisar com o fornecedor da ferramenta de erros (7e) |
 | 7c-N1 | Nota | O `digest` do Next é hash de mensagem e pilha: com mensagem de poucos valores possíveis, quem lê o log poderia confirmar o valor por dicionário. Os erros da aplicação são tipados e sem dado. | LEG-R04 | — | Aceito |
+
+### Qualidade (7d)
+
+Achados da 7d (ADR-0039). Rodada manual com leitor de tela e celular: `docs/qa/ROTEIRO_MANUAL.md` (ADR-0036 D7);
+os problemas que ela achar entram aqui.
+
+| ID | Sev. | Achado | Referência | Sub-fase | Status |
+|---|---|---|---|---|---|
+| 7d-A1 | Média | Bloqueio de meta pelo guardrail aparecia sem foco nem região viva: quem usa leitor de tela não sabia que a meta não foi criada. | LEG-X01 (WCAG 4.1.3), LEG-M04 | 7d | Resolvido: aviso com `role="alert"` e foco, como os erros de formulário (teste unitário e e2e) |
+| 7d-A2 | Média | Depois de escolher o tipo no registro rápido, o foco voltava ao botão "Registrar" do topo: teclado e leitor de tela recomeçavam do cabeçalho. | LEG-X01 (WCAG 2.4.3) | 7d | Resolvido: foco no primeiro campo do formulário (`#novo`) ou no conteúdo principal (e2e de teclado) |
+| 7d-P1 | Média | Dashboard levava ~3,4 s para ficar interativo com 4G lenta e CPU 4× (meta de 2,5 s, §41): 379 KiB gzip de JS de entrada, com o recharts e o `zod` completo no cliente. | §41 | 7d | Resolvido: recharts sob demanda e `zod/mini` no período do cabeçalho; 199 KiB e 2,4 s medidos localmente (com o atraso de rede da navegação somado). Folga pequena: o orçamento na CI barra regressão |
+| 7d-A3 | Baixa | Depois de um erro de login, o formulário voltava vazio (o React reinicia o formulário após a action) e era preciso digitar o e-mail de novo. | LEG-X01 (WCAG 3.3.7) | 7d | Resolvido: o e-mail volta preenchido (só no navegador); a senha volta vazia (e2e de teclado) |
+| 7d-N2 | Nota | Os testes do twin com WebGL real derrubam o Chromium headless no Windows local ("session closed"); na CI (Linux) rodam normalmente. | — | — | Aceito: ambiente local; a CI é a referência |
+| 7d-N3 | Nota | iPhone não tem caminho simples para o roteiro no celular: cookies `__Host-`/`Secure` exigem `https` ou `localhost`, e o Safari não tem o redirecionamento de porta do Chrome. | ADR-0036 D7 | Roteiro | Aberto: `https` local se o teste for feito em iPhone |

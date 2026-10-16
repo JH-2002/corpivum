@@ -1,0 +1,28 @@
+{
+  "$comment": "Orçamento de performance (§41, ADR-0039). KiB = gzip do JS de entrada da rota (rootMainFiles + entryJSFiles); conferido na CI por `pnpm check:perf-budget` depois do build. Subir um teto exige justificativa no PR e no ADR.",
+  "routes": {
+    "(app)/inicio": 420,
+    "(app)/sono": 420,
+    "(app)/corpo": 420,
+    "(app)/metas": 300,
+    "(app)/privacidade": 300,
+    "(app)/relatorios": 420,
+    "(app)/twin": 300,
+    "(presentation)/apresentacao": 420,
+    "demo/(shell)": 420,
+    "demo/(shell)/twin": 300,
+    "demo/apresentacao": 420,
+    "(auth)/entrar": 175,
+    "(auth)/cadastro": 175
+  },
+  "maxChunkKiB": 180,
+  "models": {
+    "dir": "public/models",
+    "maxFileKiB": 160,
+    "maxTotalKiB": 320
+  },
+  "dashboard": {
+    "$comment": "Medido por e2e/perf.spec.ts no build de produção, com rede 4G lenta (150 ms, 1,6 Mbit/s) e CPU 4× mais lenta.",
+    "maxInteractiveMs": 2500
+  }
+}

@@ -8,6 +8,8 @@ pointToTestDatabase();
 
 const PORT = 3100;
 const isCI = Boolean(process.env.CI);
+/** Build de produção também fora da CI (medição de performance: `E2E_PROD=1 pnpm test:perf`). */
+const useProductionBuild = isCI || process.env.E2E_PROD === '1';
 
 export default defineConfig({
   testDir: './e2e',
@@ -30,17 +32,26 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/pessoa.json' },
       dependencies: ['setup'],
+      testIgnore: /perf\.spec\.ts/,
+    },
+    // Orçamento de performance (§41, ADR-0039): job próprio na CI, sem paralelismo, só no build de produção.
+    {
+      name: 'perf',
+      testMatch: /perf\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup'],
+      fullyParallel: false,
     },
   ],
   webServer: {
     // No CI roda contra o build de produção (gerado antes, no job); localmente, contra o dev server.
     // O servidor sobe ANTES do globalSetup: no CI, migra o banco de testes primeiro, senão os jobs da subida
     // (expurgos e varreduras, ADR-0035) rodam contra um banco vazio e falham.
-    command: isCI
+    command: useProductionBuild
       ? `pnpm exec prisma migrate deploy && pnpm start --port ${PORT}`
       : `pnpm dev --port ${PORT}`,
     url: `http://localhost:${PORT}/entrar`,
-    reuseExistingServer: !isCI,
+    reuseExistingServer: !useProductionBuild,
     timeout: 120_000,
     env: {
       APP_ENV: 'test',

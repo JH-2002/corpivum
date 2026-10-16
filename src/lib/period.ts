@@ -1,4 +1,6 @@
-import { z } from 'zod';
+// `zod/mini` (mesma validação, API funcional): este módulo vai ao navegador com o seletor de período do cabeçalho,
+// e o `zod` completo não encolhe no bundle (~89 KiB gzip em toda tela do app; orçamento da 7d, §41).
+import * as z from 'zod/mini';
 
 /** Seletor de período global (§10). Datas como `YYYY-MM-DD` no fuso local, sem horário. */
 export const PERIOD_PRESETS = ['7d', '30d', '90d', '12m'] as const;

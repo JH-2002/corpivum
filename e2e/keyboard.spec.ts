@@ -170,10 +170,10 @@ test.describe('fluxos críticos só com teclado (7d)', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('form [role="alert"]')).toBeFocused();
 
-    // Depois do erro, o formulário volta vazio (o React reinicia o form após a action): digita de novo.
-    await tabTo(page, page.getByLabel('E-mail'), 5);
-    await page.keyboard.type(email);
-    await page.keyboard.press('Tab');
+    // O e-mail continua preenchido depois do erro (WCAG 3.3.7); a senha volta vazia.
+    await expect(page.getByLabel('E-mail')).toHaveValue(email);
+    await tabTo(page, page.getByLabel('Senha', { exact: true }), 5);
+    await expect(page.getByLabel('Senha', { exact: true })).toHaveValue('');
     await page.keyboard.type(E2E_PASSWORD);
     await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
