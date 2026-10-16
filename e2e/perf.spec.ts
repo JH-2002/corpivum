@@ -15,6 +15,14 @@ const budget = JSON.parse(readFileSync('perf-budget.json', 'utf8')) as {
   dashboard: { maxInteractiveMs: number };
 };
 const RUNS = 5;
+
+interface Load {
+  tti: number;
+  lcp: number;
+  ttfb: number;
+  htmlEnd: number;
+  jsEnd: number;
+}
 const KBIT = 1000 / 8;
 
 test.skip(
@@ -36,7 +44,7 @@ async function throttle(page: Page) {
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
 }
 
-async function timeToInteractive(page: Page, path: string): Promise<{ tti: number; lcp: number }> {
+async function timeToInteractive(page: Page, path: string): Promise<Load> {
   await page.goto(path, { waitUntil: 'commit' });
   const toggle = page.getByRole('button', { name: 'Modo privacidade', exact: true });
   await expect(async () => {
@@ -45,7 +53,7 @@ async function timeToInteractive(page: Page, path: string): Promise<{ tti: numbe
   }).toPass({ timeout: 15_000, intervals: [50] });
   return page.evaluate(
     () =>
-      new Promise<{ tti: number; lcp: number }>((resolve) => {
+      new Promise<Load>((resolve) => {
         // O atraso emulado pelo CDP não vale para a requisição da navegação (o HTML chega sem os 150 ms): soma o
         // que faltou, para a medida não sair otimista.
         const nav = performance.getEntriesByType('navigation')[0] as
@@ -54,7 +62,17 @@ async function timeToInteractive(page: Page, path: string): Promise<{ tti: numbe
         const tti = performance.now() + missingLatency;
         new PerformanceObserver((list) => {
           const entries = list.getEntries();
-          resolve({ tti, lcp: (entries[entries.length - 1]?.startTime ?? 0) + missingLatency });
+          const js = (
+            performance.getEntriesByType('resource') as PerformanceResourceTiming[]
+          ).filter((r) => r.initiatorType === 'script');
+          resolve({
+            tti,
+            lcp: (entries[entries.length - 1]?.startTime ?? 0) + missingLatency,
+            // Divisão do tempo, para saber se o gargalo é servidor, HTML ou JS.
+            ttfb: Math.round(nav?.responseStart ?? 0),
+            htmlEnd: Math.round(nav?.responseEnd ?? 0),
+            jsEnd: Math.round(Math.max(0, ...js.map((r) => r.responseEnd))),
+          });
         }).observe({ type: 'largest-contentful-paint', buffered: true });
       }),
   );
@@ -75,7 +93,7 @@ for (const { name, path, storageState } of [
     browser,
   }, testInfo) => {
     test.setTimeout(120_000);
-    const results: Array<{ tti: number; lcp: number }> = [];
+    const results: Load[] = [];
     for (let i = 0; i < RUNS; i += 1) {
       // Contexto novo a cada carga: cache e conexões frios, como na primeira visita do dia.
       const context = await browser.newContext({
@@ -95,6 +113,10 @@ for (const { name, path, storageState } of [
       type: 'perf',
       description: `${path}: interativo ${tti} ms, LCP ${lcp} ms`,
     });
+    console.log(
+      `[perf] ${path} cargas (primeiro byte / fim do HTML / fim do JS / interativo, ms): ` +
+        results.map((r) => `${r.ttfb}/${r.htmlEnd}/${r.jsEnd}/${Math.round(r.tti)}`).join(', '),
+    );
     console.log(
       `[perf] ${path}: interativo ${tti} ms (cargas: ${results.map((r) => Math.round(r.tti)).join(', ')}), LCP ${lcp} ms`,
     );
