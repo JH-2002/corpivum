@@ -28,11 +28,19 @@ async function sample() {
   return workerDb().$queryRaw<
     Array<{
       tuples_read: bigint;
-      active_users: number;
       window_minutes: number;
+      baseline_per_hour: bigint | null;
       operator_actions_max: number;
     }>
   >`SELECT * FROM app.security_volume_sample()`;
+}
+
+/** Recua todas as amostras guardadas, como se o tempo tivesse passado. */
+async function ageSamples(minutes: number): Promise<void> {
+  await admin.query(
+    `UPDATE app.read_volume_samples SET sampled_at = sampled_at - make_interval(mins => $1)`,
+    [minutes],
+  );
 }
 
 /** Tuplas lidas das medidas segundo os contadores do Postgres (sem o cache da transação). */
@@ -83,7 +91,7 @@ describe('amostra de volume (P7-M1)', () => {
     );
   });
 
-  it('primeira amostra sem linha; a seguinte conta as leituras das tabelas de saúde e quem está ativo', async () => {
+  it('sem amostra de 55 min atrás não há linha; o período de relógio conta a leitura em massa', async () => {
     await admin.query('DELETE FROM app.read_volume_samples');
     const u = await createVerifiedUser(t);
     await admin.query(
@@ -93,29 +101,51 @@ describe('amostra de volume (P7-M1)', () => {
       [u.userId],
     );
     expect(await sample()).toEqual([]);
+    expect(await sample()).toEqual([]);
+    await ageSamples(60);
     // Leitura em massa como faria código rodando como o runtime: 10 varreduras de 200 linhas.
     await bulkRead(10, 2000);
-
+    // Revisão M1: uma chamada extra no meio do período não "gasta" o delta da próxima.
+    expect(await sample()).toHaveLength(1);
     const rows = await sample();
     expect(rows).toHaveLength(1);
     expect(Number(rows[0]?.tuples_read)).toBeGreaterThanOrEqual(2000);
-    expect(rows[0]?.active_users).toBeGreaterThanOrEqual(1);
-    expect(rows[0]?.window_minutes).toBe(1);
+    expect(rows[0]?.window_minutes).toBeGreaterThanOrEqual(60);
+    expect(rows[0]?.baseline_per_hour).toBeNull();
   });
 
-  it('o monitor alerta com teto baixo e não leva pessoa, papel nem recurso', async () => {
+  it('linha de base: mediana por hora dos 7 dias anteriores, com pelo menos 24 taxas', async () => {
+    await admin.query('DELETE FROM app.read_volume_samples');
+    // 30 amostras de hora em hora, 1.000 tuplas por hora (contadores sintéticos).
+    await admin.query(
+      `INSERT INTO app.read_volume_samples (sampled_at, tuples_total)
+       SELECT now() - make_interval(hours => 31 - g), g * 1000 FROM generate_series(0, 30) g`,
+    );
+    const rows = await sample();
+    expect(Number(rows[0]?.baseline_per_hour)).toBe(1000);
+  });
+
+  it('sessões tocadas pelo runtime em várias contas não mexem no teto (revisão A1)', async () => {
+    await admin.query('DELETE FROM app.read_volume_samples');
+    await sample();
+    await ageSamples(60);
+    for (let i = 0; i < 3; i += 1) {
+      const u = await createVerifiedUser(t);
+      await admin.query(`UPDATE sessions SET last_seen_at = now() WHERE user_id = $1`, [u.userId]);
+    }
     const reporter = new MemoryErrorReporter();
     const monitor = createVolumeMonitor({
       workerDb,
       reporter: () => reporter,
       logger: silent,
-      limits: { readFloorPerHour: 0, readPerActiveUserPerHour: 0, operatorActionsPerHour: 1000 },
+      limits: { readFloorPerHour: 1000, readBaselineMultiplier: 5, operatorActionsPerHour: 1000 },
     });
-    await bulkRead(5, 1000);
+    await bulkRead(10, 2000);
     const result = await monitor.check();
+    expect(result?.read.threshold).toBeLessThanOrEqual(1100);
     expect(result?.read.anomalous).toBe(true);
     expect(reporter.alerts).toEqual([
-      expect.objectContaining({ name: 'security.read_volume_anomaly', threshold: 0 }),
+      expect.objectContaining({ name: 'security.read_volume_anomaly' }),
     ]);
     expect(Object.keys(reporter.alerts[0] ?? {}).sort()).toEqual([
       'count',
@@ -174,7 +204,9 @@ describe('consulta do encarregado sem pedido novo (7b-R3)', () => {
       },
     ]);
     // Entra na contagem por operador da amostra seguinte.
+    await admin.query('DELETE FROM app.read_volume_samples');
     await sample();
+    await ageSamples(60);
     await operator.query(
       `SELECT app.operator_request_register('outra@exemplo.test', 'correction', now())`,
     );

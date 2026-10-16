@@ -54,11 +54,13 @@ function stackFrames(error: unknown): string[] {
   const stack = read(error, 'stack');
   if (typeof stack !== 'string') return [];
   const message = read(error, 'message');
-  // A mensagem pode ter quebras de linha que imitam quadros: tudo até o fim dela fica de fora.
-  const start =
-    typeof message === 'string' && message.length > 0 && stack.includes(message)
-      ? stack.indexOf(message) + message.length
-      : 0;
+  // A mensagem pode ter quebras de linha que imitam quadros: tudo até o fim dela fica de fora. Se ela mudou depois
+  // de a pilha ser montada (não está mais na pilha), não dá para separar a original: nenhum quadro sai.
+  let start = 0;
+  if (typeof message === 'string' && message.length > 0) {
+    if (!stack.includes(message)) return [];
+    start = stack.indexOf(message) + message.length;
+  }
   const frames: string[] = [];
   for (const raw of stack.slice(start).split('\n')) {
     const m = FRAME_LINE.exec(raw.trim());

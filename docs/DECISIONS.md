@@ -1324,18 +1324,30 @@ vira `privacyRequestId` (era o id do pedido do titular e se confundiria com o id
 `threshold`. `userId` continua (UUID técnico, nunca e-mail). `sanitizeLogLine` refiltra uma linha já serializada
 (usada pela guarda).
 **Decisão — alerta de volume (P7-M1).** Job `observability.volume_check` de hora em hora, no `app_worker`: a função
-`app.security_volume_sample()` lê os contadores do Postgres (`pg_stat_user_tables`, tuplas lidas por varredura e
-por índice) das tabelas de saúde, guarda o total em `app.read_volume_samples` (fora do `public`, sem acesso de
-`app_user`, `app_worker` nem operador; 7 dias) e devolve, desde a amostra anterior, as tuplas lidas, as pessoas com
-sessão usada e a duração. Alerta `security.read_volume_anomaly` acima de `100.000 + 20.000 × pessoas ativas` por
-hora (calibração inicial, sem tráfego real; ajuste no CHECKLIST). O runtime não altera nem zera esses contadores, e
-o sinal não depende de o código passar pelo app. Limites: não pega leitura lenta de poucas contas, e o alerta sai
-pelo log do worker (canal externo no CHECKLIST).
+`app.security_volume_sample()` lê os contadores do Postgres (`seq_tup_read` das tabelas e `idx_tup_read` dos índices,
+que conta também a varredura só pelo índice) das tabelas de saúde, de `users` e de `consent_records`, guarda o total
+em `app.read_volume_samples` (fora do `public`, sem acesso de `app_user`, `app_worker` nem operador; 8 dias) e
+devolve a leitura num **período de relógio** (amostra atual contra a mais recente com pelo menos 55 minutos) e a
+**linha de base**: mediana das taxas por hora dos 7 dias anteriores (só com 24 taxas ou mais). Alerta
+`security.read_volume_anomaly` acima de `max(100.000, 5 × linha de base)` por hora (calibração inicial; ajuste no
+CHECKLIST). Nada que o runtime grava entra no teto: o runtime não altera esses contadores, e o sinal não depende de o
+código passar pelo app.
 **Decisão — 7b-R3.** `operator_request_register` grava AuditLog `privacy_request_lookup` (só o papel; sem pessoa no
-caso de e-mail sem conta) quando não abre pedido. A mesma amostra devolve o maior número de ações de um papel de
-operador no período: acima de 20 por hora, `security.operator_volume_anomaly`. Duplo controle continua no CHECKLIST.
+caso de e-mail sem conta) quando não abre pedido, e também `RAISE LOG` com a ação e o papel (nunca o e-mail), que
+fica no log do servidor do banco mesmo se quem chamou desfizer a transação. A mesma amostra devolve o maior número
+de ações de um papel de operador no período: acima de 20 por hora, `security.operator_volume_anomaly`.
+**Revisão do `privacy-reviewer` (7c).** Nada crítico. Corrigido: **A1** o teto usava pessoas com sessão usada, e o
+runtime grava `sessions.last_seen_at` de qualquer conta (P7-M1): virou linha de base pelo histórico das amostras;
+**M1** com a credencial do worker na web (OI-14 a), uma chamada extra "gastava" o delta: período de relógio;
+**M2** o AuditLog da consulta some com ROLLBACK: `RAISE LOG`; **B1** mensagem trocada depois da pilha: nenhum
+quadro sai; **B2** `?host=` contornava a trava local do `resync-migration`; **B3** `users`, `consent_records` e
+varredura só pelo índice entram na soma; **B4** `db:verify-roles` confere também o operador e `TRUNCATE`;
+`privacy_request_lookup` fora do tipo `AuditAction` do runtime. Aceito e registrado (OPEN_ISSUES 7c-R*):
+linha de base que sobe devagar, leitura lenta de poucas contas, enumeração abaixo de 20 por hora, saídas fora da
+guarda (`console.log`, `process.stderr`, erros de job) e o `digest` do Next (hash de mensagem e pilha) confirmável
+por dicionário quando a mensagem tem poucos valores possíveis (os erros da aplicação são tipados e sem dado).
 **Consequências.** `.env` ganha `ERROR_REPORTER` (padrão `console`). Migração `fase_7c_observabilidade`. Runbook
-`docs/runbooks/ALERTS.md`. `db:verify-roles` confere que só o `app_worker` executa a amostra e que ninguém lê as
-amostras. Preparação da sub-fase: `.gitattributes` força LF em `prisma/migrations/**` e `*.sql` (checksum das
+`docs/runbooks/ALERTS.md`. `db:verify-roles` confere que só o `app_worker` executa a amostra (nem `app_user` nem
+operador) e que nenhum deles lê ou altera as amostras. Preparação da sub-fase: `.gitattributes` força LF em `prisma/migrations/**` e `*.sql` (checksum das
 migrações no Windows) e `pnpm db:resync-migration` reaplica funções de uma migração da branch já aplicada nos bancos
 locais (`LOCAL_DEV.md`).

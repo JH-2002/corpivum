@@ -192,11 +192,23 @@ try {
   // ADR-0038 (P7-M1): as amostras de volume só são lidas e gravadas pela função dona; ninguém as altera.
   const { rows: samples } = await migrator.query(
     `SELECT to_regclass('app.read_volume_samples') IS NULL
-            OR NOT (has_table_privilege('app_user', 'app.read_volume_samples', 'SELECT,INSERT,UPDATE,DELETE')
-                    OR has_table_privilege('app_worker', 'app.read_volume_samples', 'SELECT,INSERT,UPDATE,DELETE'))
+            OR NOT (has_table_privilege('app_user', 'app.read_volume_samples', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+                    OR has_table_privilege('app_worker', 'app.read_volume_samples', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+                    OR has_table_privilege('app_operator', 'app.read_volume_samples', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
             AS ok`,
   );
-  check('amostras do alerta de volume fora do alcance de app_user e app_worker', samples[0]?.ok);
+  check(
+    'amostras do alerta de volume fora do alcance de app_user, app_worker e operador',
+    samples[0]?.ok,
+  );
+  const { rows: sampler } = await migrator.query(
+    `SELECT to_regprocedure('app.security_volume_sample()') IS NULL
+            OR (NOT has_function_privilege('app_user', 'app.security_volume_sample()', 'EXECUTE')
+                AND NOT has_function_privilege('app_operator', 'app.security_volume_sample()', 'EXECUTE')
+                AND has_function_privilege('app_worker', 'app.security_volume_sample()', 'EXECUTE'))
+            AS ok`,
+  );
+  check('amostra de volume executada só pelo app_worker', sampler[0]?.ok);
 
   const { rows: who } = await runtime.query('SELECT current_user AS u');
   check('DATABASE_URL conecta como app_user', who[0]?.u === 'app_user');

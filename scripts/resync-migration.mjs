@@ -58,7 +58,13 @@ if (urls.length === 0) {
   process.exit(1);
 }
 for (const url of urls) {
-  if (!LOCAL_HOSTS.has(new URL(url).hostname)) {
+  const parsed = new URL(url);
+  // O `pg` aceita `?host=`/`?hostaddr=`, que substituem o host da URL: recusados (revisão B2 da 7c).
+  if (
+    !LOCAL_HOSTS.has(parsed.hostname) ||
+    parsed.searchParams.has('host') ||
+    parsed.searchParams.has('hostaddr')
+  ) {
     console.error('Recusado: só bancos locais (localhost).');
     process.exit(1);
   }

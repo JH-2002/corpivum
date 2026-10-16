@@ -12,6 +12,6 @@
 - [ ] Revisão clínica dos textos de saúde, das fórmulas e dos fluxos de risco por profissionais habilitados
 - [ ] Subir o worker dedicado dos jobs (OI-14 a): só ele com `WORKER_DATABASE_URL`, e as instâncias web com `JOB_WORKER=off` e sem essa credencial. Sem isso, a separação de papéis do ADR-0037 (D5) não vale por inteiro (o `parseEnv` recusa a credencial na web com `JOB_WORKER=off`)
 - [ ] Criar um papel `operador_<nome>` por pessoa que atende pedidos, nunca reutilizar um nome e decidir se exclusões pedidas fora do app exigem conferência de uma segunda pessoa (ADR-0037, OI-34)
-- [ ] Escolher a ferramenta de erros (ou ficar no log da hospedagem), com região e DPA, e ligar os alertas `alert.read_volume_anomaly` e `alert.operator_volume_anomaly` e o `error.request` a um canal fora da aplicação; calibrar os tetos de `VOLUME_LIMITS` com o tráfego do beta (ADR-0038, `docs/runbooks/ALERTS.md`)
+- [ ] Escolher a ferramenta de erros (ou ficar no log da hospedagem), com região e DPA, e ligar os alertas `alert.read_volume_anomaly` e `alert.operator_volume_anomaly` e o `error.request` a um canal fora da aplicação, junto do log do servidor do banco (`RAISE LOG` do 7b-R3; pgaudit se o provedor oferecer); calibrar os tetos de `VOLUME_LIMITS` com o tráfego do beta (ADR-0038, `docs/runbooks/ALERTS.md`)
 - [ ] Definir canal de suporte e de atendimento a titulares com SLA compatível com 15 dias (LEG-D07)
 - [ ] Lançar primeiro em beta fechado com poucos usuários adultos antes de abrir ao público

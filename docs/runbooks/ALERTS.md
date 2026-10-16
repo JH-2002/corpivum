@@ -24,18 +24,21 @@ copie dado pessoal para o ticket ou o chat (`INCIDENT.md`, seção 1).
    não aparece de propósito (guarda do console, ADR-0038).
 
 ## `alert.read_volume_anomaly` (P7-M1)
-Leitura das tabelas de saúde, desde a amostra anterior, acima de `100.000 + 20.000 × pessoas com sessão usada`
-por hora. É o sinal de código rodando como o runtime e lendo muitas contas (dependência maliciosa, invasão).
+Leitura das tabelas de saúde, de `users` e de `consent_records` em cerca de 1 hora acima de
+`max(100.000, 5 × mediana por hora dos 7 dias anteriores)`. É o sinal de código rodando como o runtime e lendo
+muitas contas (dependência maliciosa, invasão).
 
 1. Abra o registro de incidente (`INCIDENT.md`, nível Médio até descartar acesso indevido).
 2. No banco, como `app_migrator`, veja quais tabelas cresceram (só contadores, sem dado pessoal):
    ```sql
-   SELECT relname, seq_tup_read, idx_tup_fetch, seq_scan, idx_scan
-     FROM pg_stat_user_tables WHERE schemaname = 'public' ORDER BY seq_tup_read + coalesce(idx_tup_fetch, 0) DESC;
+   SELECT relname, seq_tup_read, seq_scan, idx_scan
+     FROM pg_stat_user_tables WHERE schemaname = 'public' ORDER BY seq_tup_read DESC;
+   SELECT relname, sum(idx_tup_read) FROM pg_stat_user_indexes WHERE schemaname = 'public'
+    GROUP BY 1 ORDER BY 2 DESC;
    SELECT sampled_at, tuples_total FROM app.read_volume_samples ORDER BY sampled_at DESC LIMIT 24;
    ```
 3. Descarte causas legítimas no mesmo período: deploy com consulta nova sem índice (`seq_scan` alto numa tabela),
-   pico de exportações (`data_export_jobs`), job reprocessado.
+   pico de exportações (`data_export_jobs`), job reprocessado, `pg_dump` ou backup lógico rodando no banco.
 4. Sem causa legítima: trate como incidente Crítico (`INCIDENT.md`): revogar sessões, girar segredos e a
    credencial do `app_user`, preservar os logs da hospedagem e do banco.
 5. Falso positivo recorrente: recalibre `VOLUME_LIMITS` (`src/modules/observability/volume.ts`) em PR, com o
@@ -45,7 +48,8 @@ por hora. É o sinal de código rodando como o runtime e lendo muitas contas (de
 Um mesmo papel `operador_<nome>` fez mais de 20 ações no AuditLog no período (registro, consulta sem pedido novo,
 leitura do contato, exclusão, fechamento).
 
-1. Como `app_migrator`, veja quem e o quê (o AuditLog guarda só o papel, a ação e IDs):
+1. Como `app_migrator`, veja quem e o quê (o AuditLog guarda só o papel, a ação e IDs). Consultas desfeitas por
+   ROLLBACK não ficam no AuditLog: procure `privacy_request_lookup operator_role=` no log do servidor do banco.
    ```sql
    SELECT operator_role, action, count(*) FROM audit_logs
     WHERE operator_role IS NOT NULL AND created_at > now() - interval '2 hours'

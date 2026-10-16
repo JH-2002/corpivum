@@ -4,33 +4,35 @@ import { logger as defaultLogger, type Logger } from '@/lib/logger';
 
 /**
  * Alerta de volume anômalo (P7-M1, 7b-R3, ADR-0038). O RLS não protege contra código que já executa como o
- * runtime (P7-M1): ele declara qualquer `app.user_id` e lê os dados de saúde de muitas contas. O sinal vem dos
- * contadores do Postgres (`app.security_volume_sample`, só no `app_worker`), que o runtime não altera:
- * tuplas lidas nas tabelas de saúde no período, comparadas com quantas pessoas usaram uma sessão no mesmo
- * período. E, do AuditLog, o maior número de ações de um mesmo papel de operador (consulta sem rastro, 7b-R3).
+ * runtime (P7-M1): ele declara qualquer `app.user_id` e lê os dados de muitas contas. O sinal vem dos contadores
+ * do Postgres (`app.security_volume_sample`, só no `app_worker`), que o runtime não altera: tuplas lidas nas tabelas
+ * de saúde, em `users` e em `consent_records` num período de relógio de cerca de 1 hora, comparadas com a mediana
+ * por hora dos 7 dias anteriores. Nada que o runtime grava (ex.: `sessions.last_seen_at`) entra no teto (revisão A1
+ * da 7c). E, do AuditLog, o maior número de ações de um mesmo papel de operador (7b-R3).
  *
- * Os tetos são a calibração inicial (sem tráfego real): ajustar com a operação (CHECKLIST_GO_LIVE). O alerta leva
+ * Os números são a calibração inicial (sem tráfego real): ajustar com a operação (CHECKLIST_GO_LIVE). O alerta leva
  * só contagem e teto; quem e o quê se apura no banco, pelo runbook (docs/runbooks/ALERTS.md).
  */
 export interface VolumeLimits {
+  /** Teto mínimo de leitura por hora (vale também enquanto não há 24 horas de histórico). */
   readFloorPerHour: number;
-  readPerActiveUserPerHour: number;
+  /** Quantas vezes a mediana por hora dos 7 dias anteriores o período pode ler. */
+  readBaselineMultiplier: number;
+  /** Ações de um mesmo papel de operador por hora (o teto do contato é 30/h; atendimento real é bem menor). */
   operatorActionsPerHour: number;
 }
 
 export const VOLUME_LIMITS: Readonly<VolumeLimits> = {
-  /** Leitura de base por hora, com ninguém ativo (jobs, exportações, relatórios). */
   readFloorPerHour: 100_000,
-  /** Leitura esperada por hora para cada pessoa com sessão usada (painel, gráficos, histórico). */
-  readPerActiveUserPerHour: 20_000,
-  /** Ações de um mesmo papel de operador por hora (o teto do contato é 30/h; atendimento real é bem menor). */
+  readBaselineMultiplier: 5,
   operatorActionsPerHour: 20,
 };
 
 export interface VolumeSample {
   tuplesRead: number;
-  activeUsers: number;
   windowMinutes: number;
+  /** Mediana das leituras por hora nos 7 dias anteriores; `null` com menos de 24 horas de histórico. */
+  baselinePerHour: number | null;
   operatorActionsMax: number;
 }
 
@@ -45,9 +47,11 @@ export function evaluateVolume(
   limits: Readonly<VolumeLimits> = VOLUME_LIMITS,
 ): VolumeEvaluation {
   const hours = Math.max(sample.windowMinutes, 1) / 60;
-  const readThreshold = Math.round(
-    (limits.readFloorPerHour + limits.readPerActiveUserPerHour * sample.activeUsers) * hours,
+  const perHour = Math.max(
+    limits.readFloorPerHour,
+    limits.readBaselineMultiplier * (sample.baselinePerHour ?? 0),
   );
+  const readThreshold = Math.round(perHour * hours);
   const operatorThreshold = Math.max(1, Math.round(limits.operatorActionsPerHour * hours));
   return {
     read: {
@@ -64,7 +68,7 @@ export function evaluateVolume(
 }
 
 export interface VolumeMonitor {
-  /** Amostra, avalia e alerta. `null` na primeira amostra (sem período para comparar). */
+  /** Amostra, avalia e alerta. `null` sem amostra de pelo menos 55 minutos atrás (sem período para comparar). */
   check(): Promise<VolumeEvaluation | null>;
 }
 
@@ -82,19 +86,19 @@ export function createVolumeMonitor(deps: {
       const rows = await deps.workerDb().$queryRaw<
         Array<{
           tuples_read: bigint;
-          active_users: number;
           window_minutes: number;
+          baseline_per_hour: bigint | null;
           operator_actions_max: number;
         }>
-      >`SELECT tuples_read, active_users, window_minutes, operator_actions_max
+      >`SELECT tuples_read, window_minutes, baseline_per_hour, operator_actions_max
           FROM app.security_volume_sample()`;
       const row = rows[0];
       if (!row) return null;
       const evaluation = evaluateVolume(
         {
           tuplesRead: Number(row.tuples_read),
-          activeUsers: row.active_users,
           windowMinutes: row.window_minutes,
+          baselinePerHour: row.baseline_per_hour === null ? null : Number(row.baseline_per_hour),
           operatorActionsMax: row.operator_actions_max,
         },
         deps.limits,

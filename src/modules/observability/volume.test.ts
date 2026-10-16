@@ -21,27 +21,30 @@ function fakeDb(rows: unknown[]): () => Db {
 }
 
 describe('evaluateVolume', () => {
-  it('teto de leitura cresce com as pessoas ativas e com a duração do período', () => {
-    const base = { tuplesRead: 0, activeUsers: 0, windowMinutes: 60, operatorActionsMax: 0 };
+  const base = { tuplesRead: 0, windowMinutes: 60, baselinePerHour: null, operatorActionsMax: 0 };
+
+  it('sem histórico vale o piso; com histórico, a mediana vezes o multiplicador; escala com o período', () => {
     expect(evaluateVolume(base).read.threshold).toBe(VOLUME_LIMITS.readFloorPerHour);
-    expect(evaluateVolume({ ...base, activeUsers: 10 }).read.threshold).toBe(
-      VOLUME_LIMITS.readFloorPerHour + 10 * VOLUME_LIMITS.readPerActiveUserPerHour,
+    expect(evaluateVolume({ ...base, baselinePerHour: 1_000 }).read.threshold).toBe(
+      VOLUME_LIMITS.readFloorPerHour,
+    );
+    expect(evaluateVolume({ ...base, baselinePerHour: 300_000 }).read.threshold).toBe(
+      300_000 * VOLUME_LIMITS.readBaselineMultiplier,
     );
     expect(evaluateVolume({ ...base, windowMinutes: 120 }).read.threshold).toBe(
       2 * VOLUME_LIMITS.readFloorPerHour,
     );
   });
 
-  it('leitura de muitas contas com poucas pessoas ativas é anômala; uso normal não', () => {
-    const quiet = { activeUsers: 3, windowMinutes: 60, operatorActionsMax: 0 };
-    expect(evaluateVolume({ ...quiet, tuplesRead: 90_000 }).read.anomalous).toBe(false);
-    expect(evaluateVolume({ ...quiet, tuplesRead: 2_000_000 }).read.anomalous).toBe(true);
+  it('leitura muito acima do normal é anômala; uso normal não', () => {
+    const usual = { ...base, baselinePerHour: 50_000 };
+    expect(evaluateVolume({ ...usual, tuplesRead: 90_000 }).read.anomalous).toBe(false);
+    expect(evaluateVolume({ ...usual, tuplesRead: 2_000_000 }).read.anomalous).toBe(true);
   });
 
   it('operador acima de 20 ações por hora é anômalo', () => {
-    const s = { tuplesRead: 0, activeUsers: 0, windowMinutes: 60 };
-    expect(evaluateVolume({ ...s, operatorActionsMax: 20 }).operator.anomalous).toBe(false);
-    expect(evaluateVolume({ ...s, operatorActionsMax: 21 }).operator.anomalous).toBe(true);
+    expect(evaluateVolume({ ...base, operatorActionsMax: 20 }).operator.anomalous).toBe(false);
+    expect(evaluateVolume({ ...base, operatorActionsMax: 21 }).operator.anomalous).toBe(true);
   });
 });
 
@@ -62,7 +65,12 @@ describe('createVolumeMonitor', () => {
     const records: LogRecord[] = [];
     const monitor = createVolumeMonitor({
       workerDb: fakeDb([
-        { tuples_read: 5_000_000n, active_users: 2, window_minutes: 60, operator_actions_max: 40 },
+        {
+          tuples_read: 5_000_000n,
+          window_minutes: 60,
+          baseline_per_hour: 28_000n,
+          operator_actions_max: 40,
+        },
       ]),
       reporter: () => reporter,
       logger: createLogger({ minLevel: 'debug', sink: (r) => records.push(r) }),

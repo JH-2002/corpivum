@@ -52,7 +52,7 @@ própria Fase 1a (ADR-0017), com teste; ficam listados para rastreabilidade.
 | PR1a-B2 | Bloqueio por conta permite travar o login de terceiros sabendo só o e-mail (também `resetAccount`). | LEG-S04 | Resolvido na Fase 1b: cookie de aparelho conhecido (ADR-0019, OI-15), com teste |
 | PR1a-B3 | Pepper dos códigos de recuperação é o `SESSION_SECRET`: girá-lo invalida todos os códigos. | LEG-S04 | **Resolvido na 7b (ADR-0037)**: pepper próprio `RECOVERY_CODE_PEPPER`; girar o `SESSION_SECRET` não invalida os códigos (teste de banco) |
 | PR1a-B4 | Pequena diferença de tempo no cadastro (e-mail novo × existente). | ADR-0014 | Resolvido: token e e-mail após a resposta (`after()`) |
-| PR1a-B5 | Erros do Prisma/Next fora do logger podem ecoar argumentos (hashes). | LEG-R04 | **Resolvido (7c, ADR-0038)**: Prisma `minimal`; `onRequestError` → `ErrorReporter` por lista de campos permitidos; guarda do `console.error`/`warn` em produção; teste de injeção |
+| PR1a-B5 | Erros do Prisma/Next fora do logger podem ecoar argumentos (hashes). | LEG-R04 | **Resolvido com residual (7c, ADR-0038)**: Prisma `minimal`; `onRequestError` → `ErrorReporter` por lista de campos permitidos; guarda do `console.error`/`warn` em produção; teste de injeção. Residual em 7c-R3 |
 | PR1a-B6 | `hm_age_block` só era checado nas páginas, não nas server actions do cadastro. | LEG-F01 | Resolvido: checado também nas actions |
 | PR1a-B7 | Políticas RLS chamavam função plpgsql por linha. | LEG-S03 | Resolvido: `(SELECT app.current_user_id())` |
 | PR1a-B8 | `app_user` podia alterar qualquer coluna de `users`. | LEG-S03 | Resolvido: UPDATE só nas colunas mutáveis (teste) |
@@ -227,7 +227,7 @@ Nenhum achado crítico nem alto. Os 3 médios e 4 dos 6 baixos foram corrigidos 
 |---|---|---|---|---|---|
 | 7b-R1 | Baixa | O limite do 2º fator por conta consulta (`rate_limit_peek`) e registra a falha em passos separados: uma rajada de tentativas simultâneas em várias sessões pendentes passa um pouco do teto de 10. | LEG-S04 | — | Aceito: o limite de 5 por sessão pendente e o de login (5 a cada 15 min por conta) seguem valendo. Revisitar se o pentest apontar |
 | 7b-R2 | Baixa | `app.audit_append_system` continua liberada ao `app_user`: o runtime pode gravar para a própria conta uma ação "do sistema" da lista fechada. | LEG-S06 | — | Aceito: o aviso de exclusão é gravado pela web e o efeito se limita à própria conta. Mover para o worker junto do worker dedicado (OI-14 a) |
-| 7b-R3 | Nota | `operator_request_register` sem conta para o e-mail não grava nada, então a consulta de e-mail pelo encarregado não deixa rastro; e uma só pessoa registra e executa a exclusão. | LEG-S06, OI-34 | 7c, CHECKLIST | Parcial: na 7c (ADR-0038) a consulta sem pedido novo grava AuditLog `privacy_request_lookup` com o papel e entra no alerta de mais de 20 ações por operador por hora. Aberto: duplo controle e não reuso de nomes de papel no CHECKLIST_GO_LIVE |
+| 7b-R3 | Nota | `operator_request_register` sem conta para o e-mail não grava nada, então a consulta de e-mail pelo encarregado não deixa rastro; e uma só pessoa registra e executa a exclusão. | LEG-S06, OI-34 | 7c, CHECKLIST | Parcial: na 7c (ADR-0038) a consulta sem pedido novo grava AuditLog `privacy_request_lookup` e `RAISE LOG` (não desfeito por ROLLBACK) com o papel e entra no alerta de mais de 20 ações por operador por hora (residual em 7c-R2). Aberto: duplo controle e não reuso de nomes de papel no CHECKLIST_GO_LIVE |
 
 ## Resolvidas
 
@@ -237,3 +237,14 @@ Nenhum achado crítico nem alto. Os 3 médios e 4 dos 6 baixos foram corrigidos 
 | OI-07, OI-08, OI-09, OI-21, OI-23 (partes de IA e recomendações) | Fechadas por escopo removido: sem assistente de IA nem recomendações automáticas (ADR-0030). Saem o Aviso de IA (OI-08), `disclaimer.aiGenerated` (OI-09), as recomendações do enquadramento (OI-07), a referência a LEG-I07 (OI-21) e a sugestão geral de rotina e o modo de risco da IA (OI-23 c, d). Os itens continuam abertos no restante. | 2026-10-14 | Responsável pelo produto (remoção da IA) |
 | OI-19 | Fechada por escopo removido: o diário e o humor saíram do produto (ADR-0027). A detecção de sinais de risco ficaria no chat da IA (LEG-I07, Fase 5) e nos guardrails de imagem corporal e alimentação (OI-23). **Atualização (ADR-0030, 2026-10-14):** sem IA, fica só nos guardrails (OI-23). | 2026-10-08 | Responsável pelo produto (reorientação) |
 | OI-15 | Cookie de aparelho conhecido (`__Host-hm_device`, HMAC sem banco): tentativas de aparelho conhecido contam num limite próprio; o bloqueio por conta só alcança aparelhos desconhecidos. Vale também para a redefinição de senha. A enumeração não é reaberta. Decisão técnica, sem questão jurídica pendente (ADR-0019). | 2026-10-07 | Responsável pelo projeto (aprovação do plano da Fase 1b) |
+
+### Fase 7c (observabilidade, ADR-0038)
+
+Revisão do `privacy-reviewer`: nada crítico; A1, M1, M2 e B1–B4 corrigidos (ver ADR-0038). Fica:
+
+| ID | Sev. | Achado | Referência | Sub-fase | Status |
+|---|---|---|---|---|---|
+| 7c-R1 | Média | O alerta de leitura compara com a mediana dos 7 dias anteriores: quem lê pouco por hora (poucas contas) ou sobe a leitura devagar ao longo de dias não dispara. Com a credencial do worker na web (OI-14 a), quem executa como o runtime também lê a amostra. | P7-M1, LEG-S03 | 7e, 7f, CHECKLIST | Aberto: worker dedicado (OI-14 a), log do banco (pgaudit) num canal externo e calibração com o beta; residual no RIPD (7f) |
+| 7c-R2 | Baixa | O encarregado consulta até 20 e-mails por hora sem alerta; o rastro que não é desfeito é o `RAISE LOG`, que só vale com o log do servidor do banco guardado fora do banco. | 7b-R3, LEG-S06 | CHECKLIST | Aberto: log do banco no canal externo; duplo controle (OI-34) |
+| 7c-R3 | Baixa | Fora da guarda e do `ErrorReporter`: `console.log`/`info` de dependências, escrita direta em `process.stderr` e erros de job (só `job.failed` com o nome do erro). Nenhum imprime dado de usuário hoje. | PR1a-B5, LEG-R04 | 7e | Aberto: revisar com o fornecedor da ferramenta de erros |
+| 7c-N1 | Nota | O `digest` do Next é hash de mensagem e pilha: com mensagem de poucos valores possíveis, quem lê o log poderia confirmar o valor por dicionário. Os erros da aplicação são tipados e sem dado. | LEG-R04 | — | Aceito |

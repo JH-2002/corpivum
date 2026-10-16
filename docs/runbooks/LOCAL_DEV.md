@@ -108,7 +108,9 @@ pnpm db:resync-migration <pasta_da_migracao> <funcao> [<funcao>...]
 ```
 O script recria só os blocos `CREATE [OR REPLACE] FUNCTION app.<funcao>` daquele arquivo e grava o checksum novo
 em `_prisma_migrations`, no banco de desenvolvimento e no de testes, como `app_migrator`; recusa host que não seja
-local. Serve só para funções: mudança de tabela, política ou GRANT pede `docker compose down -v` ou migração nova.
+local. Serve só para o corpo de funções: não reaplica GRANT/REVOKE e não muda assinatura nem tipo de retorno
+(nesses casos, `DROP FUNCTION` como `app_migrator` antes e os GRANTs da migração depois). Mudança de tabela ou
+política pede `docker compose down -v` ou migração nova.
 Migração que já está na `main` nunca muda: a correção vira migração nova.
 
 O `.gitattributes` força LF em `prisma/migrations/**` e `*.sql`, porque o checksum é do arquivo como está e CRLF

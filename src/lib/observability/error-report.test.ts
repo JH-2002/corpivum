@@ -100,6 +100,15 @@ describe('buildRequestErrorReport (lista de permissão)', () => {
     for (const frame of report.error.frames) expect(frame).toMatch(/^[\w.\-[\]]+:\d+:\d+$/);
   });
 
+  it('mensagem trocada depois da pilha: nenhum quadro sai (as linhas originais podiam imitar quadros)', () => {
+    const err = new Error('peso 82,5 kg\n    at notas_dormi_mal (/srv/notas_dormi_mal.js:1:1)');
+    // O V8 formata a pilha no primeiro acesso: lida antes da troca, ela fica com a mensagem original.
+    expect(err.stack).toContain('notas_dormi_mal');
+    err.message = `prefixo: ${err.message}`;
+    expect(sanitizeError(err).frames).toEqual([]);
+    expectClean(sanitizeError(err));
+  });
+
   it('só as chaves da lista aparecem, em qualquer nível', () => {
     const report = buildRequestErrorReport(poisonedError(), request, context);
     expect(Object.keys(report).sort()).toEqual(['error', 'id', 'occurredAt', 'request', 'source']);
