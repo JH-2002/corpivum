@@ -10,7 +10,7 @@ import { presentationHref, type PresentationScreen } from './screens';
 
 /**
  * Entrada do modo apresentação (ADR-0035): quem abre o endereço direto ainda não "entrou". O botão grava a
- * entrada (modo privacidade ligado, estado anterior guardado) antes de mostrar qualquer dado.
+ * entrada (modo privacidade ligado) antes de mostrar qualquer dado.
  */
 export function PresentationStart({ scope }: { scope: 'app' | 'demo' }) {
   const t = useTranslations('presentation');

@@ -1123,8 +1123,8 @@ peso, medidas, altura e calorias; o modo apresentação usa dados de demonstraç
   opção: é preferência de exibição, não consentimento, então pode vir marcada; LEG-C02 vale para consentimento).
 - **Modo apresentação (§45):** `/apresentacao` (conta, grupo `(presentation)`, fora do shell) e `/demo/apresentacao`
   (o shell do demo passou para `demo/(shell)`). Entrada e saída por server action (sem GET com efeito colateral):
-  entrar grava o estado anterior do modo privacidade em `__Host-hm_presenting` (sessão) e liga o modo; sair o
-  restaura (sem registro, fica ligado). Quem abre o endereço direto vê a tela de entrada antes de qualquer dado.
+  entrar marca a apresentação em `__Host-hm_presenting` e liga o modo; sair o mantém ligado, com aviso e botão
+  para desligar (OI-36 d; a versão inicial restaurava o estado anterior, ver revisão M2). Quem abre o endereço direto vê a tela de entrada antes de qualquer dado.
   Quatro telas (painel, corpo 3D, timeline sem filtros, relatório do mês) com os mesmos componentes e selos; setas,
   PageUp/PageDown, Home/End e botões navegam (as setas não agem dentro de campos e do controle de datas), Esc sai (em
   tela cheia, o navegador usa o Esc para sair dela), foco no título a cada troca, Fullscreen API quando existe (senão
@@ -1134,7 +1134,7 @@ peso, medidas, altura e calorias; o modo apresentação usa dados de demonstraç
   `hidden`, telas da apresentação); banco (purga das provas de reautenticação); e2e `e2e/privacy-mode.spec.ts`
   (nenhum valor kg/cm/kcal no texto e nenhum valor gravado da pessoa no HTML de início, corpo, twin, metas, timeline,
   alimentação e relatórios, com controle positivo; demo; cookie de sessão; axe) e `e2e/presentation.spec.ts`
-  (teclado, foco, Esc, privacidade ligada na entrada e restaurada na saída, "meus dados", sem consentimento, axe, sem
+  (teclado, foco, Esc, privacidade ligada na entrada e mantida ligada na saída (OI-36 d), "meus dados", sem consentimento, axe, sem
   IMC, 320 e 1920 px). A CI mede o JS de entrada das rotas da apresentação (o three.js segue sob demanda) e migra o
   banco de testes antes de subir o servidor do e2e (os jobs da subida falhavam contra um banco vazio).
 **Revisão de privacidade (nada crítico nem alto; 2 médios, 5 baixos, 8 notas).** Corrigido, com teste:
@@ -1149,9 +1149,15 @@ peso, medidas, altura e calorias; o modo apresentação usa dados de demonstraç
   tela de corpo). **N2:** Zod na action do modo. **N4:** o piso de `PROOF_RETENTION_DAYS` (365) entra em
   `assertRetentionPolicy` e no `check:retention`. **N5:** avisos fixos (`disclaimer.wellbeingOnly` e, no demo,
   `disclaimer.demoData`) no rodapé da apresentação. **N6:** chave `twin.controls.hidden` removida.
-**Não alterado.** **M2** (sair da apresentação restaura o modo desligado e mostra os valores em seguida, um Esc depois
-de sair da tela cheia): é a decisão do plano ("ao sair, volta ao estado anterior"); o risco fica registrado em OI-36(d)
-para decisão do produto. **B1** (no demo, as medidas fictícias vão ao twin com o modo ligado, para a forma fictícia
+**M2** (sair da apresentação restaurava o modo desligado e mostrava os valores em seguida, um Esc depois de sair da
+tela cheia): **resolvido por decisão do produto (2026-10-15, OI-36 d), substituindo o "volta ao estado anterior" do
+plano**: ao sair, o modo privacidade continua ligado; o destino (`/inicio` ou `/demo`, com `?apresentacao=encerrada`)
+mostra no indicador "Você saiu da apresentação. O modo privacidade continua ligado..." e o botão para desligar.
+`__Host-hm_presenting` passa a guardar só `on.<expiração>` (apresentação em curso, cookie de sessão com o prazo de 4 h
+no valor), sem o estado anterior; o aviso aparece uma vez, leva o foco e o parâmetro sai da URL. Exceção aceita: quem
+desliga o modo dentro do deck e sai pelo voltar do navegador chega com o modo desligado (escolheu mostrar os valores;
+OI-36 d). e2e na conta e no demo.
+**Não alterado.** **B1** (no demo, as medidas fictícias vão ao twin com o modo ligado, para a forma fictícia
 continuar): dado sintético, decisão registrada acima; o e2e confere só dados próprios no HTML.
 **Consequências.** PR4-B8 e PR1b-R2-B1 fechados; OI-23(e) feito na parte técnica. Os cookies de preferência e os
 textos `privacyMode.*`/`presentation.*` são RASCUNHO (`LEGAL-REVIEW`, OI-36). O modo privacidade some ao fechar o

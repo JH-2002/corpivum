@@ -146,7 +146,7 @@ function TodayHabits({
  * Dashboard "Seu estado atual" (§11, §12). Estados: vazio (nunca registrou), sem dados no período,
  * parcial (algum domínio sem registro) e completo. Todo valor tem selo (§39). Nenhum gráfico vazio.
  * Modo privacidade (`hidden`, ADR-0035): o card do corpo chega sem peso (`maskDashboard`) e mostra "oculto".
- * `links={false}` (modo apresentação): nada leva para fora do deck, que sairia sem restaurar o modo.
+ * `links={false}` (modo apresentação): nada leva para fora do deck, que sairia pelo caminho que não passa pela saída da apresentação.
  */
 export function Dashboard({
   data,
