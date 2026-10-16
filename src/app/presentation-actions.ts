@@ -11,8 +11,9 @@ import { enterPresentation, exitPresentation } from '@/lib/presentation-server';
  */
 const scopeSchema = z.enum(['app', 'demo']);
 const DESTINATION = {
-  app: { enter: '/apresentacao', exit: '/inicio' },
-  demo: { enter: '/demo/apresentacao', exit: '/demo' },
+  // `?apresentacao=encerrada`: o destino avisa que o modo privacidade continua ligado (OI-36 d).
+  app: { enter: '/apresentacao', exit: '/inicio?apresentacao=encerrada' },
+  demo: { enter: '/demo/apresentacao', exit: '/demo?apresentacao=encerrada' },
 } as const;
 
 function scopeOf(form: FormData) {

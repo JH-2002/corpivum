@@ -1,7 +1,9 @@
 'use client';
 
 import { Eye, EyeOff } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Suspense } from 'react';
 import { cn } from '@/lib/cn';
 import { usePrivacyMode } from './PrivacyModeProvider';
 
@@ -33,7 +35,17 @@ export function PrivacyModeToggle() {
   );
 }
 
-/** Indicador visível enquanto o modo está ligado (texto, não só o estado do botão). */
+/** Depois de sair da apresentação: o modo continua ligado de propósito (OI-36 d). */
+function LeftPresentationNote() {
+  const t = useTranslations('privacyMode');
+  const left = useSearchParams().get('apresentacao') === 'encerrada';
+  return left ? <span className="basis-full font-semibold">{t('afterPresentation')}</span> : null;
+}
+
+/**
+ * Indicador visível enquanto o modo está ligado (texto, não só o estado do botão), com o botão para
+ * desligar. Ao voltar da apresentação, diz também que o modo continuou ligado.
+ */
 export function PrivacyModeIndicator() {
   const t = useTranslations('privacyMode');
   const { hidden, setHidden } = usePrivacyMode();
@@ -43,6 +55,9 @@ export function PrivacyModeIndicator() {
       role="status"
       className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border bg-primary-soft px-4 py-2 text-sm text-primary-soft-fg lg:px-6"
     >
+      <Suspense fallback={null}>
+        <LeftPresentationNote />
+      </Suspense>
       <EyeOff className="size-4 shrink-0" aria-hidden="true" />
       <span className="font-semibold">{t('active')}</span>
       <span>{t('activeHint')}</span>

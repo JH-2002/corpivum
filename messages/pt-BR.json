@@ -1734,7 +1734,8 @@
     "valuesHidden": "Valores ocultos",
     "valuesHiddenHint": "Desligue o modo privacidade para ver os valores.",
     "editHidden": "Para editar este registro, desligue o modo privacidade.",
-    "goalHidden": "Alvo e progresso ocultos no modo privacidade."
+    "goalHidden": "Alvo e progresso ocultos no modo privacidade.",
+    "afterPresentation": "Você saiu da apresentação. O modo privacidade continua ligado para os valores não aparecerem na tela."
   },
   "presentation": {
     "title": "Modo apresentação",
@@ -1742,7 +1743,7 @@
     "start": "Começar apresentação",
     "back": "Voltar",
     "startBody": "Tela cheia com quatro telas: painel, corpo 3D, timeline e relatório do mês. Use as setas do teclado ou os botões para navegar e Esc para sair.",
-    "startPrivacy": "A apresentação começa com dados de demonstração e com o modo privacidade ligado: peso, medidas, altura e calorias ficam ocultos. Ao sair, o modo privacidade volta ao que era antes.",
+    "startPrivacy": "A apresentação começa com dados de demonstração e com o modo privacidade ligado: peso, medidas, altura e calorias ficam ocultos. Ao sair, o modo privacidade continua ligado; você pode desligá-lo depois, no aviso ou no botão do topo.",
     "exit": "Sair da apresentação",
     "fullscreen": "Tela cheia",
     "previous": "Anterior",

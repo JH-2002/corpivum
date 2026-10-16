@@ -69,10 +69,17 @@ test.describe('demo público', () => {
     await expectScreen(page, 'Corpo 3D', 2);
 
     await page.keyboard.press('Escape');
-    await expect(page).toHaveURL(/\/demo$/);
-    // Antes estava desligado: volta desligado.
+    await expect(page).toHaveURL(/\/demo\?apresentacao=encerrada$/);
+    // Antes estava desligado, mas ao sair o modo CONTINUA ligado, com aviso e botão para desligar (OI-36 d).
+    expect(await privacyCookie(page)).toBe('on');
+    await expect(
+      page.getByText('Você saiu da apresentação. O modo privacidade continua ligado'),
+    ).toBeVisible();
+    expect(await page.locator('main').innerText()).not.toMatch(UNIT_VALUE);
+    await page.getByRole('button', { name: 'Desligar o modo privacidade' }).click();
     await expect.poll(() => privacyCookie(page)).toBe('off');
     await expect(page.getByText('Modo privacidade ativo.')).toHaveCount(0);
+    await expect(page.locator('main')).toContainText(UNIT_VALUE);
   });
 
   test('o endereço direto passa pela entrada antes de mostrar dados', async ({ page }) => {
@@ -127,7 +134,7 @@ test.describe('demo público', () => {
 test.describe('conta', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('"meus dados" opcional; sair devolve o modo privacidade que estava ligado', async ({
+  test('"meus dados" opcional; desligado dentro do deck, sair liga de novo e avisa', async ({
     browser,
   }) => {
     test.setTimeout(90_000);
@@ -139,9 +146,8 @@ test.describe('conta', () => {
     await loginWithOwnIp(page, email);
     await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
 
-    // Liga antes de entrar e desliga dentro da apresentação: ao sair, volta ligado.
-    await page.getByRole('button', { name: 'Modo privacidade', exact: true }).click();
-    await expect.poll(() => privacyCookie(page)).toBe('on');
+    // Entra com o modo desligado no shell; desliga também dentro da apresentação; ao sair, fica ligado.
+    expect(await privacyCookie(page)).toBeUndefined();
     await page.getByRole('button', { name: 'Ajuda' }).click();
     await page.getByRole('button', { name: 'Modo apresentação' }).click();
     await expect(page).toHaveURL(/\/apresentacao$/);
@@ -163,9 +169,19 @@ test.describe('conta', () => {
     await page.getByRole('button', { name: 'Modo privacidade', exact: true }).click();
     await expect.poll(() => privacyCookie(page)).toBe('off');
     await page.getByRole('button', { name: 'Sair da apresentação' }).click();
-    await expect(page).toHaveURL(/\/inicio$/);
-    await expect.poll(() => privacyCookie(page)).toBe('on');
+    await expect(page).toHaveURL(/\/inicio\?apresentacao=encerrada$/);
+    expect(await privacyCookie(page)).toBe('on');
     await expect(page.getByText('Modo privacidade ativo.')).toBeVisible();
+    await expect(
+      page.getByText('Você saiu da apresentação. O modo privacidade continua ligado'),
+    ).toBeVisible();
+    expect(await page.locator('main').innerText()).not.toMatch(UNIT_VALUE);
+    // Sem o aviso de saída fora da volta da apresentação.
+    await page.goto('/inicio');
+    await expect(page.getByText('Modo privacidade ativo.')).toBeVisible();
+    await expect(
+      page.getByText('Você saiu da apresentação. O modo privacidade continua ligado'),
+    ).toHaveCount(0);
     await context.close();
   });
 
