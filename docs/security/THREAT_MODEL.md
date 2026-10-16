@@ -51,7 +51,7 @@ disponibilidade).
    │                                     ┌─────────────┼──────────────┬─────────────────┐
    │                                     ▼             ▼              ▼                 ▼
    │                         PostgreSQL (app_user,  KmsProvider   StorageProvider   MailProvider ──▶ e-mail (provável fora do BR)
-   │                         RLS + SET LOCAL;       (DEK por      (exports/,         ErrorReporter ──▶ erros (7c, provável fora do BR)
+   │                         RLS + SET LOCAL;       (DEK por      (exports/,         ErrorReporter ──▶ log filtrado (7c); fornecedor no CHECKLIST
    │                         SECURITY DEFINER       escrita)      cifrado)
    │                         no pré-login)
    │                                     ▲
@@ -79,7 +79,7 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 | T | Clickjacking | `frame-ancestors 'none'` + `X-Frame-Options: DENY` | — |
 | I | Token de verificação ou reset no endereço (query string) fica nos logs da hospedagem e no histórico | Uso único, vida curta (24 h / 30 min), só o hash no banco, `Referrer-Policy: no-referrer` | Média: **TM-01** |
 | I | Dado de conta em cache compartilhado | `Cache-Control: private, no-store` em toda resposta que passa pelo proxy, inclusive prefetch e redirecionamento sem sessão (7b, P7-N1: o matcher não tem mais exceção para prefetch); download com `no-store` | Resolvido na 7b: e2e TM-02 |
-| I | Mensagens de erro com detalhes internos | `errorFormat: 'minimal'` no Prisma; páginas de erro genéricas | Média até a 7c: `onRequestError` sem remoção de PII (PR1a-B5) |
+| I | Mensagens de erro com detalhes internos | `errorFormat: 'minimal'` no Prisma; páginas de erro genéricas; `onRequestError` → `ErrorReporter` por lista de campos permitidos e guarda do `console.error`/`warn` em produção (7c, ADR-0038) | Resolvido na 7c (PR1a-B5): teste de injeção com medidas, notas, e-mail, token e cookie |
 | I | Leitura do HTML por quem está perto (A5) | Modo privacidade omite os valores no servidor (ADR-0035) | Baixa |
 | D | Esgotamento por geração de PDF ou exportação | Um pedido por vez, 5 por 24 h, trava por pessoa, fila | Baixa |
 | D | Abuso do demo público | Sem banco de usuário; dados gerados | Baixa: **TM-03** (sem limite por IP na hospedagem; definir com a hospedagem) |
@@ -90,7 +90,7 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 | STRIDE | Ameaça | Controle atual | Residual |
 |---|---|---|---|
 | E | IDOR entre contas (A2) | RLS por `user_id` com `SET LOCAL app.user_id` em transação; sem o setting, zero linhas; teste de isolamento entre duas contas (LEG-S03) | Baixa |
-| E | Código executando como o runtime (A8, A9) declara qualquer `app.user_id` e passa nas políticas de qualquer conta; com o KMS do runtime, decifra os textos; com `auth_issue_token` (aceita usuário e hash do chamador) toma contas; com `reauth_issue` + `account_delete` exclui contas | O RLS protege contra erro de aplicação (A2), **não** contra quem já executa código no servidor; segredos fora do repositório; dependências fixas e varridas (F9) | **Média**: P7-M1. Avaliado na 7b (ADR-0037): amarrar o contexto à sessão não foi feito (custo alto, ganho parcial). Mitigado: varreduras, expurgos e purga só no `app_worker`, `deleted_at` fora do runtime e purga só com pedido de exclusão. Alerta de volume anômalo na 7c; residual no RIPD (7f) |
+| E | Código executando como o runtime (A8, A9) declara qualquer `app.user_id` e passa nas políticas de qualquer conta; com o KMS do runtime, decifra os textos; com `auth_issue_token` (aceita usuário e hash do chamador) toma contas; com `reauth_issue` + `account_delete` exclui contas | O RLS protege contra erro de aplicação (A2), **não** contra quem já executa código no servidor; segredos fora do repositório; dependências fixas e varridas (F9) | **Média**: P7-M1. Avaliado na 7b (ADR-0037): amarrar o contexto à sessão não foi feito (custo alto, ganho parcial). Mitigado: varreduras, expurgos e purga só no `app_worker`, `deleted_at` fora do runtime e purga só com pedido de exclusão. Alerta de volume anômalo feito na 7c (ADR-0038): contadores do Postgres por hora × pessoas ativas, no `app_worker`; detecta leitura em massa, não leitura lenta de poucas contas. Residual no RIPD (7f) |
 | E | Tratamento sem consentimento | `app.has_active_consent('health_data')` nas políticas das tabelas de saúde + guard na aplicação na mesma transação; teste pelo catálogo (ADR-0021) | Baixa |
 | E | Abuso das funções SECURITY DEFINER | `search_path` fixo (teste em `pg_proc`), sem SQL dinâmico, retorno mínimo, `EXECUTE` só para `app_user` | Resolvido na 7b (ADR-0037): funções de job só no `app_worker`; AuditLog do sistema por função própria com lista fechada (PR1b-M1 residual, PR1b-B3, PR1b-B2) |
 | T | Alteração de colunas sensíveis pelo runtime | UPDATE por coluna em `users` | Média: `sessions` aceita UPDATE em todas as colunas (PR1a-R2-B5) |
@@ -128,7 +128,9 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 
 | STRIDE | Ameaça | Controle atual | Residual |
 |---|---|---|---|
-| I | Erro carrega argumentos, corpo, cookies ou medidas | Logger com lista fechada de campos e formatos (LEG-R04); Prisma `minimal` | Média até a 7c: `ErrorReporter` com lista de permissão e teste de injeção (D2) |
+| I | Erro carrega argumentos, corpo, cookies ou medidas | Relatório montado por lista de campos permitidos antes do adaptador (nome, código, `digest`, causa, quadros sem pasta; método e rota como arquivo); nunca mensagem, `request.path`, cabeçalhos ou corpo; teste de injeção; logger com lista fechada (LEG-R04, ADR-0038) | Resolvido na 7c. Fornecedor externo, região e DPA no CHECKLIST (OI-03, OI-11) |
+| I | Next ou dependência imprime o erro original no console da hospedagem | Guarda do `console.error`/`warn` em produção: só linhas do logger (filtradas de novo), erro reduzido, números | Baixa: `console.log`/`info` de dependências não passa pela guarda (nenhuma imprime dado de usuário hoje) |
+| R | Alerta suprimido por quem já executa como o runtime | Amostra pelos contadores do Postgres, lida só pelo `app_worker`; o runtime não grava nem lê as amostras | Média: o alerta sai pelo log da instância do worker; canal de alerta fora da aplicação no CHECKLIST |
 
 ### F7 Operador ↔ banco
 

@@ -121,4 +121,6 @@ O `pnpm db:seed` grava no banco de **desenvolvimento** (é para usar o app logad
 - **Somente dados sintéticos.** Nunca use dados reais, nem os seus (CLAUDE.md regra 6).
 - Nunca commitar `.env`, chaves ou dumps de banco.
 - Para ver um estado de tela: `?state=loading|error|no-data|partial` (desligado em produção).
-- Logs: use `logger` de `src/lib/logger.ts`; ele só aceita metadados (LEG-R04).
+- Logs: use `logger` de `src/lib/logger.ts`; ele só aceita metadados (LEG-R04). Erros do servidor vão ao
+  `ErrorReporter` pelo `onRequestError`, já filtrados (ADR-0038): em dev aparecem como `error.request` no terminal,
+  com o `digest` da página de erro; a mensagem original continua no terminal só fora de produção.

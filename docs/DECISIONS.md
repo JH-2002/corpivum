@@ -1295,3 +1295,47 @@ gravado na web e o efeito se limita à própria conta.
 `RECOVERY_CODE_PEPPER`; o `OPERATOR_DATABASE_URL` passa a usar `operador_dev`. Volumes antigos: `pnpm
 db:operator:init && pnpm db:worker:init` antes de `pnpm db:deploy`. Migrações `fase_7b_papeis`, `fase_7b_direitos`,
 `fase_7b_auth`, `fase_7b_lembretes`, `fase_7b_revisao`.
+
+## ADR-0038 — Fase 7c: observabilidade sem dado pessoal (ErrorReporter, guarda do console, alerta de volume)
+**Contexto.** ADR-0036 D2 e os itens marcados para a 7c: PR1a-B5 (erros fora do logger), P7-M1 (alerta de volume
+anômalo de leitura) e 7b-R3 (consulta do encarregado sem rastro). LEG-R04: logs sem dado de saúde e remoção de PII
+na ferramenta de erros. O fornecedor da ferramenta ainda não foi escolhido (OI-03, OI-11).
+**Decisão — relatório de erro.**
+- Adaptador `ErrorReporter` (`src/adapters/error-reporter`): `console` grava o relatório no log estruturado e vale
+  também em produção (é o próprio log filtrado); `memory` só para testes, recusado em produção pelo `parseEnv`
+  (`ERROR_REPORTER`). O fornecedor externo entra depois do CHECKLIST, em SUBPROCESSORS.
+- O `onRequestError` monta o relatório por **lista de campos permitidos** antes de qualquer adaptador
+  (`src/lib/observability/error-report.ts`): do erro, nome, código (`AppError`, Prisma, SQLSTATE, Node), `digest`
+  numérico do Next, nome e código de um nível da causa e até 10 quadros `arquivo:linha:coluna` sem pasta (a pasta
+  pode ter o nome de quem roda); da requisição, só o método e a rota como arquivo (`context.routePath`). Nunca a
+  mensagem (nem as linhas dela que imitam quadros), propriedades extras, `request.path` (query e valores dos
+  segmentos), cabeçalhos, cookies ou corpo. Cada campo tem formato fechado; getter que lança ou Proxy não derruba o
+  relatório, e falha ao relatar vira só `error.report_failed`.
+- **Guarda do console em produção** (`installConsoleGuard`, no `register()`): o `onRequestError` não impede o Next
+  de imprimir o erro original. `console.error`/`warn` só deixam passar linha do logger (filtrada de novo), erro
+  reduzido como no relatório, números e booleanos; o resto vira `[redacted]`. Em desenvolvimento a mensagem
+  continua no terminal (dados sintéticos).
+- Teste de injeção (`error-report.test.ts`): medidas, notas, alimentação, e-mail, telefone, token e cookie na
+  mensagem, na causa, em propriedades extras, no `digest` de redirecionamento, no caminho, nos cabeçalhos e no corpo;
+  nada sai no relatório, no log nem no console.
+**Decisão — revisão do esquema do logger.** Saem os campos sem uso (`durationMs`, `status`, `region`); `requestId`
+vira `privacyRequestId` (era o id do pedido do titular e se confundiria com o id de relatório); entram só `reportId`,
+`errorName`, `digest`, `route` (formato de rota como arquivo), `routeType`, `method`, `frame` (formato de quadro) e
+`threshold`. `userId` continua (UUID técnico, nunca e-mail). `sanitizeLogLine` refiltra uma linha já serializada
+(usada pela guarda).
+**Decisão — alerta de volume (P7-M1).** Job `observability.volume_check` de hora em hora, no `app_worker`: a função
+`app.security_volume_sample()` lê os contadores do Postgres (`pg_stat_user_tables`, tuplas lidas por varredura e
+por índice) das tabelas de saúde, guarda o total em `app.read_volume_samples` (fora do `public`, sem acesso de
+`app_user`, `app_worker` nem operador; 7 dias) e devolve, desde a amostra anterior, as tuplas lidas, as pessoas com
+sessão usada e a duração. Alerta `security.read_volume_anomaly` acima de `100.000 + 20.000 × pessoas ativas` por
+hora (calibração inicial, sem tráfego real; ajuste no CHECKLIST). O runtime não altera nem zera esses contadores, e
+o sinal não depende de o código passar pelo app. Limites: não pega leitura lenta de poucas contas, e o alerta sai
+pelo log do worker (canal externo no CHECKLIST).
+**Decisão — 7b-R3.** `operator_request_register` grava AuditLog `privacy_request_lookup` (só o papel; sem pessoa no
+caso de e-mail sem conta) quando não abre pedido. A mesma amostra devolve o maior número de ações de um papel de
+operador no período: acima de 20 por hora, `security.operator_volume_anomaly`. Duplo controle continua no CHECKLIST.
+**Consequências.** `.env` ganha `ERROR_REPORTER` (padrão `console`). Migração `fase_7c_observabilidade`. Runbook
+`docs/runbooks/ALERTS.md`. `db:verify-roles` confere que só o `app_worker` executa a amostra e que ninguém lê as
+amostras. Preparação da sub-fase: `.gitattributes` força LF em `prisma/migrations/**` e `*.sql` (checksum das
+migrações no Windows) e `pnpm db:resync-migration` reaplica funções de uma migração da branch já aplicada nos bancos
+locais (`LOCAL_DEV.md`).
