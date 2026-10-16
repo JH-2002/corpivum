@@ -170,7 +170,10 @@ export function createPrivacyService(deps: PrivacyDeps) {
           dueAt: longDate.format(request.dueAt),
           url: `${deps.appUrl}/privacidade#pedidos`,
         });
-        logger.info('privacy.request_opened', { requestId: request.id, operation: request.kind });
+        logger.info('privacy.request_opened', {
+          privacyRequestId: request.id,
+          operation: request.kind,
+        });
       }
       return { status: 'ok', request, created: opened.created };
     },
@@ -235,7 +238,7 @@ export function createPrivacyService(deps: PrivacyDeps) {
       await deps.queue
         .enqueue(ACCOUNT_PURGE_JOB, { userId }, { singletonKey: accountPurgeKey(userId) })
         .catch(() => logger.warn('privacy.account_purge_enqueue_failed'));
-      logger.info('privacy.account_deleted', { requestId: deleted.id });
+      logger.info('privacy.account_deleted', { privacyRequestId: deleted.id });
       return 'deleted';
     },
 

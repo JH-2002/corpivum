@@ -1,5 +1,6 @@
 import { getEnv, type Env } from '@/lib/env';
 import { createAgeSignalProvider, type AgeSignalProvider } from './age-signal';
+import { createErrorReporter, type ErrorReporter } from './error-reporter';
 import { createJobQueue, type JobQueue } from './jobs';
 import { createKmsProvider, type KmsProvider } from './kms';
 import { createMailProvider, type MailProvider } from './mail';
@@ -17,6 +18,7 @@ export interface Adapters {
   jobs: JobQueue;
   ageSignal: AgeSignalProvider;
   wearable: WearableProvider;
+  errorReporter: ErrorReporter;
 }
 
 export function createAdapters(env: Env): Adapters {
@@ -27,6 +29,7 @@ export function createAdapters(env: Env): Adapters {
     jobs: createJobQueue(env),
     ageSignal: createAgeSignalProvider(env),
     wearable: createWearableProvider(env),
+    errorReporter: createErrorReporter(env),
   };
 }
 

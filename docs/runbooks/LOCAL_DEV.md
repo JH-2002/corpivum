@@ -99,10 +99,30 @@ pnpm db:deploy
 ```
 Com o pepper novo, os códigos de recuperação de contas de desenvolvimento com MFA deixam de valer: gere outros.
 
+### Migração da branch alterada depois de aplicada
+Se uma função de uma migração **da branch em curso** muda depois de aplicada, o `prisma migrate dev` acusa
+checksum diferente e oferece apagar o banco. Em vez disso:
+```sh
+pnpm db:resync-migration <pasta_da_migracao> <funcao> [<funcao>...]
+# ex.: pnpm db:resync-migration 20261016160000_fase_7b_revisao exports_mark_file_deleted
+```
+O script recria só os blocos `CREATE [OR REPLACE] FUNCTION app.<funcao>` daquele arquivo e grava o checksum novo
+em `_prisma_migrations`, no banco de desenvolvimento e no de testes, como `app_migrator`; recusa host que não seja
+local. Serve só para o corpo de funções: não reaplica GRANT/REVOKE e não muda assinatura nem tipo de retorno
+(nesses casos, `DROP FUNCTION` como `app_migrator` antes e os GRANTs da migração depois). Mudança de tabela ou
+política pede `docker compose down -v` ou migração nova.
+Migração que já está na `main` nunca muda: a correção vira migração nova.
+
+O `.gitattributes` força LF em `prisma/migrations/**` e `*.sql`, porque o checksum é do arquivo como está e CRLF
+no Windows o mudaria. Se um arquivo de migração ficou com CRLF de antes da regra:
+`git add --renormalize prisma/migrations` e `git checkout -- prisma/migrations`.
+
 O `pnpm db:seed` grava no banco de **desenvolvimento** (é para usar o app logado com dados sintéticos).
 
 ## Regras
 - **Somente dados sintéticos.** Nunca use dados reais, nem os seus (CLAUDE.md regra 6).
 - Nunca commitar `.env`, chaves ou dumps de banco.
 - Para ver um estado de tela: `?state=loading|error|no-data|partial` (desligado em produção).
-- Logs: use `logger` de `src/lib/logger.ts`; ele só aceita metadados (LEG-R04).
+- Logs: use `logger` de `src/lib/logger.ts`; ele só aceita metadados (LEG-R04). Erros do servidor vão ao
+  `ErrorReporter` pelo `onRequestError`, já filtrados (ADR-0038): em dev aparecem como `error.request` no terminal,
+  com o `digest` da página de erro; a mensagem original continua no terminal só fora de produção.

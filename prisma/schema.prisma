@@ -318,6 +318,8 @@ enum AuditAction {
   onboarding_expiry_notice_sent
   account_expired_onboarding
   privacy_request_registered
+  /// Consulta do encarregado que não abriu pedido (e-mail sem conta ou pedido já aberto), 7b-R3/ADR-0038.
+  privacy_request_lookup
 
   @@map("audit_action")
 }

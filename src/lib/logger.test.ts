@@ -9,7 +9,7 @@ function capture() {
 describe('logger', () => {
   it('grava apenas metadados tipados', () => {
     const { records, logger } = capture();
-    logger.info('job.completed', { jobName: 'reminder.dispatch', count: 1, durationMs: 5 });
+    logger.info('job.completed', { jobName: 'reminder.dispatch', count: 1 });
     expect(records[0]).toMatchObject({
       level: 'info',
       event: 'job.completed',
@@ -36,17 +36,32 @@ describe('logger', () => {
     logger.info('ai.request', {
       operation: 'conteúdo livre: tomei 2 comprimidos',
       recipient: 'pessoa@exemplo.com',
-      durationMs: Number.NaN,
-      status: 200,
+      count: Number.NaN,
+      attempt: 2,
       template: 'email-verification',
     });
     expect(records[0]).toMatchObject({
       operation: REDACTED,
       recipient: REDACTED,
-      durationMs: REDACTED,
-      status: 200,
+      count: REDACTED,
+      attempt: 2,
       template: 'email-verification',
     });
+  });
+
+  it('rota só como arquivo do App Router; caminho com query ou espaço vira [redacted]', () => {
+    const { records, logger } = capture();
+    logger.error('error.request', { route: '/(app)/corpo/[id]/page' });
+    logger.error('error.request', { route: '/corpo?peso=82' });
+    logger.error('error.request', { route: '/notas/dormi mal' });
+    expect(records.map((r) => r.route)).toEqual(['/(app)/corpo/[id]/page', REDACTED, REDACTED]);
+  });
+
+  it('não aceita mais os campos retirados na revisão do esquema (ADR-0038)', () => {
+    const { records, logger } = capture();
+    const meta = { requestId: 'r1', durationMs: 5, status: 200, region: 'gru1', userId: 'u1' };
+    logger.info('job.completed', meta);
+    expect(Object.keys(records[0] ?? {}).sort()).toEqual(['event', 'level', 'ts', 'userId']);
   });
 
   it('aceita destinatário já mascarado', () => {

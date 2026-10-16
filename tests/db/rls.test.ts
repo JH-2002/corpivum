@@ -223,6 +223,8 @@ describe('privilégios e funções SECURITY DEFINER (ADR-0015)', () => {
       'onboarding_expiry_notices_due',
       'onboarding_expiry_notice_mark',
       'onboarding_expired_purge',
+      // Alerta de volume (ADR-0038, P7-M1).
+      'security_volume_sample',
     ]);
     expect(
       rows

@@ -54,6 +54,9 @@ Adaptadores trocáveis: `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQu
 - **Criptografia de campo × busca:** campos criptografados (notas, descrição de refeição, nomes de hábito e de
   exercício) não são pesquisáveis no banco. Filtros só por data e campos não sensíveis; agrupar por nome cifrado
   só em memória, depois de decifrar.
+- **Arquivos temporários:** nunca criar arquivos em `C:\JOOHOM~1` (o caminho curto do Windows mal resolvido) nem
+  em qualquer lugar fora do repositório. Arquivo temporário vai no scratchpad da sessão; o que precisa durar vai
+  para o repositório (ex.: `scripts/`).
 
 ## Convenções
 - Sem `any`. Zod em toda entrada. Erros tipados. Strings de UI em i18n.
