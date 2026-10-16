@@ -219,15 +219,7 @@ test('revogada, a sessão cai também na navegação pelo cliente (sem recarrega
 });
 
 test.describe('acessibilidade das telas de conta (axe)', () => {
-  for (const path of ['/entrar', '/cadastro', '/recuperar-senha', '/redefinir-senha']) {
-    test(`${path} sem violações`, async ({ page }) => {
-      await page.goto(path);
-      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
-      expect(results.violations.map((v) => v.id)).toEqual([]);
-    });
-  }
-
+  // As telas de conta em si estão no a11y.spec.ts (inventário de todas as páginas, claro e escuro, 7d).
   test('erros de login são anunciados e recebem foco', async ({ page }) => {
     await login(page, e2eEmail('a11y'), 'senha errada sintética');
     const alert = page.locator('form [role="alert"]');

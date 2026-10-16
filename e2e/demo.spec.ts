@@ -64,21 +64,7 @@ test('"Como é calculado" explica componentes, pesos e exclusões', async ({ pag
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 
-for (const colorScheme of ['light', 'dark'] as const) {
-  test.describe(`demo sem violações (axe) — tema ${colorScheme}`, () => {
-    test.use({ colorScheme });
-    for (const route of DEMO_ROUTES) {
-      test(`${route.path}`, async ({ page }) => {
-        await page.goto(route.path);
-        await expect(page.getByRole('heading', { level: 1, name: route.title })).toBeVisible();
-        const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
-        expect(
-          results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(', ')}`),
-        ).toEqual([]);
-      });
-    }
-  });
-}
+// axe do demo nos dois temas: a11y.spec.ts (inventário de todas as páginas, 7d).
 
 test.describe('demo responsivo, sem rolagem horizontal', () => {
   for (const viewport of VIEWPORTS) {
