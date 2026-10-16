@@ -48,6 +48,9 @@ const config = [
       'src/modules/reports/server.ts',
       // Reconciliação dos lembretes (ADR-0037): lista de IDs pelo client dos jobs (`app_worker`).
       'src/modules/notifications/jobs.ts',
+      // Alerta de volume (ADR-0038): só a função de amostra, pelo client dos jobs (`app_worker`).
+      'src/modules/observability/volume.ts',
+      'src/modules/observability/volume.test.ts',
       'src/server-jobs.ts',
     ],
     rules: {

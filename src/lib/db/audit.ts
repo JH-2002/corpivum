@@ -31,7 +31,9 @@ export type AuditAction =
   | 'account_purged'
   | 'onboarding_expiry_notice_sent'
   | 'account_expired_onboarding'
-  | 'privacy_request_registered';
+  | 'privacy_request_registered'
+  /** Só pelas funções do operador (7b-R3, ADR-0038). */
+  | 'privacy_request_lookup';
 
 /** Ações aceitas por `app.audit_append_system` (lista igual à da função no banco). */
 export type SystemAuditAction =

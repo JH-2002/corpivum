@@ -185,10 +185,18 @@ try {
                           'privacy_purge_access_logs', 'privacy_purge_proofs', 'privacy_purge_reauth_proofs',
                           'privacy_due_health_eliminations', 'privacy_request_deadlines',
                           'onboarding_expiry_notices_due', 'onboarding_expiry_notice_mark',
-                          'onboarding_expired_purge', 'reminders_active')
+                          'onboarding_expired_purge', 'reminders_active', 'security_volume_sample')
         AND has_function_privilege('app_user', p.oid, 'EXECUTE')`,
   );
   check('app_user não executa varreduras nem purgas (só app_worker)', sweeps[0]?.n === 0);
+  // ADR-0038 (P7-M1): as amostras de volume só são lidas e gravadas pela função dona; ninguém as altera.
+  const { rows: samples } = await migrator.query(
+    `SELECT to_regclass('app.read_volume_samples') IS NULL
+            OR NOT (has_table_privilege('app_user', 'app.read_volume_samples', 'SELECT,INSERT,UPDATE,DELETE')
+                    OR has_table_privilege('app_worker', 'app.read_volume_samples', 'SELECT,INSERT,UPDATE,DELETE'))
+            AS ok`,
+  );
+  check('amostras do alerta de volume fora do alcance de app_user e app_worker', samples[0]?.ok);
 
   const { rows: who } = await runtime.query('SELECT current_user AS u');
   check('DATABASE_URL conecta como app_user', who[0]?.u === 'app_user');

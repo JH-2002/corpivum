@@ -14,6 +14,11 @@ import {
   registerReminderJobs,
   scheduleReminderJobs,
 } from '@/modules/notifications/jobs';
+import {
+  createVolumeMonitor,
+  registerObservabilityJobs,
+  scheduleObservabilityJobs,
+} from '@/modules/observability';
 import { registerPrivacyJobs, schedulePrivacyJobs } from '@/modules/privacy/jobs';
 import { getHealthDataEliminator, getPrivacyService } from '@/modules/privacy/server';
 import { registerReportJobs, scheduleReportJobs } from '@/modules/reports/jobs';
@@ -47,10 +52,16 @@ export async function startJobs(): Promise<void> {
   });
   // Exportação e relatórios (ADR-0032): geração em segundo plano e expiração dos links (LEG-D03).
   registerReportJobs(jobs, getReportsService());
+  // Alerta de volume anômalo (P7-M1, 7b-R3, ADR-0038): contadores do Postgres lidos pelo app_worker.
+  registerObservabilityJobs(
+    jobs,
+    createVolumeMonitor({ workerDb: getWorkerDb, reporter: () => getAdapters().errorReporter }),
+  );
   await scheduleAuthPurge(jobs);
   await schedulePrivacyJobs(jobs);
   await scheduleReportJobs(jobs);
   await scheduleReminderJobs(jobs);
+  await scheduleObservabilityJobs(jobs);
   if (jobs instanceof MemoryJobQueue) {
     void jobs.drain().catch(() => logger.warn('job.drain_failed', { adapter: jobs.id }));
     const timer = setInterval(() => {
