@@ -1,9 +1,11 @@
 import type {
+  ErrorReporter,
+  JobErrorReport,
   RequestErrorReport,
   RouteType,
   SanitizedError,
 } from '@/adapters/error-reporter/types';
-import { ROUTE_TEMPLATE, STACK_FRAME } from '@/lib/logger';
+import { ROUTE_TEMPLATE, STACK_FRAME, type Logger } from '@/lib/logger';
 
 /**
  * Monta o relatório de erro por LISTA DE CAMPOS PERMITIDOS (LEG-R04, ADR-0038). Do erro saem só nome, código,
@@ -126,4 +128,58 @@ export function buildRequestErrorReport(
   const renderType = oneOf(RENDER_TYPES, read(context, 'renderType'));
   if (renderType) report.request.renderType = renderType;
   return report;
+}
+
+/** Nome do job como registrado (`privacy.account_purge`); id técnico; adaptador da fila. */
+const JOB_NAME = /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$/;
+const JOB_ID = /^[A-Za-z0-9_.:-]{1,64}$/;
+const ADAPTER = /^[a-z][a-z0-9_-]{0,31}$/;
+
+export interface FailedJob {
+  name: unknown;
+  id: unknown;
+  attempt: unknown;
+  adapter: unknown;
+}
+
+/**
+ * Relatório de um erro de job (7c-R3, ADR-0039): mesma lista de campos permitidos do `onRequestError`. O payload
+ * do job nunca é lido; nome, id, tentativa e adaptador passam por formato fechado.
+ */
+export function buildJobErrorReport(
+  error: unknown,
+  job: FailedJob,
+  options: { now?: Date; id?: string } = {},
+): JobErrorReport {
+  const attempt = job.attempt;
+  return {
+    id: options.id ?? crypto.randomUUID(),
+    occurredAt: (options.now ?? new Date()).toISOString(),
+    source: 'job',
+    error: sanitizeError(error),
+    job: {
+      name: matching(JOB_NAME, job.name) ?? 'unknown',
+      id: matching(JOB_ID, job.id) ?? 'unknown',
+      attempt:
+        typeof attempt === 'number' && Number.isInteger(attempt) && attempt >= 0 ? attempt : -1,
+      adapter: matching(ADAPTER, job.adapter) ?? 'unknown',
+    },
+  };
+}
+
+/** Quem a fila chama quando um job falha. Nunca lança. */
+export type JobErrorSink = (error: unknown, job: FailedJob) => Promise<void>;
+
+/**
+ * Liga as filas ao `ErrorReporter` (7c-R3): o relatório é montado ANTES de o adaptador tocar no erro, e a falha ao
+ * relatar vira só `error.report_failed`, como no `onRequestError`.
+ */
+export function createJobErrorSink(reporter: () => ErrorReporter, logger: Logger): JobErrorSink {
+  return async (error, job) => {
+    try {
+      await reporter().captureError(buildJobErrorReport(error, job));
+    } catch {
+      logger.error('error.report_failed');
+    }
+  };
 }

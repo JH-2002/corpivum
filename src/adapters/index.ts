@@ -1,4 +1,6 @@
 import { getEnv, type Env } from '@/lib/env';
+import { logger } from '@/lib/logger';
+import { createJobErrorSink } from '@/lib/observability/error-report';
 import { createAgeSignalProvider, type AgeSignalProvider } from './age-signal';
 import { createErrorReporter, type ErrorReporter } from './error-reporter';
 import { createJobQueue, type JobQueue } from './jobs';
@@ -22,14 +24,16 @@ export interface Adapters {
 }
 
 export function createAdapters(env: Env): Adapters {
+  const errorReporter = createErrorReporter(env);
   return {
     kms: createKmsProvider(env),
     storage: createStorageProvider(env),
     mail: createMailProvider(env),
-    jobs: createJobQueue(env),
+    // Erros de job pelo mesmo ErrorReporter e a mesma lista de campos do onRequestError (7c-R3).
+    jobs: createJobQueue(env, { onError: createJobErrorSink(() => errorReporter, logger) }),
     ageSignal: createAgeSignalProvider(env),
     wearable: createWearableProvider(env),
-    errorReporter: createErrorReporter(env),
+    errorReporter,
   };
 }
 

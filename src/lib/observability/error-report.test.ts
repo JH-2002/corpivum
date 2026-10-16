@@ -2,10 +2,16 @@
 import { describe, expect, it } from 'vitest';
 import { ConsoleErrorReporter } from '@/adapters/error-reporter/console';
 import { MemoryErrorReporter } from '@/adapters/error-reporter/memory';
+import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import { AdapterError, NotFoundError } from '@/lib/errors';
 import { createLogger, type LogRecord } from '@/lib/logger';
 import { guardConsoleArgs, installConsoleGuard } from './console-guard';
-import { buildRequestErrorReport, sanitizeError } from './error-report';
+import {
+  buildJobErrorReport,
+  buildRequestErrorReport,
+  createJobErrorSink,
+  sanitizeError,
+} from './error-report';
 import { reportRequestError } from './report';
 
 /**
@@ -199,6 +205,95 @@ describe('reportRequestError (onRequestError → ErrorReporter)', () => {
           throw new Error('dormi mal e chorei');
         },
       }),
+    ).resolves.toBeUndefined();
+    expect(records.map((r) => r.event)).toEqual(['error.report_failed']);
+    expectClean(records);
+  });
+});
+
+describe('erros de job (7c-R3)', () => {
+  it('buildJobErrorReport usa a mesma lista de campos e nunca lê o payload', () => {
+    const report = buildJobErrorReport(
+      poisonedError(),
+      { name: 'reports.build', id: 'job-1', attempt: 2, adapter: 'memory' },
+      { id: 'r-2', now: new Date('2026-10-16T12:00:00.000Z') },
+    );
+    expectClean(report);
+    expect(report).toEqual({
+      id: 'r-2',
+      occurredAt: '2026-10-16T12:00:00.000Z',
+      source: 'job',
+      error: { name: 'Error', cause: { name: 'Error', code: 'P2002' }, frames: expect.any(Array) },
+      job: { name: 'reports.build', id: 'job-1', attempt: 2, adapter: 'memory' },
+    });
+  });
+
+  it('nome, id, tentativa e adaptador fora do formato não passam', () => {
+    const report = buildJobErrorReport(new Error('x'), {
+      name: 'nota: dormi mal e chorei',
+      id: 'maria.silva@exemplo.test',
+      attempt: '82,5 kg',
+      adapter: 'peso=82',
+    });
+    expect(report.job).toEqual({ name: 'unknown', id: 'unknown', attempt: -1, adapter: 'unknown' });
+    expectClean(report);
+  });
+
+  it('a fila manda o erro do handler ao ErrorReporter e ao log sem dado (injeção)', async () => {
+    const records: LogRecord[] = [];
+    const logger = createLogger({ minLevel: 'debug', sink: (r) => records.push(r) });
+    const memory = new MemoryErrorReporter();
+    const consoleReporter = new ConsoleErrorReporter({ logger });
+    const queue = new MemoryJobQueue(logger, {
+      onError: async (error, job) => {
+        await createJobErrorSink(() => memory, logger)(error, job);
+        await createJobErrorSink(() => consoleReporter, logger)(error, job);
+      },
+    });
+    queue.register('privacy.account_purge', async () => {
+      throw poisonedError();
+    });
+    await queue.enqueue('privacy.account_purge', {
+      note: 'dormi mal e chorei',
+      email: 'maria.silva@exemplo.test',
+    });
+    await queue.drain();
+    expect(memory.errors).toHaveLength(1);
+    expect(memory.errors[0]).toMatchObject({
+      source: 'job',
+      job: { name: 'privacy.account_purge', attempt: 1, adapter: 'memory' },
+    });
+    expect(records.map((r) => r.event)).toEqual(['job.failed', 'error.job']);
+    expect(records[1]).toMatchObject({
+      level: 'error',
+      errorName: 'Error',
+      jobName: 'privacy.account_purge',
+      attempt: 1,
+    });
+    expectClean([memory.errors, records]);
+  });
+
+  it('nome de erro com dado vira Unknown também no job.failed', async () => {
+    const records: LogRecord[] = [];
+    const logger = createLogger({ minLevel: 'debug', sink: (r) => records.push(r) });
+    const queue = new MemoryJobQueue(logger);
+    queue.register('reports.build', async () => {
+      throw Object.assign(new Error('x'), { name: 'notas_dormi_mal 82,5 kg' });
+    });
+    await queue.enqueue('reports.build', {});
+    await queue.drain();
+    expect(records[0]).toMatchObject({ event: 'job.failed', errorCode: 'Unknown' });
+    expectClean(records);
+  });
+
+  it('falha ao relatar o job vira só error.report_failed, sem lançar', async () => {
+    const records: LogRecord[] = [];
+    const logger = createLogger({ minLevel: 'debug', sink: (r) => records.push(r) });
+    const sink = createJobErrorSink(() => {
+      throw new Error('dormi mal e chorei');
+    }, logger);
+    await expect(
+      sink(poisonedError(), { name: 'a.b', id: '1', attempt: 1, adapter: 'memory' }),
     ).resolves.toBeUndefined();
     expect(records.map((r) => r.event)).toEqual(['error.report_failed']);
     expectClean(records);

@@ -37,6 +37,25 @@ export interface RequestErrorReport {
   };
 }
 
+/**
+ * Erro de um job da fila (7c-R3, ADR-0039): mesma redução do erro da requisição. Do job saem só o nome (formato
+ * `dominio.acao`), o id técnico e a tentativa; nunca o payload, que carrega IDs de pessoa e de recurso.
+ */
+export interface JobErrorReport {
+  id: string;
+  occurredAt: string;
+  source: 'job';
+  error: SanitizedError;
+  job: {
+    name: string;
+    id: string;
+    attempt: number;
+    adapter: string;
+  };
+}
+
+export type ErrorReport = RequestErrorReport | JobErrorReport;
+
 /** Alertas de volume (P7-M1, 7b-R3): só a contagem e o teto, sem pessoa, papel ou recurso. */
 export type AlertName = 'security.read_volume_anomaly' | 'security.operator_volume_anomaly';
 
@@ -49,6 +68,6 @@ export interface Alert {
 
 export interface ErrorReporter {
   readonly id: string;
-  captureError(report: RequestErrorReport): Promise<void>;
+  captureError(report: ErrorReport): Promise<void>;
   captureAlert(alert: Alert): Promise<void>;
 }

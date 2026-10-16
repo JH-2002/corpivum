@@ -1,8 +1,10 @@
 import type pg from 'pg';
+import { MemoryErrorReporter } from '@/adapters/error-reporter/memory';
 import { PgJobQueue } from '@/adapters/jobs/postgres';
 import type { Db } from '@/lib/db/client';
 import { withUserOn } from '@/lib/db/rls';
 import { createLogger, type LogRecord } from '@/lib/logger';
+import { createJobErrorSink } from '@/lib/observability/error-report';
 import { connectAdmin, runtimeDb, truncateAll, workerDb } from './helpers';
 
 /** Fila de jobs no Postgres (OI-14, ADR-0019; PR1a-R2-B6). */
@@ -94,6 +96,38 @@ describe('PgJobQueue', () => {
       `SELECT count(*)::int AS n FROM job_queue WHERE status = 'queued' AND run_at > now()`,
     );
     expect(rows[0].n).toBe(1);
+  });
+
+  it('erro do job vai ao ErrorReporter pela lista de campos; nada sensível no relatório, log ou banco (7c-R3)', async () => {
+    const { logs, logger } = silent();
+    const reporter = new MemoryErrorReporter();
+    const q = new PgJobQueue(db, {
+      logger,
+      workerDb,
+      onError: createJobErrorSink(() => reporter, logger),
+    });
+    q.register('test.poison', async () => {
+      throw Object.assign(new Error('peso 82,5 kg de maria.silva@exemplo.test: dormi mal'), {
+        name: 'maria.silva@exemplo.test',
+        code: 'nota dormi mal',
+        payload: { weightKg: 82.5 },
+        cause: new Error('comi só uma maçã'),
+      });
+    });
+    await q.enqueue('test.poison', { userId: 'u-1', note: 'dormi mal' }, { maxAttempts: 1 });
+    expect(await q.runOnce()).toBe(0);
+    const { rows } = await admin.query(`SELECT last_error_code FROM job_queue`);
+    expect(rows[0].last_error_code).toBe('Unknown');
+    expect(reporter.errors).toHaveLength(1);
+    expect(reporter.errors[0]).toMatchObject({
+      source: 'job',
+      error: { name: 'Unknown', cause: { name: 'Error' } },
+      job: { name: 'test.poison', attempt: 1, adapter: 'postgres' },
+    });
+    const out = JSON.stringify([reporter.errors, logs, rows]);
+    for (const secret of ['82,5', 'maria.silva', 'dormi mal', 'maçã', 'u-1', 'weightKg']) {
+      expect(out).not.toContain(secret);
+    }
   });
 
   it('falha volta à fila com atraso e, sem tentativas restantes, fica failed (só o código do erro)', async () => {

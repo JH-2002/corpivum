@@ -1,5 +1,5 @@
 import { logger as defaultLogger, type Logger } from '@/lib/logger';
-import type { Alert, ErrorReporter, RequestErrorReport } from './types';
+import type { Alert, ErrorReport, ErrorReporter } from './types';
 
 /**
  * Implementação local: grava o relatório no log estruturado (que de novo filtra por lista de campos, LEG-R04).
@@ -13,7 +13,20 @@ export class ConsoleErrorReporter implements ErrorReporter {
     this.#logger = logger;
   }
 
-  async captureError(report: RequestErrorReport): Promise<void> {
+  async captureError(report: ErrorReport): Promise<void> {
+    if (report.source === 'job') {
+      this.#logger.error('error.job', {
+        reportId: report.id,
+        errorName: report.error.name,
+        errorCode: report.error.code,
+        frame: report.error.frames[0],
+        adapter: report.job.adapter,
+        jobName: report.job.name,
+        jobId: report.job.id,
+        attempt: report.job.attempt,
+      });
+      return;
+    }
     this.#logger.error('error.request', {
       reportId: report.id,
       errorName: report.error.name,

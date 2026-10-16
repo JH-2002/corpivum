@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { logger as defaultLogger, type Logger } from '@/lib/logger';
+import { sanitizeError, type JobErrorSink } from '@/lib/observability/error-report';
 import type { EnqueueOptions, JobHandler, JobPayload, JobQueue } from './types';
 
 type JobStatus = 'pending' | 'done' | 'failed';
@@ -19,18 +20,21 @@ interface MemoryJob {
 
 /**
  * Fila em memória para DESENVOLVIMENTO e testes. Não persiste; `drain()` executa os jobs vencidos.
- * Falhas são registradas só com nome do job, id e tentativa (LEG-R04).
+ * Falhas são registradas só com nome do job, id e tentativa; o erro vai ao `ErrorReporter` já reduzido (LEG-R04).
  */
 export class MemoryJobQueue implements JobQueue {
   readonly id = 'memory';
   readonly #jobs: MemoryJob[] = [];
   readonly #handlers = new Map<string, JobHandler>();
   readonly #logger: Logger;
+  readonly #onError: JobErrorSink | undefined;
   #draining = false;
   #again = false;
 
-  constructor(logger: Logger = defaultLogger) {
+  /** `onError`: erro do handler vai ao `ErrorReporter` pela lista de campos permitidos (7c-R3, ADR-0039). */
+  constructor(logger: Logger = defaultLogger, options: { onError?: JobErrorSink } = {}) {
     this.#logger = logger;
+    this.#onError = options.onError;
   }
 
   async enqueue(name: string, payload: JobPayload, options: EnqueueOptions = {}): Promise<string> {
@@ -107,7 +111,13 @@ export class MemoryJobQueue implements JobQueue {
           jobName: job.name,
           jobId: job.id,
           attempt: job.attempts,
-          errorCode: error instanceof Error ? error.name : 'unknown',
+          errorCode: sanitizeError(error).name,
+        });
+        await this.#onError?.(error, {
+          name: job.name,
+          id: job.id,
+          attempt: job.attempts,
+          adapter: this.id,
         });
       } finally {
         job.running = false;
