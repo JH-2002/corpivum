@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Db } from '@/lib/db/client';
 import { logger as defaultLogger, type Logger } from '@/lib/logger';
-import { sanitizeError, type JobErrorSink } from '@/lib/observability/error-report';
+import { notifyJobError, sanitizeError, type JobErrorSink } from '@/lib/observability/error-report';
 import type { EnqueueOptions, JobHandler, JobPayload, JobQueue } from './types';
 
 const payloadSchema = z.record(
@@ -108,14 +108,15 @@ export class PgJobQueue implements JobQueue {
           attempt: job.attempts,
           errorCode,
         });
-        await this.#onError?.(error, {
+        await worker.$queryRaw`SELECT app.jobs_fail(${job.id}::uuid, ${this.workerId}, ${errorCode},
+          ${retryDelaySeconds(job.attempts)}::int)`;
+        // Só depois de liberar o job: o relatório não segura o lock nem o backoff.
+        await notifyJobError(this.#onError, error, {
           name: job.name,
           id: job.id,
           attempt: job.attempts,
           adapter: this.id,
         });
-        await worker.$queryRaw`SELECT app.jobs_fail(${job.id}::uuid, ${this.workerId}, ${errorCode},
-          ${retryDelaySeconds(job.attempts)}::int)`;
       }
     }
     return completed;

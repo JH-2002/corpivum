@@ -35,11 +35,11 @@ const config = [
   {
     // 7c-R3 (ADR-0039): nada escreve direto no stdout/stderr em src/; só o logger. O teste estático
     // tests/security/no-console-output.test.ts cobre também `eslint-disable`, alias e desestruturação.
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx,js,jsx,mjs,cjs}'],
     rules: {
       'no-restricted-properties': [
         'error',
-        ...['stdout', 'stderr'].map((property) => ({
+        ...['stdout', 'stderr', 'emitWarning', '_rawDebug'].map((property) => ({
           object: 'process',
           property,
           message: 'Use o logger de metadados (@/lib/logger), LEG-R04.',

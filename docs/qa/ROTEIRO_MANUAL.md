@@ -7,7 +7,9 @@ nos fluxos principais, o tamanho das telas e o tempo de carga. O que só uma pes
 Leve uns 60 a 90 minutos no computador e 30 no celular. Não precisa fazer tudo de uma vez.
 
 > **Use só dados inventados.** E-mail como `ana@exemplo.test`, peso e sono inventados. Nunca seus dados reais
-> (regra 6 do projeto).
+> (regra 6 do projeto). Faça o teste numa **janela anônima** (no computador e no celular) ou num perfil de
+> convidado, para o navegador não oferecer seu e-mail real no preenchimento automático, e responda **"Nunca"**
+> quando ele perguntar se quer salvar a senha.
 
 ---
 
@@ -20,10 +22,11 @@ No terminal, dentro da pasta do projeto:
 ```
 pnpm db:up
 pnpm mail:up
-pnpm dev
+pnpm dev -H localhost
 ```
 
-- O app abre em **http://localhost:3000**.
+- O app abre em **http://localhost:3000**. O `-H localhost` deixa o app só no seu computador (sem ele, outros
+  aparelhos da rede Wi-Fi conseguem abrir o app enquanto ele roda).
 - Os e-mails do app (confirmação de cadastro) aparecem em **http://localhost:8025** (Mailpit).
 
 ### 1.2 Instalar e conhecer o NVDA
@@ -76,7 +79,7 @@ Cada passo tem um código (A1, A2...). Marque o resultado na tabela da seção 4
 
 ### A1. Pessoa com menos de 18 anos não cria conta
 
-1. Abra uma **janela anônima** (**Ctrl+Shift+N**) e nela **http://localhost:3000/cadastro**. Aperte **1**.
+1. Abra uma **janela anônima nova** (**Ctrl+Shift+N**), só para este passo, e nela **http://localhost:3000/cadastro**. Aperte **1**.
    - **Ouvir:** "Boas-vindas ao HealthMind 360, título nível 1".
 2. Aperte **F** até chegar à data de nascimento. Digite a data de nascimento de alguém com 16 anos
    (ex.: o dia de hoje, com o ano de 16 anos atrás).
@@ -85,7 +88,8 @@ Cada passo tem um código (A1, A2...). Marque o resultado na tabela da seção 4
    - **Ouvir:** "Não é possível criar uma conta, título nível 1".
    - **Ver/ouvir:** texto dizendo que nada do que foi digitado foi guardado e o CVV 188.
    - **Problema se:** aparecer um formulário de e-mail ou qualquer coisa que peça dados.
-4. Feche a janela anônima. O A2 é numa janela normal (o bloqueio fica só na janela anônima).
+4. Feche essa janela anônima. O A2 começa em outra janela anônima nova (o bloqueio de idade fica só na
+   janela fechada).
 
 ### A2. Cadastro de adulto
 
@@ -191,6 +195,7 @@ Cada passo tem um código (A1, A2...). Marque o resultado na tabela da seção 4
    - **Ouvir:** "Pedido recebido..." anunciado sem você precisar procurar.
 2. Recarregue a página (**F5**) depois de alguns segundos e ache o link "Baixar ...".
    - **Ouvir:** o nome do link diz o que vai ser baixado.
+3. Ao terminar, apague o arquivo baixado da pasta **Downloads**.
 
 ### A11. Tema escuro, zoom e foco
 
@@ -258,6 +263,14 @@ Use o Chrome do celular (seção 1.3). Faça na vertical e depois deite o celula
    - **Ouvir:** o TalkBack vai para "Deitei em".
 4. Desligue o TalkBack ao terminar (o atalho de volume também desliga).
 
+### C5. Ao terminar (não pule)
+
+1. No Chrome do computador, em `chrome://inspect/#devices` > **Port forwarding**, desmarque **Enable port
+   forwarding**.
+2. No celular, em **Opções do desenvolvedor**, desligue a **Depuração USB** (deixada ligada, ela facilita o acesso
+   ao celular por quem pegar o aparelho com um cabo).
+3. Feche as janelas anônimas. No terminal, pare o app com **Ctrl+C**.
+
 ---
 
 ## 4. Tabela para marcar
@@ -283,6 +296,7 @@ o que aconteceu de diferente.
 | C2 | Conta, registro e tempo de resposta no celular | | | |
 | C3 | Telas sem rolagem lateral e modo privacidade | | | |
 | C4 | TalkBack (opcional) | | | |
+| C5 | Redirecionamento e Depuração USB desligados | | | |
 
 Celular usado (modelo e versão do Android): ____________________
 

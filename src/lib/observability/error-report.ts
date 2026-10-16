@@ -183,3 +183,32 @@ export function createJobErrorSink(reporter: () => ErrorReporter, logger: Logger
     }
   };
 }
+
+/** Tempo máximo que a fila espera o relatório de erro (o fornecedor externo pode estar lento ou fora do ar). */
+export const JOB_ERROR_REPORT_TIMEOUT_MS = 3000;
+
+/**
+ * Chamado pelas filas DEPOIS de registrar a falha do job (revisão da 7d, B2): o relatório nunca segura o job no
+ * lock nem pula o `jobs_fail`, mesmo com um sink que lance ou trave. Espera no máximo `timeoutMs`.
+ */
+export async function notifyJobError(
+  sink: JobErrorSink | undefined,
+  error: unknown,
+  job: FailedJob,
+  timeoutMs = JOB_ERROR_REPORT_TIMEOUT_MS,
+): Promise<void> {
+  if (!sink) return;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      sink(error, job),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, timeoutMs);
+      }),
+    ]);
+  } catch {
+    // O sink padrão já registra `error.report_failed`; um sink que lance não pode derrubar a fila.
+  } finally {
+    clearTimeout(timer);
+  }
+}

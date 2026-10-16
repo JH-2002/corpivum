@@ -10,6 +10,7 @@ import {
   buildJobErrorReport,
   buildRequestErrorReport,
   createJobErrorSink,
+  notifyJobError,
   sanitizeError,
 } from './error-report';
 import { reportRequestError } from './report';
@@ -284,6 +285,34 @@ describe('erros de job (7c-R3)', () => {
     await queue.drain();
     expect(records[0]).toMatchObject({ event: 'job.failed', errorCode: 'Unknown' });
     expectClean(records);
+  });
+
+  it('sink que lança ou trava não derruba nem segura a fila (revisão 7d, B2)', async () => {
+    const job = { name: 'a.b', id: '1', attempt: 1, adapter: 'memory' };
+    await expect(
+      notifyJobError(
+        async () => {
+          throw new Error('dormi mal e chorei');
+        },
+        poisonedError(),
+        job,
+      ),
+    ).resolves.toBeUndefined();
+    const started = Date.now();
+    await notifyJobError(() => new Promise<void>(() => undefined), poisonedError(), job, 50);
+    expect(Date.now() - started).toBeLessThan(1000);
+
+    const queue = new MemoryJobQueue(createLogger({ sink: () => undefined }), {
+      onError: async () => {
+        throw new Error('sink quebrado');
+      },
+    });
+    queue.register('reports.build', async () => {
+      throw new Error('x');
+    });
+    const id = await queue.enqueue('reports.build', {}, { maxAttempts: 1 });
+    await queue.drain();
+    expect(queue.statusOf(id)).toBe('failed');
   });
 
   it('falha ao relatar o job vira só error.report_failed, sem lançar', async () => {

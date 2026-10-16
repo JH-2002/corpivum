@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { logger as defaultLogger, type Logger } from '@/lib/logger';
-import { sanitizeError, type JobErrorSink } from '@/lib/observability/error-report';
+import { notifyJobError, sanitizeError, type JobErrorSink } from '@/lib/observability/error-report';
 import type { EnqueueOptions, JobHandler, JobPayload, JobQueue } from './types';
 
 type JobStatus = 'pending' | 'done' | 'failed';
@@ -113,7 +113,7 @@ export class MemoryJobQueue implements JobQueue {
           attempt: job.attempts,
           errorCode: sanitizeError(error).name,
         });
-        await this.#onError?.(error, {
+        await notifyJobError(this.#onError, error, {
           name: job.name,
           id: job.id,
           attempt: job.attempts,

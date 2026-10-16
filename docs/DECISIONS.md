@@ -1394,6 +1394,12 @@ responsável pelo produto) e o 7c-R3, fechado na mesma branch por pedido do resp
   inicial não muda, e título, selo, legenda e tabela alternativa continuam fora do chunk) e `src/lib/period.ts` usa
   `zod/mini` (o seletor de período do cabeçalho levava o `zod` completo a toda tela). Resultado local: 199 KiB e
   2,4 s em `/inicio`, 2,3 s em `/demo`. A folga é pequena: o orçamento barra regressão.
+**Revisão do `privacy-reviewer` (7d).** Nada crítico, alto nem médio. Corrigido: **B1** buracos do teste
+estático (import padrão e namespace, apelido e desestruturação de `process`, `node:console`, `require`,
+`emitWarning`/`_rawDebug`, `writeSync(1|2)`, arquivos `.js`); **B2** o relatório de erro de job vem depois do
+`jobs_fail`, protegido e com teto de 3 s (`notifyJobError`), para não segurar o lock nem pular o backoff; **B3**
+roteiro com janela anônima, sem salvar senha, `pnpm dev -H localhost` e desligamento do redirecionamento e da
+Depuração USB. Nota aberta em 7d-N4 (formato aberto dos nomes de erro).
 **Consequências.** Scripts `test:perf` e `check:perf-budget`; o job de e2e roda só o projeto `chromium`;
 `E2E_PROD=1` usa o build de produção também fora da CI. Os testes do twin com WebGL real não rodam de forma
 estável no Windows local (7d-N2); a CI é a referência.
