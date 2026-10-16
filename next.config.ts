@@ -23,21 +23,7 @@ const SECURITY_HEADERS = [
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
 ];
 
-/**
- * Rotas removidas na reorientação (ADR-0027) e com o fim da IA (ADR-0030): links salvos levam à tela
- * inicial em vez de um 404.
- * Temporário (307), não permanente: o navegador não guarda o redirecionamento se a rota voltar a existir.
- */
-const REMOVED_ROUTES = [
-  { source: '/humor', destination: '/inicio' },
-  { source: '/diario', destination: '/inicio' },
-  { source: '/medicamentos', destination: '/inicio' },
-  { source: '/ia', destination: '/inicio' },
-  { source: '/twin/cerebro', destination: '/twin' },
-  { source: '/demo/humor', destination: '/demo' },
-  { source: '/demo/diario', destination: '/demo' },
-  { source: '/demo/twin/cerebro', destination: '/demo/twin' },
-];
+// Rotas removidas (ADR-0027, ADR-0030): redirecionadas no proxy (src/proxy.ts), com CSP e `no-store` (TM-02).
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -50,9 +36,6 @@ const nextConfig: NextConfig = {
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
     ];
-  },
-  async redirects() {
-    return REMOVED_ROUTES.map((route) => ({ ...route, permanent: false }));
   },
   reactStrictMode: true,
   typedRoutes: true,

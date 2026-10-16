@@ -5,8 +5,11 @@ import { AdapterError } from '@/lib/errors';
 /**
  * Criptografia de campo com envelope (LEG-S02, ADR-0016).
  * Cada escrita gera uma DEK nova pelo KmsProvider; o valor é cifrado com AES-256-GCM e o contexto
- * `{ userId, table, column }` entra como AAD tanto na DEK quanto no dado: decifrar em outra linha,
- * coluna ou usuário falha.
+ * `{ userId, table, column }` entra como AAD tanto na DEK quanto no dado: decifrar em outra coluna ou de
+ * outro usuário falha. O id da linha NÃO está no contexto (P7-B5, ADR-0037): quem já escreve no banco consegue
+ * trocar o texto cifrado entre linhas da mesma pessoa e da mesma coluna sem que a leitura perceba. Esse ator
+ * já é o do P7-M1 (código como o runtime) e é tratado lá; incluir o id exigiria nova versão do envelope e
+ * recifrar tudo.
  *
  * Formato: 0x01 | len(keyId) u8 | keyId | len(encDEK) u16be | encDEK | iv(12) | tag(16) | ciphertext
  */

@@ -46,6 +46,9 @@ const config = [
       // Exportação (ADR-0032): função SECURITY DEFINER de expiração e injeção do client nos testes.
       'src/modules/reports/service.ts',
       'src/modules/reports/server.ts',
+      // Reconciliação dos lembretes (ADR-0037): lista de IDs pelo client dos jobs (`app_worker`).
+      'src/modules/notifications/jobs.ts',
+      'src/server-jobs.ts',
     ],
     rules: {
       'no-restricted-imports': [

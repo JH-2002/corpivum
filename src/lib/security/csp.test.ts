@@ -69,6 +69,10 @@ describe('proxy', () => {
     expect(re.test('/modelos')).toBe(true);
     expect(re.test('/demo/twin')).toBe(true);
   });
+
+  it('não pula prefetch: toda resposta recebe CSP e no-store (P7-N1)', () => {
+    expect(proxyConfig.matcher.every((m) => !('missing' in m))).toBe(true);
+  });
 });
 
 describe('rotas públicas', () => {
