@@ -1163,3 +1163,42 @@ continuar): dado sintético, decisão registrada acima; o e2e confere só dados 
 textos `privacyMode.*`/`presentation.*` são RASCUNHO (`LEGAL-REVIEW`, OI-36). O modo privacidade some ao fechar o
 navegador (como o período); persistir entre sessões fica para decisão (OI-36 c). Arquivo órfão de exportação segue
 em OI-35 (Fase 7).
+
+## ADR-0036 — Plano da Fase 7 (endurecimento e pré-lançamento) no escopo atual
+**Contexto.** O prompt da Fase 7 (`docs/prompts/fase-7-endurecimento.md`) é anterior ao ADR-0027 e ao ADR-0030: cita
+um threat model com IA, "finalizar" documentos cujos placeholders dependem de decisões humanas e IaC com hospedagem
+ainda não escolhida (OI-11). Decisões do responsável pelo produto (2026-10-15), ao aprovar o plano:
+**Decisão.**
+- **Divisão:** 7a threat model, revisão de privacidade do repositório inteiro e escopo do pentest (só documentos e
+  triagem); 7b endurecimento de segurança; 7c observabilidade (LEG-R04); 7d e2e, acessibilidade e performance
+  (LEG-X01, §41, §42); 7e operação (backup e restauração, infra declarada, storage, runbooks; LEG-S07, S10); 7f
+  governança (ROPA, RIPD, SUBPROCESSORS, INTENDED_USE, documentos públicos e OPEN_ISSUES consolidado para o
+  jurídico; LEG-G01–G05). Cada sub-fase fecha com testes, `privacy-reviewer`, PR, CI verde e merge commit.
+- **D1 (infra):** sem Terraform enquanto não houver hospedagem. `infra/regions.json` declara banco, storage, fila,
+  KMS, execução das funções e backups em região no Brasil, conferido na CI por `pnpm check:infra` (padrão do
+  `check:retention`), com runbook de provisionamento. Terraform só depois da escolha (CHECKLIST_GO_LIVE).
+- **D2 (erros):** adaptador `ErrorReporter` (implementação local agora) com remoção de PII testada, ligado ao
+  `onRequestError`. O fornecedor fica para o checklist (OI-03, OI-11).
+- **D3:** corrigir na 7b todos os achados baixos e médios abertos que não dependem do checklist, para o pentest
+  partir de uma base limpa.
+- **D4 (PR1b-R2-M1):** o teto global de encerramentos de menor vira pedido pendente processado por job, sem
+  bloquear quem se declarou menor.
+- **D5:** papel `app_worker` separado para os jobs (PR1b-M1 residual, PR1b-B3) e um papel de login por pessoa
+  para o atendimento manual, num grupo NOLOGIN com os GRANTs (OI-34 b).
+- **D6:** push (OI-27) e fuso por conta (PR4-B5) ficam fora da Fase 7.
+- **D7:** a rodada manual com leitor de tela (NVDA) e celular real é feita pelo responsável pelo produto, com
+  roteiro entregue na 7d. O resto da acessibilidade e da performance é automatizado.
+**Fora do alcance do código (CHECKLIST_GO_LIVE).** Controlador, encarregado, hospedagem e região, DPAs e art. 33,
+pentest, revisão clínica e jurídica, teste de restauração no provedor real, canal de suporte e beta fechado. Os
+documentos ficam consolidados, com os placeholders `{{...}}` padronizados, mas não são "finais" sem essas decisões.
+**Produção ainda não sobe.** O `parseEnv` recusa em produção os adaptadores locais (`KMS_PROVIDER`,
+`STORAGE_PROVIDER`, `MAIL_PROVIDER` só têm implementação de desenvolvimento) e a fila em memória: os adaptadores
+reais entram depois da escolha dos fornecedores.
+**Entrega da 7a.** `docs/security/THREAT_MODEL.md` (STRIDE por fronteira, residuais ligados aos achados e itens
+novos TM-01 a TM-05) e `docs/security/PENTEST_SCOPE.md` (ligado no CHECKLIST_GO_LIVE). Revisão do `privacy-reviewer`
+no repositório inteiro: nada crítico nem alto, nenhuma regressão de item resolvido; 3 médios, 10 baixos e 6 notas
+registrados em OPEN_ISSUES ("Revisão do repositório inteiro", P7-*) com a sub-fase de cada um. Corrigido na 7a só o
+que é documento da própria entrega: o threat model passa a tratar o código que executa como o runtime (P7-M1), os
+pedidos de prefetch fora do proxy (P7-N1) e o AuditLog do download (P7-N5); status do PR-IA-M1 (P7-N4).
+**Pendente de decisão do produto antes da 7b:** P7-M2 (conta verificada sem onboarding não tem como ser excluída nem
+encerrada e não tem prazo de retenção).
