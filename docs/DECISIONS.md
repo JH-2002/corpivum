@@ -1391,9 +1391,12 @@ responsável pelo produto) e o 7c-R3, fechado na mesma branch por pedido do resp
   vale para a requisição da navegação, então o que faltou dos 150 ms é somado à medida.
 - Medição inicial: 3,4 s (379 KiB gzip). Corrigido (7d-P1): o recharts sai da entrada (`TimeChartPlot` e
   `SparklinePlot` por `next/dynamic` sem SSR; o `ResponsiveContainer` não desenha nada no servidor, então o HTML
-  inicial não muda, e título, selo, legenda e tabela alternativa continuam fora do chunk) e `src/lib/period.ts` usa
-  `zod/mini` (o seletor de período do cabeçalho levava o `zod` completo a toda tela). Resultado local: 199 KiB e
-  2,4 s em `/inicio`, 2,3 s em `/demo`. A folga é pequena: o orçamento barra regressão.
+  inicial não muda, e título, selo, legenda e tabela alternativa continuam fora do chunk) e `src/lib/period.ts` fica
+  sem Zod (o seletor de período do cabeçalho levava o núcleo do Zod 4 a toda tela; até o `zod/mini` custava ~24 KiB
+  gzip): a validação com Zod do período vindo do navegador fica em `period-schema.ts`, só no servidor. Resultado:
+  173 KiB; na CI, mediana de 5 cargas de 2,48 s em `/inicio` e 2,14 s em `/demo`. A folga do `/inicio` é muito
+  pequena (cargas até 2,9 s): o próximo corte é escopar as traduções enviadas ao navegador (hoje o catálogo inteiro
+  vai no HTML), registrado em 7d-P1.
 **Revisão do `privacy-reviewer` (7d).** Nada crítico, alto nem médio. Corrigido: **B1** buracos do teste
 estático (import padrão e namespace, apelido e desestruturação de `process`, `node:console`, `require`,
 `emitWarning`/`_rawDebug`, `writeSync(1|2)`, arquivos `.js`); **B2** o relatório de erro de job vem depois do
