@@ -1,4 +1,8 @@
 * text=auto eol=lf
+# O Prisma guarda o checksum do arquivo de migração: CRLF no Windows mudaria o checksum e o `migrate`
+# acusaria migração alterada. `text` explícito não depende da detecção automática.
+prisma/migrations/** text eol=lf
+*.sql text eol=lf
 *.png binary
 *.ico binary
 *.woff2 binary
