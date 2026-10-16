@@ -43,6 +43,7 @@ describe('createAdapters', () => {
       jobs: 'memory',
       ageSignal: 'none',
       wearable: 'disabled',
+      errorReporter: 'console',
     });
   });
 });

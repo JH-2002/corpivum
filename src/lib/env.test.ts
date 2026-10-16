@@ -118,6 +118,11 @@ describe('parseEnv', () => {
       );
     });
 
+    it('recusa o ErrorReporter em memória, aceita o console filtrado (ADR-0038)', () => {
+      expect(hasIssue({ ...prod, ERROR_REPORTER: 'memory' }, 'ERROR_REPORTER')).toBe(true);
+      expect(hasIssue({ ...prod, ERROR_REPORTER: 'console' }, 'ERROR_REPORTER')).toBe(false);
+    });
+
     it('recusa a credencial de migração no runtime (LEG-S03)', () => {
       expect(
         hasIssue(

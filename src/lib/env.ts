@@ -95,6 +95,8 @@ const envSchema = z
     JOB_WORKER: z.enum(['inline', 'off']).default('inline'),
     AGE_SIGNAL_PROVIDER: z.enum(['none']).default('none'),
     WEARABLE_PROVIDER: z.enum(['disabled']).default('disabled'),
+    /** Ferramenta de erros (ADR-0038): `console` (log filtrado) ou `memory` (só testes). */
+    ERROR_REPORTER: z.enum(['console', 'memory']).default('console'),
   })
   .superRefine((env, ctx) => {
     const issue = (key: string, message: string) =>
@@ -160,6 +162,7 @@ const envSchema = z
         STORAGE_PROVIDER: 'local',
         MAIL_PROVIDER: 'console',
         JOB_QUEUE: 'memory',
+        ERROR_REPORTER: 'memory',
       } as const;
       for (const [key, value] of Object.entries(devOnly)) {
         if (env[key as keyof typeof devOnly] === value) {
