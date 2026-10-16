@@ -64,3 +64,27 @@ export function twinBodyInsights({
     ]),
   };
 }
+
+/**
+ * Variante sem números do modo privacidade (ADR-0035): só quantas datas de medição há. Com dados próprios,
+ * as medidas nem chegam à tela e o modelo fica na forma de referência (`referenceShape`); no demo, a forma
+ * fictícia continua e só os números ficam ocultos.
+ */
+export function twinBodyInsightsHidden({
+  records,
+  range,
+  today,
+  referenceShape,
+}: Omit<TwinBodyInsightsInput, 'latestHeightCm'> & { referenceShape: boolean }): ModuleInsights {
+  const base = { module: 'twin' as const, highlights: [] };
+  if (records.length === 0) return { ...base, state: 'empty', sentences: [sentence('empty')] };
+  const dates = measurementDays(records);
+  return {
+    ...base,
+    state: dates.length < 2 ? 'partial' : 'ok',
+    sentences: [
+      sentence('hiddenDates', { ...periodArgs(range, today), count: int(dates.length) }),
+      sentence(referenceShape ? 'hiddenReference' : 'hiddenValues'),
+    ],
+  };
+}

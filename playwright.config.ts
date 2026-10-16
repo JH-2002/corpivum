@@ -34,7 +34,11 @@ export default defineConfig({
   ],
   webServer: {
     // No CI roda contra o build de produção (gerado antes, no job); localmente, contra o dev server.
-    command: isCI ? `pnpm start --port ${PORT}` : `pnpm dev --port ${PORT}`,
+    // O servidor sobe ANTES do globalSetup: no CI, migra o banco de testes primeiro, senão os jobs da subida
+    // (expurgos e varreduras, ADR-0035) rodam contra um banco vazio e falham.
+    command: isCI
+      ? `pnpm exec prisma migrate deploy && pnpm start --port ${PORT}`
+      : `pnpm dev --port ${PORT}`,
     url: `http://localhost:${PORT}/entrar`,
     reuseExistingServer: !isCI,
     timeout: 120_000,

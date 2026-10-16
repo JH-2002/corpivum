@@ -22,7 +22,8 @@ const requestSchema = z.discriminatedUnion('kind', [
     format: z.enum(['pdf', 'csv', 'json']),
     period: reportPeriodSchema,
     reference: z.iso.date(),
-    hideBodyValues: z.literal('on').optional(),
+    // `on` = ocultar peso, medidas e calorias (ADR-0032); `off` ou ausente = mostrar.
+    hideBodyValues: z.enum(['on', 'off']).optional(),
   }),
 ]);
 

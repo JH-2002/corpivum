@@ -7,10 +7,12 @@ import { GuardrailNotice } from '@/components/health/GuardrailNotice';
 import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodSummary } from '@/components/insights/PeriodInsights';
+import { HiddenEditNotice } from '@/components/privacy-mode/Masked';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { addDays } from '@/lib/dates';
 import type { GoalMetric, GoalProgress, GoalRecord } from '@/modules/goals';
+import { isBodyValueGoal } from '@/modules/health/mask';
 import type { GuardrailReason } from '@/modules/guardrails';
 import type { HabitRecord } from '@/modules/habits';
 import { goalsInsights } from '@/modules/insights';
@@ -20,6 +22,8 @@ import { GoalForm } from './GoalForm';
  * Tela de metas (§30, LEG-M04, LEG-M06, LEG-F05): criar, acompanhar com barra (valor em texto, nunca só
  * cor), ajustar, arquivar e excluir. Peso só em número, seta e palavra, sem barra, sem sequência e sem
  * comemoração. Prazo encerrado em tom neutro. Meta de calorias em pausa com a estimativa desligada.
+ * Modo privacidade (`hidden`, ADR-0035): metas de peso e de calorias sem alvo, progresso nem edição (os dados
+ * já chegam sem esses valores, `maskGoalsScreen`).
  */
 export function GoalsView({
   goals,
@@ -29,6 +33,7 @@ export function GoalsView({
   estimateEnabled,
   today,
   mode,
+  hidden = false,
 }: {
   goals: GoalRecord[];
   habits: HabitRecord[];
@@ -38,8 +43,10 @@ export function GoalsView({
   estimateEnabled: boolean;
   today: string;
   mode: HealthMode;
+  hidden?: boolean;
 }) {
   const t = useTranslations('goals');
+  const tm = useTranslations('privacyMode');
   const tp = useTranslations('pages.goals');
   const format = useFormatter();
   const own = mode === 'own';
@@ -68,6 +75,9 @@ export function GoalsView({
   function Progress({ goal }: { goal: GoalRecord }) {
     const p = byId.get(goal.id);
     if (!p) return null;
+    if (hidden && isBodyValueGoal(goal.metric)) {
+      return <p className="text-sm text-fg-muted">{tm('goalHidden')}</p>;
+    }
     if (goal.metric === 'kcal_reference_day') {
       // Calorias: só o total do dia e a referência, em texto. Sem barra, porcentagem nem "alcançado"
       // (comer uma quantidade não é conquista nem teto, LEG-M07, revisão M2).
@@ -152,7 +162,11 @@ export function GoalsView({
             )}
           />
         </div>
-        {archivedGoal ? null : blocked.length > 0 ? (
+        {archivedGoal ? null : hidden && isBodyValueGoal(goal.metric) ? (
+          // Nem o aviso do guardrail: ele revela a relação entre alvo, peso e altura (revisão B5). O apoio
+          // continua fixo na tela de corpo.
+          <p className="text-sm text-fg-muted">{tm('goalHidden')}</p>
+        ) : blocked.length > 0 ? (
           <GuardrailNotice reasons={blocked} />
         ) : (
           <Progress goal={goal} />
@@ -180,18 +194,22 @@ export function GoalsView({
               </SubmitButton>
             </form>
             <EntryActions id={goal.id} itemLabel={title(goal)} deleteAction={deleteGoalAction}>
-              <GoalForm
-                habits={habitOptions}
-                estimateEnabled={estimateEnabled}
-                minDay={minDay}
-                values={{
-                  id: goal.id,
-                  metric: goal.metric,
-                  targetValue: goal.targetValue,
-                  habitId: goal.habitId,
-                  targetDay: goal.targetDay,
-                }}
-              />
+              {hidden && isBodyValueGoal(goal.metric) ? (
+                <HiddenEditNotice />
+              ) : (
+                <GoalForm
+                  habits={habitOptions}
+                  estimateEnabled={estimateEnabled}
+                  minDay={minDay}
+                  values={{
+                    id: goal.id,
+                    metric: goal.metric,
+                    targetValue: goal.targetValue,
+                    habitId: goal.habitId,
+                    targetDay: goal.targetDay,
+                  }}
+                />
+              )}
             </EntryActions>
           </div>
         ) : null}

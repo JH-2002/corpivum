@@ -31,20 +31,23 @@ import { useTurntable } from './useTurntable';
 import { ViewControls } from './ViewControls';
 
 /**
- * Corpo 3D (§15, ADR-0026): modelo paramétrico com controle de datas, regiões com tooltip, vistas,
- * restaurar e modo privacidade local (oculta os números; não é salvo). Recebe só dia e medidas
- * (`TwinRow`). Selos INFORMADO/ESTIMADO, ou DEMO na demonstração (CLAUDE.md regra 7).
+ * Corpo 3D (§15, ADR-0026): modelo paramétrico com controle de datas, regiões com tooltip, vistas e
+ * restaurar. Recebe só dia e medidas (`TwinRow`). Selos INFORMADO/ESTIMADO, ou DEMO na demonstração
+ * (CLAUDE.md regra 7). No modo privacidade global (`hidden`, ADR-0035) os números viram "oculto"; com dados
+ * próprios as linhas já chegam sem medidas e o modelo fica na forma de referência.
  */
 export function BodyTwin({
   rows: inputRows,
   latestHeightCm: inputHeightCm,
   demo,
   describedBy,
+  hidden = false,
 }: {
   rows: TwinRow[];
   latestHeightCm: number | null;
   demo: boolean;
   describedBy: string;
+  hidden?: boolean;
 }) {
   const t = useTranslations('twin.body');
   const [model] = useBodyModel();
@@ -63,7 +66,7 @@ export function BodyTwin({
   const [index, setIndex] = useState(Math.max(0, days.length - 1));
   const [selected, setSelected] = useState<BodyRegion | null>(null);
   const [hover, setHover] = useState<HoverInfo<BodyRegion> | null>(null);
-  const [hideValues, setHideValues] = useState(false);
+  const hideValues = hidden;
   const turntable = useTurntable(VIEW_ANGLE.front);
   const compact = useCompact();
   const fmt = useTwinFormat(hideValues);
@@ -88,6 +91,7 @@ export function BodyTwin({
   const regionName = (r: BodyRegion) => t(`regions.${r}`);
   const regionLine = (r: BodyRegion) => {
     const m = snapshot.values[REGION_FIELD[r]];
+    if (hideValues) return t('measure', { value: fmt.hiddenText });
     return m ? t('measure', { value: fmt.value(m.value, 'cm') }) : t('notInformed');
   };
 
@@ -146,8 +150,6 @@ export function BodyTwin({
                 setSelected(null);
                 setIndex(Math.max(0, days.length - 1));
               }}
-              hideValues={hideValues}
-              onHideValues={setHideValues}
             />
             {model ? <BodyModelPicker /> : null}
             {days.length > 1 && day ? (
@@ -281,7 +283,9 @@ function RegionPanel({
   return (
     <>
       <p className="font-semibold">{name}</p>
-      {current ? (
+      {hideValues ? (
+        <p className="tabular">{t('measure', { value: fmt.hiddenText })}</p>
+      ) : current ? (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="tabular">{t('measure', { value: fmt.value(current.value, 'cm') })}</p>
@@ -327,7 +331,11 @@ function MeasureLine({
       <dt className="text-fg-muted">{label}</dt>
       <dd className="flex flex-wrap items-center justify-between gap-1">
         <span className="tabular font-semibold">
-          {value === null ? t('notInformedShort') : fmt.value(value, unit)}
+          {hideValues
+            ? fmt.hiddenText
+            : value === null
+              ? t('notInformedShort')
+              : fmt.value(value, unit)}
         </span>
         <ConfidenceBadge level={badge} />
       </dd>

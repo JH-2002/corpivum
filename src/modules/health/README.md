@@ -11,3 +11,5 @@ Núcleo compartilhado dos módulos de saúde (ADR-0021).
 - `erasers.ts`: eliminadores de TODAS as tabelas de saúde. Tabela nova = eliminador aqui + classificação em
   `tests/db/health.test.ts`.
 - `form-result.ts`: apoio às server actions (erros traduzidos, modo demo somente leitura).
+- `mask.ts`: modo privacidade no servidor (ADR-0035): tira peso, medidas, altura e calorias dos dados de cada tela
+  antes de chegar aos componentes. Valor novo do corpo numa tela = passar pelo mascarador correspondente.

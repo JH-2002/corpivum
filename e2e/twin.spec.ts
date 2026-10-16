@@ -121,8 +121,13 @@ test.describe('demo público', () => {
 
       const table = page.getByRole('table', { name: /Medidas nas duas datas/ });
       await expect(table.getByRole('row', { name: /Peso/ })).toContainText(/subiu|desceu|igual/);
-      await page.getByRole('button', { name: 'Ocultar valores' }).click();
+      // Ocultar valores é o modo privacidade global do header (ADR-0035).
+      await page.getByRole('button', { name: 'Modo privacidade', exact: true }).click();
+      await expect(page.getByText('Modo privacidade ativo.')).toBeVisible();
+      await expect(table.getByRole('row', { name: /Peso/ })).toContainText('oculto');
       await expect(table.getByRole('row', { name: /Peso/ })).not.toContainText('kg');
+      await page.getByRole('button', { name: 'Modo privacidade', exact: true }).click();
+      await expect(page.getByText('Modo privacidade ativo.')).toHaveCount(0);
       await expectNoAxeViolations(page);
     });
 

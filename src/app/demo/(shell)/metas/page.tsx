@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { GoalsView } from '@/components/modules/goals/GoalsView';
 import { loadGoals } from '@/modules/health/screens';
-import { demoContext } from '../demo-data';
+import { maskGoalsScreen } from '@/modules/health/mask';
+import { demoContext } from '@/app/demo/demo-data';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -10,8 +11,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function DemoGoalsPage() {
-  const { today, source } = await demoContext();
-  const data = await loadGoals(source, today);
+  const { today, source, hidden } = await demoContext();
+  const loaded = await loadGoals(source, today);
+  const data = hidden ? maskGoalsScreen(loaded) : loaded;
   return (
     <GoalsView
       goals={data.goals}
@@ -21,6 +23,7 @@ export default async function DemoGoalsPage() {
       estimateEnabled={data.estimateEnabled}
       today={today}
       mode="publicDemo"
+      hidden={hidden}
     />
   );
 }

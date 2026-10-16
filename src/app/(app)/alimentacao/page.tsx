@@ -5,7 +5,9 @@ import { NutritionView } from '@/components/modules/nutrition/NutritionView';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
 import { readPeriod } from '@/lib/period-server';
 import { requireAppSession } from '@/modules/consent/server';
+import { maskNutritionScreen } from '@/modules/health/mask';
 import { loadNutrition } from '@/modules/health/screens';
+import { readPrivacyMode } from '@/lib/privacy-mode-server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -18,8 +20,10 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const preview = await readPreviewState(searchParams);
   const { range, today } = await readPeriod();
   const view = healthView(session, today);
-  const data =
+  const hidden = await readPrivacyMode();
+  const loaded =
     view.kind === 'data' && !preview ? await loadNutrition(view.source, range, today) : null;
+  const data = loaded && hidden ? maskNutritionScreen(loaded) : loaded;
   return (
     <HealthFrame
       page="nutrition"
@@ -29,7 +33,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
       preview={preview}
     >
       {view.kind === 'data' && data ? (
-        <NutritionView {...data} range={range} today={today} mode={view.mode} />
+        <NutritionView {...data} range={range} today={today} mode={view.mode} hidden={hidden} />
       ) : null}
     </HealthFrame>
   );

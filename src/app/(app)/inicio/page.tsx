@@ -6,6 +6,8 @@ import { HealthFrame, healthView } from '@/components/health/HealthPage';
 import { OpenQuickLogButton } from '@/components/shell/OpenQuickLogButton';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
 import { readPeriod } from '@/lib/period-server';
+import { readPrivacyMode } from '@/lib/privacy-mode-server';
+import { maskDashboard } from '@/modules/health/mask';
 import { requireAppSession } from '@/modules/consent/server';
 import { UpcomingReminders } from '@/components/modules/reminders/UpcomingReminders';
 import { buildDashboard } from '@/modules/health/dashboard';
@@ -26,6 +28,7 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
   const preview = await readPreviewState(searchParams);
   const { range, today } = await readPeriod();
   const view = healthView(session, today);
+  const hidden = await readPrivacyMode();
   const data =
     view.kind === 'data' && !preview
       ? await view.source.session(async (s) => ({
@@ -40,8 +43,9 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
       {data && view.kind === 'data' ? (
         <>
           <Dashboard
-            data={data.dashboard}
+            data={hidden ? maskDashboard(data.dashboard) : data.dashboard}
             mode={view.mode}
+            hidden={hidden}
             emptyAction={<OpenQuickLogButton>{t('pages.home.cta')}</OpenQuickLogButton>}
           />
           <UpcomingReminders

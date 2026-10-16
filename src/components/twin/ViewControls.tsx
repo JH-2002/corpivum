@@ -1,6 +1,6 @@
 'use client';
 
-import { EyeOff, RotateCcw, RotateCw, Undo2 } from 'lucide-react';
+import { RotateCcw, RotateCw, Undo2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { TWIN_VIEWS, VIEW_ANGLE, type TwinView } from './layout';
@@ -18,20 +18,16 @@ const toggle = (pressed: boolean) =>
 
 /**
  * Controles por teclado do modelo (§15, WCAG 2.1.1): vistas frente/costas/lado, girar, restaurar e,
- * opcionalmente, ocultar valores. Tudo que o arrasto faz também está aqui.
+ * Tudo que o arrasto faz também está aqui. Ocultar valores é o modo privacidade global (header, ADR-0035).
  */
 export function ViewControls({
   angle,
   onAngle,
   onReset,
-  hideValues,
-  onHideValues,
 }: {
   angle: number;
   onAngle: (angle: number) => void;
   onReset: () => void;
-  hideValues?: boolean;
-  onHideValues?: (hide: boolean) => void;
 }) {
   const t = useTranslations('twin.controls');
   // A vista fica marcada só quando o modelo está exatamente nela (girar desmarca).
@@ -75,17 +71,6 @@ export function ViewControls({
         <Undo2 aria-hidden className="size-5" />
         {t('reset')}
       </button>
-      {onHideValues ? (
-        <button
-          type="button"
-          className={toggle(Boolean(hideValues))}
-          aria-pressed={Boolean(hideValues)}
-          onClick={() => onHideValues(!hideValues)}
-        >
-          <EyeOff aria-hidden className="size-5" />
-          {t('hideValues')}
-        </button>
-      ) : null}
     </div>
   );
 }

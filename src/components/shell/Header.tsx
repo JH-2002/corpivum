@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { logoutAction } from '@/app/(auth)/actions';
+import {
+  PrivacyModeIndicator,
+  PrivacyModeToggle,
+} from '@/components/privacy-mode/PrivacyModeToggle';
 import { Button, buttonClasses } from '@/components/ui/Button';
 import { Disclosure } from './Disclosure';
 import { HelpMenu } from './HelpMenu';
@@ -17,7 +21,8 @@ const menuItemClass =
 
 /**
  * Header (§8 + adendo): título da página, seletor de período, registro rápido, notificações,
- * atalho para a Central de Privacidade, menu da conta e indicador DEMO quando em demonstração.
+ * atalho para a Central de Privacidade, menu da conta, modo privacidade (ADR-0035) e indicador DEMO quando
+ * em demonstração.
  * `variant="demo"` (demo público, LEG-X02): sem registro rápido, notificações nem conta; CTA para criar
  * conta e link para a Política.
  */
@@ -74,9 +79,14 @@ export function Header({
         )}
       </div>
 
-      <div data-tour="period" className="border-t border-border px-4 py-2 lg:px-6">
-        <PeriodSelector />
+      {/* Segunda linha: período e modo privacidade (na primeira não cabe a 320px, §42). */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2 lg:px-6">
+        <div data-tour="period" className="min-w-0 flex-1">
+          <PeriodSelector />
+        </div>
+        <PrivacyModeToggle />
       </div>
+      <PrivacyModeIndicator />
     </header>
   );
 }

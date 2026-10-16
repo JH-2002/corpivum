@@ -341,6 +341,28 @@ describe('retenção (LEG-R02, LEG-R03)', () => {
     expect(audit.rows[0].n).toBe(0);
   });
 
+  it('provas de reautenticação: apaga vencidas e usadas, mantém a válida (PR1b-R2-B1)', async () => {
+    const [a, b, c] = [
+      await createVerifiedUser(t),
+      await createVerifiedUser(t),
+      await createVerifiedUser(t),
+    ];
+    for (const u of [a, b, c]) {
+      await t.service.issueReauthProof(u.userId, PASSWORD, 'minor_closure');
+    }
+    await admin.query(
+      `UPDATE reauth_proofs SET expires_at = now() - interval '5 minutes' WHERE user_id = $1`,
+      [a.userId],
+    );
+    await admin.query(`UPDATE reauth_proofs SET used_at = now() WHERE user_id = $1`, [b.userId]);
+    expect(await privacy().purgeReauthProofs()).toBeGreaterThanOrEqual(2);
+    const { rows } = await admin.query(
+      `SELECT user_id FROM reauth_proofs WHERE user_id = ANY($1::uuid[])`,
+      [[a.userId, b.userId, c.userId]],
+    );
+    expect(rows).toEqual([{ user_id: c.userId }]);
+  });
+
   it('o prazo das provas tem piso de 1 ano no banco', async () => {
     await expect(db.$queryRaw`SELECT app.privacy_purge_proofs(30)`).rejects.toThrow();
     await expect(db.$queryRaw`SELECT app.privacy_purge_access_logs(365)`).rejects.toThrow();

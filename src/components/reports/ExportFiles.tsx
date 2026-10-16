@@ -29,7 +29,6 @@ export function ExportFiles({
 }) {
   const t = useTranslations('reports.files');
   const th = useTranslations('reports.heading');
-  const tg = useTranslations('reports.generate');
   const format = useFormatter();
   const name = (j: ExportJobSummary) =>
     j.kind === 'full_export'
@@ -79,7 +78,7 @@ export function ExportFiles({
                       : null}
                   </span>
                   {j.hideBodyValues ? (
-                    <span className="text-fg-muted">{tg('hideBody')}</span>
+                    <span className="text-fg-muted">{t('bodyHidden')}</span>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">

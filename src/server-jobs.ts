@@ -4,6 +4,7 @@ import { PgJobQueue } from '@/adapters/jobs/postgres';
 import { APP_TIME_ZONE } from '@/lib/dates';
 import { getEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { assertRetentionPolicy } from '@/lib/retention';
 import { registerAuthJobs, scheduleAuthPurge } from '@/modules/auth/jobs';
 import { getAuthService } from '@/modules/auth/server';
 import { getHealthServices } from '@/modules/health/server';
@@ -16,12 +17,15 @@ import { getReportsService } from '@/modules/reports/server';
 const MEMORY_DRAIN_MS = 60 * 1000;
 
 /**
- * Registra e agenda os jobs recorrentes e liga o consumo da fila nesta instância.
+ * Registra e agenda os jobs recorrentes e liga o consumo da fila nesta instância. Antes, confere a política de
+ * retenção (`assertRetentionPolicy`): backups ≤ PURGE_DAYS, link ≤ 24 h, AccessLog ≤ 180 dias.
  * - Fila em memória (dev/test): laço local.
  * - Fila Postgres (ADR-0019, OI-14): `JOB_WORKER=inline` consome aqui; `off` deixa para um worker separado.
  *   Os agendamentos usam `singletonKey`, então várias instâncias não duplicam jobs recorrentes.
  */
 export async function startJobs(): Promise<void> {
+  // Segunda linha de defesa da política de retenção (ADR-0035): sem ela válida, nenhum job sobe.
+  assertRetentionPolicy(getEnv());
   const { jobs } = getAdapters();
   registerAuthJobs(jobs, getAuthService());
   registerPrivacyJobs(jobs, {

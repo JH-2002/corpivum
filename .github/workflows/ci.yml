@@ -41,9 +41,11 @@ jobs:
       - run: pnpm typecheck
       # Inclui o teste de strings proibidas (LEG-M03) e o de contraste dos tokens (LEG-X01).
       - run: pnpm test
+      # Política de retenção do .env.example e do backup declarado em infra/retention.json (ADR-0035, LEG-S07).
+      - run: pnpm check:retention
       - run: pnpm build
       # JS de entrada por rota; falha se o three.js entrar no dashboard (3D sob demanda, ADR-0026).
-      - run: node scripts/route-js.mjs "(app)/inicio" demo "(app)/twin" demo/twin
+      - run: node scripts/route-js.mjs "(app)/inicio" "demo/(shell)" "(app)/twin" "demo/(shell)/twin" "(presentation)/apresentacao" demo/apresentacao
 
   e2e:
     # Dividido em 2 partes (shards), cada uma com banco e servidor próprios: o job inteiro chegou a 9m54s.
