@@ -7,3 +7,5 @@ arquivo e compara com o registrado nas migrações: as provas antigas continuam 
 
 - `consent_health_data.v1.json`: consentimento de saúde da Fase 1b, substituído na reorientação (ADR-0027).
 - `terms.v1.json`: Termos de Uso da Fase 1b, com a seção "Sugestões do app"; substituídos pela v2 (ADR-0031).
+- `privacy_policy.v1.json`: Política de Privacidade da Fase 1b, sem a lista das categorias de dados de bem-estar,
+  o prazo das contas sem onboarding e os cookies; substituída pela v2 (ADR-0041).

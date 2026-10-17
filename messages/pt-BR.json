@@ -657,21 +657,23 @@
       "s1Title": "Quem somos",
       "s1Body": "O HealthMind 360 é oferecido por '{{CONTROLADOR}}', controlador dos dados pessoais tratados no app. O encarregado pelo tratamento de dados é '{{ENCARREGADO}}', com contato em '{{CONTATO_ENCARREGADO}}'.",
       "s2Title": "Quais dados tratamos",
-      "s2Body": "Dados da conta (e-mail, senha protegida por hash, declaração de maioridade, configurações de segurança); dados de bem-estar que você registrar, somente com sua autorização; registros de acesso (IP, data e hora); e registros mínimos que provam suas escolhas de privacidade e seus pedidos.",
+      "s2Body": "Dados da conta: e-mail, senha protegida por hash, data e hora da declaração de maioridade (nunca a data de nascimento) e configurações de segurança, como a verificação em duas etapas. Dados de bem-estar, somente com sua autorização e só o que você registrar: peso e medidas do corpo; sono; hábitos; alimentação (refeições, água e, se você ligar, a estimativa de calorias); atividade física; metas e lembretes. Registros de acesso (IP, data e hora). Registros mínimos que provam suas escolhas de privacidade e seus pedidos, sem e-mail e sem conteúdo. Não pedimos nome, documento, foto nem localização.",
       "s3Title": "Para que usamos e com qual base legal",
-      "s3Body": "Conta e autenticação: execução do contrato. Dados de bem-estar: consentimento específico e destacado. Comunicações sobre novidades e métricas ligadas à conta: consentimentos separados e opcionais. Segurança da conta: legítimo interesse, sem dados de bem-estar. Registros de acesso: obrigação legal, se aplicável. Prova de consentimento e de pedidos: exercício regular de direitos.",
+      "s3Body": "Conta e autenticação: execução do contrato. Dados de bem-estar: consentimento específico e destacado. Comunicações sobre novidades e métricas ligadas à conta: consentimentos separados e opcionais. Segurança da conta: legítimo interesse, sem dados de bem-estar. Registros de acesso: obrigação legal, se aplicável. Prova de consentimento e de pedidos e atendimento aos seus pedidos: exercício regular de direitos e atendimento ao titular.",
       "s4Title": "Com quem compartilhamos",
-      "s4Body": "Somente com os provedores listados em Subprocessadores, para operar o serviço. Não vendemos dados, não usamos dados para publicidade e não compartilhamos dados de bem-estar com outros controladores para obter vantagem econômica.",
+      "s4Body": "Somente com os provedores listados em Subprocessadores, para operar o serviço. Os e-mails que enviamos (confirmação de cadastro, redefinição de senha, avisos de segurança, recibos de pedidos, lembretes e avisos sobre a conta) nunca levam conteúdo dos seus registros. Não vendemos dados, não usamos dados para publicidade e não compartilhamos dados de bem-estar com outros controladores para obter vantagem econômica.",
       "s5Title": "Onde os dados ficam",
       "s5Body": "Banco de dados, armazenamento, filas e execução do servidor ficam no Brasil. Qualquer serviço que trate dados fora do Brasil aparece em Subprocessadores antes de ser ativado.",
       "s6Title": "Por quanto tempo",
-      "s6Body": "Dados de bem-estar: enquanto a conta existir e você mantiver a autorização. Se você revogar a autorização, os dados são eliminados após o prazo informado na revogação, a menos que você autorize de novo antes. Conta com e-mail nunca confirmado: apagada 7 dias após o cadastro. Registros de acesso: até '{{RETENCAO_ACESSO}}'. Provas de consentimento e de pedidos: '{{RETENCAO_PROVA}}', com dados mínimos.",
+      "s6Body": "Dados de bem-estar: enquanto a conta existir e você mantiver a autorização. Se você revogar a autorização, os dados são eliminados após o prazo informado na revogação, a menos que você autorize de novo antes. Conta com e-mail nunca confirmado: apagada 7 dias após o cadastro. Conta com e-mail confirmado que não conclui o cadastro inicial (aceite dos Termos e escolhas de privacidade): enviamos um aviso por e-mail no 23º dia e a conta é apagada 30 dias após o cadastro, nunca antes de 7 dias depois do aviso; até lá, você pode concluir o cadastro ou excluir a conta. Conta excluída por você: apagada em minutos. Registros de acesso: até '{{RETENCAO_ACESSO}}'. Provas de consentimento e de pedidos: '{{RETENCAO_PROVA}}', com dados mínimos. Cópias de segurança: substituídas em até '{{PRAZO_BACKUP}}'.",
       "s7Title": "Seus direitos",
-      "s7Body": "Você pode confirmar e acessar seus dados, corrigi-los, pedir portabilidade, anonimização ou eliminação, saber com quem compartilhamos e revogar autorizações a qualquer momento, pela Central de Privacidade ou pelo contato do encarregado.",
+      "s7Body": "Você pode confirmar e acessar seus dados, corrigi-los, pedir portabilidade, anonimização ou eliminação, saber com quem compartilhamos e revogar autorizações a qualquer momento, pela Central de Privacidade ou pelo contato do encarregado. Se você ainda não concluiu o cadastro inicial, a opção de excluir a conta fica no rodapé das telas do cadastro.",
       "s8Title": "Idade mínima",
-      "s8Body": "O HealthMind 360 é exclusivo para pessoas com 18 anos ou mais. Se você tem menos de 18 anos, use a opção de encerramento na Central de Privacidade: a conta e os dados registrados são apagados na hora. Ficam só, sem e-mail e sem conteúdo, a prova do encerramento e das escolhas de privacidade e os registros de acesso, pelos prazos de 'Por quanto tempo'; cópias de segurança são substituídas em até '{{PRAZO_BACKUP}}'.",
-      "s9Title": "Mudanças nesta política",
-      "s9Body": "Quando houver mudança importante, avisaremos e pediremos sua confirmação antes de continuar."
+      "s8Body": "O HealthMind 360 é exclusivo para pessoas com 18 anos ou mais. Se você tem menos de 18 anos, use a opção de encerramento na Central de Privacidade ou, se ainda não concluiu o cadastro inicial, no rodapé das telas do cadastro: a conta e os dados registrados são apagados na hora. Ficam só, sem e-mail e sem conteúdo, a prova do encerramento e das escolhas de privacidade e os registros de acesso, pelos prazos da seção Por quanto tempo; cópias de segurança são substituídas em até '{{PRAZO_BACKUP}}'.",
+      "s9Title": "Cookies e armazenamento no navegador",
+      "s9Body": "Usamos só cookies necessários ao funcionamento: a sessão da conta, o reconhecimento de um aparelho em que você já entrou (para proteger o login contra bloqueios feitos por outras pessoas), a verificação de idade no cadastro e as preferências que você escolhe na tela (período exibido, modo privacidade e modo apresentação), que somem ao fechar o navegador. O tema de cores, a aparência do modelo 3D e o tour da demonstração ficam guardados só no seu navegador e não são enviados para nós. Não usamos cookies de publicidade, de análise de terceiros nem de rastreamento.",
+      "s10Title": "Mudanças nesta política",
+      "s10Body": "Quando a mudança ampliar o tratamento dos seus dados (por exemplo, uma nova finalidade ou um novo tipo de dado), pediremos sua confirmação antes de continuar. Quando não ampliar, avisaremos dentro do app e registraremos que você viu o aviso."
     },
     "terms": {
       "title": "Termos de Uso",
@@ -1621,6 +1623,9 @@
     "changes": {
       "terms": {
         "v2": "Os Termos de Uso estão na versão 2: saiu a seção \"Sugestões do app\", porque o app não faz sugestões automáticas. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo."
+      },
+      "privacy_policy": {
+        "v2": "A Política de Privacidade está na versão 2: agora lista cada tipo de dado de bem-estar, explica o prazo de 30 dias para contas que não concluem o cadastro inicial, descreve os cookies e diz onde excluir a conta durante o cadastro. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo."
       },
       "generic": "O documento está na versão {version}. Você não precisa aceitar de novo."
     },

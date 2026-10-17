@@ -1,0 +1,21 @@
+{
+  "title": "Política de Privacidade",
+  "s1Title": "Quem somos",
+  "s1Body": "O HealthMind 360 é oferecido por '{{CONTROLADOR}}', controlador dos dados pessoais tratados no app. O encarregado pelo tratamento de dados é '{{ENCARREGADO}}', com contato em '{{CONTATO_ENCARREGADO}}'.",
+  "s2Title": "Quais dados tratamos",
+  "s2Body": "Dados da conta (e-mail, senha protegida por hash, declaração de maioridade, configurações de segurança); dados de bem-estar que você registrar, somente com sua autorização; registros de acesso (IP, data e hora); e registros mínimos que provam suas escolhas de privacidade e seus pedidos.",
+  "s3Title": "Para que usamos e com qual base legal",
+  "s3Body": "Conta e autenticação: execução do contrato. Dados de bem-estar: consentimento específico e destacado. Comunicações sobre novidades e métricas ligadas à conta: consentimentos separados e opcionais. Segurança da conta: legítimo interesse, sem dados de bem-estar. Registros de acesso: obrigação legal, se aplicável. Prova de consentimento e de pedidos: exercício regular de direitos.",
+  "s4Title": "Com quem compartilhamos",
+  "s4Body": "Somente com os provedores listados em Subprocessadores, para operar o serviço. Não vendemos dados, não usamos dados para publicidade e não compartilhamos dados de bem-estar com outros controladores para obter vantagem econômica.",
+  "s5Title": "Onde os dados ficam",
+  "s5Body": "Banco de dados, armazenamento, filas e execução do servidor ficam no Brasil. Qualquer serviço que trate dados fora do Brasil aparece em Subprocessadores antes de ser ativado.",
+  "s6Title": "Por quanto tempo",
+  "s6Body": "Dados de bem-estar: enquanto a conta existir e você mantiver a autorização. Se você revogar a autorização, os dados são eliminados após o prazo informado na revogação, a menos que você autorize de novo antes. Conta com e-mail nunca confirmado: apagada 7 dias após o cadastro. Registros de acesso: até '{{RETENCAO_ACESSO}}'. Provas de consentimento e de pedidos: '{{RETENCAO_PROVA}}', com dados mínimos.",
+  "s7Title": "Seus direitos",
+  "s7Body": "Você pode confirmar e acessar seus dados, corrigi-los, pedir portabilidade, anonimização ou eliminação, saber com quem compartilhamos e revogar autorizações a qualquer momento, pela Central de Privacidade ou pelo contato do encarregado.",
+  "s8Title": "Idade mínima",
+  "s8Body": "O HealthMind 360 é exclusivo para pessoas com 18 anos ou mais. Se você tem menos de 18 anos, use a opção de encerramento na Central de Privacidade: a conta e os dados registrados são apagados na hora. Ficam só, sem e-mail e sem conteúdo, a prova do encerramento e das escolhas de privacidade e os registros de acesso, pelos prazos de 'Por quanto tempo'; cópias de segurança são substituídas em até '{{PRAZO_BACKUP}}'.",
+  "s9Title": "Mudanças nesta política",
+  "s9Body": "Quando houver mudança importante, avisaremos e pediremos sua confirmação antes de continuar."
+}
