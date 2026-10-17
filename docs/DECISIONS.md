@@ -1504,7 +1504,7 @@ fornecedores e a revisão jurídica e clínica são do CHECKLIST.
   contas sem onboarding), SUBPROCESSORS 0.4 (P7-B10; livro de reaplicação e gerenciador de segredos também na página
   pública), INTENDED_USE 0.4. Runbooks: KEY_ROTATION (P7-B8), INCIDENT (P7-B9), DATA_SUBJECT_REQUEST (P7-N3).
 - **Placeholders padronizados:** catálogo único `docs/legal/PLACEHOLDERS.md` (o que é, quem decide e o valor
-  implementado hoje); nomes ambíguos renomeados (`{{CONTATO}}`, `{{DATA}}`, `{{RESPONSAVEL}}` etc.) e os `{{}}` do
+  implementado hoje); nomes ambíguos renomeados (CONTATO, DATA, RESPONSAVEL etc. ganharam sufixo) e as lacunas vazias do
   RIPD preenchidos. `tests/content/placeholders.test.ts` varre `docs/`, `messages/`, `legal/` e `infra/` e recusa
   placeholder fora do catálogo, vazio ou fora do formato, e linha do catálogo sem uso (`{{...}}` é a notação genérica).
 - **Pacote para o jurídico:** `docs/legal/PACOTE_JURIDICO.md` agrupa as questões abertas em 10 temas, cada um com

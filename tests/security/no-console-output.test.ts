@@ -177,16 +177,25 @@ export function findForbiddenOutput(fileName: string, code: string): string[] {
 }
 
 describe('saída só pelo logger em src/ (7c-R3)', () => {
-  it('nenhum arquivo usa console nem escreve direto no stdout/stderr fora do logger e da guarda', () => {
-    const files = sourceFiles();
-    expect(files.length).toBeGreaterThan(100);
-    const offenders = files
-      .filter((f) => !ALLOWED.has(f))
-      .flatMap((f) =>
-        findForbiddenOutput(f, readFileSync(path.join(SRC, f), 'utf8')).map((hit) => `${f}:${hit}`),
-      );
-    expect(offenders).toEqual([]);
-  });
+  // Lê a árvore sintática de todo o src/: com a suíte inteira em paralelo no Windows, passa dos 5 s padrão.
+  it(
+    'nenhum arquivo usa console nem escreve direto no stdout/stderr fora do logger e da guarda',
+    {
+      timeout: 30_000,
+    },
+    () => {
+      const files = sourceFiles();
+      expect(files.length).toBeGreaterThan(100);
+      const offenders = files
+        .filter((f) => !ALLOWED.has(f))
+        .flatMap((f) =>
+          findForbiddenOutput(f, readFileSync(path.join(SRC, f), 'utf8')).map(
+            (hit) => `${f}:${hit}`,
+          ),
+        );
+      expect(offenders).toEqual([]);
+    },
+  );
 
   it('o detector pega as formas de contorno e ignora comentários, tipos e process.env', () => {
     const code = [
