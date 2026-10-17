@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { AdapterError, NotFoundError } from '@/lib/errors';
 import { isValidStorageKey, type StorageProvider, type StoredObjectInfo } from './types';
@@ -55,6 +55,33 @@ export class LocalStorageProvider implements StorageProvider {
   async deletePrefix(prefix: string): Promise<void> {
     const { file } = this.#paths(prefix);
     await rm(file, { recursive: true, force: true });
+  }
+
+  async list(prefix: string, limit: number, startAfter?: string): Promise<string[]> {
+    const { file } = this.#paths(prefix);
+    let entries: string[];
+    try {
+      entries = await readdir(file, { recursive: true });
+    } catch (cause) {
+      if ((cause as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw new AdapterError('storage.local', 'list', { cause });
+    }
+    const keys: string[] = [];
+    for (const entry of entries) {
+      const key = `${prefix}/${entry.split(path.sep).join('/')}`;
+      if (key.endsWith('.meta.json') || !isValidStorageKey(key)) continue;
+      if (
+        await stat(path.join(file, entry)).then(
+          (s) => s.isFile(),
+          () => false,
+        )
+      )
+        keys.push(key);
+    }
+    return keys
+      .sort()
+      .filter((k) => startAfter === undefined || k > startAfter)
+      .slice(0, limit);
   }
 
   async exists(key: string): Promise<boolean> {

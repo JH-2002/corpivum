@@ -5,7 +5,8 @@ import { EXPORT_JOB, type ReportsService } from './service';
 /**
  * Jobs da exportação (ADR-0032). Payloads só com IDs (LEG-R04).
  * - `reports.generate` ({ userId, jobId }): gera o arquivo; rechecha consentimento e estado.
- * - `reports.expire` (de hora em hora): marca vencidos e apaga os arquivos (teto de 24 h, LEG-D03).
+ * - `reports.expire` (de hora em hora): marca vencidos e apaga os arquivos (teto de 24 h, LEG-D03); depois, os
+ *   arquivos órfãos do storage (OI-35).
  */
 export const EXPORT_EXPIRE_JOB = 'reports.expire';
 export const EXPORT_EXPIRE_MS = 60 * 60 * 1000;
@@ -14,7 +15,7 @@ const generatePayload = z.object({ userId: z.uuid(), jobId: z.uuid() });
 
 export function registerReportJobs(
   queue: JobQueue,
-  service: Pick<ReportsService, 'generate' | 'expireDue'>,
+  service: Pick<ReportsService, 'generate' | 'expireDue' | 'sweepOrphans'>,
   now: () => Date = () => new Date(),
 ): void {
   queue.register(EXPORT_JOB, async (payload) => {
@@ -24,6 +25,7 @@ export function registerReportJobs(
   queue.register(EXPORT_EXPIRE_JOB, async () => {
     try {
       await service.expireDue();
+      await service.sweepOrphans();
     } finally {
       await queue.enqueue(
         EXPORT_EXPIRE_JOB,

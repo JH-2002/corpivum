@@ -16,6 +16,12 @@ export interface StorageProvider {
   exists(key: string): Promise<boolean>;
   /** Apaga todos os objetos sob o prefixo (ex.: `exports/<userId>`), na eliminação e na exclusão (PR1b-B9). */
   deletePrefix(prefix: string): Promise<void>;
+  /**
+   * Chaves dos objetos sob o prefixo, em ordem, depois de `startAfter` (se houver), até `limit` (varredura de
+   * órfãos, OI-35). Só as chaves: nunca o conteúdo. No provedor real, listagem por prefixo (ex.: ListObjectsV2
+   * com `StartAfter`), na mesma região (LEG-S10).
+   */
+  list(prefix: string, limit: number, startAfter?: string): Promise<string[]>;
 }
 
 /** Segmentos alfanuméricos separados por `/`; sem `..`, sem caminho absoluto. */

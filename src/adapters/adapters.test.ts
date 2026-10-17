@@ -116,6 +116,18 @@ describe('LocalStorageProvider', () => {
     await expect(storage.get('exports/u1/arquivo.json')).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it('lista as chaves sob o prefixo, sem os metadados, em ordem e até o limite (OI-35)', async () => {
+    const storage = new LocalStorageProvider(dir);
+    const opts = { contentType: 'application/octet-stream' };
+    await storage.put('exports/u2/b.bin', new Uint8Array([1]), opts);
+    await storage.put('exports/u1/a.bin', new Uint8Array([1]), opts);
+    await storage.put('outro/c.bin', new Uint8Array([1]), opts);
+    expect(await storage.list('exports', 10)).toEqual(['exports/u1/a.bin', 'exports/u2/b.bin']);
+    expect(await storage.list('exports', 1)).toEqual(['exports/u1/a.bin']);
+    expect(await storage.list('exports', 10, 'exports/u1/a.bin')).toEqual(['exports/u2/b.bin']);
+    expect(await storage.list('vazio', 10)).toEqual([]);
+  });
+
   it.each(['../fora', '/absoluto', 'a/../../b', 'a//b', '', 'C:\\x'])(
     'recusa chave insegura %j',
     async (key) => {
