@@ -142,7 +142,7 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 
 | STRIDE | Ameaça | Controle atual | Residual |
 |---|---|---|---|
-| I | Dado excluído sobrevive em backup | Retenção ≤ `PURGE_DAYS`, conferida no `parseEnv`, nos jobs e na CI (`check:retention`); reaplicação da purga depois de restaurar (`BACKUP_RESTORE.md`) | Média: conferência na configuração real do provedor e teste de restauração (7e + CHECKLIST) |
+| I | Dado excluído sobrevive em backup | Retenção ≤ `PURGE_DAYS`, conferida no `parseEnv`, nos jobs e na CI (`check:retention`); reaplicação testada depois de restaurar: exclusões, encerramentos, expurgos, revogações e eliminações a partir da origem ou do livro cifrado, sessões zeradas (`BACKUP_RESTORE.md`, ADR-0040) | Baixa: conferência no provedor real e primeiro ensaio lá (CHECKLIST); sem origem nem livro, o intervalo se perde (7e-R1) |
 | I | Backup fora do Brasil ou sem cifra | Declarado em `infra/retention.json` | Média até o provedor existir (D1, 7e) |
 
 ### F9 Build e dependências

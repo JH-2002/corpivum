@@ -14,7 +14,7 @@ import { exportTables, type AccountExport, type ExportTableName } from './datase
 import { fullExportJson, fullExportZip } from './export';
 import { calendarRange, isValidReference, type ReportPeriod } from './period';
 import { buildReport, type ReportModel } from './report';
-import { EXPORT_FILE_FIELD, exportKey } from './storage';
+import { EXPORT_FILE_FIELD, EXPORTS_ROOT, exportKey, parseExportKey } from './storage';
 import { exportRecordsFromRows } from './export-rows';
 import { createFieldCipher } from '@/modules/health/core';
 
@@ -267,6 +267,9 @@ export function createReportsService(deps: ReportsDeps) {
   }
 
   /** Apaga o arquivo e marca a linha. Falha no storage: a linha continua pendente e o job tenta de novo. */
+  /** Onde a última varredura de órfãos parou (em memória: depois de reiniciar, começa do início). */
+  let orphanCursor: string | undefined;
+
   async function cleanupOne(userId: string, jobId: string): Promise<boolean> {
     try {
       await deps.storage.delete(exportKey(userId, jobId));
@@ -546,6 +549,38 @@ export function createReportsService(deps: ReportsDeps) {
       if (done > 0) logger.info('reports.expired', { count: done });
       if (rowsPurged > 0) logger.info('reports.rows_purged', { count: rowsPurged });
       return done;
+    },
+
+    /**
+     * Arquivos órfãos no storage (OI-35): lista o prefixo `exports/` e apaga os arquivos que nenhum pedido com
+     * arquivo vivo reconhece (`app.exports_orphans`, só no app_worker), como o de uma geração que terminou depois
+     * da purga da conta. Chave fora do formato não é apagada: só contada no log. Até `limit` chaves por execução,
+     * continuando de onde a anterior parou (revisão B5 da 7e: com muitos arquivos vivos, os do fim da lista também
+     * são vistos); a regra de ciclo de vida do provedor (`infra/retention.json`) é a rede de segurança.
+     */
+    async sweepOrphans(limit = 1000): Promise<number> {
+      const worker = deps.workerDb?.() ?? db;
+      const keys = await deps.storage.list(EXPORTS_ROOT, limit, orphanCursor);
+      orphanCursor = keys.length < limit ? undefined : keys.at(-1);
+      const parsed = keys.map(parseExportKey);
+      const known = parsed.filter((k) => k !== null);
+      const unknown = parsed.length - known.length;
+      if (unknown > 0) logger.warn('reports.orphans_unknown', { count: unknown });
+      if (known.length === 0) return 0;
+      const orphans = await worker.$queryRaw<Array<{ user_id: string; job_id: string }>>`
+        SELECT user_id, job_id FROM app.exports_orphans(
+          ${known.map((k) => k.userId)}::uuid[], ${known.map((k) => k.jobId)}::uuid[])`;
+      let removed = 0;
+      for (const o of orphans) {
+        try {
+          await deps.storage.delete(exportKey(o.user_id, o.job_id));
+          removed += 1;
+        } catch {
+          // Fica para a próxima execução.
+        }
+      }
+      if (removed > 0) logger.info('reports.orphans_removed', { count: removed });
+      return removed;
     },
   };
 }

@@ -69,4 +69,14 @@ export function pointToTestDatabase(): void {
     throw new Error('TEST_WORKER_DATABASE_URL aponta para outro banco.');
   }
   process.env.WORKER_DATABASE_URL = worker;
+  // Livro de reaplicação dos backups (ADR-0040): papel app_backup no mesmo banco de testes.
+  const backup = process.env.TEST_BACKUP_DATABASE_URL;
+  if (!backup) {
+    throw new Error('Defina TEST_BACKUP_DATABASE_URL no .env (papel app_backup; LOCAL_DEV.md).');
+  }
+  assertDisposableDatabase(backup);
+  if (databaseName(backup) !== databaseName(user)) {
+    throw new Error('TEST_BACKUP_DATABASE_URL aponta para outro banco.');
+  }
+  process.env.BACKUP_DATABASE_URL = backup;
 }

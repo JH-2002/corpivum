@@ -225,7 +225,11 @@ describe('privilégios e funções SECURITY DEFINER (ADR-0015)', () => {
       'onboarding_expired_purge',
       // Alerta de volume (ADR-0038, P7-M1).
       'security_volume_sample',
+      // Órfãos do storage (OI-35, ADR-0040).
+      'exports_orphans',
     ]);
+    // Reaplicação depois de restaurar um backup (P7-M3, ADR-0040): só o dono, nenhum papel da aplicação.
+    const ownerOnly = (name: string) => name.startsWith('restore_');
     expect(
       rows
         .filter((fn) => fn.op)
@@ -240,11 +244,13 @@ describe('privilégios e funções SECURITY DEFINER (ADR-0015)', () => {
       'operator_role',
     ]);
     expect(rows.filter((fn) => workerOnly.has(fn.name))).toHaveLength(workerOnly.size);
+    expect(rows.filter((fn) => ownerOnly(fn.name))).toHaveLength(8);
     for (const fn of rows) {
       expect(fn.pub, fn.name).toBe(false);
-      expect(fn.usr, fn.name).toBe(!operatorOnly(fn.name) && !workerOnly.has(fn.name));
+      const appRole = !ownerOnly(fn.name);
+      expect(fn.usr, fn.name).toBe(appRole && !operatorOnly(fn.name) && !workerOnly.has(fn.name));
       // O worker herda o app_user (jobs por pessoa) e executa as próprias; nunca as do operador.
-      expect(fn.wrk, fn.name).toBe(!operatorOnly(fn.name));
+      expect(fn.wrk, fn.name).toBe(appRole && !operatorOnly(fn.name));
     }
   });
 

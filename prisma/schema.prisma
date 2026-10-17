@@ -320,6 +320,8 @@ enum AuditAction {
   privacy_request_registered
   /// Consulta do encarregado que não abriu pedido (e-mail sem conta ou pedido já aberto), 7b-R3/ADR-0038.
   privacy_request_lookup
+  /// Reaplicação depois de restaurar um backup (P7-M3, ADR-0040): só pelas funções `app.restore_*`.
+  restore_reapplied
 
   @@map("audit_action")
 }

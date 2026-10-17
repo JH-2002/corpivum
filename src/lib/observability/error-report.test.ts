@@ -5,7 +5,7 @@ import { MemoryErrorReporter } from '@/adapters/error-reporter/memory';
 import { MemoryJobQueue } from '@/adapters/jobs/memory';
 import { AdapterError, NotFoundError } from '@/lib/errors';
 import { createLogger, type LogRecord } from '@/lib/logger';
-import { guardConsoleArgs, installConsoleGuard } from './console-guard';
+import { GUARDED_CONSOLE_METHODS, guardConsoleArgs, installConsoleGuard } from './console-guard';
 import {
   buildJobErrorReport,
   buildRequestErrorReport,
@@ -361,17 +361,32 @@ describe('guarda do console (produção)', () => {
     expect(guardConsoleArgs(['{"level":"toString","event":"x.y"}'])).toEqual(['[redacted]']);
   });
 
-  it('instala uma vez só e filtra error e warn', () => {
+  it('instala uma vez só e filtra todos os métodos de saída (7c-R3)', () => {
     const printed: unknown[][] = [];
-    const fake = {
-      error: (...args: unknown[]) => printed.push(args),
-      warn: (...args: unknown[]) => printed.push(args),
-    } as unknown as Console;
+    const sink = (...args: unknown[]) => printed.push(args);
+    const fake = Object.fromEntries(
+      GUARDED_CONSOLE_METHODS.map((m) => [m, sink]),
+    ) as unknown as Console;
     installConsoleGuard(fake);
     installConsoleGuard(fake);
     fake.error('peso=82', poisonedError());
     fake.warn('comi só uma maçã');
-    expect(printed).toHaveLength(2);
+    // Dependências (Next, Prisma, pg) que imprimem por log/info/debug também passam pela guarda.
+    fake.log('prisma:query SELECT * FROM users WHERE email = $1', ['pessoa@exemplo.invalid']);
+    fake.info('nota: dormi mal');
+    fake.debug({ weightKg: 82 });
+    fake.trace('peso=82');
+    fake.dir({ email: 'pessoa@exemplo.invalid' });
+    fake.table([{ peso: 82 }]);
+    expect(printed).toHaveLength(8);
     expectClean(printed);
+    expect(JSON.stringify(printed)).not.toMatch(/exemplo\.invalid|dormi|maçã|82|SELECT/);
+    const line = JSON.stringify({
+      ts: '2026-10-16T12:00:00.000Z',
+      level: 'info',
+      event: 'job.done',
+    });
+    fake.log(line);
+    expect(printed.at(-1)).toEqual([line]);
   });
 });

@@ -444,6 +444,7 @@ describe('revisão de privacidade da 6a (ADR-0032)', () => {
       get: (k) => storage.get(k),
       exists: (k) => storage.exists(k),
       deletePrefix: (p) => storage.deletePrefix(p),
+      list: (p, n, a) => storage.list(p, n, a),
       delete: async (k) => {
         if (fail) throw new Error('storage fora do ar');
         await storage.delete(k);
@@ -469,6 +470,53 @@ describe('revisão de privacidade da 6a (ADR-0032)', () => {
     await s.expireDue();
     const { rows } = await admin.query(`SELECT 1 FROM data_export_jobs WHERE id = $1`, [jobId]);
     expect(rows).toHaveLength(0);
+  });
+
+  it('OI-35: a varredura apaga só o arquivo que nenhum pedido vivo reconhece', async () => {
+    const a = await person();
+    const s = service();
+    const live = await ready(a.userId, s);
+    // Geração que terminou depois da purga: arquivo de uma pessoa que não existe mais.
+    const ghostUser = '00000000-0000-4000-8000-0000000000aa';
+    const ghostJob = '00000000-0000-4000-8000-0000000000bb';
+    await storage.put(exportKey(ghostUser, ghostJob), new Uint8Array([1, 2, 3]), {
+      contentType: 'application/octet-stream',
+    });
+    // Arquivo dado como apagado, mas que reapareceu (gravação atrasada).
+    const gone = await ready(a.userId, s);
+    await s.remove(a.userId, gone);
+    await storage.put(exportKey(a.userId, gone), new Uint8Array([4]), {
+      contentType: 'application/octet-stream',
+    });
+    // Fora do formato: fica e só conta no log.
+    await storage.put('exports/estranho.bin', new Uint8Array([5]), {
+      contentType: 'application/octet-stream',
+    });
+
+    expect(await s.sweepOrphans()).toBe(2);
+    expect(await storage.exists(exportKey(ghostUser, ghostJob))).toBe(false);
+    expect(await storage.exists(exportKey(a.userId, gone))).toBe(false);
+    expect(await storage.exists(exportKey(a.userId, live))).toBe(true);
+    expect(await storage.exists('exports/estranho.bin')).toBe(true);
+    await storage.delete('exports/estranho.bin');
+
+    // Com o limite menor que a lista, a execução seguinte continua de onde parou (revisão B5).
+    const orphanA = exportKey('00000000-0000-4000-8000-0000000000c1', ghostJob);
+    const orphanB = exportKey('ffffffff-0000-4000-8000-0000000000c2', ghostJob);
+    for (const k of [orphanA, orphanB]) {
+      await storage.put(k, new Uint8Array([6]), { contentType: 'application/octet-stream' });
+    }
+    const paged = service();
+    let removed = 0;
+    const total = (await storage.list('exports', 1000)).length;
+    for (let i = 0; i <= total; i += 1) removed += await paged.sweepOrphans(1);
+    expect(removed).toBe(2);
+    expect(await storage.exists(orphanB)).toBe(false);
+    expect(await storage.exists(exportKey(a.userId, live))).toBe(true);
+    // O runtime web não executa a consulta dos órfãos (ADR-0037).
+    await expect(
+      db.$queryRaw`SELECT * FROM app.exports_orphans('{}'::uuid[], '{}'::uuid[])`,
+    ).rejects.toThrow();
   });
 
   it('A1: falha ao apagar os arquivos desfaz a eliminação; a nova tentativa conclui', async () => {

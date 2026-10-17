@@ -38,3 +38,6 @@ Thumbs.db
 
 # Claude Code: configurações locais
 .claude/settings.local.json
+
+# backups e livros cifrados locais (pnpm backup:*; ADR-0040)
+.backups/

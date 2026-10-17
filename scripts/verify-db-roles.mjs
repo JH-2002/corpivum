@@ -210,6 +210,49 @@ try {
   );
   check('amostra de volume executada só pelo app_worker', sampler[0]?.ok);
 
+  // ADR-0040 (P7-M3): reaplicação depois de restaurar um backup só pelo dono, nunca pela aplicação.
+  const { rows: restoreFns } = await migrator.query(
+    `SELECT count(*)::int AS total,
+            count(*) FILTER (WHERE has_function_privilege('app_user', p.oid, 'EXECUTE')
+                               OR has_function_privilege('app_worker', p.oid, 'EXECUTE')
+                               OR has_function_privilege('app_operator', p.oid, 'EXECUTE')
+                               OR (p.proname <> 'restore_ledger'
+                                   AND to_regrole('app_backup') IS NOT NULL
+                                   AND has_function_privilege('app_backup', p.oid, 'EXECUTE')))::int AS open
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'app' AND p.proname LIKE 'restore\_%'`,
+  );
+  check('funções app.restore_* só do dono (nenhum papel da aplicação)', restoreFns[0]?.open === 0);
+  // Revisão M3 da 7e: o papel do livro só executa app.restore_ledger e não lê tabela nenhuma.
+  const { rows: backupRole } = await migrator.query(
+    `SELECT r.rolname, r.rolsuper OR r.rolbypassrls OR r.rolcreatedb OR r.rolcreaterole AS power,
+            (SELECT count(*) FROM pg_auth_members m WHERE m.member = r.oid)::int AS groups,
+            (SELECT coalesce(array_agg(p.proname::text ORDER BY p.proname), '{}')
+               FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+              WHERE n.nspname = 'app' AND has_function_privilege(r.oid, p.oid, 'EXECUTE')) AS fns,
+            (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname IN ('public', 'app') AND c.relkind IN ('r', 'v', 'm')
+                AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))::int AS tables
+       FROM pg_roles r WHERE r.rolname = 'app_backup'`,
+  );
+  const b = backupRole[0];
+  check(
+    'app_backup só executa app.restore_ledger, sem tabelas, atributos nem grupos',
+    b &&
+      !b.power &&
+      b.groups === 0 &&
+      b.tables === 0 &&
+      (b.fns ?? []).join(',') === 'restore_ledger',
+  );
+  // OI-35: a consulta de órfãos do storage é da varredura (app_worker), nunca do runtime web.
+  const { rows: orphans } = await migrator.query(
+    `SELECT to_regprocedure('app.exports_orphans(uuid[], uuid[])') IS NULL
+            OR (NOT has_function_privilege('app_user', 'app.exports_orphans(uuid[], uuid[])', 'EXECUTE')
+                AND has_function_privilege('app_worker', 'app.exports_orphans(uuid[], uuid[])', 'EXECUTE'))
+            AS ok`,
+  );
+  check('consulta de órfãos do storage só no app_worker', orphans[0]?.ok);
+
   const { rows: who } = await runtime.query('SELECT current_user AS u');
   check('DATABASE_URL conecta como app_user', who[0]?.u === 'app_user');
 
