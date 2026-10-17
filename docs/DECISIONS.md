@@ -1516,3 +1516,11 @@ fornecedores e a revisão jurídica e clínica são do CHECKLIST.
   linguagem simples do que o app faz, do que falta e de quem faz.
 **Consequências.** Fim da Fase 7. Próximos passos dependem do CHECKLIST (etapa 1). Preencher um placeholder de texto
 versionado é versão nova do documento.
+**Revisão do `privacy-reviewer` (7f).** Nada crítico. Corrigido: **A1** livro de reaplicação com IP e papel do
+operador nos textos públicos, SUBPROCESSORS, ROPA e RETENTION; **M1** a regra de mudanças da Política mantém a
+promessa da v1 (mudança importante pede confirmação), o aviso cita o acréscimo e OI-30 ganha a pergunta (e); **M2**
+KEY_ROTATION com rotação programada × comprometimento e o aviso de que o KMS com vários `keyId` e a recifragem ainda
+não existem; **M3** data de nascimento pedida e não guardada; **M4** bases legais de backups, registros técnicos,
+cookies e contas sem onboarding na Política; baixos e notas (OPEN_ISSUES "Governança (7f)"). Como o texto da
+Política mudou antes do merge, o hash foi recalculado na própria migração da branch. Ficam 7f-R1 (conta sem
+onboarding sem aviso enviado não expira) e 7f-R2 (investigação com o `app_migrator`), no CHECKLIST.

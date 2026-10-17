@@ -19,8 +19,10 @@ dieta ou treino. Quando uma meta passa de um limite de segurança, ele bloqueia 
 (CVV 188, SAMU 192).
 
 A privacidade já funciona: a pessoa vê e baixa todos os seus dados, revoga autorizações, corrige registros e exclui a
-conta (inclusive antes de terminar o cadastro). Tudo foi feito para rodar no Brasil, com dados sensíveis cifrados,
-cópias de segurança cifradas e registros técnicos sem dados pessoais.
+conta (inclusive antes de terminar o cadastro). O app foi feito para guardar e processar os dados no Brasil; só o
+envio de e-mails e o diagnóstico de erros devem ficar com fornecedores de fora, sem nenhum dado de bem-estar. Cada
+pessoa só enxerga os próprios dados, os textos livres (notas, descrições, nomes de hábitos e exercícios) e as cópias
+de segurança são cifrados, e os registros técnicos levam só identificadores, nunca o conteúdo dos registros.
 
 ## O que falta para lançar
 

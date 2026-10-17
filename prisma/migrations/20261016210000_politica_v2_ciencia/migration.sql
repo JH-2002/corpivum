@@ -6,4 +6,4 @@
 -- Nova versão = INSERT, nunca UPDATE: as provas da v1 continuam apontando para a v1 (texto em legal/archive/).
 INSERT INTO public.policy_versions (id, document, version, text_hash, requires_reconsent, published_at, updated_at)
 VALUES
-  (gen_random_uuid(), 'privacy_policy', 2, '939cbbc86e180570fdaf39d049dd5bd08759d5f7e748987788470eee57e00cc2', false, '2026-10-16T00:00:00Z', now());
+  (gen_random_uuid(), 'privacy_policy', 2, 'd758c5ff3f443af3b979a53756e262cfd43d5e43781d3e3fb3f773aebbf2bac0', false, '2026-10-16T00:00:00Z', now());

@@ -19,18 +19,33 @@ Segredos **nunca** no repositório (CLAUDE.md regra 6; gitleaks na CI).
 
 ## Rotação da chave mestra (envelope)
 Cada valor cifrado guarda a DEK cifrada e o `keyId` da KEK que a cifrou.
+
+> **Ainda não implementado (CHECKLIST, etapa 2.4).** O `KmsProvider` local aceita um único `keyId` e não existe
+> job de recifragem no repositório. Os passos abaixo valem para o KMS real, que precisa decifrar com vários `keyId`,
+> e para um script de recifragem testado, ambos a construir junto com o adaptador real.
+
+### Rotação programada (sem suspeita de vazamento)
 1. Criar a nova KEK no KMS (novo `keyId`); manter a antiga ativa só para decifrar.
 2. Novas gravações passam a usar a nova KEK.
-3. Job de recifragem: para cada DEK com `keyId` antigo, decifrar com a KEK antiga e cifrar com a nova
-   (os dados em si não precisam ser recifrados).
+3. Recifragem: para cada DEK com `keyId` antigo, decifrar com a KEK antiga e cifrar com a nova (os dados em si
+   não precisam ser recifrados, porque a DEK não vazou).
 4. Confirmar que nenhuma DEK **do banco** usa o `keyId` antigo e desativar a KEK antiga para cifrar.
    - **Arquivos de exportação** (`exports/<pessoa>/<pedido>.bin`): o envelope fica dentro do arquivo, fora do
-     banco, e o job de recifragem não os alcança. Vivem no máximo `EXPORT_LINK_HOURS` + 1 h (e 2 dias pela regra
-     de ciclo de vida): basta esperar esse prazo; não recifrar.
-   - **Backups e livros de reaplicação:** têm DEKs envolvidas pela KEK antiga. **Só destruir a KEK antiga depois
-     de `BACKUP_RETENTION_DAYS`** contados do fim da recifragem; antes disso, uma restauração não conseguiria
-     decifrar os campos.
+     banco, e a recifragem não os alcança. Vivem no máximo `EXPORT_LINK_HOURS` + 1 h (e 2 dias pela regra de ciclo
+     de vida): basta esperar esse prazo.
+   - **Backups do banco:** os campos cifrados dentro deles têm DEKs envolvidas pela KEK antiga. **Só destruir a KEK
+     antiga depois de `BACKUP_RETENTION_DAYS`** contados do fim da recifragem; antes disso, uma restauração não
+     conseguiria decifrar os campos. Os livros de reaplicação não têm campos cifrados em campo (usam só a
+     `BACKUP_ENCRYPTION_KEY`) e não dependem da KEK.
 5. Registrar data, `keyId` antigo/novo e responsável (sem material de chave no registro).
+
+### Comprometimento da KEK (vazamento ou suspeita)
+Reenvolver as DEKs **não basta**: quem tem a KEK antiga e uma cópia do banco (dump ou backup) já abre as DEKs.
+1. Abrir incidente (`INCIDENT.md`) e criar a nova KEK.
+2. Gerar **DEKs novas e recifrar os próprios dados** com elas (não só reenvolver as DEKs antigas).
+3. Assim que a recifragem terminar, desativar a KEK antiga no KMS também para decifrar.
+4. Tratar como comprometidos os backups e arquivos de exportação cifrados sob a KEK antiga: avaliar no incidente
+   (RIPD e comunicação), apagar os que não forem indispensáveis e não restaurar deles sem decisão registrada.
 
 ## Segredos de autenticação (ADR-0014, ADR-0017, ADR-0037)
 - `SESSION_SECRET`: assina o cookie `hm_age_ok` (os em curso expiram em até 30 min) e o cookie de aparelho
@@ -44,4 +59,5 @@ Cada valor cifrado guarda a DEK cifrada e o `keyId` da KEK que a cifrou.
   num incidente, use `UPDATE sessions SET revoked_at = now() WHERE revoked_at IS NULL` como `app_migrator`.
 
 ## Em incidente
-Seguir `INCIDENT.md`: revogar sessões, rotacionar imediatamente os segredos expostos e recifrar DEKs.
+Seguir `INCIDENT.md`: revogar sessões, rotacionar imediatamente os segredos expostos e, se a KEK vazou, seguir
+"Comprometimento da KEK" acima (DEKs novas e dados recifrados).

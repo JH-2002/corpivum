@@ -28,7 +28,7 @@ usa os mesmos, salvo decisão registrada em ADR.
 | Jobs da fila (`job_queue`, só IDs) | Até rodar; os da pessoa saem na purga da conta (P7-N2); falhos ficam 30 dias para diagnóstico | Purga da conta; falhos com mais de 30 dias saem na limpeza da fila (`app.jobs_*`, ADR-0019) | `privacy.account_purge` e a própria fila |
 | Segredo TOTP de ativação abandonada | 1 dia | Idem | `auth.purge_expired` |
 | Backups do banco | `BACKUP_RETENTION_DAYS` = 30 dias, ≤ `PURGE_DAYS` (LEG-S07) | Expiração no provedor (CHECKLIST) | — |
-| Livros de reaplicação (`pnpm backup:ledger`, ADR-0040) | Mesmo prazo dos backups | Expiração no storage só de acréscimo (CHECKLIST) | — |
+| Livros de reaplicação (`pnpm backup:ledger`, ADR-0040; IDs, provas e registros de acesso com IP) | Mesmo prazo dos backups: um IP pode sobreviver no livro até `BACKUP_RETENTION_DAYS` além dos 180 dias | Expiração no storage só de acréscimo (CHECKLIST) | — |
 | Cookies de preferência (`__Host-hm_period`, `__Host-hm_privacy`, `__Host-hm_presenting`) | Até fechar o navegador | Cookies de sessão, sem identificador | — |
 
 Os jobs recorrentes usam `singletonKey` (várias instâncias não duplicam) e se reagendam ao terminar, mesmo após

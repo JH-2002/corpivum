@@ -15,12 +15,18 @@
 - [ ] **1.2 (P)** Nomear o encarregado (DPO) e criar o canal de contato público (LEG-G03, OI-12).
 - [ ] **1.3 (P)** Contratar a revisão jurídica especializada (LGPD, ECA Digital, enquadramento ANVISA) e entregar
   `docs/legal/PACOTE_JURIDICO.md`, com ROPA, RIPD, RETENTION, SUBPROCESSORS e INTENDED_USE.
-- [ ] **1.4 (P)** Contratar a revisão clínica dos textos de saúde, dos limites de segurança (guardrails), do modelo 3D e
+- [ ] **1.4 (P)** Contratar a revisão clínica dos textos de saúde, das fórmulas (Índice de Bem-Estar, estimativa de calorias), dos
+  limites de segurança (guardrails), do modelo 3D e
   dos fluxos de apoio (PACOTE_JURIDICO, tema 10), em paralelo com o jurídico.
 - [ ] **1.5 (J, C)** Responder o pacote. Cada resposta vai para OPEN_ISSUES ("Resolvidas") e, se mudar o produto, para
   um ADR. Os temas 🔴 bloqueiam a etapa 4.
 - [ ] **1.6 (D)** Aplicar as respostas: textos novos (versões com aviso ou reconsentimento, ADR-0031/0041), prazos,
   limiares e recursos que mudarem. Testes e `privacy-reviewer` a cada mudança.
+
+- [ ] **1.7 (P)** Incluir um revisor jurídico e um clínico no CODEOWNERS dos textos (`messages/`, `disclaimer.*`) e
+  exigir aprovação de Code Owners na branch `main` (OI-13; em repositório privado, exige plano pago do GitHub).
+- [ ] **1.8 (P, J)** Preencher controlador e encarregado **antes do beta**, para que nenhum titular real veja os
+  placeholders (PACOTE_JURIDICO, tema 2).
 
 ## Etapa 2 — Fornecedores (todos com região no Brasil, salvo e-mail e erros)
 
@@ -31,11 +37,15 @@
   serviços fora do Brasil, sem depender de consentimento do titular (OI-03).
 - [ ] **2.3 (D)** Preencher os placeholders de fornecedor (`docs/legal/PLACEHOLDERS.md`), SUBPROCESSORS e a página
   pública; atualizar a Política se ela mudar.
-- [ ] **2.4 (D)** Implementar os adaptadores reais: `KmsProvider`, `StorageProvider` (inclusive `list` por prefixo,
+- [ ] **2.4 (D)** Implementar os adaptadores reais: `KmsProvider` (decifrando com vários `keyId`, com script de
+  recifragem testado, `docs/runbooks/KEY_ROTATION.md`), `StorageProvider` (inclusive `list` por prefixo,
   OI-35), `MailProvider` e, se houver, o `ErrorReporter` do fornecedor. Hoje o `parseEnv` recusa em produção os
   adaptadores locais e a fila em memória (ADR-0036): **sem isso, produção não sobe.**
 - [ ] **2.5 (D)** Lista fechada de nomes de erro junto com a ferramenta escolhida (7d-N4) e revisão do filtro do log
   da hospedagem para a escrita direta de dependências em `stdout` (7e-N1).
+
+- [ ] **2.6 (D)** Conta sem onboarding cujo aviso por e-mail nunca sai (ex.: endereço que rejeita sempre) fica sem
+  prazo (7f-R1): prazo-teto ou alerta, junto do provedor de e-mail.
 
 ## Etapa 3 — Infraestrutura
 
@@ -58,15 +68,16 @@
   `error.job` a um canal fora da aplicação, junto do log do servidor do banco (`RAISE LOG`; pgaudit se o provedor
   oferecer) (ADR-0038, `docs/runbooks/ALERTS.md`).
 - [ ] **3.8 (P)** Definir a periodicidade de rotação de chaves e credenciais (`docs/runbooks/KEY_ROTATION.md`) e os
-  contatos de incidente (`docs/runbooks/INCIDENT.md`).
+  contatos de incidente (`docs/runbooks/INCIDENT.md`); criar um papel só de leitura de `audit_logs` e `access_logs`
+  para investigação (7f-R2).
 
 ## Etapa 4 — Validação
 
 - [ ] **4.1 (X, D)** Pentest independente num ambiente igual ao de produção, só com dados sintéticos (escopo em
   `docs/security/PENTEST_SCOPE.md`, contexto em `docs/security/THREAT_MODEL.md`), com atenção especial ao **módulo de
   autenticação próprio** (ADR-0014): sessões (fixação e revogação), enumeração de e-mail e diferença de tempo de
-  resposta, contorno dos limites de tentativa, TOTP (reuso e força bruta), códigos de recuperação, tokens de
-  verificação e de redefinição, funções SECURITY DEFINER e RLS, CSRF e CSP, cookie de aparelho conhecido e guarda de
+  resposta, contorno dos limites de tentativa (IP, variações de maiúsculas no e-mail), TOTP (reuso e força bruta), códigos de recuperação, tokens de
+  verificação e de redefinição, funções SECURITY DEFINER e RLS, CSRF e CSP, cookie de aparelho conhecido (falsificação, reuso entre contas) e guarda de
   consentimento (`app.has_active_consent`, ADR-0019). Tratar os achados.
 - [ ] **4.2 (P, D)** Rodada manual de acessibilidade com NVDA e celular real (`docs/qa/ROTEIRO_MANUAL.md`, ADR-0036 D7) e
   correção do que ela achar (LEG-X01); medir de novo o dashboard no celular real e na região da hospedagem (§41,

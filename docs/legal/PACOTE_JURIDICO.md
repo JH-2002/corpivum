@@ -34,9 +34,9 @@
 | 5 | Retenção e registros de acesso | OI-04, OI-06, OI-14 b, OI-17, PR1b-M2 | 🔴 | Não |
 | 6 | Direitos do titular | OI-18, OI-20, OI-31, OI-33, OI-34, PR2-N1 | 🟠 | Não |
 | 7 | Menores de idade | OI-02 | 🔴 | Não |
-| 8 | Fornecedores e transferência internacional | OI-03, OI-11 | 🔴 | Não |
+| 8 | Fornecedores e transferência internacional | OI-03, OI-11, OI-27 | 🔴 | Não |
 | 9 | Incidentes | OI-05 | 🟠 | Não |
-| 10 | Imagem corporal, alimentação e profissões regulamentadas | OI-09, OI-10, OI-21, OI-22, OI-23, OI-24, OI-25 | 🔴 | **Sim** |
+| 10 | Imagem corporal, alimentação e profissões regulamentadas | OI-09, OI-10, OI-13, OI-21, OI-22, OI-23, OI-24, OI-25 | 🔴 | **Sim** |
 
 ---
 
@@ -74,8 +74,9 @@ tema 5). Encarregado interno ou serviço externo.
 um papel de banco próprio, com rastro e limites (tema 6).
 
 **Impacto.** Preencher os placeholders muda o texto da Política, dos Termos e do consentimento de saúde: é versão
-nova. Proposta: tratar como **não substancial** (só identifica quem já era o responsável), com aviso e ciência,
-salvo orientação contrária.
+nova. A identidade do controlador é informação essencial para o consentimento (arts. 8º e 9º). **Recomendação:**
+preencher antes do beta (CHECKLIST 1.8), para que nenhum titular real veja os placeholders e a versão nova não
+precise de aviso a ninguém.
 
 ## 3. Bases legais e consentimento — OI-01, OI-16, OI-32, PR4-M3, OI-37 🔴
 
@@ -143,6 +144,10 @@ direitos.
 Textos em `messages/pt-BR.json` (`legal.*`, `consent.purposes.*`, `privacyCenter.*`); versões anteriores
 arquivadas em `legal/archive/` com o hash conferido por teste.
 
+A seção 3 da Política v2 ("Para que usamos e com qual base legal") traz as bases **propostas** no ROPA, inclusive
+para cópias de segurança, registros técnicos, cookies necessários e a exclusão das contas sem onboarding (legítimo
+interesse e execução do contrato): confirmar cada uma.
+
 **Impacto.** Cada ajuste vira versão nova; retirar o rótulo de rascunho depende desta aprovação.
 
 ### 4.2 Versões não substanciais com aviso e ciência (OI-30)
@@ -150,7 +155,10 @@ arquivadas em `legal/archive/` com o hash conferido por teste.
 existia, inclusive o prazo de 30 dias das contas sem onboarding) foram publicados como versões **não substanciais**:
 quem aceitou a v1 não aceita de novo; vê um aviso único dentro do app e o clique em "Entendi" fica registrado.
 (a) As mudanças dispensam novo aceite (CDC; Marco Civil, art. 7º, XI)? (b) O aviso dentro do app basta, ou é preciso
-também e-mail? (c) O registro do clique é prova suficiente? (d) O texto do aviso está adequado?
+também e-mail? (c) O registro do clique é prova suficiente? (d) O texto do aviso está adequado? (e) A Política v1 dizia "quando
+houver mudança importante, avisaremos e pediremos sua confirmação"; a v2 mantém essa promessa e acrescenta que
+mudanças que só descrevem melhor o tratamento têm aviso e registro de ciência. Esse acréscimo, feito pela própria via
+não substancial, é aceitável?
 
 **Opções.** Para cada uma: confirmar, ou indicar novo aceite / e-mail / outro registro.
 
@@ -232,6 +240,11 @@ para isso; depende de fornecedor (novo subprocessador, ROPA e RIPD).
 entra sem linha em SUBPROCESSORS. E-mails só com link, tipo de aviso e datas. Relatório de erro sem mensagem nem dado
 de usuário. Fornecedores ainda não escolhidos (`{{HOSPEDAGEM}}`, `{{EMAIL}}` etc.).
 
+4. **Lembretes por push (OI-27, adiado):** se entrarem, o serviço de push é um subprocessador novo, possivelmente
+   fora do Brasil. A pergunta 2 vale também para ele.
+5. A seção 5 da Política v2 diz que banco, armazenamento, filas e servidor ficam no Brasil e remete a
+   Subprocessadores para o resto; com o mecanismo do art. 33 definido, ela pode precisar citar a transferência.
+
 **Impacto.** Se o lembrete exigir base própria: opção de lembrete só no app (sem e-mail) ou provedor de e-mail no
 Brasil. A escolha dos fornecedores atualiza SUBPROCESSORS, a página pública e a Política (se mudar o que ela diz).
 
@@ -256,6 +269,7 @@ Este tema precisa de advogado(a) **e** de profissionais de saúde (nutrição, e
 | **Resumos e guias dos gráficos (OI-21):** o "o que fazer com isso" pode ser lido como orientação de saúde? | Resumos por regras fixas, comparando só com a própria pessoa, sem propor ações | Ajuste de texto |
 | **Modelo 3D do corpo (OI-22, OI-24):** pode ser lido como avaliação corporal ou comparação com um corpo padrão? Rótulos "feminino"/"masculino", forma base, limites do desenho | Forma só pelas medidas informadas (o peso não muda a forma), sem IMC, cor neutra, aviso fixo, escolha só no navegador | Ajuste de texto ou de desenho; em último caso, retirar o 3D |
 | **Limites de segurança e textos (OI-23):** IMC mínimo 18,5 na meta, perda de até 1% por semana, piso de 1.500 kcal/dia (sem dado de sexo); só metas de perda são limitadas; meta de calorias só com a estimativa ligada; onde mostrar CVV 188 / SAMU 192; limite entre registrar e prescrever | Implementado no servidor e no banco, com testes; apoio fixo na tela de corpo, quando um limite dispara e no menu de ajuda | Mudar um limiar: migração (está no banco) e testes; retirar a meta de calorias: remoção de recurso |
+| **Quem aprova os textos (OI-13):** hoje a revisão dos avisos depende do teste de textos e do checklist de PR | CODEOWNERS só com o desenvolvimento | Incluir revisor jurídico e clínico e exigir aprovação (CHECKLIST 1.7) |
 | **Medidas novas (OI-25):** se antebraço e panturrilha entrarem, o consentimento atual ("peso e medidas") cobre? | Adiado pelo produto | Se não cobrir: versão nova do consentimento |
 
 ---

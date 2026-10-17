@@ -58,7 +58,7 @@ export const CURRENT_VERSIONS = {
   // `legal/archive/privacy_policy.v1.json`.
   privacy_policy: {
     version: 2,
-    textHash: '939cbbc86e180570fdaf39d049dd5bd08759d5f7e748987788470eee57e00cc2',
+    textHash: 'd758c5ff3f443af3b979a53756e262cfd43d5e43781d3e3fb3f773aebbf2bac0',
     requiresReconsent: false,
   },
   // v2 (ADR-0031): sem a seção "Sugestões do app" (recomendações removidas, ADR-0030). Só remove
