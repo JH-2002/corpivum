@@ -36,7 +36,7 @@ let t: TestAuth;
 
 const ALL = { acceptTerms: true, acceptPrivacy: true } as const;
 
-async function onboarded(purposes: Array<'health_data' | 'marketing' | 'product_metrics'>) {
+async function onboarded(purposes: Array<'health_data'>) {
   const u = await createVerifiedUser(t);
   const c = createTestConsent(db, t.clock);
   expect(await c.service.completeOnboarding(u.userId, { ...ALL, purposes })).toEqual({ ok: true });
@@ -111,8 +111,6 @@ describe('onboarding e escolhas por finalidade (LEG-C01–C03, C05)', () => {
     expect(state.updatePending).toBe(false);
     expect(Object.fromEntries(state.purposes.map((p) => [p.purpose, p.active]))).toEqual({
       health_data: true,
-      marketing: false,
-      product_metrics: false,
     });
     const { rows } = await admin.query(
       `SELECT c.purpose, c.text_hash, v.version, c.revoked_at
@@ -143,9 +141,14 @@ describe('onboarding e escolhas por finalidade (LEG-C01–C03, C05)', () => {
     expect(state.health).toEqual({ status: 'missing' });
   });
 
-  it('finalidades revogadas (IA, transferência, ADR-0030) são recusadas pelo serviço', async () => {
+  it('finalidades revogadas (IA, transferência, ADR-0030; novidades, métricas, ADR-0042) são recusadas pelo serviço', async () => {
     const u = await onboarded([]);
-    for (const purpose of ['ai_sharing', 'international_transfer']) {
+    for (const purpose of [
+      'ai_sharing',
+      'international_transfer',
+      'marketing',
+      'product_metrics',
+    ]) {
       expect(await u.service.grant(u.userId, purpose)).toEqual({ ok: false, error: 'unavailable' });
       expect(await u.service.revoke(u.userId, purpose)).toEqual({
         ok: false,
@@ -164,6 +167,61 @@ describe('onboarding e escolhas por finalidade (LEG-C01–C03, C05)', () => {
         ),
       ).rejects.toMatchObject({ code: '23514', constraint: 'policy_versions_document_ativo' });
     }
+  });
+
+  it('o banco recusa publicar texto novo das finalidades opcionais removidas (ADR-0042)', async () => {
+    for (const document of ['consent_marketing', 'consent_product_metrics']) {
+      await expect(
+        admin.query(
+          `INSERT INTO policy_versions (id, document, version, text_hash, requires_reconsent, published_at, updated_at)
+           VALUES (gen_random_uuid(), $1, 2, 'x', true, now(), now())`,
+          [document],
+        ),
+      ).rejects.toMatchObject({
+        code: '23514',
+        constraint: 'policy_versions_document_opcional_removido',
+      });
+    }
+  });
+
+  it('consent_records recusa as finalidades opcionais removidas mesmo sem o gatilho (CHECK, ADR-0042)', async () => {
+    for (const [purpose, document] of [
+      ['marketing', 'consent_marketing'],
+      ['product_metrics', 'consent_product_metrics'],
+    ] as const) {
+      const { rows: versions } = await admin.query<{ id: string }>(
+        `SELECT id FROM policy_versions WHERE document = $1 LIMIT 1`,
+        [document],
+      );
+      await admin.query('BEGIN');
+      try {
+        await admin.query('ALTER TABLE consent_records DISABLE TRIGGER consent_records_guard');
+        await expect(
+          admin.query(
+            `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at, updated_at)
+             VALUES (gen_random_uuid(), gen_random_uuid(), $1, $2, 'x', now(), now())`,
+            [purpose, versions[0]?.id],
+          ),
+        ).rejects.toMatchObject({
+          code: '23514',
+          constraint: 'consent_records_purpose_opcional_removida',
+        });
+      } finally {
+        await admin.query('ROLLBACK');
+      }
+    }
+  });
+
+  it('as CHECKs das finalidades opcionais são NOT VALID: provas antigas ficam até o expurgo (ADR-0042)', async () => {
+    const { rows } = await admin.query<{ name: string; validated: boolean }>(
+      `SELECT conname AS name, convalidated AS validated FROM pg_constraint
+        WHERE conname IN ('consent_records_purpose_opcional_removida', 'policy_versions_document_opcional_removido')
+        ORDER BY conname`,
+    );
+    expect(rows).toEqual([
+      { name: 'consent_records_purpose_opcional_removida', validated: false },
+      { name: 'policy_versions_document_opcional_removido', validated: false },
+    ]);
   });
 
   it('consent_records recusa finalidade revogada mesmo sem o gatilho (CHECK, ADR-0030)', async () => {
@@ -219,16 +277,6 @@ describe('guard de tratamento e revogação imediata (LEG-C04)', () => {
     const u = await onboarded([]);
     await expect(writeFixture(u.userId)).rejects.toBeInstanceOf(ConsentRequiredError);
     await expect(insertFixtureRls(u.userId)).rejects.toThrow();
-  });
-
-  it('revogar marketing ou métricas não afeta os dados de bem-estar (LEG-C05)', async () => {
-    const u = await onboarded(['health_data', 'marketing', 'product_metrics']);
-    await u.service.revoke(u.userId, 'marketing');
-    await u.service.revoke(u.userId, 'product_metrics');
-    await writeFixture(u.userId);
-    const state = await u.service.getState(u.userId);
-    expect(state.purposes.find((p) => p.purpose === 'health_data')?.active).toBe(true);
-    expect(state.purposes.find((p) => p.purpose === 'marketing')?.active).toBe(false);
   });
 
   it('o consentimento de uma pessoa não vale para outra', async () => {
@@ -428,26 +476,27 @@ describe('reconsentimento após versão substancial nova (LEG-C06)', () => {
   });
 
   it('versão não substancial mantém o consentimento e novos registros usam a versão nova', async () => {
-    const u = await onboarded(['marketing']);
+    const u = await onboarded(['health_data']);
     const hash = 'b'.repeat(64);
-    const v2 = await publishVersion(admin, 'consent_marketing', 2, hash, false);
+    const next = CURRENT_VERSIONS.consent_health_data.version + 1;
+    const v2 = await publishVersion(admin, 'consent_health_data', next, hash, false);
     const catalog = {
       ...CURRENT_VERSIONS,
-      consent_marketing: { version: 2, textHash: hash, requiresReconsent: false },
+      consent_health_data: { version: next, textHash: hash, requiresReconsent: false },
     };
     try {
       const c = createTestConsent(db, t.clock, catalog);
       const state = await c.service.getState(u.userId);
       expect(state.updatePending).toBe(false);
-      expect(state.purposes.find((p) => p.purpose === 'marketing')?.active).toBe(true);
+      expect(state.purposes.find((p) => p.purpose === 'health_data')?.active).toBe(true);
       const other = await onboarded([]);
-      await c.service.grant(other.userId, 'marketing');
+      await c.service.grant(other.userId, 'health_data');
       const { rows } = await admin.query(
         `SELECT v.version FROM consent_records c JOIN policy_versions v ON v.id = c.policy_version_id
           WHERE c.user_id = $1`,
         [other.userId],
       );
-      expect(rows).toEqual([{ version: 2 }]);
+      expect(rows).toEqual([{ version: next }]);
     } finally {
       await unpublishVersion(admin, v2);
     }
@@ -457,9 +506,13 @@ describe('reconsentimento após versão substancial nova (LEG-C06)', () => {
     const u = await onboarded([]);
     const wrong = createTestConsent(db, t.clock, {
       ...CURRENT_VERSIONS,
-      consent_marketing: { version: 1, textHash: 'c'.repeat(64), requiresReconsent: true },
+      consent_health_data: {
+        version: CURRENT_VERSIONS.consent_health_data.version,
+        textHash: 'c'.repeat(64),
+        requiresReconsent: true,
+      },
     });
-    await expect(wrong.service.grant(u.userId, 'marketing')).rejects.toThrow(/diverge/);
+    await expect(wrong.service.grant(u.userId, 'health_data')).rejects.toThrow(/diverge/);
   });
 });
 
@@ -554,7 +607,7 @@ describe('Termos v2 não substancial: aviso único e ciência (ADR-0031)', () =>
   });
 });
 
-describe('Política v2 não substancial: mesmo fluxo de aviso dos Termos v2 (ADR-0041)', () => {
+describe('Política não substancial (v2, ADR-0041; v3, ADR-0042): mesmo fluxo de aviso dos Termos v2', () => {
   /** Simula quem aceitou a v1 dos documentos indicados (só o admin, no banco de teste). */
   async function acceptedV1(documents: readonly string[]) {
     const u = await onboarded([]);
@@ -578,21 +631,24 @@ describe('Política v2 não substancial: mesmo fluxo de aviso dos Termos v2 (ADR
       )
       .then((r) => r.rows);
 
-  it('a v2 está publicada como não substancial, com o hash do catálogo', async () => {
+  it('as versões 2 e 3 estão publicadas como não substanciais; a vigente com o hash do catálogo', async () => {
     expect(CURRENT_VERSIONS.privacy_policy).toMatchObject({
-      version: 2,
+      version: 3,
       requiresReconsent: false,
     });
-    const { rows } = await admin.query<{ text_hash: string; requires_reconsent: boolean }>(
-      `SELECT text_hash, requires_reconsent FROM policy_versions
-        WHERE document = 'privacy_policy' AND version = 2`,
+    const { rows } = await admin.query<{
+      version: number;
+      text_hash: string;
+      requires_reconsent: boolean;
+    }>(
+      `SELECT version, text_hash, requires_reconsent FROM policy_versions
+        WHERE document = 'privacy_policy' AND version >= 2 ORDER BY version`,
     );
-    expect(rows).toEqual([
-      {
-        text_hash: CURRENT_VERSIONS.privacy_policy.textHash,
-        requires_reconsent: false,
-      },
+    expect(rows.map((r) => [r.version, r.requires_reconsent])).toEqual([
+      [2, false],
+      [3, false],
     ]);
+    expect(rows[1]?.text_hash).toBe(CURRENT_VERSIONS.privacy_policy.textHash);
   });
 
   it('quem aceitou a Política v1 não é bloqueado e registra a ciência uma vez', async () => {
@@ -603,9 +659,10 @@ describe('Política v2 não substancial: mesmo fluxo de aviso dos Termos v2 (ADR
 
     expect(await u.service.acknowledgeDocuments(u.userId, ['privacy_policy'])).toBe(1);
     expect((await u.service.getState(u.userId)).documentNotices).toEqual([]);
+    // A ciência é da versão vigente; versões intermediárias não exigem registro próprio.
     expect(await policyRows(u.userId)).toEqual([
       { version: 1, kind: 'accepted' },
-      { version: 2, kind: 'acknowledged' },
+      { version: CURRENT_VERSIONS.privacy_policy.version, kind: 'acknowledged' },
     ]);
     expect(await u.service.acknowledgeDocuments(u.userId, ['privacy_policy'])).toBe(0);
   });
@@ -686,14 +743,14 @@ describe('integridade das provas (LEG-R03, LEG-S06)', () => {
   it('as datas das provas vêm do relógio do banco, não do cliente (revisão B1)', async () => {
     const u = await onboarded([]);
     const { rows: v } = await admin.query(
-      `SELECT id, text_hash FROM policy_versions WHERE document = 'consent_marketing' AND version = 1`,
+      `SELECT id, text_hash FROM policy_versions WHERE document = 'consent_health_data' ORDER BY version DESC LIMIT 1`,
     );
     const past = new Date('2000-01-01T00:00:00Z');
     await withUserOn(db, u.userId, async (tx) => {
       const r = await tx.consentRecord.create({
         data: {
           userId: u.userId,
-          purpose: 'marketing',
+          purpose: 'health_data',
           policyVersionId: v[0].id,
           textHash: v[0].text_hash,
           grantedAt: past,
@@ -721,25 +778,25 @@ describe('integridade das provas (LEG-R03, LEG-S06)', () => {
   });
 
   it('o runtime não apaga consentimento, não desfaz revogação e não grava hash falso', async () => {
-    const u = await onboarded(['marketing']);
+    const u = await onboarded(['health_data']);
     await withUserOn(db, u.userId, async (tx) => {
       await expect(tx.consentRecord.deleteMany({})).rejects.toThrow();
     });
-    await u.service.revoke(u.userId, 'marketing');
+    await u.service.revoke(u.userId, 'health_data');
     await expect(
       withUserOn(db, u.userId, (tx) =>
         tx.consentRecord.updateMany({ where: {}, data: { revokedAt: null } }),
       ),
     ).rejects.toThrow();
     const { rows } = await admin.query(
-      `SELECT id FROM policy_versions WHERE document = 'consent_marketing' AND version = 1`,
+      `SELECT id FROM policy_versions WHERE document = 'consent_health_data' ORDER BY version DESC LIMIT 1`,
     );
     await expect(
       withUserOn(db, u.userId, (tx) =>
         tx.consentRecord.create({
           data: {
             userId: u.userId,
-            purpose: 'marketing',
+            purpose: 'health_data',
             policyVersionId: rows[0].id,
             textHash: 'f'.repeat(64),
             grantedAt: new Date(),
@@ -769,8 +826,9 @@ describe('integridade das provas (LEG-R03, LEG-S06)', () => {
          VALUES (gen_random_uuid(), 'privacy_request_closed', 'privacy_request', 'Maria@Exemplo', now(), now())`,
       ),
     ).rejects.toThrow(/audit_logs_operator_role/);
-    const u = await onboarded(['health_data', 'marketing']);
-    await u.service.revoke(u.userId, 'marketing');
+    const u = await onboarded(['health_data']);
+    await u.service.revoke(u.userId, 'health_data');
+    await u.service.grant(u.userId, 'health_data');
     const { rows } = await admin.query(`SELECT * FROM audit_logs WHERE subject_user_id = $1`, [
       u.userId,
     ]);

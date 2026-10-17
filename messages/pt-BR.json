@@ -378,22 +378,6 @@
         "processors": "A equipe do HealthMind 360 ('{{CONTROLADOR}}') e os provedores de infraestrutura listados em Subprocessadores, com dados armazenados no Brasil. Nunca vendemos nem compartilhamos esses dados para publicidade.",
         "refusal": "Você continua com acesso à conta e à Central de Privacidade, mas não consegue registrar nem ver dados de bem-estar.",
         "revoke": "Na Central de Privacidade. O uso para na hora e os dados já registrados são eliminados depois de 30 dias, a menos que você autorize de novo antes."
-      },
-      "marketing": {
-        "title": "Comunicações sobre novidades",
-        "collected": "Seu e-mail.",
-        "purpose": "Enviar, de vez em quando, novidades sobre o HealthMind 360. Seus dados de bem-estar nunca são usados para isso.",
-        "processors": "O provedor de e-mail listado em Subprocessadores. Ele ainda não foi escolhido; se tratar dados fora do Brasil, isso será informado antes de qualquer envio.",
-        "refusal": "Você recebe só os e-mails necessários à conta, como confirmações e avisos de segurança.",
-        "revoke": "Na Central de Privacidade, a qualquer momento. O envio para na hora."
-      },
-      "product_metrics": {
-        "title": "Métricas de uso ligadas à sua conta",
-        "collected": "Quais telas e funções você usa e quando, ligadas à sua conta. Nunca o conteúdo dos seus registros.",
-        "purpose": "Entender como o app é usado para melhorá-lo.",
-        "processors": "Somente a equipe do HealthMind 360, em infraestrutura no Brasil. Sem ferramentas de análise de terceiros.",
-        "refusal": "Nada muda no app, e nenhuma métrica de uso fica ligada à sua conta.",
-        "revoke": "Na Central de Privacidade, a qualquer momento. A coleta ligada à sua conta para na hora."
       }
     },
     "status": {
@@ -671,7 +655,7 @@
       "s2Title": "Quais dados tratamos",
       "s2Body": "Dados da conta: e-mail, senha protegida por hash, data e hora da declaração de maioridade (a data de nascimento é pedida só para conferir a idade no cadastro e não é guardada) e configurações de segurança, como a verificação em duas etapas. Dados de bem-estar, somente com sua autorização e só o que você registrar: peso e medidas do corpo; sono; hábitos; alimentação (refeições, água e, se você ligar, a estimativa de calorias); atividade física; metas e lembretes. Registros de acesso (IP, data e hora). Registros mínimos que provam suas escolhas de privacidade e seus pedidos, sem e-mail e sem conteúdo. Não pedimos nome, documento, foto nem localização.",
       "s3Title": "Para que usamos e com qual base legal",
-      "s3Body": "Conta e autenticação: execução do contrato. Dados de bem-estar: consentimento específico e destacado. Comunicações sobre novidades e métricas ligadas à conta: consentimentos separados e opcionais. Segurança da conta, cookies necessários, registros técnicos de funcionamento e cópias de segurança: legítimo interesse, sem uso dos dados de bem-estar para outra finalidade. Aviso e exclusão de contas que não concluem o cadastro inicial: execução do contrato e legítimo interesse. Registros de acesso: obrigação legal, se aplicável. Prova de consentimento e de pedidos e atendimento aos seus pedidos: exercício regular de direitos e atendimento ao titular.",
+      "s3Body": "Conta e autenticação: execução do contrato. Dados de bem-estar: consentimento específico e destacado. Segurança da conta, cookies necessários, registros técnicos de funcionamento e cópias de segurança: legítimo interesse, sem uso dos dados de bem-estar para outra finalidade. Aviso e exclusão de contas que não concluem o cadastro inicial: execução do contrato e legítimo interesse. Registros de acesso: obrigação legal, se aplicável. Prova de consentimento e de pedidos e atendimento aos seus pedidos: exercício regular de direitos e atendimento ao titular.",
       "s4Title": "Com quem compartilhamos",
       "s4Body": "Somente com os provedores listados em Subprocessadores, para operar o serviço. Os e-mails que enviamos (confirmação de cadastro, redefinição de senha, avisos de segurança, recibos de pedidos, lembretes e avisos sobre a conta) nunca levam conteúdo dos seus registros. Não vendemos dados, não usamos dados para publicidade e não compartilhamos dados de bem-estar com outros controladores para obter vantagem econômica.",
       "s5Title": "Onde os dados ficam",
@@ -1637,7 +1621,8 @@
         "v2": "Os Termos de Uso estão na versão 2: saiu a seção \"Sugestões do app\", porque o app não faz sugestões automáticas. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo."
       },
       "privacy_policy": {
-        "v2": "A Política de Privacidade está na versão 2: agora lista cada tipo de dado de bem-estar e a base de cada uso, explica o prazo de 30 dias para contas que não concluem o cadastro inicial, descreve os cookies, diz onde excluir a conta durante o cadastro e como avisamos sobre mudanças que só descrevem melhor o que já fazemos. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo."
+        "v2": "A Política de Privacidade está na versão 2: agora lista cada tipo de dado de bem-estar e a base de cada uso, explica o prazo de 30 dias para contas que não concluem o cadastro inicial, descreve os cookies, diz onde excluir a conta durante o cadastro e como avisamos sobre mudanças que só descrevem melhor o que já fazemos. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo.",
+        "v3": "A Política de Privacidade está na versão 3: lista cada tipo de dado de bem-estar e a base de cada uso, explica o prazo de 30 dias para contas que não concluem o cadastro inicial, descreve os cookies, diz onde excluir a conta durante o cadastro e como avisamos sobre mudanças. Também deixamos de oferecer as autorizações opcionais de novidades por e-mail e de métricas de uso, que nunca chegaram a ser usadas. Nada muda no tratamento dos seus dados e você não precisa aceitar de novo."
       },
       "generic": "O documento está na versão {version}. Você não precisa aceitar de novo."
     },

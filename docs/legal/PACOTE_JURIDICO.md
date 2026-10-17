@@ -29,7 +29,7 @@
 |---|---|---|---|---|
 | 1 | Enquadramento regulatório (ANVISA) | OI-07 | 🔴 | Sim |
 | 2 | Controlador, encarregado e foro | OI-06, OI-12 | 🔴 | Não |
-| 3 | Bases legais e consentimento | OI-01, OI-16, OI-32, PR4-M3, OI-37 | 🔴 | Não |
+| 3 | Bases legais e consentimento | OI-01, OI-16, OI-32, PR4-M3 | 🔴 | Não |
 | 4 | Textos públicos, versões e avisos | OI-08, OI-30, OI-36 | 🔴 | Parcial |
 | 5 | Retenção e registros de acesso | OI-04, OI-06, OI-14 b, OI-17, PR1b-M2 | 🔴 | Não |
 | 6 | Direitos do titular | OI-18, OI-20, OI-31, OI-33, OI-34, PR2-N1 | 🟠 | Não |
@@ -78,7 +78,7 @@ nova. A identidade do controlador é informação essencial para o consentimento
 preencher antes do beta (CHECKLIST 1.8), para que nenhum titular real veja os placeholders e a versão nova não
 precise de aviso a ninguém.
 
-## 3. Bases legais e consentimento — OI-01, OI-16, OI-32, PR4-M3, OI-37 🔴
+## 3. Bases legais e consentimento — OI-01, OI-16, OI-32, PR4-M3 🔴
 
 ### 3.1 Consentimento para os dados de bem-estar (OI-01)
 **Pergunta.** O consentimento específico e destacado (art. 11, I) é a base adequada para os dados de bem-estar?
@@ -122,22 +122,18 @@ houver exportação em curso?
 
 **Impacto.** Se não bastar: a cópia passa a ser oferecida só antes da revogação (o aviso de revogação já oferece).
 
-### 3.5 Finalidades opcionais sem uso (OI-37, novo)
-**Pergunta.** O app oferece dois consentimentos opcionais — **novidades por e-mail** e **métricas de uso ligadas à
-conta** — mas hoje não envia novidades nem coleta métricas. Pode continuar oferecendo (e registrando a escolha) de
-algo que ainda não acontece?
-
-**Opções.** (a) Manter, porque o texto diz o que acontecerá. (b) Esconder as duas finalidades até existirem.
-(c) Manter com uma frase dizendo que ainda não está em uso (versão nova dos dois textos).
-
-**Impacto.** (b) as escolhas já registradas continuam como prova; a oferta sai do onboarding e da Central até haver
-uso, ADR e textos. (c) versão não substancial dos dois textos.
+### 3.5 Finalidades opcionais sem uso (OI-37) — decidido pelo produto
+Os consentimentos de novidades por e-mail e de métricas de uso saíram do onboarding e da Central (ADR-0042): o app
+nunca os usou. As autorizações ativas foram revogadas e as provas ficam até o expurgo. A Política v3 deixou de
+citá-los (versão não substancial, tema 4.2). Só é preciso confirmar que a revogação feita pelo controlador, sem ação
+do titular, de uma finalidade que nunca foi exercida dispensa comunicação individual (o aviso da Política v3 menciona
+a mudança).
 
 ## 4. Textos públicos, versões e avisos — OI-08, OI-30, OI-36 🔴
 
 ### 4.1 Textos finais (OI-08)
-**Pergunta.** Revisar e aprovar a Política de Privacidade v2, os Termos de Uso v2, os três consentimentos e os textos
-da Central de Privacidade. A Política v2 já lista as categorias de dados (art. 9º), os prazos, os cookies e os
+**Pergunta.** Revisar e aprovar a Política de Privacidade v3, os Termos de Uso v2, o consentimento de dados de bem-estar e os
+textos da Central de Privacidade. A Política já lista as categorias de dados (art. 9º), os prazos, os cookies e os
 direitos.
 
 **Implementado hoje.** Rascunhos publicados em `/legal/*` com o rótulo "RASCUNHO — revisão jurídica obrigatória".
@@ -151,8 +147,9 @@ interesse e execução do contrato): confirmar cada uma.
 **Impacto.** Cada ajuste vira versão nova; retirar o rótulo de rascunho depende desta aprovação.
 
 ### 4.2 Versões não substanciais com aviso e ciência (OI-30)
-**Pergunta.** Termos v2 (saiu a seção "Sugestões do app") e Política v2 (só descreve melhor o tratamento que já
-existia, inclusive o prazo de 30 dias das contas sem onboarding) foram publicados como versões **não substanciais**:
+**Pergunta.** Termos v2 (saiu a seção "Sugestões do app"), Política v2 (só descreve melhor o tratamento que já
+existia, inclusive o prazo de 30 dias das contas sem onboarding) e Política v3 (saem os consentimentos opcionais
+nunca usados, ADR-0042) foram publicados como versões **não substanciais**:
 quem aceitou a v1 não aceita de novo; vê um aviso único dentro do app e o clique em "Entendi" fica registrado.
 (a) As mudanças dispensam novo aceite (CDC; Marco Civil, art. 7º, XI)? (b) O aviso dentro do app basta, ou é preciso
 também e-mail? (c) O registro do clique é prova suficiente? (d) O texto do aviso está adequado? (e) A Política v1 dizia "quando
@@ -276,9 +273,9 @@ Este tema precisa de advogado(a) **e** de profissionais de saúde (nutrição, e
 
 ## O que muda no app com cada resposta (resumo para o produto)
 
-- **Só texto (versão nova com aviso):** temas 2, 3.2 (b), 3.5 (c), 4, 5 (prazos no texto), 10 (textos).
+- **Só texto (versão nova com aviso):** temas 2, 3.2 (b), 4, 5 (prazos no texto), 10 (textos).
 - **Configuração:** prazos do tema 5 que não estão no texto.
-- **Código pequeno:** 3.5 (b), 5.3, PR2-N1, e-mail do aviso (4.2 b).
+- **Código pequeno:** 5.3, PR2-N1, e-mail do aviso (4.2 b).
 - **Código médio:** 3.3 (c), duplo controle (OI-34), anonimização (OI-31), verificação de idade (tema 7).
 - **Código grande ou retirada de recurso:** 1 (c), histórico de correções (OI-20), prazo de arrependimento (OI-33),
   retirada do 3D (tema 10).

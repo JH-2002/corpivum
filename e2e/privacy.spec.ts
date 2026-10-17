@@ -97,20 +97,29 @@ test('reorientação: quem autorizou a v1 da saúde revê o texto novo antes de 
   await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
 });
 
-test('marketing: autorizar e revogar com 1 clique cada, sem afetar o resto (LEG-C04/C05)', async ({
+test('só a finalidade de dados de bem-estar é oferecida: sem novidades nem métricas (ADR-0042)', async ({
   page,
 }) => {
-  const email = e2eEmail('marketing');
+  const email = e2eEmail('finalidades');
+  await createVerifiedUser(email, E2E_PASSWORD, { onboarded: false });
+  await login(page, email);
+  await expect(page).toHaveURL(/\/boas-vindas\/seguranca$/);
+  await page.goto('/boas-vindas/consentimentos');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Suas escolhas de privacidade' }),
+  ).toBeVisible();
+  await expect(page.getByText('Dados de bem-estar').first()).toBeVisible();
+  await expect(page.getByText(/Comunicações sobre novidades|Métricas de uso/)).toHaveCount(0);
+});
+
+test('Central de Privacidade sem novidades nem métricas (ADR-0042)', async ({ page }) => {
+  const email = e2eEmail('central-finalidades');
   await createVerifiedUser(email);
   await login(page, email);
   await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
   await page.goto('/privacidade');
-  await page.getByRole('button', { name: 'Autorizar: Comunicações sobre novidades' }).click();
-  await page.getByRole('button', { name: 'Revogar: Comunicações sobre novidades' }).click();
-  await expect(
-    page.getByRole('button', { name: 'Autorizar: Comunicações sobre novidades' }),
-  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Revogar: Dados de bem-estar' })).toBeVisible();
+  await expect(page.getByText(/Comunicações sobre novidades|Métricas de uso/)).toHaveCount(0);
 });
 
 test('menor de 18 encerra a conta: apagada na hora, só a prova mínima fica (LEG-F04)', async ({

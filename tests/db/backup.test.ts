@@ -84,7 +84,7 @@ function privacy() {
   });
 }
 
-async function person(purposes: Array<'health_data' | 'marketing'>) {
+async function person(purposes: Array<'health_data'>) {
   const u = await createVerifiedUser(t);
   const c = createTestConsent(db, t.clock);
   expect(
@@ -169,7 +169,7 @@ describe('backup e restauração (LEG-S07, P7-M3)', () => {
     await seed(minor.userId);
     const eliminated = await person(['health_data']);
     await seed(eliminated.userId);
-    const marketing = await person(['health_data', 'marketing']);
+    const revoker = await person(['health_data']);
     const control = await person(['health_data']);
     await seed(control.userId);
     const unverifiedEmail = uniqueEmail('nao-verificada');
@@ -217,10 +217,10 @@ describe('backup e restauração (LEG-S07, P7-M3)', () => {
     expect(await eliminator.eliminate(eliminated.userId)).toBe('eliminated');
     // Reconsente depois da eliminação: os dados antigos do backup continuam tendo de sair.
     expect(await eliminated.consent.grant(eliminated.userId, 'health_data')).toEqual({ ok: true });
-    await marketing.consent.revoke(marketing.userId, 'marketing');
+    await revoker.consent.revoke(revoker.userId, 'health_data');
     const { rows: revokedAt } = await admin.query<{ at: Date }>(
-      `SELECT revoked_at AS at FROM consent_records WHERE user_id = $1 AND purpose = 'marketing'`,
-      [marketing.userId],
+      `SELECT revoked_at AS at FROM consent_records WHERE user_id = $1 AND purpose = 'health_data'`,
+      [revoker.userId],
     );
     const newcomer = await person(['health_data']);
 
@@ -269,8 +269,8 @@ describe('backup e restauração (LEG-S07, P7-M3)', () => {
     expect(await healthRows(restored, eliminated.userId)).toBe(0);
     // Revogação copiada com a data da origem; nada de "ativo" de novo.
     const { rows: mk } = await restored.query<{ at: Date | null }>(
-      `SELECT revoked_at AS at FROM consent_records WHERE user_id = $1 AND purpose = 'marketing'`,
-      [marketing.userId],
+      `SELECT revoked_at AS at FROM consent_records WHERE user_id = $1 AND purpose = 'health_data'`,
+      [revoker.userId],
     );
     expect(mk[0]?.at?.toISOString()).toBe(revokedAt[0]?.at.toISOString());
     // Controle intacto; quem chegou depois do backup não existe no ponto restaurado.

@@ -27,7 +27,8 @@ econômica (art. 11, §4º). Sem venda, sem publicidade, sem data brokers.
 - LEG-C01 Entidade `ConsentRecord` (user_id, purpose, policy_version, text_hash, granted_at, revoked_at).
 - LEG-C02 Finalidades separadas: (1) dados de saúde para o funcionamento do app; (2) **revogado (ADR-0030)**:
   compartilhamento com IA; (3) **revogado (ADR-0030)**: transferência internacional por consentimento; (4)
-  comunicações de marketing; (5) métricas de produto com identificador. Cada uma com checkbox próprio, nunca
+  **revogado (ADR-0042)**: comunicações de marketing; (5) **revogado (ADR-0042)**: métricas de produto com
+  identificador. Cada uma com checkbox próprio, nunca
   pré-marcado. A numeração não muda; reintroduzir uma finalidade exige nova ADR e nova versão do consentimento.
 - LEG-C03 Consentimento genérico é inválido: cada texto descreve finalidade, dados e consequências.
 - LEG-C04 Revogar é tão fácil quanto conceder (Central de Privacidade, 1–2 cliques). A revogação interrompe

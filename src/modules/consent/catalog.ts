@@ -8,13 +8,15 @@
  * falha se o texto mudar sem isso, e o teste de banco
  * confere as versões publicadas. `requiresReconsent: true` = mudança substancial (pede nova escolha).
  */
-export const CONSENT_PURPOSES = ['health_data', 'marketing', 'product_metrics'] as const;
+export const CONSENT_PURPOSES = ['health_data'] as const;
 export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
 
 /**
  * Finalidades oferecidas: todas as do catálogo. Compartilhamento com IA e transferência internacional foram
- * revogadas (ADR-0030); os valores continuam no enum do banco só porque o Postgres não remove valor de enum, e
- * um CHECK em `consent_records` e `policy_versions` impede usá-los.
+ * revogadas (ADR-0030), e novidades por e-mail (`marketing`) e métricas de uso (`product_metrics`) saíram sem nunca
+ * terem sido usadas (ADR-0042, OI-37). Os valores continuam no enum do banco só porque o Postgres não remove valor
+ * de enum, e CHECKs em `consent_records` e `policy_versions` impedem usá-los. Os textos de `marketing` e
+ * `product_metrics` estão em `legal/archive/`.
  */
 export const AVAILABLE_PURPOSES = CONSENT_PURPOSES;
 export type AvailablePurpose = ConsentPurpose;
@@ -27,13 +29,8 @@ export function isAvailablePurpose(purpose: string): purpose is AvailablePurpose
 export const REQUIRED_DOCUMENTS = ['terms', 'privacy_policy'] as const;
 export type RequiredDocument = (typeof REQUIRED_DOCUMENTS)[number];
 
-/** Documentos versionados vigentes. Os textos das finalidades revogadas (ADR-0030) não existem. */
-export const POLICY_DOCUMENTS = [
-  ...REQUIRED_DOCUMENTS,
-  'consent_health_data',
-  'consent_marketing',
-  'consent_product_metrics',
-] as const;
+/** Documentos versionados vigentes. Os textos das finalidades revogadas (ADR-0030, ADR-0042) não são vigentes. */
+export const POLICY_DOCUMENTS = [...REQUIRED_DOCUMENTS, 'consent_health_data'] as const;
 export type PolicyDocument = (typeof POLICY_DOCUMENTS)[number];
 
 export function isPolicyDocument(document: string): document is PolicyDocument {
@@ -52,13 +49,13 @@ export interface DocumentVersion {
 
 /** Versão vigente de cada documento publicado. */
 export const CURRENT_VERSIONS = {
-  // v2 (ADR-0041): lista as categorias de dados de bem-estar, o prazo das contas sem onboarding (ADR-0037), os
-  // cookies e onde excluir a conta durante o cadastro. Só descreve o tratamento que já existe: sem novo aceite;
-  // aviso único com registro de ciência, como os Termos v2. `LEGAL-REVIEW` (OI-30). Texto da v1 em
-  // `legal/archive/privacy_policy.v1.json`.
+  // v2 (ADR-0041): categorias de dados de bem-estar, prazo das contas sem onboarding (ADR-0037), cookies e onde
+  // excluir a conta durante o cadastro. v3 (ADR-0042): sem os consentimentos opcionais de novidades e métricas.
+  // Ambas só descrevem ou removem: sem novo aceite; aviso único com registro de ciência, como os Termos v2.
+  // `LEGAL-REVIEW` (OI-30). Textos anteriores em `legal/archive/privacy_policy.v<n>.json`.
   privacy_policy: {
-    version: 2,
-    textHash: 'd758c5ff3f443af3b979a53756e262cfd43d5e43781d3e3fb3f773aebbf2bac0',
+    version: 3,
+    textHash: 'a4ea2110c40c91d67196df9c9c7cc40ed1d88face51d43d7f89d30208bb30877',
     requiresReconsent: false,
   },
   // v2 (ADR-0031): sem a seção "Sugestões do app" (recomendações removidas, ADR-0030). Só remove
@@ -76,16 +73,6 @@ export const CURRENT_VERSIONS = {
     textHash: 'cd0d42d175c05e0cb6e0e5d492fb4402cde382283bb64f9f3b649d9d91886c6e',
     requiresReconsent: true,
   },
-  consent_marketing: {
-    version: 1,
-    textHash: '0d782b27a4743565d7cfeb3d5e94fb6e39b863413cf1973f8c9d55c78b795fde',
-    requiresReconsent: true,
-  },
-  consent_product_metrics: {
-    version: 1,
-    textHash: '084a0ea0dc34d3ae61c26f4b9f71c66c88276424c60f3c265e2c8c40a57b1fed',
-    requiresReconsent: true,
-  },
 } as const satisfies Partial<Record<PolicyDocument, DocumentVersion>>;
 
 export type PublishedDocument = keyof typeof CURRENT_VERSIONS;
@@ -95,8 +82,6 @@ export const DOCUMENT_MESSAGES = {
   privacy_policy: 'legal.privacyPolicy',
   terms: 'legal.terms',
   consent_health_data: 'consent.purposes.health_data',
-  consent_marketing: 'consent.purposes.marketing',
-  consent_product_metrics: 'consent.purposes.product_metrics',
 } as const satisfies Record<PublishedDocument, string>;
 
 /**
@@ -108,6 +93,6 @@ export const HEALTH_DATA_GRACE_DAYS_IN_TEXT = 30;
 
 /** Data de publicação da versão vigente de cada documento obrigatório (exibida nas páginas públicas). */
 export const PUBLISHED_AT = {
-  privacy_policy: '2026-10-16',
+  privacy_policy: '2026-10-17',
   terms: '2026-10-14',
 } as const satisfies Record<RequiredDocument, string>;

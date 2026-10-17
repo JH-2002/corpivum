@@ -244,15 +244,21 @@ test.describe('fluxos críticos só com teclado (7d)', () => {
   test('Central de Privacidade: autorizar e revogar com Enter', async ({ browser }) => {
     const { context, page } = await freshPerson(browser, 'teclado-consent');
     await page.goto('/privacidade');
-    const grant = page.getByRole('button', { name: 'Autorizar: Comunicações sobre novidades' });
-    await tabTo(page, grant, 120);
+    // Única finalidade oferecida desde o ADR-0042: dados de bem-estar (revogar pede confirmação).
+    const revoke = page.getByRole('button', { name: 'Revogar: Dados de bem-estar' });
+    await tabTo(page, revoke, 120);
     await page.keyboard.press('Enter');
-    const revoke = page.getByRole('button', { name: 'Revogar: Comunicações sobre novidades' });
-    await expect(revoke).toBeVisible({ timeout: 15_000 });
-    await revoke.focus();
+    const dialog = page.getByRole('dialog', { name: 'Revogar o uso dos dados de bem-estar?' });
+    await expect(dialog).toBeVisible();
+    const confirm = dialog.getByRole('button', { name: 'Revogar agora' });
+    await tabTo(page, confirm, 10);
+    await page.keyboard.press('Enter');
+    const grant = page.getByRole('button', { name: 'Autorizar: Dados de bem-estar' });
+    await expect(grant).toBeVisible({ timeout: 15_000 });
+    await grant.focus();
     await expectVisibleFocus(page);
     await page.keyboard.press('Enter');
-    await expect(grant).toBeVisible();
+    await expect(revoke).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
 

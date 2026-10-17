@@ -1524,3 +1524,30 @@ não existem; **M3** data de nascimento pedida e não guardada; **M4** bases leg
 cookies e contas sem onboarding na Política; baixos e notas (OPEN_ISSUES "Governança (7f)"). Como o texto da
 Política mudou antes do merge, o hash foi recalculado na própria migração da branch. Ficam 7f-R1 (conta sem
 onboarding sem aviso enviado não expira) e 7f-R2 (investigação com o `app_migrator`), no CHECKLIST.
+
+## ADR-0042 — Consentimentos opcionais de novidades e de métricas retirados (OI-37)
+**Contexto.** OI-37 (7f): o onboarding e a Central de Privacidade ofereciam os consentimentos `marketing` (novidades por
+e-mail) e `product_metrics` (métricas de uso ligadas à conta), mas o app nunca enviou novidades nem coletou métricas.
+Decisão do responsável pelo produto (2026-10-17): retirar os dois, no modelo do ADR-0030.
+**Decisão.**
+- **Catálogo:** `CONSENT_PURPOSES` passa a ser só `health_data`; saem `consent_marketing` e `consent_product_metrics` de
+  `POLICY_DOCUMENTS`, `CURRENT_VERSIONS` e do i18n. O serviço recusa conceder e revogar as duas (`unavailable`), e o
+  onboarding e a Central mostram só a finalidade de dados de bem-estar. Textos v1 em `legal/archive/` (hash conferido).
+- **Banco (migração `finalidades_opcionais_removidas`):** os valores ficam dormentes no enum (o Postgres não remove
+  valor de enum sem recriar o tipo, `app.has_active_consent` e as políticas RLS). Diferente do ADR-0030, essas
+  finalidades tiveram versões publicadas (Fase 1b) e provas de escolha: as autorizações ativas são **revogadas** na
+  própria migração (o único UPDATE que a guarda aceita; nada é apagado, LEG-R03) e as CHECKs
+  `consent_records_purpose_opcional_removida` e `policy_versions_document_opcional_removido` entram **NOT VALID**:
+  barram toda linha nova e toda alteração, e as provas antigas saem pelo expurgo normal (`PROOF_RETENTION_DAYS`).
+  Produção nunca subiu: lá a revogação não alcança ninguém. Consequência aceita: um backup anterior a esta migração
+  não pode receber, pela reaplicação, prova dessas finalidades criada depois do ponto (não há nenhuma).
+- **Política de Privacidade v3:** sai a frase "Comunicações sobre novidades e métricas ligadas à conta:
+  consentimentos separados e opcionais". Só remove funcionalidade: não substancial, aviso único e ciência (ADR-0031),
+  com o texto `policyNotice.changes.privacy_policy.v3`, que resume também as mudanças da v2 para quem aceitou a v1.
+  Texto da v2 arquivado. `LEGAL-REVIEW` em OI-30.
+- **Documentos:** ROPA T8 e T9 removidas (IDs não reaproveitados), LEG-C02 itens (4) e (5) revogados, SUBPROCESSORS,
+  PACOTE_JURIDICO (tema 3.5 decidido; fica só se a revogação sem ação do titular dispensa comunicação individual),
+  OI-37 em "Resolvidas"; sai o placeholder `RETENCAO_METRICAS`.
+**Consequências.** Testes que usavam `marketing` como "outra finalidade" passam a usar dados de bem-estar (revogar e
+autorizar de novo). Reintroduzir novidades ou métricas exige nova ADR, nova finalidade com texto e prazo, revisão do
+ROPA, do RIPD e de SUBPROCESSORS, e remover a CHECK correspondente.

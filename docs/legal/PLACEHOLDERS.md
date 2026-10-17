@@ -49,7 +49,6 @@ Nos textos i18n o placeholder aparece entre aspas simples (`'{{CONTROLADOR}}'`),
 | `{{RETENCAO_ACESSO}}` | Guarda dos registros de acesso (Marco Civil, art. 15) | Jurídico (OI-06, OI-17) | `ACCESS_LOG_RETENTION_DAYS` = 180 dias |
 | `{{RETENCAO_PROVA}}` | Guarda das provas de consentimento e de pedidos | Jurídico (OI-04) | `PROOF_RETENTION_DAYS` = 1825 dias (5 anos), piso técnico de 365 |
 | `{{PRAZO_BACKUP}}` | Prazo para as cópias de segurança serem substituídas | Responsável pelo produto, com o jurídico | `BACKUP_RETENTION_DAYS` = 30 dias, ≤ `PURGE_DAYS` |
-| `{{RETENCAO_METRICAS}}` | Guarda das métricas de uso, se forem ativadas | Responsável pelo produto | Nada é coletado (ROPA T9) |
 | `{{RETENCAO_LOGS}}` | Guarda dos logs da hospedagem | Responsável pelo produto, com a hospedagem | Configuração do provedor |
 | `{{PRAZO_ANPD}}` | Prazo de comunicação de incidente à ANPD | Jurídico (OI-05) | — |
 | `{{FREQUENCIA_BACKUP}}` | Frequência dos backups no provedor (no mínimo diária) | Responsável pelo produto | PITR de 7 dias declarado em `infra/retention.json` |

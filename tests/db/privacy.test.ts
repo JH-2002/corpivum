@@ -156,7 +156,7 @@ describe('LEG-F04: encerramento de conta de quem se descobre menor', () => {
     await consent.service.completeOnboarding(u.userId, {
       acceptTerms: true,
       acceptPrivacy: true,
-      purposes: ['health_data', 'marketing'],
+      purposes: ['health_data'],
     });
     expect(await privacy().closeMinorAccount(u.userId, PASSWORD)).toBe('closed');
 
@@ -326,9 +326,11 @@ describe('retenção (LEG-R02, LEG-R03)', () => {
     await c.service.completeOnboarding(u.userId, {
       acceptTerms: true,
       acceptPrivacy: true,
-      purposes: ['marketing', 'health_data'],
+      purposes: ['health_data'],
     });
-    await c.service.revoke(u.userId, 'marketing');
+    // Revoga e autoriza de novo: uma revogação antiga e um consentimento vigente.
+    await c.service.revoke(u.userId, 'health_data');
+    await c.service.grant(u.userId, 'health_data');
     // Envelhece os registros. O gatilho de integridade impede qualquer UPDATE além da revogação,
     // então fica desligado só nesta transação de simulação.
     await admin.query('BEGIN');
