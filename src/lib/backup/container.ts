@@ -60,7 +60,7 @@ export function parseBackupKey(value: string | undefined): Buffer {
 /** Transform que cifra o conteúdo que passa, com o manifesto à frente. */
 export function createBackupEncryptStream(key: Buffer, manifest: BackupManifest): Transform {
   const iv = randomBytes(IV_BYTES);
-  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const cipher = createCipheriv('aes-256-gcm', key, iv, { authTagLength: TAG_BYTES });
   cipher.setAAD(BACKUP_MAGIC);
   const json = Buffer.from(JSON.stringify(backupManifestSchema.parse(manifest)), 'utf8');
   const length = Buffer.alloc(4);
@@ -144,7 +144,8 @@ export async function decryptBackupFile(
   sink: (manifest: () => BackupManifest | undefined) => NodeJS.WritableStream,
 ): Promise<BackupManifest> {
   const { iv, tag, size } = await readEnvelope(file);
-  const decipher = createDecipheriv('aes-256-gcm', key, iv);
+  // Tamanho da etiqueta fixo: uma etiqueta curta nunca é aceita.
+  const decipher = createDecipheriv('aes-256-gcm', key, iv, { authTagLength: TAG_BYTES });
   decipher.setAAD(BACKUP_MAGIC);
   decipher.setAuthTag(tag);
   const splitter = new ManifestSplitter();
