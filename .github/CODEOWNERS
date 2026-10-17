@@ -9,3 +9,21 @@
 /docs/INTENDED_USE.md                   @JH-2002
 /docker/postgres/                       @JH-2002
 /.github/                               @JH-2002
+# Áreas sensíveis (P7-B6): migrações, autenticação, consentimento, direitos, exportação, banco, criptografia,
+# segurança, borda, documentos de segurança, infraestrutura declarada e scripts de operação.
+/prisma/migrations/                     @JH-2002
+/src/modules/auth/                      @JH-2002
+/src/modules/consent/                   @JH-2002
+/src/modules/privacy/                   @JH-2002
+/src/modules/reports/                   @JH-2002
+/src/lib/db/                            @JH-2002
+/src/lib/crypto/                        @JH-2002
+/src/lib/security/                      @JH-2002
+/src/lib/backup/                        @JH-2002
+/src/proxy.ts                           @JH-2002
+/next.config.ts                         @JH-2002
+/docs/security/                         @JH-2002
+/docs/runbooks/                         @JH-2002
+/infra/                                 @JH-2002
+/scripts/                               @JH-2002
+/docker-compose.yml                     @JH-2002
