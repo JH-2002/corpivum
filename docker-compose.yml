@@ -2,7 +2,8 @@
 # Senhas vêm do arquivo .env (não versionado). Veja .env.example.
 services:
   db:
-    image: postgres:17-alpine
+    # Fixada por digest (P7-B7); o Dependabot (docker-compose) propõe as atualizações.
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_SUPERUSER:?defina POSTGRES_SUPERUSER no .env}
@@ -17,6 +18,8 @@ services:
       APP_OPERATOR_PASSWORD: ${APP_OPERATOR_PASSWORD:?defina APP_OPERATOR_PASSWORD no .env}
       # Jobs em segundo plano (ADR-0037), criado por docker/postgres/init/04-worker-role.sh.
       APP_WORKER_PASSWORD: ${APP_WORKER_PASSWORD:?defina APP_WORKER_PASSWORD no .env}
+      # Livro de reaplicação dos backups (ADR-0040), criado por docker/postgres/init/05-backup-role.sh.
+      APP_BACKUP_PASSWORD: ${APP_BACKUP_PASSWORD:?defina APP_BACKUP_PASSWORD no .env}
       TZ: UTC
     ports:
       # Exposto só na máquina local.
@@ -34,7 +37,7 @@ services:
   # APP_ENV=development (verificação, redefinição) e mostra em http://localhost:8025. Nada sai da máquina.
   # Mensagens só em memória (sem volume): somem ao parar o contêiner.
   mailpit:
-    image: axllent/mailpit:v1.31.2
+    image: axllent/mailpit:v1.31.2@sha256:74d609a42ec279aa63c6b4622a6fa9b5408d1ad5b1d76a1c4be40a265ce0863d
     restart: unless-stopped
     environment:
       MP_MAX_MESSAGES: 200

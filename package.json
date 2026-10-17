@@ -24,6 +24,7 @@
     "db:test:init": "docker compose exec -T db sh /docker-entrypoint-initdb.d/02-test-db.sh",
     "db:operator:init": "docker compose exec -T db sh /docker-entrypoint-initdb.d/03-operator-role.sh",
     "db:worker:init": "docker compose exec -T db sh /docker-entrypoint-initdb.d/04-worker-role.sh",
+    "db:backup:init": "docker compose exec -T db sh /docker-entrypoint-initdb.d/05-backup-role.sh",
     "privacy:requests": "node scripts/privacy-requests.mjs",
     "mail:up": "docker compose up -d mailpit",
     "db:verify-roles": "node scripts/verify-db-roles.mjs",
@@ -35,7 +36,13 @@
     "db:resync-migration": "node scripts/resync-migration.mjs",
     "db:seed": "node --import ./scripts/ts-loader.mjs scripts/seed-demo.ts",
     "check:retention": "node --import ./scripts/ts-loader.mjs scripts/check-retention.ts",
-    "check:perf-budget": "node scripts/check-perf-budget.mjs"
+    "check:perf-budget": "node scripts/check-perf-budget.mjs",
+    "check:infra": "node --import ./scripts/ts-loader.mjs scripts/check-infra.ts",
+    "backup:create": "node --import ./scripts/ts-loader.mjs scripts/backup.ts create",
+    "backup:ledger": "node --import ./scripts/ts-loader.mjs scripts/backup.ts ledger",
+    "backup:restore": "node --import ./scripts/ts-loader.mjs scripts/backup.ts restore",
+    "backup:reapply": "node --import ./scripts/ts-loader.mjs scripts/backup.ts reapply",
+    "backup:drop": "node --import ./scripts/ts-loader.mjs scripts/backup.ts drop"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

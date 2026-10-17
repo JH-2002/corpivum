@@ -141,6 +141,19 @@ describe('parseEnv', () => {
       ).toBe(true);
     });
 
+    it('recusa a credencial e a chave dos backups no runtime (ADR-0040)', () => {
+      expect(
+        hasIssue(
+          { ...prod, BACKUP_DATABASE_URL: 'postgresql://app_backup:x@h/db' },
+          'BACKUP_DATABASE_URL',
+        ),
+      ).toBe(true);
+      expect(hasIssue({ ...prod, BACKUP_ENCRYPTION_KEY: 'x' }, 'BACKUP_ENCRYPTION_KEY')).toBe(true);
+      expect(
+        hasIssue({ ...prod, DATABASE_URL: 'postgresql://app_backup:x@h/db' }, 'DATABASE_URL'),
+      ).toBe(true);
+    });
+
     it('exige região no Brasil (LEG-S10)', () => {
       expect(hasIssue({ ...prod, APP_REGION: 'us-east-1' }, 'APP_REGION')).toBe(true);
       expect(hasIssue({ ...prod, APP_REGION: 'gru1' }, 'APP_REGION')).toBe(false);

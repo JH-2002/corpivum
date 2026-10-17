@@ -9,7 +9,13 @@ const days = z.coerce.number().int().positive();
 export const BRAZIL_REGIONS = ['gru1', 'sa-east-1', 'brazilsouth', 'southamerica-east1'] as const;
 
 /** Papéis que nunca podem ser usados pelo runtime web (LEG-S03). */
-const FORBIDDEN_RUNTIME_DB_USERS = ['app_migrator', 'app_operator', 'app_worker', 'postgres'];
+const FORBIDDEN_RUNTIME_DB_USERS = [
+  'app_migrator',
+  'app_operator',
+  'app_worker',
+  'app_backup',
+  'postgres',
+];
 /** Papéis de login de quem atende pedidos fora do app (ADR-0037): nunca no runtime. */
 const OPERATOR_LOGIN_ROLE = /^operador_/;
 
@@ -36,6 +42,9 @@ const envSchema = z
     WORKER_DATABASE_URL: z.url().optional(),
     /** Só para `pnpm privacy:requests` (papel app_operator, ADR-0034). Recusada no runtime de produção. */
     OPERATOR_DATABASE_URL: z.url().optional(),
+    /** Só para `pnpm backup:*` (papel app_backup e chave dos arquivos, ADR-0040). Recusadas no runtime de produção. */
+    BACKUP_DATABASE_URL: z.url().optional(),
+    BACKUP_ENCRYPTION_KEY: z.string().optional(),
     /** Base dos links enviados por e-mail (verificação, redefinição). https obrigatório em produção. */
     APP_URL: z.url(),
     /** Segredos de auth (ADR-0014), 32+ bytes em base64. Assina os cookies do fluxo e o de aparelho conhecido. */
@@ -183,6 +192,13 @@ const envSchema = z
       // Nem a do atendimento manual (ADR-0034): o operador usa o script, nunca o app web.
       if (env.OPERATOR_DATABASE_URL) {
         issue('OPERATOR_DATABASE_URL', 'não deve estar definido no runtime de produção (LEG-S03)');
+      }
+      // Nem as dos backups (ADR-0040): ficam na máquina de quem opera, nunca na web nem no worker.
+      if (env.BACKUP_DATABASE_URL) {
+        issue('BACKUP_DATABASE_URL', 'não deve estar definido no runtime de produção (LEG-S03)');
+      }
+      if (env.BACKUP_ENCRYPTION_KEY) {
+        issue('BACKUP_ENCRYPTION_KEY', 'não deve estar definida no runtime de produção (LEG-S07)');
       }
       // LEG-S10: execução no Brasil.
       if (!(BRAZIL_REGIONS as readonly string[]).includes(env.APP_REGION)) {

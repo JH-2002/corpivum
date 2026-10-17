@@ -32,7 +32,8 @@ export type AuditAction =
   | 'onboarding_expiry_notice_sent'
   | 'account_expired_onboarding'
   | 'privacy_request_registered';
-// `privacy_request_lookup` (7b-R3, ADR-0038) fica fora: só as funções do operador gravam.
+// `privacy_request_lookup` (7b-R3, ADR-0038) e `restore_reapplied` (P7-M3, ADR-0040) ficam fora: só as funções do
+// operador e as de restauração gravam.
 
 /** Ações aceitas por `app.audit_append_system` (lista igual à da função no banco). */
 export type SystemAuditAction =
