@@ -615,9 +615,7 @@ describe('Política v2 não substancial: mesmo fluxo de aviso dos Termos v2 (ADR
     const state = await u.service.getState(u.userId);
     expect(state.updatePending).toBe(false);
     expect([...state.documentNotices].sort()).toEqual(['privacy_policy', 'terms']);
-    expect(
-      await u.service.acknowledgeDocuments(u.userId, ['terms', 'privacy_policy']),
-    ).toBe(2);
+    expect(await u.service.acknowledgeDocuments(u.userId, ['terms', 'privacy_policy'])).toBe(2);
     expect((await u.service.getState(u.userId)).documentNotices).toEqual([]);
   });
 });

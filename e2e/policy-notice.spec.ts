@@ -93,9 +93,10 @@ test('quem aceitou as duas v1 vê um só aviso com Termos e Política e registra
   const notice = page.getByRole('region', notices);
   await expect(notice).toBeVisible();
   await expect(notice).toContainText('30 dias');
-  await expect(
-    notice.getByRole('link', { name: 'Ler a Política de Privacidade' }),
-  ).toHaveAttribute('href', '/legal/politica-de-privacidade');
+  await expect(notice.getByRole('link', { name: 'Ler a Política de Privacidade' })).toHaveAttribute(
+    'href',
+    '/legal/politica-de-privacidade',
+  );
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations.map((v) => v.id)).toEqual([]);
 
