@@ -16,7 +16,7 @@
 | Item | Valor |
 |---|---|
 | Provedor | `{{BANCO}}` (região `sa-east-1`, `infra/regions.json`) |
-| Frequência | `{{FREQUENCIA}}` (diário, no mínimo) |
+| Frequência | `{{FREQUENCIA_BACKUP}}` (diário, no mínimo) |
 | Retenção | `BACKUP_RETENTION_DAYS` = 30 dias (≤ `PURGE_DAYS`) |
 | Recuperação a um ponto no tempo (PITR) | 7 dias (`infra/retention.json`, `pointInTimeRecoveryDays`) |
 | Criptografia do provedor | `{{KMS}}` |

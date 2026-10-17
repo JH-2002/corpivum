@@ -87,12 +87,13 @@ Respostas-modelo (RASCUNHO, `LEGAL-REVIEW`):
 - Confirmação: senha atual e, com MFA, o TOTP ou um código de recuperação; prova de uso único de 2 min
   (`account_deletion`); frase "excluir minha conta" conferida no servidor.
 - Na hora: `deleted_at`, sessões e tokens revogados, consentimentos revogados, links de exportação vencidos,
-  pedido `deletion` em andamento. Em minutos (`privacy.account_purge`): aviso por e-mail (`account-deleted`, sem dado
-  de saúde nem link de login; falha no envio não segura a purga), arquivos no storage, tabelas e `DELETE` da conta.
-  O aviso sai uma vez só, logo depois da confirmação. O e-mail fica livre para novo cadastro. Os demais pedidos
+  pedido `deletion` em andamento e o aviso por e-mail (`account-deleted`, sem dado de saúde nem link de login),
+  enviado uma vez só, logo depois da confirmação (falha no envio não segura a exclusão). Em minutos
+  (`privacy.account_purge`): arquivos no storage, tabelas e `DELETE` da conta. O e-mail fica livre para novo
+  cadastro. Os demais pedidos
   abertos da pessoa saem como recusados (perderam o objeto; OI-33). Pedidos de exportação na fila ou em geração
   param na exclusão e a carência acaba.
-- Rede de segurança: `privacy.account_purge_sweep` (diário) reenfileira contas excluídas que ainda existem.
+- Rede de segurança: `privacy.account_purge_sweep` (de hora em hora desde a 7b, ADR-0037) reenfileira contas excluídas que ainda existem.
 - Não há prazo de arrependimento (OI-33, `LEGAL-REVIEW`): não dá para restaurar uma conta excluída.
 
 ## Pedidos fora do app (e-mail ao encarregado)

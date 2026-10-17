@@ -593,7 +593,7 @@
     "items": {
       "hosting": {
         "service": "Hospedagem / execução das funções",
-        "purpose": "Servir o app e executar o servidor",
+        "purpose": "Servir o app, executar o servidor e as tarefas em segundo plano",
         "data": "Todos os dados em trânsito; registros técnicos (IP, requisição)",
         "region": "Brasil"
       },
@@ -615,6 +615,12 @@
         "data": "Arquivos de exportação",
         "region": "Brasil"
       },
+      "ledger": {
+        "service": "Livros de reaplicação",
+        "purpose": "Refazer exclusões, revogações e provas depois de restaurar uma cópia de segurança",
+        "data": "Arquivo cifrado com identificadores de contas e provas; sem e-mail e sem dados de bem-estar",
+        "region": "Brasil"
+      },
       "jobs": {
         "service": "Fila / jobs",
         "purpose": "Lembretes, relatórios, exportações, purga",
@@ -627,16 +633,22 @@
         "data": "Chaves; nenhum dado de usuário",
         "region": "Brasil"
       },
+      "secrets": {
+        "service": "Gerenciador de segredos",
+        "purpose": "Guardar senhas técnicas e chaves do sistema",
+        "data": "Segredos técnicos; nenhum dado de usuário",
+        "region": "Brasil"
+      },
       "email": {
         "service": "E-mail transacional",
-        "purpose": "Verificação, recuperação de senha, avisos e lembretes",
-        "data": "E-mail e links; sem conteúdo de bem-estar",
+        "purpose": "Confirmação de cadastro, redefinição de senha, avisos de segurança e da conta, recibos de pedidos e lembretes",
+        "data": "E-mail, tipo de aviso, links e datas; sem nome e sem conteúdo de bem-estar",
         "region": "A definir"
       },
       "errors": {
         "service": "Monitoramento de erros",
         "purpose": "Identificar e corrigir falhas técnicas",
-        "data": "Metadados técnicos, com remoção de dados pessoais",
+        "data": "Nome e código técnico do erro e a tela em que ocorreu; sem mensagem e sem dados pessoais",
         "region": "A definir"
       }
     },
