@@ -1414,3 +1414,69 @@ Depuração USB. Nota aberta em 7d-N4 (formato aberto dos nomes de erro).
 **Consequências.** Scripts `test:perf` e `check:perf-budget`; o job de e2e roda só o projeto `chromium`;
 `E2E_PROD=1` usa o build de produção também fora da CI. Os testes do twin com WebGL real não rodam de forma
 estável no Windows local (7d-N2); a CI é a referência.
+
+## ADR-0040 — Fase 7e: operação (backup e restauração, regiões declaradas, órfãos do storage, runbooks)
+**Contexto.** ADR-0036 (7e: LEG-S07, LEG-S10; D1) e os itens marcados para a 7e: P7-M3 (reaplicação depois de
+restaurar), OI-35 (arquivo de exportação órfão), o restante do 7c-R3 (saída de dependências), P7-B6 e P7-B7. A
+hospedagem ainda não foi escolhida (OI-11): o que depende dela fica nos runbooks com `{{...}}` e no CHECKLIST.
+**Decisão — backup e restauração (LEG-S07).**
+- `pnpm backup:create`: `pg_dump` do banco de `MIGRATION_DATABASE_URL` pelo contêiner do docker compose, no
+  **mesmo snapshot** das contagens por tabela (`pg_export_snapshot` + `--snapshot`), direto para um arquivo
+  AES-256-GCM (`src/lib/backup/container.ts`: magic como dado autenticado, manifesto com ponto do backup, migrações
+  e contagens dentro da cifra). O dump nunca toca o disco sem cifra. Chave própria `BACKUP_ENCRYPTION_KEY`, recusada
+  se igual a outro segredo.
+- `pnpm backup:restore`: confere a etiqueta no arquivo inteiro **antes** de qualquer byte chegar ao banco, restaura
+  num banco isolado `<banco>_restore` (nunca o da aplicação nem o de testes) com os mesmos donos e acessos, confere
+  as contagens contra o manifesto, aplica as migrações pendentes, roda `db:verify-roles` e reaplica. `backup:drop`
+  destrói o banco isolado. `create`, `restore` e `drop` recusam `APP_ENV=production`: em produção o backup é do
+  provedor e só a reaplicação (`backup:reapply`) roda contra a instância restaurada.
+**Decisão — reaplicação (P7-M3).** Funções da migração `fase_7e_operacao`, executáveis só pelo dono
+(`app_migrator`; `db:verify-roles` e `rls.test.ts` conferem), e `src/modules/privacy/restore.ts`:
+- **Livro** (`app.restore_ledger`, um snapshot na origem): ids e estado das contas (sem e-mail) e as provas criadas
+  ou alteradas depois do ponto (consentimentos, aceites, pedidos, AuditLog, registros de acesso). Nenhum dado de
+  saúde. Vem da origem (`--source`) ou de um arquivo cifrado `pnpm backup:ledger` guardado fora do banco
+  (`--ledger`), para quando a origem se perde.
+- **No banco restaurado:** provas copiadas com as datas da origem (gatilhos de data desligados só dentro da
+  transação); contas que não existem mais na origem ou lá estão excluídas: as não verificadas saem direto, as outras
+  têm o acesso cortado e passam pela purga normal (`app.account_purge` + eliminadores), com o pedido de encerramento
+  devolvido à situação da origem depois; dados de saúde eliminados na origem saem de novo mesmo com consentimento
+  ativo (o backup é anterior à eliminação); agendamento de eliminação igual ao da origem; sempre, com ou sem livro:
+  sessões revogadas, tokens e provas de reautenticação apagados, links de exportação vencidos, expurgo de
+  autenticação e AuditLog `restore_reapplied` com o papel de quem rodou.
+- O ensaio completo (backup, mudanças depois dele na origem, restauração, reaplicação) roda na CI
+  (`tests/db/backup.test.ts`, job "Banco"). Residuais: 7e-R1 (sem origem nem livro, o intervalo se perde; PITR e
+  livro de hora em hora no CHECKLIST) e 7e-R2 (senha e 2º fator trocados depois do ponto voltam).
+**Decisão — D1 (LEG-S10).** `infra/regions.json` declara funções, worker, logs, banco, backups, fila, storage e KMS
+com fornecedor `{{...}}` e região obrigatória no Brasil, e os serviços fora do Brasil (e-mail e erros, sem dado de
+saúde). `pnpm check:infra` na CI confere as regiões, o `APP_REGION`, a região dos backups contra
+`infra/retention.json` e a linha de cada serviço de fora em `SUBPROCESSORS.md`. Runbook `PROVISIONING.md`.
+**Decisão — OI-35.** `StorageProvider.list(prefix, limit)` (local: leitura recursiva sem os metadados) e
+`sweepOrphans` no job `reports.expire`: chaves `exports/<pessoa>/<pedido>.bin` que nenhum pedido com arquivo vivo
+reconhece (`app.exports_orphans`, só `app_worker`) são apagadas; chave fora do formato só conta no log
+(`reports.orphans_unknown`). O pedido nasce antes do arquivo, então uma geração em curso nunca é órfã.
+**Decisão — 7c-R3 (LEG-R04).** A guarda do console em produção passa a cobrir `log`, `info`, `debug`, `trace`,
+`dir` e `table`, além de `error` e `warn`: `console.*` do Next, do Prisma e do `pg` só sai como linha do logger.
+Fica de fora a escrita direta em `process.stdout`/`stderr` por dependência (7e-N1).
+**Decisão — outros.** P7-B6: CODEOWNERS nas áreas sensíveis. P7-B7: imagens fixadas por digest (o Dependabot
+atualiza a do compose; as da CI à mão). Runbooks novos `WORKER_DEPLOY.md` (OI-14 a: mesmo build com
+`JOB_WORKER=inline`, sem entrada pública; 7e-N2), `OPERATOR_CREDENTIALS.md` (criar, trocar a cada 90 dias e remover
+o papel `operador_<nome>`), `PROVISIONING.md`; `BACKUP_RESTORE.md` reescrito com o ensaio local passo a passo e a
+restauração no provedor; `INCIDENT.md` com sinais, contenção por credencial e recuperação de dados.
+**Revisão do `privacy-reviewer` (7e).** Nada crítico. Corrigido (migração `fase_7e_revisao`): **A1** livro lido
+antes do ponto do backup ou dos dados restaurados é recusado; **A2** identidade da instalação (`app.installation`,
+que vai no backup) conferida contra o livro, plano com `--dry-run`, remoções acima de max(5, 1%) só com
+`--confirm-closures <total>` e nenhum passo depois de o acesso ser liberado (sessão nova depois da reaplicação deste
+restore, `app.restore_runs`); **M1** livro com 1 hora de margem antes do ponto; **M2** saída das ferramentas do
+Postgres só em `BACKUP_DEBUG_LOG`; **M3** papel `app_backup` só com o livro; **B1** cópia das provas não reabre pedido
+fechado; **B2** purga que falha faz o comando sair com erro; **B4** `create`/`restore`/`drop` só contra banco local;
+**B5** varredura de órfãos continua de onde parou; **B6** storage do livro e gerenciador de segredos em
+`regions.json`; **B7/B8** teste dentro do repositório e cobrindo livro, `reapply` e as recusas. Aceito: **M4** (dados
+apagados ou corrigidos depois do ponto voltam; 7e-R2) e as provas duplicadas da purga refeita. Segunda rodada
+(migração `fase_7e_revisao_2`): `app.restore_begin` fixa o ponto na primeira execução (recusa ponto anterior aos dados
+restaurados e, depois, ponto diferente) e a trava de liberação passa a olhar contas e sessões criadas depois do início
+do restore, qualquer que seja o `--since` (N1/N2); `BACKUP_DEBUG_LOG` só em `.backups/` (N3); backups anteriores à
+identidade da instalação recusam livro (7e-N3, transitório).
+**Consequências.** `.env` ganha `BACKUP_ENCRYPTION_KEY`, `APP_BACKUP_PASSWORD`, `BACKUP_DATABASE_URL` e
+`TEST_BACKUP_DATABASE_URL` (volumes antigos: `pnpm db:backup:init`). Scripts `backup:create|ledger|restore|reapply|drop`,
+`db:backup:init` e `check:infra`. Migrações `fase_7e_operacao`, `fase_7e_revisao` e `fase_7e_revisao_2` (`audit_action`
+`restore_reapplied`). Arquivos locais em `.backups/` (ignorado pelo git).

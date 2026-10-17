@@ -9,6 +9,7 @@
 | Credenciais do banco (`app_user`, `app_migrator`) | Gerenciador de segredos `{{SEGREDOS}}` | `{{PERIODICIDADE}}` | Reinício do runtime |
 | Segredo de sessão / CSRF | `{{SEGREDOS}}` | Em incidente | Usuários precisam entrar de novo |
 | Chave do provedor de e-mail | `{{SEGREDOS}}` | `{{PERIODICIDADE}}` | Nenhum |
+| `BACKUP_ENCRYPTION_KEY` (arquivos de `pnpm backup:*` e livros de reaplicação, ADR-0040) | `{{SEGREDOS}}`, fora do provedor dos backups | Em incidente | Arquivos antigos só abrem com a chave antiga: guardá-la até o último arquivo cifrado com ela vencer (`BACKUP_RETENTION_DAYS`) e só então destruir |
 
 Segredos **nunca** no repositório (CLAUDE.md regra 6; gitleaks na CI).
 

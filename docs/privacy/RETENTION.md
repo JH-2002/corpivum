@@ -16,6 +16,7 @@ usa os mesmos, salvo decisão registrada em ADR.
 | Conta excluída pela pessoa | Minutos (purga imediata, OI-33) | Arquivos no storage, eliminadores e `DELETE` da conta (cascata) | `privacy.account_purge` (logo após a exclusão) + `privacy.account_purge_sweep` (diário) |
 | Conta de quem se descobre menor (LEG-F04) | Na hora | Mesma transação do encerramento | — |
 | Arquivos de exportação e relatórios | Link de até `EXPORT_LINK_HOURS` = 24 h (teto 24, LEG-D03) | Linha vira `expired` e o arquivo cifrado é apagado | `reports.expire` (de hora em hora) |
+| Arquivo de exportação órfão (sem pedido vivo, ex.: geração que terminou depois da purga; OI-35) | Até 1 h; no provedor, regra de ciclo de vida de 2 dias no prefixo `exports/` | Varredura do prefixo e `app.exports_orphans` (só `app_worker`) | `reports.expire` (de hora em hora) |
 | Exportações ao revogar o consentimento de saúde | Na hora (fora a carência da portabilidade, OI-32) | Links vencem na transação da revogação | `reports.expire` apaga os arquivos |
 | Registros de acesso (IP + data/hora) | `ACCESS_LOG_RETENTION_DAYS` = 180 dias, teto 180 (LEG-R02, OI-06) | `app.privacy_purge_access_logs` | `privacy.purge_access_logs` (diário) |
 | Provas: consentimentos revogados, aceites e consentimentos de contas encerradas, pedidos fechados, AuditLog | `PROOF_RETENTION_DAYS` = 1825 dias, piso 365 (LEG-R03, OI-04) | `app.privacy_purge_proofs` | `privacy.purge_proofs` (diário) |
@@ -23,7 +24,8 @@ usa os mesmos, salvo decisão registrada em ADR.
 | Sessões revogadas ou expiradas, tokens usados ou vencidos | 1 dia depois de perder a validade | `app.auth_purge_expired` | `auth.purge_expired` (a cada 6 h) |
 | Contas com e-mail nunca verificado | 7 dias | Idem | `auth.purge_expired` |
 | Segredo TOTP de ativação abandonada | 1 dia | Idem | `auth.purge_expired` |
-| Backups do banco | `BACKUP_RETENTION_DAYS` = 30 dias, ≤ `PURGE_DAYS` (LEG-S07) | Expiração no provedor (Fase 7) | — |
+| Backups do banco | `BACKUP_RETENTION_DAYS` = 30 dias, ≤ `PURGE_DAYS` (LEG-S07) | Expiração no provedor (CHECKLIST) | — |
+| Livros de reaplicação (`pnpm backup:ledger`, ADR-0040) | Mesmo prazo dos backups | Expiração no storage só de acréscimo (CHECKLIST) | — |
 | Cookies de preferência (`__Host-hm_period`, `__Host-hm_privacy`, `__Host-hm_presenting`) | Até fechar o navegador | Cookies de sessão, sem identificador | — |
 
 Os jobs recorrentes usam `singletonKey` (várias instâncias não duplicam) e se reagendam ao terminar, mesmo após
@@ -47,13 +49,16 @@ falha. Payloads só com IDs; logs só com contagens (LEG-R04).
    `infra/retention.json` (cifrado, regiões no Brasil, retenção igual a `BACKUP_RETENTION_DAYS` e ≤ `PURGE_DAYS`,
    recuperação a um ponto no tempo dentro da retenção) e a regra de ciclo de vida do prefixo `exports/` do storage
    (`storage.exportsLifecycleDays`: pelo menos o link + 1 h, nunca além de `PURGE_DAYS`).
-4. **Fase 7:** conferir `infra/retention.json` contra a configuração real do provedor de banco e de storage
-   (OI-11), e aplicar no provedor a regra de ciclo de vida de `exports/`, rede de segurança para arquivo órfão
-   (OI-35).
+4. **CI** (`pnpm check:infra`, ADR-0040): `infra/regions.json` declara banco, backups, fila, storage, KMS,
+   funções, worker e logs no Brasil (LEG-S10).
+5. **Go-live (CHECKLIST):** conferir `infra/retention.json` e `infra/regions.json` contra a configuração real do
+   provedor (OI-11) e aplicar a regra de ciclo de vida de `exports/`.
 
 ## Restauração de backup
 
-Uma restauração pode trazer de volta contas excluídas ou dados de saúde já eliminados dentro do prazo dos
-backups. Antes de liberar o acesso, reaplicar as eliminações: os pedidos `deletion` concluídos e os registros
-`health_data_eliminated` do AuditLog (provas sem FK para `users`, LEG-R03) listam as contas. Passo a passo em
-`docs/runbooks/BACKUP_RESTORE.md`.
+Uma restauração traz de volta o banco do ponto do backup: contas excluídas, encerradas como menor, expiradas ou
+nunca verificadas, consentimentos revogados e dados de saúde eliminados depois dele voltariam. Antes de liberar o
+acesso, `pnpm backup:restore` / `pnpm backup:reapply` reaplicam essas mudanças a partir da origem ou de um livro
+cifrado guardado fora do banco, copiam as provas posteriores ao backup com as datas originais e zeram sessões e
+tokens (P7-M3, ADR-0040). Sem origem nem livro, o intervalo entre o backup e o incidente se perde (residual
+7e-R1). Passo a passo e limites em `docs/runbooks/BACKUP_RESTORE.md`.

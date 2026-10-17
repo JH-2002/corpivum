@@ -7,8 +7,8 @@
 ```sh
 pnpm install
 cp .env.example .env
-# edite .env: troque "troque-localmente" por senhas locais e gere QUATRO valores diferentes
-# (KMS_LOCAL_MASTER_KEY, SESSION_SECRET, RATE_LIMIT_SECRET, RECOVERY_CODE_PEPPER), cada um com:
+# edite .env: troque "troque-localmente" por senhas locais e gere CINCO valores diferentes
+# (KMS_LOCAL_MASTER_KEY, SESSION_SECRET, RATE_LIMIT_SECRET, RECOVERY_CODE_PEPPER, BACKUP_ENCRYPTION_KEY), cada um com:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 pnpm db:up              # Postgres 17 em 127.0.0.1 (cria app_migrator, app_user, healthmind e healthmind_test)
 pnpm mail:up            # Mailpit: caixa de e-mail local em http://localhost:8025
@@ -45,6 +45,12 @@ pnpm lint && pnpm typecheck && pnpm test
 pnpm test:db            # integração com Postgres: RLS, sessões, MFA, limites, age gate (exige db:up)
 pnpm test:e2e           # Playwright + axe (instale o navegador uma vez: pnpm exec playwright install chromium)
 ```
+`test:db` inclui o ensaio de backup e restauração (`tests/db/backup.test.ts`): roda `pg_dump`/`pg_restore` no
+contêiner `db` e cria e destrói `healthmind_test_restore`. Precisa de `BACKUP_ENCRYPTION_KEY` no `.env` (volumes
+antigos: gere uma e acrescente) e do papel `app_backup` (`APP_BACKUP_PASSWORD`, `BACKUP_DATABASE_URL` e
+`TEST_BACKUP_DATABASE_URL` como no `.env.example`; volume antigo: `docker compose up -d db` para o contêiner
+receber a senha nova e depois `pnpm db:backup:init`). Ensaio manual: `docs/runbooks/BACKUP_RESTORE.md`, parte 2.
+
 `test:db` e `test:e2e` usam **só o banco de testes** `healthmind_test` (`TEST_DATABASE_URL` e
 `TEST_MIGRATION_DATABASE_URL` no `.env`), aplicam as migrações nele e apagam as tabelas dele a cada rodada.
 O banco de desenvolvimento (`healthmind`) não é tocado: os testes recusam rodar se a URL de teste não
