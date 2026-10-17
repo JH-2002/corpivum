@@ -1,0 +1,70 @@
+{
+  "$comment": "Onde cada parte do sistema roda e guarda dados (ADR-0036 D1, ADR-0040; LEG-S10). Hospedagem ainda não escolhida (OI-11): os fornecedores ficam como {{...}}, mas as regiões já são obrigatórias. A CI confere com `pnpm check:infra`; o provisionamento segue docs/runbooks/PROVISIONING.md e a conferência no provedor real é do CHECKLIST_GO_LIVE. Mudar aqui exige ADR.",
+  "version": 1,
+  "components": {
+    "functions": {
+      "description": "Execução das funções e do servidor web (Next.js), JOB_WORKER=off",
+      "provider": "{{HOSPEDAGEM}}",
+      "region": "gru1"
+    },
+    "worker": {
+      "description": "Worker dedicado dos jobs (JOB_WORKER=inline, única instância com WORKER_DATABASE_URL)",
+      "provider": "{{HOSPEDAGEM}}",
+      "region": "gru1"
+    },
+    "logs": {
+      "description": "Logs da plataforma de hospedagem (requisições, saída do processo)",
+      "provider": "{{HOSPEDAGEM}}",
+      "region": "gru1"
+    },
+    "database": {
+      "description": "PostgreSQL gerenciado (dados de conta, saúde cifrada em campo, provas)",
+      "provider": "{{BANCO}}",
+      "region": "sa-east-1"
+    },
+    "backups": {
+      "description": "Backups e recuperação a um ponto no tempo do banco (infra/retention.json)",
+      "provider": "{{BANCO}}",
+      "region": "sa-east-1"
+    },
+    "queue": {
+      "description": "Fila de jobs na tabela job_queue do mesmo banco (ADR-0019)",
+      "provider": "{{BANCO}}",
+      "region": "sa-east-1"
+    },
+    "storage": {
+      "description": "Arquivos de exportação e relatórios cifrados, prefixo exports/ com ciclo de vida",
+      "provider": "{{STORAGE}}",
+      "region": "sa-east-1"
+    },
+    "kms": {
+      "description": "Chaves de criptografia de campo (KmsProvider)",
+      "provider": "{{KMS}}",
+      "region": "sa-east-1"
+    },
+    "ledgerStorage": {
+      "description": "Livros de reaplicação dos backups (pnpm backup:ledger), cifrados, em storage só de acréscimo: ids de contas, provas e registros de acesso",
+      "provider": "{{STORAGE_LIVRO}}",
+      "region": "sa-east-1"
+    },
+    "secrets": {
+      "description": "Gerenciador de segredos (credenciais do banco, segredos do app, BACKUP_ENCRYPTION_KEY)",
+      "provider": "{{SEGREDOS}}",
+      "region": "sa-east-1"
+    }
+  },
+  "outsideBrazil": [
+    {
+      "service": "E-mail transacional",
+      "provider": "{{EMAIL}}",
+      "healthData": false,
+      "data": "E-mail, links e tipo de aviso; um lembrete pode indicar rotina (ROPA T7, OI-03)"
+    },
+    {
+      "service": "Monitoramento de erros",
+      "provider": "{{ERROS}}",
+      "healthData": false,
+      "data": "Relatório filtrado por lista de campos (ADR-0038), sem mensagem nem dado de usuário"
+    }
+  ]
+}
