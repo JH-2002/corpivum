@@ -97,7 +97,9 @@ por menores. A LGPD (art. 14) exige melhor interesse e consentimento parental pa
 - LEG-G03 Encarregado (art. 41): página pública com canal de contato, nome como `{{ENCARREGADO}}`.
 - LEG-G04 Rascunhos com placeholders `{{...}}`: Política de Privacidade, Termos de Uso, Aviso de Consentimento
   por finalidade, Política de Cookies, lista de subprocessadores. Cada um versionado
-  (`PolicyVersion`) e marcado "RASCUNHO — revisão jurídica obrigatória".
+  (`PolicyVersion`) e marcado "RASCUNHO — revisão jurídica obrigatória". Catálogo dos placeholders:
+  `docs/legal/PLACEHOLDERS.md`; a Política de Cookies é a seção "Cookies e armazenamento no navegador" da Política
+  de Privacidade v2 (ADR-0041).
 - LEG-G05 docs/INTENDED_USE.md — declaração de finalidade pretendida (ver B7).
 
 ### B6. IA (revogada)

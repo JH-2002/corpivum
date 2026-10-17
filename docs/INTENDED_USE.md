@@ -2,7 +2,8 @@
 
 > **RASCUNHO — revisão jurídica obrigatória.** `LEGAL-REVIEW`: avaliar o enquadramento frente à
 > RDC ANVISA nº 657/2022 (software como dispositivo médico) antes do lançamento (LEG-M01, LEG-G05).
-> Versão: 0.3 (sem IA nem recomendações, ADR-0030) · Controlador: `{{CONTROLADOR}}` · Encarregado: `{{ENCARREGADO}}`
+> Versão: 0.4 (revisão da Fase 7, ADR-0041) · Controlador: `{{CONTROLADOR}}` · Encarregado: `{{ENCARREGADO}}`
+> Pergunta ao jurídico sobre o enquadramento: `docs/legal/PACOTE_JURIDICO.md`, tema 1 (OI-07).
 
 ## 1. Finalidade
 O HealthMind 360 é uma plataforma web de **bem-estar e autoacompanhamento do desenvolvimento corporal** para
@@ -19,6 +20,9 @@ envio de dados a modelo de linguagem (ADR-0030).
 - Acompanha metas definidas pela pessoa, dentro de limites de segurança (LEG-M04).
 - Resume cada período em texto gerado por regras fixas, comparando só com a própria pessoa, sem propor ações.
 - Oferece conteúdo educativo, identificado como tal.
+- Gera relatórios do período e a cópia completa dos dados, só para a própria pessoa (portabilidade).
+- Permite ocultar peso, medidas e calorias em todas as telas (modo privacidade) e apresentar o app com dados
+  fictícios (modo apresentação e demonstração pública).
 
 ## 3. O que o produto não faz
 - **Não diagnostica** doenças, transtornos ou condições.
@@ -35,6 +39,7 @@ envio de dados a modelo de linguagem (ADR-0030).
 - **Não faz recomendações automáticas** nem usa inteligência artificial para interpretar os registros.
 - **Não substitui** profissional de saúde, consulta, exame ou atendimento de emergência.
 - Não é destinado a crianças ou adolescentes.
+- **Não lê fotos, exames nem dados de dispositivos**: só o que a pessoa digita.
 
 ## 4. Usuários e ambiente de uso
 - Adultos (18+), uso pessoal, em navegador (desktop e celular).

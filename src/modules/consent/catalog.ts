@@ -52,10 +52,14 @@ export interface DocumentVersion {
 
 /** Versão vigente de cada documento publicado. */
 export const CURRENT_VERSIONS = {
+  // v2 (ADR-0041): lista as categorias de dados de bem-estar, o prazo das contas sem onboarding (ADR-0037), os
+  // cookies e onde excluir a conta durante o cadastro. Só descreve o tratamento que já existe: sem novo aceite;
+  // aviso único com registro de ciência, como os Termos v2. `LEGAL-REVIEW` (OI-30). Texto da v1 em
+  // `legal/archive/privacy_policy.v1.json`.
   privacy_policy: {
-    version: 1,
-    textHash: 'd97b589c8574c2a3cf3f339adb51e4ef491744504e88f77fff906273580afa6a',
-    requiresReconsent: true,
+    version: 2,
+    textHash: 'd758c5ff3f443af3b979a53756e262cfd43d5e43781d3e3fb3f773aebbf2bac0',
+    requiresReconsent: false,
   },
   // v2 (ADR-0031): sem a seção "Sugestões do app" (recomendações removidas, ADR-0030). Só remove
   // funcionalidade e não amplia o tratamento: sem novo aceite; aviso único com registro de ciência.
@@ -104,6 +108,6 @@ export const HEALTH_DATA_GRACE_DAYS_IN_TEXT = 30;
 
 /** Data de publicação da versão vigente de cada documento obrigatório (exibida nas páginas públicas). */
 export const PUBLISHED_AT = {
-  privacy_policy: '2026-10-07',
+  privacy_policy: '2026-10-16',
   terms: '2026-10-14',
 } as const satisfies Record<RequiredDocument, string>;

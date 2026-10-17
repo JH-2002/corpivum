@@ -9,6 +9,7 @@ export const NOTICE_CHANGE_KEYS: Partial<
   Record<RequiredDocument, Partial<Record<number, string>>>
 > = {
   terms: { 2: 'changes.terms.v2' },
+  privacy_policy: { 2: 'changes.privacy_policy.v2' },
 };
 
 export function noticeChangeKey(document: RequiredDocument, version: number): string | null {

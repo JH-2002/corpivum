@@ -1,15 +1,15 @@
 # Runbook — Incidente de segurança com dados pessoais
 
 > **RASCUNHO.** `LEGAL-REVIEW`: confirmar prazos e conteúdo da comunicação no regulamento vigente da ANPD
-> (OPEN_ISSUES OI-05). Requisitos: LEG-S07, LEG-S08. Atualizado na 7e (ADR-0040).
+> (OPEN_ISSUES OI-05). Requisitos: LEG-S07, LEG-S08. Atualizado na 7e (ADR-0040) e na 7f (ADR-0041).
 
 ## 0. Contatos
 | Papel | Nome | Contato |
 |---|---|---|
-| Responsável pelo incidente | `{{RESPONSAVEL_INCIDENTE}}` | `{{CONTATO}}` |
+| Responsável pelo incidente | `{{RESPONSAVEL_INCIDENTE}}` | `{{CONTATO_INCIDENTE}}` |
 | Encarregado (DPO) | `{{ENCARREGADO}}` | `{{CONTATO_ENCARREGADO}}` |
-| Jurídico | `{{JURIDICO}}` | `{{CONTATO}}` |
-| Hospedagem / banco | `{{HOSPEDAGEM}}` | `{{SUPORTE}}` |
+| Jurídico | `{{JURIDICO}}` | `{{CONTATO_JURIDICO}}` |
+| Hospedagem / banco | `{{HOSPEDAGEM}}` | `{{SUPORTE_HOSPEDAGEM}}` |
 
 ## 1. Detecção e registro (imediato)
 1. Abrir registro interno: data/hora da detecção (UTC), quem detectou, sistemas afetados, como foi detectado.
@@ -18,6 +18,29 @@
 3. Preservar evidências antes de alterar sistemas: logs da plataforma, log do servidor do banco (inclui o
    `RAISE LOG` das consultas do encarregado), AuditLog (`audit_logs`, só enums e UUIDs) e configurações.
    Se for preciso congelar o banco, use um backup ou PITR do provedor (não um dump numa máquina pessoal).
+
+4. **Investigar AuditLog e AccessLog** (P7-B9): o runtime não lê essas tabelas (LEG-S06, LEG-R02); só o
+   `app_migrator`, de uma máquina de operação, em sessão `READ ONLY`. O `app_migrator` é dono das tabelas: o
+   `READ ONLY` evita só o acidente, então a sessão é feita por duas pessoas ou gravada (um papel só de leitura
+   dessas tabelas fica para depois da hospedagem, 7f-R2). Desligue o histórico do `psql` (`\set HISTFILE /dev/null`
+   ou `psql -n`). O relatório do incidente registra **a consulta e a quantidade de linhas, nunca o resultado** (o IP é
+   dado pessoal). Só metadados: nunca juntar com `users.email` no mesmo resultado nem exportar para fora do provedor.
+   ```sql
+   BEGIN READ ONLY;
+   -- O que aconteceu numa janela (ações, recursos e papéis de operador, sem conteúdo):
+   SELECT action, resource_type, operator_role, count(*) FROM audit_logs
+    WHERE created_at BETWEEN '<início UTC>' AND '<fim UTC>' GROUP BY 1, 2, 3 ORDER BY 4 DESC;
+   -- Linha do tempo de uma conta (UUID vindo do alerta ou do protocolo, nunca do e-mail). Ações do sistema e de
+   -- expiração podem ficar sem pessoa (subject nulo): olhe também a consulta por janela acima.
+   SELECT created_at, action, resource_type, resource_id, operator_role FROM audit_logs
+    WHERE subject_user_id = '<uuid>' OR actor_user_id = '<uuid>' ORDER BY created_at;
+   -- IPs de acesso de uma conta (Marco Civil; fornecer a terceiros só com ordem judicial, OI-17):
+   SELECT occurred_at, ip FROM access_logs WHERE user_id = '<uuid>'
+    AND occurred_at BETWEEN '<início UTC>' AND '<fim UTC>' ORDER BY occurred_at;
+   ROLLBACK;
+   ```
+   Consultas do encarregado que não abriram pedido ficam no log do servidor do banco (`RAISE LOG`, 7b-R3), não
+   no AuditLog.
 
 Sinais que abrem incidente (`ALERTS.md`): `alert.read_volume_anomaly`, `alert.operator_volume_anomaly`, picos de
 `error.request`, `privacy.closures_stalled` persistente, `reports.orphans_unknown` (arquivo estranho no prefixo

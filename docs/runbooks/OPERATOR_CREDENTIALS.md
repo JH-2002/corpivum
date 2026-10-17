@@ -16,7 +16,7 @@
 
 ## Criar a credencial de uma pessoa
 Quem faz: o responsável pelo banco, conectado como dono (`app_migrator`) ou administrador do provedor.
-1. Gerar uma senha forte (32+ caracteres aleatórios) e entregá-la à pessoa por canal seguro (`{{CANAL}}`).
+1. Gerar uma senha forte (32+ caracteres aleatórios) e entregá-la à pessoa por canal seguro (`{{CANAL_SEGURO}}`).
 2. Rodar (troque `<nome>` e `<senha>`; em dev isso é feito pelo `03-operator-role.sh` com `operador_dev`):
    ```sql
    CREATE ROLE operador_<nome> LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT

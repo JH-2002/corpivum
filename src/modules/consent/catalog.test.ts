@@ -10,6 +10,10 @@ import {
   purposeDocument,
 } from './catalog';
 import { noticeChangeKey } from '@/components/privacy/policy-notice';
+import {
+  ONBOARDING_EXPIRY_DAYS,
+  ONBOARDING_EXPIRY_NOTICE_DAYS,
+} from '@/modules/privacy/onboarding-expiry';
 
 function namespace(path: string): unknown {
   return path.split('.').reduce<unknown>((node, key) => {
@@ -58,6 +62,13 @@ describe('catálogo de documentos versionados', () => {
       `${HEALTH_DATA_GRACE_DAYS_IN_TEXT} dias`,
     );
     expect(JSON.stringify(messages.consent.purposes)).not.toMatch(/\{days\}/);
+  });
+
+  it('a Política escreve os prazos das contas sem onboarding usados pelo job (ADR-0037, ADR-0041)', () => {
+    const retention = messages.legal.privacyPolicy.s6Body;
+    expect(retention).toContain(`${ONBOARDING_EXPIRY_DAYS} dias após o cadastro`);
+    expect(retention).toContain(`${ONBOARDING_EXPIRY_DAYS - ONBOARDING_EXPIRY_NOTICE_DAYS}º dia`);
+    expect(retention).toContain(`${ONBOARDING_EXPIRY_NOTICE_DAYS} dias depois do aviso`);
   });
 
   it('finalidades revogadas (IA e transferência internacional, ADR-0030) não existem no catálogo', () => {

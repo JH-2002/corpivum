@@ -537,7 +537,7 @@ describe('Termos v2 não substancial: aviso único e ciência (ADR-0031)', () =>
         WHERE document IN ('terms', 'privacy_policy') ORDER BY document, version DESC`,
     );
     for (const row of rows) {
-      // Termos v2: a pessoa não tem versão anterior. Política v1: versão substancial.
+      // Termos v2 e Política v2: a pessoa não tem versão anterior (aceitou a vigente no onboarding).
       await expect(
         withUserOn(db, u.userId, (tx) =>
           tx.policyAcceptance.create({
@@ -551,6 +551,72 @@ describe('Termos v2 não substancial: aviso único e ciência (ADR-0031)', () =>
         ),
       ).rejects.toThrow();
     }
+  });
+});
+
+describe('Política v2 não substancial: mesmo fluxo de aviso dos Termos v2 (ADR-0041)', () => {
+  /** Simula quem aceitou a v1 dos documentos indicados (só o admin, no banco de teste). */
+  async function acceptedV1(documents: readonly string[]) {
+    const u = await onboarded([]);
+    await admin.query(
+      `UPDATE policy_acceptances a SET policy_version_id = v1.id
+         FROM policy_versions v1, policy_versions cur
+        WHERE a.user_id = $1 AND a.policy_version_id = cur.id AND cur.document::text = ANY($2)
+          AND v1.document = cur.document AND v1.version = 1`,
+      [u.userId, documents],
+    );
+    return u;
+  }
+
+  const policyRows = (userId: string) =>
+    admin
+      .query<{ version: number; kind: string }>(
+        `SELECT v.version, a.kind::text AS kind FROM policy_acceptances a
+           JOIN policy_versions v ON v.id = a.policy_version_id
+          WHERE a.user_id = $1 AND v.document = 'privacy_policy' ORDER BY v.version`,
+        [userId],
+      )
+      .then((r) => r.rows);
+
+  it('a v2 está publicada como não substancial, com o hash do catálogo', async () => {
+    expect(CURRENT_VERSIONS.privacy_policy).toMatchObject({
+      version: 2,
+      requiresReconsent: false,
+    });
+    const { rows } = await admin.query<{ text_hash: string; requires_reconsent: boolean }>(
+      `SELECT text_hash, requires_reconsent FROM policy_versions
+        WHERE document = 'privacy_policy' AND version = 2`,
+    );
+    expect(rows).toEqual([
+      {
+        text_hash: CURRENT_VERSIONS.privacy_policy.textHash,
+        requires_reconsent: false,
+      },
+    ]);
+  });
+
+  it('quem aceitou a Política v1 não é bloqueado e registra a ciência uma vez', async () => {
+    const u = await acceptedV1(['privacy_policy']);
+    const before = await u.service.getState(u.userId);
+    expect(before.updatePending).toBe(false);
+    expect(before.documentNotices).toEqual(['privacy_policy']);
+
+    expect(await u.service.acknowledgeDocuments(u.userId, ['privacy_policy'])).toBe(1);
+    expect((await u.service.getState(u.userId)).documentNotices).toEqual([]);
+    expect(await policyRows(u.userId)).toEqual([
+      { version: 1, kind: 'accepted' },
+      { version: 2, kind: 'acknowledged' },
+    ]);
+    expect(await u.service.acknowledgeDocuments(u.userId, ['privacy_policy'])).toBe(0);
+  });
+
+  it('quem aceitou as duas v1 vê um só aviso com os dois documentos', async () => {
+    const u = await acceptedV1(['terms', 'privacy_policy']);
+    const state = await u.service.getState(u.userId);
+    expect(state.updatePending).toBe(false);
+    expect([...state.documentNotices].sort()).toEqual(['privacy_policy', 'terms']);
+    expect(await u.service.acknowledgeDocuments(u.userId, ['terms', 'privacy_policy'])).toBe(2);
+    expect((await u.service.getState(u.userId)).documentNotices).toEqual([]);
   });
 });
 

@@ -8,8 +8,10 @@ export const SUBPROCESSORS = [
   'database',
   'backups',
   'storage',
+  'ledger',
   'jobs',
   'kms',
+  'secrets',
   'email',
   'errors',
 ] as const;

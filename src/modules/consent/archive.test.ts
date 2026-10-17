@@ -24,9 +24,10 @@ function publishedHash(document: string, version: number): string | undefined {
 describe('arquivo de textos superados', () => {
   const files = readdirSync(ARCHIVE).filter((f) => f.endsWith('.json'));
 
-  it('tem os textos superados (consentimento de saúde v1 e Termos v1)', () => {
+  it('tem os textos superados (consentimento de saúde v1, Termos v1 e Política v1)', () => {
     expect(files).toContain('consent_health_data.v1.json');
     expect(files).toContain('terms.v1.json');
+    expect(files).toContain('privacy_policy.v1.json');
   });
 
   it.each(files)('%s: hash confere com a versão publicada', (file) => {

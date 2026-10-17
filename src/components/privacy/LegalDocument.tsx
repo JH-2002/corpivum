@@ -15,7 +15,7 @@ export async function DraftBanner() {
 }
 
 const SECTIONS = {
-  privacyPolicy: 9,
+  privacyPolicy: 10,
   terms: 6,
 } as const;
 
