@@ -1480,3 +1480,39 @@ identidade da instalação recusam livro (7e-N3, transitório).
 `TEST_BACKUP_DATABASE_URL` (volumes antigos: `pnpm db:backup:init`). Scripts `backup:create|ledger|restore|reapply|drop`,
 `db:backup:init` e `check:infra`. Migrações `fase_7e_operacao`, `fase_7e_revisao` e `fase_7e_revisao_2` (`audit_action`
 `restore_reapplied`). Arquivos locais em `.backups/` (ignorado pelo git).
+
+## ADR-0041 — Fase 7f: governança (Política v2, documentos de privacidade, pacote para o jurídico)
+**Contexto.** ADR-0036 (7f: LEG-G01–G05), última sub-fase da Fase 7. Pendências marcadas para a 7f: o prazo das
+contas sem onboarding na Política (ADR-0037, P7-N2), residuais a registrar no RIPD (P7-M1, 7c-R1, 7d-N4, 7e-R2) e
+os achados de documento P7-B8, P7-B9, P7-B10 e P7-N3. Os documentos continuam rascunhos: controlador, encarregado,
+fornecedores e a revisão jurídica e clínica são do CHECKLIST.
+**Decisão — Política de Privacidade v2 (decisão do responsável pelo produto: mesmo fluxo dos Termos v2).**
+- Texto novo em `legal.privacyPolicy` (10 seções): categorias de dados de bem-estar (art. 9º, pendência do OI-08),
+  prazo das contas sem onboarding (aviso no 23º dia, exclusão 30 dias após o cadastro e 7 após o aviso), conta
+  excluída em minutos, cópias de segurança, onde excluir ou encerrar a conta durante o cadastro (P7-M2), e-mails
+  sem conteúdo dos registros, cookies e armazenamento no navegador (OI-36 a) e a regra de mudanças (ampliar o
+  tratamento pede confirmação; o resto tem aviso e registro de ciência).
+- **Não substancial** (`requires_reconsent = false`): só descreve tratamento que já existia. Migração
+  `politica_v2_ciencia` (INSERT), hash no catálogo, data de publicação 2026-10-16, texto da v1 em
+  `legal/archive/privacy_policy.v1.json`, aviso `policyNotice.changes.privacy_policy.v2`. Quem aceitou a v1 vê o aviso
+  único (junto dos Termos, se for o caso) e registra a ciência; conta nova aceita a v2. `LEGAL-REVIEW` em OI-30.
+- Teste: os prazos escritos na Política são os de `ONBOARDING_EXPIRY_DAYS`/`ONBOARDING_EXPIRY_NOTICE_DAYS`.
+**Decisão — documentos.**
+- ROPA 0.8 (T12 cópias de segurança e livro, T13 segurança operacional, T14 contas sem onboarding; T6 operador por
+  pessoa; T9 sem coleta hoje), RIPD 0.7 (probabilidade e risco residual **propostos** pela equipe técnica para o
+  encarregado validar; riscos novos R16–R19 com os residuais da Fase 7), RETENTION (fila, linhas de exportação,
+  contas sem onboarding), SUBPROCESSORS 0.4 (P7-B10; livro de reaplicação e gerenciador de segredos também na página
+  pública), INTENDED_USE 0.4. Runbooks: KEY_ROTATION (P7-B8), INCIDENT (P7-B9), DATA_SUBJECT_REQUEST (P7-N3).
+- **Placeholders padronizados:** catálogo único `docs/legal/PLACEHOLDERS.md` (o que é, quem decide e o valor
+  implementado hoje); nomes ambíguos renomeados (`{{CONTATO}}`, `{{DATA}}`, `{{RESPONSAVEL}}` etc.) e os `{{}}` do
+  RIPD preenchidos. `tests/content/placeholders.test.ts` varre `docs/`, `messages/`, `legal/` e `infra/` e recusa
+  placeholder fora do catálogo, vazio ou fora do formato, e linha do catálogo sem uso (`{{...}}` é a notação genérica).
+- **Pacote para o jurídico:** `docs/legal/PACOTE_JURIDICO.md` agrupa as questões abertas em 10 temas, cada um com
+  pergunta, opções, o que está implementado e o impacto de cada resposta, e prioridade (bloqueia o lançamento ou não).
+  OPEN_ISSUES continua o registro completo. Questão nova OI-37 (consentimentos de novidades e de métricas oferecidos
+  sem uso hoje).
+- `CHECKLIST_GO_LIVE.md` reescrito em cinco etapas, na ordem de execução, com quem faz cada passo (inclui os
+  adaptadores reais, sem os quais o `parseEnv` não deixa produção subir). `docs/ESTADO_DO_PROJETO.md`: resumo em
+  linguagem simples do que o app faz, do que falta e de quem faz.
+**Consequências.** Fim da Fase 7. Próximos passos dependem do CHECKLIST (etapa 1). Preencher um placeholder de texto
+versionado é versão nova do documento.
