@@ -46,7 +46,7 @@ export function e2eEmail(name: string): string {
   return `${name}.${Date.now()}.${randomBytes(4).toString('hex')}@${E2E_DOMAIN}`;
 }
 
-type Purpose = 'health_data' | 'marketing' | 'product_metrics';
+type Purpose = 'health_data';
 
 /**
  * Cria conta adulta com e-mail verificado diretamente no banco. Por padrão já com o onboarding concluído

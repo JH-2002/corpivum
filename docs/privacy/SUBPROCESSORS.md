@@ -28,8 +28,8 @@ pública `/legal/subprocessadores` espelha a tabela de produção, na mesma orde
 | E-mail transacional | `{{EMAIL}}` | Confirmação de cadastro, aviso de "conta já existe", redefinição de senha, alertas de segurança, recibos de pedidos do titular, aviso de exclusão de conta, aviso de prazo da conta sem onboarding e lembretes | Endereço de e-mail, tipo de aviso, links e datas; **sem nome (o app não coleta) e sem conteúdo de bem-estar**; um lembrete pode indicar rotina (ROPA T7) | `{{REGIAO}}` | Provável | `{{DPA}}` | A definir |
 | Monitoramento de erros | `{{ERROS}}` | Diagnóstico técnico | Relatório montado por lista de campos permitidos (nome e código do erro, rota como arquivo, quadros sem pasta), **sem mensagem nem dado de usuário** (LEG-R04, ADR-0038) | `{{REGIAO}}` | Provável | `{{DPA}}` | A definir; até a escolha, o relatório fica no log da hospedagem |
 
-E-mails de novidades (finalidade `marketing`) só passam pelo mesmo provedor de e-mail depois que ele for escolhido e
-listado aqui; hoje o app não envia nenhum.
+O app não envia e-mails de novidades: a finalidade `marketing` saiu do produto (ADR-0042). Reintroduzi-la exige
+nova ADR e nova finalidade de consentimento.
 
 ## Desenvolvimento e CI (sem dados pessoais de usuários)
 

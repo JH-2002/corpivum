@@ -107,7 +107,7 @@ test('quem aceitou as duas v1 vê um só aviso com Termos e Política e registra
     db.query<{ document: string; kind: string }>(
       `SELECT v.document::text AS document, a.kind::text AS kind FROM policy_acceptances a
          JOIN policy_versions v ON v.id = a.policy_version_id
-        WHERE a.user_id = $1 AND v.version = 2 ORDER BY v.document`,
+        WHERE a.user_id = $1 AND a.kind = 'acknowledged' ORDER BY v.document`,
       [userId],
     ),
   );
@@ -117,11 +117,12 @@ test('quem aceitou as duas v1 vê um só aviso com Termos e Política e registra
   ]);
 });
 
-test('a Política pública mostra a v2 com o prazo das contas sem onboarding e os cookies', async ({
+test('a Política pública mostra a versão vigente com o prazo das contas sem onboarding e os cookies', async ({
   page,
 }) => {
   await page.goto('/legal/politica-de-privacidade');
-  await expect(page.getByText(/Versão 2/)).toBeVisible();
+  await expect(page.getByText(/Versão 3/)).toBeVisible();
+  await expect(page.getByText(/novidades e métricas/)).toHaveCount(0);
   await expect(page.getByText(/30 dias após o cadastro/)).toBeVisible();
   await expect(
     page.getByRole('heading', { level: 2, name: 'Cookies e armazenamento no navegador' }),

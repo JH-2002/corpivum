@@ -120,7 +120,7 @@ function privacy(overrides: Partial<PrivacyDeps> = {}, logs?: LogRecord[]) {
   });
 }
 
-async function person(purposes: Array<'health_data' | 'marketing'> = ['health_data']) {
+async function person(purposes: Array<'health_data'> = ['health_data']) {
   const u = await createVerifiedUser(t);
   const c = createTestConsent(db, t.clock);
   expect(
@@ -396,7 +396,7 @@ describe('pedidos do titular (LEG-D07)', () => {
   });
 
   it('portabilidade sem autorização nem carência fica aberta para o encarregado', async () => {
-    const u = await person(['marketing']);
+    const u = await person([]);
     const r = await privacy().openRequest(u.userId, 'portability');
     expect(r.status === 'ok' && r.request.status).toBe('in_progress');
   });
@@ -430,7 +430,7 @@ describe('exclusão de conta (LEG-D04)', () => {
   });
 
   it('corta o acesso na hora: sessão inválida, login recusado, consentimentos revogados', async () => {
-    const u = await person(['health_data', 'marketing']);
+    const u = await person(['health_data']);
     const queue = new MemoryJobQueue(silent);
     const enqueued: string[] = [];
     queue.register('privacy.account_purge', async (p) => {

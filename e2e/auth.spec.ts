@@ -93,9 +93,9 @@ test('cadastro adulto: boas-vindas → idade → conta → e-mail → onboarding
     page.getByRole('heading', { level: 1, name: 'Suas escolhas de privacidade' }),
   ).toBeVisible();
 
-  // LEG-C02: nenhuma caixa vem marcada.
+  // LEG-C02: nenhuma caixa vem marcada (Termos, Política e dados de bem-estar; ADR-0042).
   const boxes = page.getByRole('checkbox');
-  await expect(boxes).toHaveCount(5);
+  await expect(boxes).toHaveCount(3);
   for (const box of await boxes.all()) await expect(box).not.toBeChecked();
 
   // Sem aceitar os Termos não avança.
