@@ -127,7 +127,7 @@ Os consentimentos de novidades por e-mail e de métricas de uso saíram do onboa
 nunca os usou. As autorizações ativas foram revogadas e as provas ficam até o expurgo. A Política v3 deixou de
 citá-los (versão não substancial, tema 4.2). Só é preciso confirmar que a revogação feita pelo controlador, sem ação
 do titular, de uma finalidade que nunca foi exercida dispensa comunicação individual (o aviso da Política v3 menciona
-a mudança).
+a mudança; cada revogação fica no AuditLog sem ator). Pergunta registrada como OI-30 (f), `LEGAL-REVIEW`.
 
 ## 4. Textos públicos, versões e avisos — OI-08, OI-30, OI-36 🔴
 

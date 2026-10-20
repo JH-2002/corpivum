@@ -24,10 +24,13 @@ function publishedHash(document: string, version: number): string | undefined {
 describe('arquivo de textos superados', () => {
   const files = readdirSync(ARCHIVE).filter((f) => f.endsWith('.json'));
 
-  it('tem os textos superados (consentimento de saúde v1, Termos v1 e Política v1)', () => {
+  it('tem os textos superados (consentimentos v1, Termos v1, Política v1 e v2)', () => {
     expect(files).toContain('consent_health_data.v1.json');
+    expect(files).toContain('consent_marketing.v1.json');
+    expect(files).toContain('consent_product_metrics.v1.json');
     expect(files).toContain('terms.v1.json');
     expect(files).toContain('privacy_policy.v1.json');
+    expect(files).toContain('privacy_policy.v2.json');
   });
 
   it.each(files)('%s: hash confere com a versão publicada', (file) => {

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type pg from 'pg';
 import type { Db } from '@/lib/db/client';
 import { withUserOn, type Tx } from '@/lib/db/rls';
@@ -212,16 +213,97 @@ describe('onboarding e escolhas por finalidade (LEG-C01–C03, C05)', () => {
     }
   });
 
-  it('as CHECKs das finalidades opcionais são NOT VALID: provas antigas ficam até o expurgo (ADR-0042)', async () => {
+  it('CHECKs das finalidades opcionais: provas validadas (todas revogadas); versões antigas ficam (NOT VALID, ADR-0042)', async () => {
     const { rows } = await admin.query<{ name: string; validated: boolean }>(
       `SELECT conname AS name, convalidated AS validated FROM pg_constraint
         WHERE conname IN ('consent_records_purpose_opcional_removida', 'policy_versions_document_opcional_removido')
         ORDER BY conname`,
     );
     expect(rows).toEqual([
-      { name: 'consent_records_purpose_opcional_removida', validated: false },
+      { name: 'consent_records_purpose_opcional_removida', validated: true },
       { name: 'policy_versions_document_opcional_removido', validated: false },
     ]);
+  });
+
+  it('prova revogada das finalidades opcionais passa pela cópia do restore (ON CONFLICT DO UPDATE, ADR-0042)', async () => {
+    const u = await createVerifiedUser(t);
+    const { rows: versions } = await admin.query<{ id: string }>(
+      `SELECT id FROM policy_versions WHERE document = 'consent_marketing' LIMIT 1`,
+    );
+    const row = [u.userId, versions[0]?.id];
+    const upsert = `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at,
+                                                 revoked_at, updated_at)
+                    VALUES ('00000000-0000-4000-8000-000000000042', $1, 'marketing', $2, 'x',
+                            now() - interval '2 days', $3, now())
+                    ON CONFLICT (id) DO UPDATE
+                      SET revoked_at = coalesce(EXCLUDED.revoked_at, consent_records.revoked_at),
+                          updated_at = EXCLUDED.updated_at`;
+    await admin.query('BEGIN');
+    try {
+      await admin.query('ALTER TABLE consent_records DISABLE TRIGGER consent_records_guard');
+      await admin.query(upsert, [...row, new Date(Date.now() - 86_400_000)]);
+      // A origem do livro já passou pela migração: toda prova dessas finalidades chega revogada.
+      await expect(admin.query(upsert, [...row, new Date()])).resolves.toBeDefined();
+      // Autorização ativa continua barrada, mesmo sem o gatilho.
+      await expect(
+        admin.query(
+          `UPDATE consent_records SET revoked_at = NULL WHERE id = '00000000-0000-4000-8000-000000000042'`,
+        ),
+      ).rejects.toMatchObject({
+        code: '23514',
+        constraint: 'consent_records_purpose_opcional_removida',
+      });
+    } finally {
+      await admin.query('ROLLBACK');
+    }
+  });
+
+  it('a migração revoga as autorizações ativas, preserva a prova e audita sem ator (ADR-0042, LEG-R03)', async () => {
+    const sql = readFileSync(
+      'prisma/migrations/20261017120000_finalidades_opcionais_removidas/migration.sql',
+      'utf8',
+    );
+    const block = /-- revogacao:inicio\n([\s\S]*?)-- revogacao:fim/.exec(sql)?.[1];
+    expect(block).toBeDefined();
+    const u = await createVerifiedUser(t);
+    const { rows: versions } = await admin.query<{ id: string }>(
+      `SELECT id FROM policy_versions WHERE document = 'consent_product_metrics' LIMIT 1`,
+    );
+    await admin.query('BEGIN');
+    try {
+      // Simula um banco anterior à migração: sem a CHECK e com uma autorização ativa.
+      await admin.query(
+        'ALTER TABLE consent_records DROP CONSTRAINT consent_records_purpose_opcional_removida',
+      );
+      await admin.query('ALTER TABLE consent_records DISABLE TRIGGER consent_records_guard');
+      const { rows: inserted } = await admin.query<{ id: string; granted_at: Date }>(
+        `INSERT INTO consent_records (id, user_id, purpose, policy_version_id, text_hash, granted_at, updated_at)
+         VALUES (gen_random_uuid(), $1, 'product_metrics', $2, 'hash-v1', now() - interval '3 days', now())
+         RETURNING id, granted_at`,
+        [u.userId, versions[0]?.id],
+      );
+      await admin.query('ALTER TABLE consent_records ENABLE TRIGGER consent_records_guard');
+      await admin.query(block ?? '');
+      await admin.query(block ?? ''); // idempotente: nada a revogar, nenhum registro a mais
+      const { rows } = await admin.query(
+        `SELECT c.revoked_at IS NOT NULL AS revoked, c.granted_at, c.text_hash, c.policy_version_id,
+                (SELECT count(*)::int FROM audit_logs a
+                  WHERE a.resource_id = c.id AND a.action = 'consent_revoked' AND a.actor_user_id IS NULL
+                    AND a.subject_user_id = c.user_id AND a.resource_type = 'consent_record'
+                    AND a.operator_role IS NULL) AS audits
+           FROM consent_records c WHERE c.id = $1`,
+        [inserted[0]?.id],
+      );
+      expect(rows[0]).toEqual({
+        revoked: true,
+        granted_at: inserted[0]?.granted_at,
+        text_hash: 'hash-v1',
+        policy_version_id: versions[0]?.id,
+        audits: 1,
+      });
+    } finally {
+      await admin.query('ROLLBACK');
+    }
   });
 
   it('consent_records recusa finalidade revogada mesmo sem o gatilho (CHECK, ADR-0030)', async () => {

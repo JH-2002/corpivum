@@ -1536,18 +1536,22 @@ Decisão do responsável pelo produto (2026-10-17): retirar os dois, no modelo d
 - **Banco (migração `finalidades_opcionais_removidas`):** os valores ficam dormentes no enum (o Postgres não remove
   valor de enum sem recriar o tipo, `app.has_active_consent` e as políticas RLS). Diferente do ADR-0030, essas
   finalidades tiveram versões publicadas (Fase 1b) e provas de escolha: as autorizações ativas são **revogadas** na
-  própria migração (o único UPDATE que a guarda aceita; nada é apagado, LEG-R03) e as CHECKs
-  `consent_records_purpose_opcional_removida` e `policy_versions_document_opcional_removido` entram **NOT VALID**:
-  barram toda linha nova e toda alteração, e as provas antigas saem pelo expurgo normal (`PROOF_RETENTION_DAYS`).
-  Produção nunca subiu: lá a revogação não alcança ninguém. Consequência aceita: um backup anterior a esta migração
-  não pode receber, pela reaplicação, prova dessas finalidades criada depois do ponto (não há nenhuma).
+  própria migração (o único UPDATE que a guarda aceita; nada é apagado, LEG-R03), cada uma com AuditLog
+  `consent_revoked` sem ator (`actor_user_id` nulo: foi o controlador, não o titular). O id desse registro deriva do id
+  da prova, para a reaplicação de um restore (ADR-0040) não o duplicar. A CHECK
+  `consent_records_purpose_opcional_removida` barra só autorização **ativa** dessas finalidades
+  (`purpose NOT IN (...) OR revoked_at IS NOT NULL`) e entra validada. Assim a prova revogada continua copiável pela
+  reaplicação de um restore anterior à migração, cujo livro traz essas linhas porque o UPDATE mudou `updated_at`
+  (revisão de privacidade). A CHECK `policy_versions_document_opcional_removido` entra **NOT VALID**: barra versão
+  nova, e as versões antigas, referenciadas pelas provas, ficam. As provas saem pelo expurgo normal
+  (`PROOF_RETENTION_DAYS`). Produção nunca subiu: lá a revogação não alcança ninguém.
 - **Política de Privacidade v3:** sai a frase "Comunicações sobre novidades e métricas ligadas à conta:
   consentimentos separados e opcionais". Só remove funcionalidade: não substancial, aviso único e ciência (ADR-0031),
   com o texto `policyNotice.changes.privacy_policy.v3`, que resume também as mudanças da v2 para quem aceitou a v1.
   Texto da v2 arquivado. `LEGAL-REVIEW` em OI-30.
 - **Documentos:** ROPA T8 e T9 removidas (IDs não reaproveitados), LEG-C02 itens (4) e (5) revogados, SUBPROCESSORS,
-  PACOTE_JURIDICO (tema 3.5 decidido; fica só se a revogação sem ação do titular dispensa comunicação individual),
-  OI-37 em "Resolvidas"; sai o placeholder `RETENCAO_METRICAS`.
+  PACOTE_JURIDICO (tema 3.5 decidido; fica só se a revogação sem ação do titular dispensa comunicação individual,
+  pergunta (f) da OI-30), OI-37 em "Resolvidas"; sai o placeholder `RETENCAO_METRICAS`.
 **Consequências.** Testes que usavam `marketing` como "outra finalidade" passam a usar dados de bem-estar (revogar e
 autorizar de novo). Reintroduzir novidades ou métricas exige nova ADR, nova finalidade com texto e prazo, revisão do
 ROPA, do RIPD e de SUBPROCESSORS, e remover a CHECK correspondente.
