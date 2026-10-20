@@ -35,7 +35,7 @@ describe('logger', () => {
     const { records, logger } = capture();
     logger.info('ai.request', {
       operation: 'conteúdo livre: tomei 2 comprimidos',
-      recipient: 'pessoa@exemplo.com',
+      recipient: 'pessoa@example.com',
       count: Number.NaN,
       attempt: 2,
       template: 'email-verification',
@@ -66,8 +66,8 @@ describe('logger', () => {
 
   it('aceita destinatário já mascarado', () => {
     const { records, logger } = capture();
-    logger.info('mail.sent', { recipient: maskEmail('maria@exemplo.com.br') });
-    expect(records[0]?.recipient).toBe('m***@e***.br');
+    logger.info('mail.sent', { recipient: maskEmail('maria@example.com') });
+    expect(records[0]?.recipient).toBe('m***@e***.com');
   });
 
   it('respeita o nível mínimo', () => {
@@ -81,7 +81,7 @@ describe('logger', () => {
 
 describe('maskEmail', () => {
   it('mascara local e domínio', () => {
-    expect(maskEmail('maria@exemplo.com.br')).toBe('m***@e***.br');
+    expect(maskEmail('maria@example.com')).toBe('m***@e***.com');
     expect(maskEmail('a@b')).toBe('a***@b***');
   });
 });

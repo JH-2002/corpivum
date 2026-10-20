@@ -128,7 +128,8 @@ describe('PR1a-R3-M1: limite por caixa canônica', () => {
   it('subendereçamento e pontos do Gmail contam no mesmo balde do destinatário', async () => {
     const t = createTestAuth(db);
     const cookie = (await t.service.checkAge('1990-01-01', new Headers())) as { cookie: string };
-    const base = `pessoa.${Date.now()}`;
+    // "_" não existe em usuário do Gmail: nenhum destes endereços pertence a alguém.
+    const base = `ficticia_teste.${Date.now()}`;
     const variants = [
       `${base}@gmail.com`,
       `${base}+1@gmail.com`,

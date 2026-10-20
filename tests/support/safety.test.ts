@@ -20,7 +20,7 @@ describe('trava do banco de testes', () => {
 
   it('recusa host remoto fora da CI e qualquer banco com APP_ENV=production', () => {
     delete process.env.CI;
-    expect(() => assertLocalDatabase('postgresql://u:p@db.exemplo.com:5432/x_test')).toThrow();
+    expect(() => assertLocalDatabase('postgresql://u:p@db.example.com:5432/x_test')).toThrow();
     process.env.APP_ENV = 'production';
     expect(() => assertLocalDatabase('postgresql://u:p@localhost:5432/x_test')).toThrow();
   });
