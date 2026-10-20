@@ -36,7 +36,7 @@ async function expectScreen(page: Page, name: string, position: number) {
     content: 'header, nav { position: static !important; }',
   });
   const axe = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
-  await unstick.evaluate((style) => style.remove());
+  await unstick.evaluate((style) => style.parentNode?.removeChild(style));
   expect(axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(', ')}`)).toEqual(
     [],
   );
