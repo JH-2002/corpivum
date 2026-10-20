@@ -20,6 +20,18 @@ describe('limite por IP do que é público (TM-03)', () => {
     expect(t.hit('a', 2)).toBe(true);
   });
 
+  it('a chave vencida sai da memória no próximo acesso de qualquer IP, sem esperar o mesmo IP voltar', () => {
+    const t = createThrottle({ windowMs: 1000, max: 5, maxKeys: 100 });
+    t.hit('203.0.113.1', 0);
+    t.hit('203.0.113.2', 500);
+    expect(t.size()).toBe(2);
+    // Outro IP, uma janela depois: a de .1 venceu e é varrida; a de .2 ainda vale.
+    t.hit('203.0.113.3', 1000);
+    expect(t.size()).toBe(2);
+    t.hit('203.0.113.3', 2100);
+    expect(t.size()).toBe(1);
+  });
+
   it('a própria máquina é reconhecida (sem limite fora de produção)', () => {
     expect(['local', '127.0.0.1', '::1'].every(isLoopback)).toBe(true);
     expect(isLoopback('203.0.113.9')).toBe(false);

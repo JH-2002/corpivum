@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { DemoOnlyProvider } from '@/components/demo/DemoOnlyContext';
+import { isDemoOnly } from '@/lib/demo-mode';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('demo');
@@ -16,5 +18,6 @@ export async function generateMetadata(): Promise<Metadata> {
  * modo apresentação (`/demo/apresentacao`, ADR-0035) ocupa a tela inteira, sem ele.
  */
 export default function DemoLayout({ children }: { children: ReactNode }) {
-  return children;
+  // Modo só demo (ADR-0043): os componentes de cliente escondem o cadastro e os links do app completo.
+  return <DemoOnlyProvider value={isDemoOnly()}>{children}</DemoOnlyProvider>;
 }

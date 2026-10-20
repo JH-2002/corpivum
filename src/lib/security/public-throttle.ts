@@ -11,12 +11,23 @@
 export interface Throttle {
   /** Conta uma requisição da chave; `false` quando passou do limite da janela. */
   hit(key: string, now: number): boolean;
+  /** Quantas chaves (IPs) estão na memória. Só para teste. */
+  size(): number;
 }
 
 export function createThrottle(opts: { windowMs: number; max: number; maxKeys: number }): Throttle {
   const windows = new Map<string, { start: number; count: number }>();
+  let lastSweep = 0;
   return {
     hit(key, now) {
+      // Uma vez por janela, apaga as janelas vencidas: o IP não fica na memória além de ~2 janelas enquanto a
+      // instância recebe acessos (aviso da demo, ADR-0043).
+      if (now - lastSweep >= opts.windowMs) {
+        lastSweep = now;
+        for (const [k, w] of windows) {
+          if (now - w.start >= opts.windowMs) windows.delete(k);
+        }
+      }
       const current = windows.get(key);
       if (current && now - current.start < opts.windowMs) {
         current.count += 1;
@@ -34,6 +45,7 @@ export function createThrottle(opts: { windowMs: number; max: number; maxKeys: n
       windows.set(key, { start: now, count: 1 });
       return true;
     },
+    size: () => windows.size,
   };
 }
 

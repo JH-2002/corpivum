@@ -19,6 +19,7 @@ import {
   getAuthService,
   requireVerifiedSession,
 } from '@/modules/auth/server';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Segurança da conta (LEG-S04). Toda action revalida a sessão no banco antes de agir. Usa
@@ -28,6 +29,7 @@ import {
 const PATH = '/configuracoes/seguranca';
 
 export async function revokeSessionAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const parsed = sessionIdSchema.safeParse(formToObject(form));
   if (!parsed.success) return;
@@ -41,12 +43,14 @@ export async function revokeSessionAction(form: FormData): Promise<void> {
 }
 
 export async function revokeOtherSessionsAction(): Promise<void> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   await getAuthService().revokeOtherSessions(session.userId, session.sessionId);
   revalidatePath(PATH);
 }
 
 export async function startMfaAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const t = await getTranslations('auth.errors');
   const parsed = passwordOnlySchema.safeParse(formToObject(form));
@@ -62,6 +66,7 @@ export async function startMfaAction(_prev: FormState, form: FormData): Promise<
 }
 
 export async function confirmMfaAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const t = await getTranslations('auth');
   const parsed = mfaCodeSchema.safeParse(formToObject(form));
@@ -86,6 +91,7 @@ export async function confirmMfaAction(_prev: FormState, form: FormData): Promis
 }
 
 export async function regenerateCodesAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const t = await getTranslations('auth');
   const parsed = passwordOnlySchema.safeParse(formToObject(form));
@@ -99,6 +105,7 @@ export async function regenerateCodesAction(_prev: FormState, form: FormData): P
 }
 
 export async function disableMfaAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const t = await getTranslations('auth');
   const parsed = passwordAndCodeSchema.safeParse(formToObject(form));
@@ -112,6 +119,7 @@ export async function disableMfaAction(_prev: FormState, form: FormData): Promis
 }
 
 export async function changePasswordAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const t = await getTranslations('auth');
   const parsed = changePasswordSchema.safeParse(formToObject(form));

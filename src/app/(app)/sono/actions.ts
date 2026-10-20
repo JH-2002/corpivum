@@ -7,9 +7,11 @@ import { fieldErrorsOf, healthMutate, healthWrite } from '@/modules/health/form-
 import { getHealthServices } from '@/modules/health/server';
 import { idSchema } from '@/modules/health/zod';
 import { sleepInputSchema } from '@/modules/sleep';
+import { assertFullApp } from '@/lib/full-app';
 
 /** Sono (§20): criar/editar e excluir. Sessão + onboarding, Zod, consentimento (serviço + RLS). */
 export async function saveSleepAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = sleepInputSchema.safeParse({
     bedAt: form.get('bedAt'),
@@ -37,6 +39,7 @@ export async function saveSleepAction(_prev: FormState, form: FormData): Promise
 }
 
 export async function deleteSleepAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idSchema.safeParse(form.get('id'));
   if (!id.success) return;

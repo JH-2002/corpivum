@@ -1,10 +1,11 @@
 'use client';
 
-import { Bell, CircleUser, LogOut, Plus, Settings, ShieldCheck, User } from 'lucide-react';
+import { Bell, CircleUser, Info, LogOut, Plus, Settings, ShieldCheck, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { logoutAction } from '@/app/(auth)/actions';
+import { useDemoOnly } from '@/components/demo/DemoOnlyContext';
 import {
   PrivacyModeIndicator,
   PrivacyModeToggle,
@@ -24,7 +25,7 @@ const menuItemClass =
  * atalho para a Central de Privacidade, menu da conta, modo privacidade (ADR-0035) e indicador DEMO quando
  * em demonstração.
  * `variant="demo"` (demo público, LEG-X02): sem registro rápido, notificações nem conta; CTA para criar
- * conta e link para a Política.
+ * conta e link para a Política. No modo só demo (ADR-0043), sem o CTA e com o link "Sobre esta demonstração".
  */
 export function Header({
   isDemo = false,
@@ -36,13 +37,16 @@ export function Header({
   const t = useTranslations();
   const pathname = usePathname();
   const { openQuickLog } = useShell();
+  const demoOnly = useDemoOnly();
   const current = navItemForPath(pathname, variant === 'demo' ? DEMO_ITEMS : undefined);
   const title =
     pathname === '/mais'
       ? t('pages.more.title')
-      : current
-        ? t(`nav.${current.key}`)
-        : t('common.appName');
+      : pathname === '/demo/sobre'
+        ? t('header.aboutDemo')
+        : current
+          ? t(`nav.${current.key}`)
+          : t('common.appName');
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
@@ -61,18 +65,25 @@ export function Header({
 
         {variant === 'demo' ? (
           <>
+            {/* Modo só demo (ADR-0043): sem Política do app nem cadastro; no lugar, o aviso da demonstração. */}
             <Link
-              href="/legal/politica-de-privacidade"
-              aria-label={t('header.privacyPolicy')}
-              title={t('header.privacyPolicy')}
+              href={demoOnly ? '/demo/sobre' : '/legal/politica-de-privacidade'}
+              aria-label={t(demoOnly ? 'header.aboutDemo' : 'header.privacyPolicy')}
+              title={t(demoOnly ? 'header.aboutDemo' : 'header.privacyPolicy')}
               className="inline-flex size-11 items-center justify-center rounded-md text-fg hover:bg-surface-muted"
             >
-              <ShieldCheck className="size-5" aria-hidden="true" />
+              {demoOnly ? (
+                <Info className="size-5" aria-hidden="true" />
+              ) : (
+                <ShieldCheck className="size-5" aria-hidden="true" />
+              )}
             </Link>
             <HelpMenu tourHref="/demo?tour=1" />
-            <Link href="/cadastro" className={buttonClasses('primary', 'shrink-0')}>
-              {t('demo.createAccount')}
-            </Link>
+            {demoOnly ? null : (
+              <Link href="/cadastro" className={buttonClasses('primary', 'shrink-0')}>
+                {t('demo.createAccount')}
+              </Link>
+            )}
           </>
         ) : (
           <AppActions onQuickLog={openQuickLog} />

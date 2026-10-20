@@ -10,6 +10,7 @@ import { getConsentService, requireAppSession } from '@/modules/consent/server';
 import { markTourSeen } from '@/modules/health/server';
 import { SCORE_VERSION } from '@/modules/wellbeing';
 import { requestScoreReview } from '@/modules/wellbeing/server';
+import { assertFullApp } from '@/lib/full-app';
 
 const reviewSchema = z.object({ version: z.coerce.number().int().min(1).max(SCORE_VERSION) });
 
@@ -22,6 +23,7 @@ export async function requestScoreReviewAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const t = await getTranslations('wellbeing.review');
   if (session.dataMode !== 'own') return { status: 'error', message: t('demo') };
@@ -42,6 +44,7 @@ export async function requestScoreReviewAction(
  * Nada fictício foi gravado, então não há o que apagar.
  */
 export async function switchToOwnDataAction(): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   await getConsentService().chooseDataMode(session.userId, 'own');
   revalidatePath('/', 'layout');
@@ -53,6 +56,7 @@ export async function switchToOwnDataAction(): Promise<void> {
  * da sessão. Reabrir pelo menu de ajuda continua possível.
  */
 export async function markTourSeenAction(): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   await markTourSeen(session.userId);
 }

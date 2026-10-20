@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { REQUIRED_DOCUMENTS } from '@/modules/consent';
 import { getConsentService, requireAppSession } from '@/modules/consent/server';
+import { assertFullApp } from '@/lib/full-app';
 
 const acknowledgeSchema = z.object({
   documents: z.array(z.enum(REQUIRED_DOCUMENTS)).min(1).max(REQUIRED_DOCUMENTS.length),
@@ -14,6 +15,7 @@ const acknowledgeSchema = z.object({
  * some. Funciona também com reconsentimento pendente, como o resto do shell.
  */
 export async function acknowledgePolicyNoticeAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   const parsed = acknowledgeSchema.safeParse({ documents: form.getAll('document') });
   if (!parsed.success) return;

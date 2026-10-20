@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
-import { EnvValidationError } from './errors';
+import { isDemoOnly } from './demo-mode';
+import { EnvValidationError, NotEnabledError } from './errors';
 import { RETENTION_LIMITS } from './retention';
 
 const days = z.coerce.number().int().positive();
@@ -27,7 +28,13 @@ function dbUser(url: string): string {
   }
 }
 
-const envSchema = z
+/** Nome do cabeçalho de IP escrito pela hospedagem. Também usado pelo ambiente do modo só demo (ADR-0043). */
+export const clientIpHeaderSchema = z
+  .string()
+  .regex(/^[a-z0-9-]{1,64}$/)
+  .refine((h) => h !== 'x-forwarded-for', 'x-forwarded-for é controlado pelo cliente');
+
+export const envSchema = z
   .object({
     // Obrigatório e sem padrão: esquecer de defini-lo não pode cair em "development" (ADR-0007).
     APP_ENV: z.enum(['development', 'test', 'production']),
@@ -60,11 +67,7 @@ const envSchema = z
      * Cabeçalho com o IP do cliente escrito pela hospedagem (ex.: x-real-ip). Obrigatório em produção.
      * `x-forwarded-for` é recusado (PR1a-R2-B3): o 1º valor vem do cliente onde a hospedagem só acrescenta.
      */
-    CLIENT_IP_HEADER: z
-      .string()
-      .regex(/^[a-z0-9-]{1,64}$/)
-      .refine((h) => h !== 'x-forwarded-for', 'x-forwarded-for é controlado pelo cliente')
-      .optional(),
+    CLIENT_IP_HEADER: clientIpHeaderSchema.optional(),
 
     PURGE_DAYS: days.default(30),
     // LEG-R02: teto de 6 meses; só sobe por decisão registrada (OPEN_ISSUES OI-06).
@@ -225,8 +228,12 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
 
 let cached: Env | undefined;
 
-/** Ambiente do servidor, validado uma vez. Não importar em componentes de cliente. */
+/**
+ * Ambiente do servidor, validado uma vez. Não importar em componentes de cliente. No modo só demo (ADR-0043)
+ * o app completo não existe: banco, adaptadores e segredos ficam inacessíveis e qualquer caminho até eles falha.
+ */
 export function getEnv(): Env {
+  if (isDemoOnly()) throw new NotEnabledError('app completo (modo só demo, ADR-0043)');
   cached ??= parseEnv(process.env);
   return cached;
 }

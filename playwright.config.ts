@@ -37,7 +37,8 @@ export default defineConfig({
         launchOptions: { args: ['--lang=pt-BR'] },
       },
       dependencies: ['setup'],
-      testIgnore: /perf\.spec\.ts/,
+      // O modo só demo tem config própria (playwright.demo.config.ts, ADR-0043): outro servidor, sem banco.
+      testIgnore: [/perf\.spec\.ts/, /demo-only[\\/]/],
     },
     // Orçamento de performance (§41, ADR-0039): job próprio na CI, sem paralelismo, só no build de produção.
     {

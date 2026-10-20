@@ -7,12 +7,14 @@ import { requireAppSession } from '@/modules/consent/server';
 import { fieldErrorsOf, healthMutate, healthWrite } from '@/modules/health/form-result';
 import { getHealthServices } from '@/modules/health/server';
 import { idSchema } from '@/modules/health/zod';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Atividade (§26, LEG-M08): criar/editar e excluir. Sessão + onboarding, Zod, consentimento (serviço +
  * RLS). Séries chegam em listas paralelas; linhas vazias são ignoradas.
  */
 export async function saveActivityAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = activityInputSchema.safeParse({
     startedAt: form.get('startedAt'),
@@ -42,6 +44,7 @@ export async function saveActivityAction(_prev: FormState, form: FormData): Prom
 }
 
 export async function deleteActivityAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idSchema.safeParse(form.get('id'));
   if (!id.success) return;

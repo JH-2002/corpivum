@@ -12,6 +12,7 @@ import { runAccountDeletion, runMinorClosure } from '@/modules/privacy/account-e
 import { getPrivacyService } from '@/modules/privacy/server';
 import { OPENABLE_REQUEST_KINDS } from '@/modules/privacy/requests';
 import { processExportsSoon } from '@/modules/reports/server';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Central de Privacidade (LEG-C04, LEG-D04, LEG-D07, LEG-F04). Toda action revalida a sessão no banco. A Central fica
@@ -20,6 +21,7 @@ import { processExportsSoon } from '@/modules/reports/server';
 const purposeSchema = z.object({ purpose: z.enum(AVAILABLE_PURPOSES) });
 
 export async function grantConsentAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   const parsed = purposeSchema.safeParse({ purpose: form.get('purpose') });
   if (!parsed.success) return;
@@ -30,6 +32,7 @@ export async function grantConsentAction(form: FormData): Promise<void> {
 
 /** Revogar vale na próxima operação (LEG-C04). Dados de bem-estar: eliminação agendada (ADR-0019). */
 export async function revokeConsentAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   const parsed = purposeSchema.safeParse({ purpose: form.get('purpose') });
   if (!parsed.success) return;
@@ -42,6 +45,7 @@ export async function closeMinorAccountAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   const failed = await runMinorClosure(session.userId, form);
   if (failed) return failed;
@@ -58,6 +62,7 @@ export async function openPrivacyRequestAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   const t = await getTranslations('privacyCenter.requests');
   const parsed = requestSchema.safeParse({ kind: form.get('kind') });
@@ -87,6 +92,7 @@ export async function openPrivacyRequestAction(
  * reautenticação (senha e, com MFA, o 2º fator) e a frase exata, conferida no servidor.
  */
 export async function deleteAccountAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   const failed = await runAccountDeletion(session.userId, form, { offerExport: true });
   if (failed) return failed;

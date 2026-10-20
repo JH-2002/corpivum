@@ -1555,3 +1555,73 @@ Decisão do responsável pelo produto (2026-10-17): retirar os dois, no modelo d
 **Consequências.** Testes que usavam `marketing` como "outra finalidade" passam a usar dados de bem-estar (revogar e
 autorizar de novo). Reintroduzir novidades ou métricas exige nova ADR, nova finalidade com texto e prazo, revisão do
 ROPA, do RIPD e de SUBPROCESSORS, e remover a CHECK correspondente.
+
+## ADR-0043 — Modo só demo: publicar apenas a demonstração pública (Fase 8a)
+**Contexto.** O responsável pelo produto quer publicar só a demonstração pública (dados 100% fictícios, LEG-X02),
+sem cadastro, login nem qualquer dado real, enquanto o app completo espera o checklist do go-live. Hoje o app
+completo não sobe em produção (`parseEnv` recusa os adaptadores locais, os únicos que existem), e a demo já roda
+sem banco (gerador em memória, ADR-0021). Toda server action exportada é alcançável por POST direto com o ID dela,
+de qualquer caminho (doc do Next 16, `data-security.md`), e o Header da demo importa `logoutAction`.
+**Decisões do responsável pelo produto (2026-10-20).**
+- **D1** Uso **não comercial**: projeto pessoal de portfólio.
+- **D2** Hospedagem: **Vercel Hobby**, funções em `gru1` (São Paulo). O plano permite uma única região; CDN e
+  proxy rodam na rede global da Vercel, sem nenhum dado de bem-estar (só IP e dados da requisição).
+- **D3** No modo só demo, páginas do app completo **redirecionam para `/demo`**; server actions e route handlers do
+  app completo respondem **404**.
+- **D4** Responsável pela demonstração: **João Henrique Arruda do Carmo**, contato **joao2002carmo@gmail.com**
+  (`src/config/demo.ts`). Não é o controlador do app completo, que segue em aberto (OI-06).
+- **D5** O nome nos textos jurídicos versionados fica para o go-live, junto com os textos finais do jurídico (no
+  modo só demo eles nem aparecem).
+- **D6** Domínio `*.vercel.app` por enquanto.
+- **D7** A demo continua com `noindex`.
+- **D8** Registro de erros: só os logs da hospedagem (o relatório já filtrado pela lista de campos, ADR-0038).
+**Decisão (Fase 8a: modo só demo, ambiente, guardas e testes).**
+- **Chave:** `DEMO_ONLY=true` (`src/lib/demo-mode.ts`); valor diferente de `true`, `false` ou vazio falha alto.
+- **Ambiente próprio:** `parseDemoEnv` (`src/lib/demo-env.ts`) aceita só `APP_ENV`, `APP_URL`, `APP_REGION` e
+  `CLIENT_IP_HEADER`; em produção exige https, região no Brasil e cabeçalho de IP (sem `x-forwarded-for`). Nenhuma
+  credencial do app completo (URLs de banco, chave de backup, segredos de sessão, pepper, chave do KMS) pode estar
+  definida: o `instrumentation` confere na subida e o servidor não sobe. `getEnv()` lança `NotEnabledError` no modo
+  só demo, então banco (`getDb`), adaptadores e segredos ficam inacessíveis por qualquer caminho.
+- **Proxy:** `demoOnlyRoute` (`src/lib/security/demo-routes.ts`, função pura): GET/HEAD fora de `/demo` → 307 para
+  `/demo`; route handlers (`/privacidade/exportacoes/*`, prefixo reservado `/api`), server actions e outros métodos
+  fora de `/demo` → 404. Respostas com CSP e `no-store`; os cabeçalhos de segurança do `next.config` continuam.
+- **Guarda nas actions:** `assertFullApp()` (`src/lib/full-app.ts`, `notFound()`) é a primeira linha de cada uma das
+  55 server actions e do route handler do app completo, porque o ID de uma action vale em qualquer caminho, inclusive
+  em `/demo`. Ficam fora só as 3 actions de preferência da demo (período, modo privacidade, apresentação), que não
+  alcançam sessão, banco nem adaptadores. Teste estático (`tests/security/demo-only-guard.test.ts`).
+- **Jobs:** nenhum no modo só demo. **Erros:** `ConsoleErrorReporter` direto, sem adaptadores (D8).
+- **Interface:** no modo só demo, a demo não convida a criar conta nem leva ao app completo (Header, início, aviso de
+  somente leitura, via `DemoOnlyProvider`). No lugar da Política, `/demo/sobre` ("Sobre esta demonstração",
+  RASCUNHO, `LEGAL-REVIEW` OI-38): o que é, o que não é coletado, as preferências no navegador, os registros técnicos
+  da hospedagem e o responsável (D4). A página só existe no modo só demo (fora dele, 404): no app completo há
+  cadastro, banco e outro controlador (revisão de privacidade).
+- **Cookies:** só os 3 de preferência já existentes (`__Host-hm_period`, `__Host-hm_privacy`, `__Host-hm_presenting`),
+  de sessão, sem identificador, criados só quando a pessoa muda uma opção. Nenhum analytics (a CSP `'self'` já
+  bloqueia scripts de terceiros; Vercel Web Analytics e Speed Insights não são instalados).
+- **Testes:** unitários (chave, ambiente, roteamento rota a rota sobre o inventário de páginas, guarda, relatório de
+  erro) e o e2e `playwright.demo.config.ts` (`pnpm test:e2e:demo`, job `demo-only` da CI): build de produção SEM
+  `.env`, banco nem credenciais; páginas redirecionam com CSP; route handlers e métodos dão 404; a `logoutAction`,
+  chamada em `/demo` com o ID real tirado do bundle público, dá 404, e toda action do app completo referenciada pela
+  demo também; a primeira visita não cria cookie; nenhum pedido sai da origem; só links para `/demo`; o aviso é
+  acessível; os `.glb` saem com cache imutável, sem passar pelo proxy, e o twin monta o modelo. O e2e usa
+  `APP_ENV=test` como os demais (em produção a CSP pede `upgrade-insecure-requests`, que quebra em http://localhost);
+  as regras de produção do ambiente têm teste unitário.
+- **Revisão de privacidade (sem bloqueantes):**
+  - o limite por IP passa a varrer as janelas vencidas a cada janela, e o aviso diz "por pouco tempo" (a memória
+    só some quando chega outro acesso ou a instância para);
+  - o aviso cita o `localStorage` do tour e do modelo do corpo 3D;
+  - `/demo/sobre` só existe no modo só demo;
+  - o 404 leva a `/demo` nesse modo;
+  - o job da CI faz o build com `DEMO_ONLY=true`, como na hospedagem;
+  - um teste liga `DEMO_FORBIDDEN_VARS` aos campos de texto do `envSchema`;
+  - o teste das guardas recusa outras formas de export;
+  - OI-38 ganhou (e)–(h), e a Vercel em SUBPROCESSORS virou pré-condição para publicar (8c).
+**Fases seguintes (fora desta).** 8b: nome do produto num único lugar ("Corpivum", constante + i18n, exceto os
+textos jurídicos versionados, D5) e a faixa fixa "Demonstração com dados fictícios. O app ainda não está aberto ao
+público.". 8c: hospedagem (`vercel.json` com `gru1`, SUBPROCESSORS com a Vercel, `infra/regions.json`, script de
+verificação dos cabeçalhos e dos `.glb` na URL publicada) e os passos manuais do responsável (conta, GitHub, região,
+variáveis).
+**Consequências.** O app completo e a demo saem do mesmo build: a diferença é só a variável. Nova server action ou
+route handler do app completo precisa de `assertFullApp()` na primeira linha (o teste falha sem ela); nova action
+que valha na demo entra na lista do teste e não pode tocar em sessão, banco nem adaptadores. Voltar a publicar o
+app completo é tirar `DEMO_ONLY` e configurar o ambiente completo, depois do checklist do go-live.

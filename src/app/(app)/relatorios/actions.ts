@@ -9,6 +9,7 @@ import { requireAppSession } from '@/modules/consent/server';
 import { reportPeriodSchema } from '@/modules/reports';
 import { MAX_PER_DAY, type ExportRequest } from '@/modules/reports/service';
 import { getReportsService, processExportsSoon } from '@/modules/reports/server';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Pedidos de arquivo (LEG-D03, ADR-0032): relatório (PDF, CSV, JSON) e exportação completa (JSON, CSV).
@@ -28,6 +29,7 @@ const requestSchema = z.discriminatedUnion('kind', [
 ]);
 
 export async function requestExportAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   // Atualização pendente só não bloqueia a exportação completa (portabilidade); o relatório segue a regra das
   // telas de saúde e leva à atualização (revisão N1).
@@ -61,6 +63,7 @@ export async function requestExportAction(_prev: FormState, form: FormData): Pro
 const deleteSchema = z.object({ id: z.uuid() });
 
 export async function deleteExportAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   const parsed = deleteSchema.safeParse({ id: form.get('id') });
   if (!parsed.success) return;

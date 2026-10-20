@@ -3,6 +3,7 @@
 import { FlaskConical } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { switchToOwnDataAction } from '@/app/(app)/inicio/actions';
+import { useDemoOnly } from '@/components/demo/DemoOnlyContext';
 import { SubmitButton } from '@/components/forms/FormFields';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -49,9 +50,11 @@ export function DemoModeBanner() {
 /** Aviso no lugar de formulários quando os dados exibidos são de demonstração. */
 export function DemoReadOnlyNotice({ publicDemo = false }: { publicDemo?: boolean }) {
   const t = useTranslations('demo');
+  // Modo só demo (ADR-0043): não há conta a criar.
+  const demoOnly = useDemoOnly();
   return (
     <p className="rounded-md border border-border bg-surface-muted p-3 text-sm">
-      {publicDemo ? t('readOnlyPublic') : t('readOnly')}
+      {publicDemo ? t(demoOnly ? 'readOnlyDemoOnly' : 'readOnlyPublic') : t('readOnly')}
     </p>
   );
 }

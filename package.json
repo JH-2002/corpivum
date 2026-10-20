@@ -16,6 +16,7 @@
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
     "test:e2e": "playwright test",
+    "test:e2e:demo": "playwright test -c playwright.demo.config.ts",
     "test:perf": "playwright test --project=perf --workers=1",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

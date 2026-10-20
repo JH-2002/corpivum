@@ -39,7 +39,8 @@
     "settings": "Configurações",
     "privacy": "Central de Privacidade",
     "signOut": "Sair",
-    "privacyPolicy": "Política de Privacidade"
+    "privacyPolicy": "Política de Privacidade",
+    "aboutDemo": "Sobre esta demonstração"
   },
   "quickLog": {
     "open": "Registrar",
@@ -1127,7 +1128,32 @@
     "title": "Demonstração",
     "introTitle": "Demonstração com dados fictícios",
     "introBody": "Explore o HealthMind 360 com 90 dias de registros inventados. Nada aqui pertence a uma pessoa real e nada é gravado.",
-    "startOwn": "Começar com meus próprios dados"
+    "startOwn": "Começar com meus próprios dados",
+    "readOnlyDemoOnly": "Esta é uma demonstração pública com dados fictícios. Nada pode ser registrado aqui.",
+    "aboutLink": "Sobre esta demonstração"
+  },
+  "demoAbout": {
+    "title": "Sobre esta demonstração",
+    "what": {
+      "title": "O que é",
+      "body": "Esta demonstração mostra o {appName} com 90 dias de registros inventados, gerados no próprio servidor a cada visita. Nada aqui pertence a uma pessoa real. O app ainda não está aberto ao público: não há cadastro nem login."
+    },
+    "notCollected": {
+      "title": "O que não é coletado",
+      "body": "Não há conta, formulário nem banco de dados: a demonstração não grava nada do que você faz. Não usamos analytics, publicidade nem rastreadores de terceiros. Veja abaixo o que fica no seu navegador e o que a hospedagem registra."
+    },
+    "browser": {
+      "title": "Preferências no navegador",
+      "body": "Para lembrar o período escolhido, o modo privacidade e o modo apresentação, a demonstração usa cookies de sessão, sem identificador, criados só quando você muda uma dessas opções e apagados ao fechar o navegador. O próprio navegador guarda, sem enviar para o servidor, que você já viu o tour e qual modelo do corpo 3D você escolheu."
+    },
+    "hosting": {
+      "title": "Registros técnicos da hospedagem",
+      "body": "Como qualquer site, o serviço de hospedagem registra dados técnicos de cada acesso, como endereço IP, data e hora e página pedida, para segurança e funcionamento, pelos prazos dele. A demonstração não grava esses dados por conta própria; o IP só é usado em memória, por pouco tempo, para limitar excesso de acessos."
+    },
+    "contact": {
+      "title": "Responsável e contato",
+      "body": "Projeto pessoal de portfólio, sem fins comerciais, de {name}. Dúvidas ou pedidos sobre esses registros: <email></email>."
+    }
   },
   "forms": {
     "invalid": "Confira os campos destacados.",
