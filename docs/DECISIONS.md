@@ -1652,6 +1652,8 @@ dizer, sempre visível, que os dados são fictícios e que o app ainda não est�
   (`src`, fora de testes) escrever "HealthMind" ou o nome fora da constante. Com o nome trocado, os avisos
   `disclaimer.*` seguem iguais aos aprovados e a varredura de alegações proibidas roda de novo. Como o nome entra
   num aviso aprovado, `src/config/product.ts` entrou no CODEOWNERS dos textos.
+- **Monograma:** o logotipo da barra lateral usa `PRODUCT_MONOGRAM` (a inicial do nome), não mais "HM"; o teste
+  também recusa o monograma antigo.
 - **Faixa:** `DemoOnlyBanner` ("Demonstração com dados fictícios. O app ainda não está aberto ao público.", chave
   `demo.notPublicBanner`), `role="note"`, dentro dos cabeçalhos fixos (sticky) do shell da demo e do modo
   apresentação, e no topo da entrada da apresentação: não sai da tela ao rolar. Só aparece no modo só demo

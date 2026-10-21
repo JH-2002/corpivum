@@ -29,6 +29,8 @@ function flatten(node: Messages, prefix = ''): Array<[string, string]> {
 const VERSIONED = Object.values(DOCUMENT_MESSAGES);
 const isVersioned = (key: string) => VERSIONED.some((ns) => key.startsWith(`${ns}.`));
 const OLD_NAME = /HealthMind/;
+/** Monograma antigo do logotipo: texto de JSX (sozinho na linha ou entre tags) ou string. */
+const OLD_MONOGRAM = /(^\s*|>|['"`])HM(\s*$|<|['"`])/m;
 
 const SRC = fileURLToPath(new URL('../../src', import.meta.url));
 const PRODUCT_FILE = path.join(SRC, 'config', 'product.ts');
@@ -93,7 +95,11 @@ describe('nome do produto num único lugar', () => {
   it('o código não escreve o nome fora da constante', () => {
     const offenders = sourceFiles(SRC).filter((file) => {
       const text = readFileSync(file, 'utf8');
-      return OLD_NAME.test(text) || (file !== PRODUCT_FILE && text.includes(PRODUCT_NAME));
+      return (
+        OLD_NAME.test(text) ||
+        OLD_MONOGRAM.test(text) ||
+        (file !== PRODUCT_FILE && text.includes(PRODUCT_NAME))
+      );
     });
     expect(offenders.map((f) => path.relative(SRC, f))).toEqual([]);
   });

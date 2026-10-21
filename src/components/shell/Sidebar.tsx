@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { IconButton } from '@/components/ui/IconButton';
+import { PRODUCT_MONOGRAM } from '@/config/product';
 import { cn } from '@/lib/cn';
 import { NavLink } from './NavLink';
 import { DEMO_ITEMS, PRIVACY_ITEM, SIDEBAR_ITEMS, type ShellVariant } from './nav-config';
@@ -33,7 +34,7 @@ export function Sidebar({ variant = 'app' }: { variant?: ShellVariant }) {
           aria-hidden="true"
           className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-fg"
         >
-          HM
+          {PRODUCT_MONOGRAM}
         </span>
         <span className={cn('truncate font-semibold', labelClassName)}>{t('common.appName')}</span>
       </div>
