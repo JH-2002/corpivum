@@ -10,6 +10,10 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Os tipos acompanham o Node do runtime (.nvmrc = 24); a major sobe junto com o .nvmrc.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -22,3 +26,7 @@ updates:
       interval: monthly
     cooldown:
       default-days: 7
+    ignore:
+      # A major do Postgres local acompanha a do banco de produção, decidida com a hospedagem (CHECKLIST_GO_LIVE 2.1).
+      - dependency-name: postgres
+        update-types: ['version-update:semver-major']
