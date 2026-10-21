@@ -39,6 +39,24 @@ Detalhes:
   `app_migrator` (dados sintéticos), ou suba o Mailpit e peça "reenviar".
 - Testes (`APP_ENV=test`) continuam sem envio: as mensagens ficam em memória para os testes lerem.
 
+## Capturas de tela da demonstração
+```sh
+pnpm capturas              # build de produção com DEMO_ONLY=true, servidor, capturas e servidor encerrado
+pnpm capturas --sem-build  # reaproveita o build atual (só se ele foi feito com DEMO_ONLY=true)
+```
+Gera, em `capturas/` (fora do Git, no `.gitignore`), cada tela da demo e do modo apresentação em desktop (1440 px) e
+celular (390 px), nos temas claro e escuro: 64 arquivos `<tela>_<tamanho>_<tema>.png`, como
+`sono_celular-390_escuro.png`. Os PNGs antigos da pasta são apagados antes. Cada captura é da página inteira; `twin`
+mostra a escolha do modelo da primeira visita e `twin-com-modelo`, o corpo 3D.
+
+- Build e `next start` no modo só demo com as credenciais do app completo (`DEMO_FORBIDDEN_VARS`) em branco
+  (ADR-0043), como o e2e `demo-only`: só dados fictícios, sem banco. O build troca o `.next`; depois, para o app
+  completo, rode `pnpm build` de novo.
+- Porta 3300 (`CAPTURAS_PORT` para outra). Se ela estiver em uso, o script recusa: um servidor antigo responderia
+  com outro build. O servidor é encerrado no fim, mesmo se a captura falhar ou se você interromper com Ctrl+C.
+- Precisa do Chromium do Playwright (`pnpm exec playwright install chromium`).
+- Telas novas na demo: acrescente em `PAGES` ou `SCREENS` de `scripts/capturas.mjs`.
+
 ## Antes de commitar
 ```sh
 pnpm lint && pnpm typecheck && pnpm test
