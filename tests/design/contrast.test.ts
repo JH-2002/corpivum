@@ -1,6 +1,6 @@
 // @vitest-environment node
 /**
- * Contraste WCAG 2.2 AA dos tokens de cor nos dois temas (§6, LEG-X01).
+ * Contraste WCAG 2.2 AA dos tokens de cor do tema único escuro (§6, LEG-X01, ADR-0046).
  * Texto: >= 4.5:1. Componentes de UI e foco (bordas de campo, anel de foco, cor de domínio em gráficos): >= 3:1.
  */
 import { readFileSync } from 'node:fs';
@@ -74,11 +74,8 @@ const PAIRS: Array<[string, string, number]> = [
   ['fg', 'info-soft', 4.5],
 ];
 
-describe.each([
-  ['claro', ':root'],
-  ['escuro', '.dark'],
-])('contraste no tema %s', (_name, selector) => {
-  const tokens = readBlock(selector);
+describe('contraste no tema escuro', () => {
+  const tokens = readBlock(':root');
 
   it.each(PAIRS)('%s sobre %s >= %s:1', (fg, bg, min) => {
     const a = tokens.get(fg);
@@ -91,6 +88,11 @@ describe.each([
   it('define todos os 10 neutros', () => {
     const neutrals = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map((n) => `neutral-${n}`);
     expect(neutrals.every((n) => tokens.has(n))).toBe(true);
+  });
+
+  it('não tem mais tema claro nem bloco .dark', () => {
+    expect(css).not.toMatch(/\.dark\s*\{/);
+    expect(css).toMatch(/color-scheme:\s*dark;/);
   });
 });
 

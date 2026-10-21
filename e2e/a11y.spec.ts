@@ -11,7 +11,8 @@ import {
 import { PAGES, type PageAccess, type PageEntry } from './routes';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-const SCHEMES = ['light', 'dark'] as const;
+// Tema único escuro (ADR-0046).
+const SCHEMES = ['dark'] as const;
 
 /**
  * LEG-X01 (7d): nenhuma violação WCAG 2.2 AA detectável pelo axe em NENHUMA página do app, nos temas claro e

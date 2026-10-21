@@ -44,10 +44,8 @@ const SIZES = [
     hasTouch: true,
   },
 ];
-const THEMES = [
-  ['claro', 'light'],
-  ['escuro', 'dark'],
-];
+// Tema único escuro (ADR-0046).
+const THEMES = [['escuro', 'dark']];
 
 // Credenciais do app completo (DEMO_FORBIDDEN_VARS) em branco contam como ausentes, no build e no servidor: o
 // Next não sobrescreve variável já definida com o .env local. APP_ENV=test como no e2e: em produção a CSP pede

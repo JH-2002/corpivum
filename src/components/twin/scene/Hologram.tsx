@@ -62,14 +62,14 @@ const sharedTime = { value: 0 };
 
 export type HoloState = 'base' | 'selected' | 'dimmed';
 
-/** Cores e mistura do holograma pelos tokens `--hm-holo-*` (temas claro e escuro). */
+/** Cores e mistura do holograma pelos tokens `--hm-holo-*` (tema único escuro, ADR-0046). */
 export function useHoloTheme() {
   return {
-    fill: useTokenColor('--hm-holo-fill', '#3b82c4'),
-    rim: useTokenColor('--hm-holo-rim', '#0a4f8a'),
-    scan: useTokenColor('--hm-holo-scan', '#1d6fb8'),
-    highlight: useTokenColor('--hm-holo-highlight', '#062f5c'),
-    additive: useThemeToken('--hm-holo-blend', 'normal') === 'additive',
+    fill: useTokenColor('--hm-holo-fill', '#38bdf8'),
+    rim: useTokenColor('--hm-holo-rim', '#a5e8ff'),
+    scan: useTokenColor('--hm-holo-scan', '#7dd3fc'),
+    highlight: useTokenColor('--hm-holo-highlight', '#ffffff'),
+    additive: useThemeToken('--hm-holo-blend', 'additive') === 'additive',
   };
 }
 
