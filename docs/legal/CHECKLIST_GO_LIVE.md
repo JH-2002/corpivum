@@ -8,6 +8,15 @@
 > física, psicologia) · **E** = encarregado (DPO) · **D** = desenvolvimento (pode ser feito com o Claude Code) ·
 > **X** = empresa externa (pentest).
 
+## Antes de publicar a demonstração (modo só demo, ADR-0043)
+
+A demonstração pública vem antes do go-live do app completo e não depende das etapas abaixo. As demais pré-condições da
+publicação estão na OI-38.
+
+- [ ] **0.1 (P, D)** Criar um e-mail próprio do projeto e trocar por ele o e-mail pessoal do responsável em
+  `src/config/demo.ts` (página `/demo/sobre`), no teste `e2e/demo-only/demo-only.spec.ts` e no ADR-0043 (D4, em
+  `docs/DECISIONS.md`) (OI-38 h).
+
 ## Etapa 1 — Pessoas e decisões de base
 
 - [ ] **1.1 (P, J)** Definir o controlador (pessoa física ou jurídica). Decide se o art. 15 do Marco Civil se aplica
