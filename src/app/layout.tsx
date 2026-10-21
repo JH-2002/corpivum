@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import localFont from 'next/font/local';
+import { connection } from 'next/server';
 import type { ReactNode } from 'react';
 import { demoClientMessages } from '@/i18n/messages';
 import { isDemoOnly } from '@/lib/demo-mode';
@@ -37,7 +38,11 @@ export const viewport: Viewport = {
   colorScheme: 'dark',
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Toda página é renderizada sob demanda: o Next só aplica o nonce da CSP (ADR-0006, gerado no proxy) em
+  // renderização dinâmica, e as páginas leem o ambiente na requisição, não no build. Antes isso vinha da leitura
+  // de `headers()` para o script de tema, que saiu com o tema único (ADR-0046).
+  await connection();
   return (
     <html lang="pt-BR" className={inter.variable}>
       <body className="min-h-dvh antialiased">
