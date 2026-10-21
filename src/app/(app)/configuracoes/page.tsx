@@ -6,7 +6,6 @@ import {
   resolvePreviewState,
   type PageSearchParams,
 } from '@/components/shell/ModulePage';
-import { ThemeSelector } from '@/components/theme/ThemeSelector';
 import { requireAppSession } from '@/modules/consent/server';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,9 +24,6 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
       state={await resolvePreviewState(searchParams)}
     >
       <div className="flex flex-col gap-6">
-        <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-          <ThemeSelector />
-        </section>
         <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
           <Link
             href="/configuracoes/seguranca"

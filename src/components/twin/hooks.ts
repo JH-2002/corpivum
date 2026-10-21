@@ -45,26 +45,18 @@ export function useCompact(): boolean {
   return useMediaQuery('(max-width: 639px)');
 }
 
-function subscribeTheme(callback: () => void) {
-  const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-  const media = window.matchMedia?.('(prefers-color-scheme: dark)');
-  media?.addEventListener('change', callback);
-  return () => {
-    observer.disconnect();
-    media?.removeEventListener('change', callback);
-  };
-}
+// Tema único escuro (ADR-0046): os tokens não mudam depois de carregados, não há o que observar.
+const subscribeTheme = () => () => {};
 
 /**
- * Cores dos tokens do tema (`--hm-*`) para o three.js, que não lê variáveis CSS. Acompanha a troca de
- * tema claro/escuro. Devolve `fallback` no servidor.
+ * Cores dos tokens do tema (`--hm-*`) para o three.js, que não lê variáveis CSS. Devolve `fallback` no
+ * servidor.
  */
 export function useTokenColor(token: `--hm-${string}`, fallback: string): string {
   return useThemeToken(token, fallback);
 }
 
-/** Valor bruto de um token do tema (ex.: `--hm-holo-blend`), acompanhando a troca de tema. */
+/** Valor bruto de um token do tema (ex.: `--hm-holo-blend`). */
 export function useThemeToken(token: `--hm-${string}`, fallback: string): string {
   return useSyncExternalStore(
     subscribeTheme,

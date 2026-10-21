@@ -182,12 +182,12 @@ test.describe('páginas públicas (§53, LEG-D06) e acessibilidade', () => {
     });
   }
 
-  test('onboarding e Central de Privacidade sem violações (claro e escuro)', async ({ page }) => {
+  test('onboarding e Central de Privacidade sem violações', async ({ page }) => {
     const email = e2eEmail('a11y-onboarding');
     await createVerifiedUser(email, E2E_PASSWORD, { onboarded: false });
     await login(page, email);
     await expect(page).toHaveURL(/\/boas-vindas\/seguranca$/);
-    for (const scheme of ['light', 'dark'] as const) {
+    for (const scheme of ['dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto('/boas-vindas/seguranca');
       await expectNoAxeViolations(page);

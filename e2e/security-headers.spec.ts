@@ -34,6 +34,40 @@ test.describe('sem sessão', () => {
     }
   });
 
+  test('marca e ícones abrem sem sessão, fora do proxy; caminhos parecidos passam por ele (ADR-0045)', async ({
+    request,
+  }) => {
+    for (const path of [
+      '/brand/corpivum-simbolo-64.webp',
+      '/brand/corpivum-logo-256.webp',
+      '/brand/corpivum-icone-192.png',
+    ]) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      expect(res.status(), path).toBe(200);
+      expect(res.headers()['cache-control'], path).toContain('public');
+      expect(res.headers()['content-security-policy'], path).toBeUndefined();
+      // Os cabeçalhos globais do next.config continuam valendo.
+      expect(res.headers()['x-content-type-options'], path).toBe('nosniff');
+    }
+    for (const path of ['/icon.svg', '/apple-icon.png', '/manifest.webmanifest']) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      expect(res.status(), path).toBe(200);
+    }
+    // Fora do padrão estrito: proxy, CSP e redirecionamento para a entrada sem sessão.
+    for (const path of [
+      '/brand',
+      '/brand/qualquer.webp',
+      '/brand/corpivum-simbolo-64.webp/x',
+      '/BRAND/corpivum-simbolo-64.webp',
+      '/brand/Corpivum-logo-64.png',
+      '/brand/corpivum-logo-64.svg',
+    ]) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      expect(res.headers()['content-security-policy'], path).toContain("default-src 'self'");
+      expect(res.headers()['location'], path).toMatch(/\/entrar$/);
+    }
+  });
+
   test('redirecionamentos: área logada sem sessão e rota removida', async ({ request }) => {
     for (const [path, to] of [
       ['/inicio', '/entrar'],

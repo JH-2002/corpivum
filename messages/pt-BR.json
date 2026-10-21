@@ -68,12 +68,6 @@
     "invalidRange": "A data inicial precisa ser anterior ou igual à data final, e nenhuma pode estar no futuro.",
     "tooLong": "Escolha um intervalo de até 366 dias, sem datas no futuro."
   },
-  "theme": {
-    "label": "Tema",
-    "light": "Claro",
-    "dark": "Escuro",
-    "system": "Do sistema"
-  },
   "states": {
     "loading": "Carregando…",
     "errorTitle": "Não foi possível carregar",
@@ -151,7 +145,7 @@
     "settings": {
       "title": "Configurações",
       "emptyTitle": "Configurações",
-      "emptyDescription": "Tema, unidades, lembretes e segurança da conta ficarão aqui."
+      "emptyDescription": "Unidades, lembretes e segurança da conta ficarão aqui."
     },
     "privacy": {
       "title": "Central de Privacidade",

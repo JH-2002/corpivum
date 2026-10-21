@@ -106,20 +106,27 @@ async function timeToInteractive(page: Page, path: string): Promise<Load> {
           PerformanceNavigationTiming | undefined;
         const missingLatency = Math.max(0, 150 - (nav?.responseStart ?? 150));
         const tti = performance.now() + missingLatency;
-        new PerformanceObserver((list) => {
-          const entries = list.getEntries();
+        const finish = (lcp: number) => {
           const js = (
             performance.getEntriesByType('resource') as PerformanceResourceTiming[]
           ).filter((r) => r.initiatorType === 'script');
           resolve({
             tti,
-            lcp: (entries[entries.length - 1]?.startTime ?? 0) + missingLatency,
+            lcp,
             // Divisão do tempo, para saber se o gargalo é servidor, HTML ou JS.
             ttfb: Math.round(nav?.responseStart ?? 0),
             htmlEnd: Math.round(nav?.responseEnd ?? 0),
             jsEnd: Math.round(Math.max(0, ...js.map((r) => r.responseEnd))),
           });
+        };
+        new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          finish((entries[entries.length - 1]?.startTime ?? 0) + missingLatency);
         }).observe({ type: 'largest-contentful-paint', buffered: true });
+        // O Chrome para de registrar o LCP na primeira interação. Se o clique no botão veio antes da primeira
+        // entrada, nenhuma chega e a carga ficaria esperando para sempre: o LCP é só informativo (a meta é o
+        // "interativo"), então segue sem ele.
+        setTimeout(() => finish(Number.NaN), 3000);
       }),
   );
 }
@@ -155,7 +162,7 @@ for (const { name, path, storageState } of [
       await context.close();
     }
     const tti = Math.round(median(results.map((r) => r.tti)));
-    const lcp = Math.round(median(results.map((r) => r.lcp)));
+    const lcp = Math.round(median(results.map((r) => r.lcp).filter((v) => !Number.isNaN(v))));
     testInfo.annotations.push({
       type: 'perf',
       description: `${path}: interativo ${tti} ms, LCP ${lcp} ms`,

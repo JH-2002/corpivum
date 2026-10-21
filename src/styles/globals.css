@@ -1,9 +1,6 @@
 @import 'tailwindcss';
 @import './tokens.css';
 
-/* Tema escuro por classe (`.dark` no <html>), definida antes da hidratação em src/app/theme-script.tsx. */
-@custom-variant dark (&:where(.dark, .dark *));
-
 @theme inline {
   /* Cores semânticas: utilitários como bg-surface, text-fg-muted, border-border */
   --color-*: initial;
@@ -58,10 +55,15 @@
   --color-body: var(--hm-domain-body);
   --color-series-violet: var(--hm-series-violet);
 
-  /* Tipografia: uma família sans-serif, 6 tamanhos */
+  /* Tipografia: Inter variável auto-hospedada (ADR-0046), 6 tamanhos */
   --font-sans:
-    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  /* Pesos um pouco mais grossos que o padrão: texto em 450, médio em 550 (fonte variável). */
+  --font-weight-normal: 450;
+  --font-weight-medium: 550;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
   --text-*: initial;
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
@@ -86,9 +88,10 @@
   --radius-lg: 1rem;
   --radius-full: 9999px;
   --shadow-*: initial;
-  --shadow-sm: 0 1px 2px 0 rgb(15 23 26 / 0.06);
-  --shadow-md: 0 4px 12px -2px rgb(15 23 26 / 0.1);
-  --shadow-lg: 0 12px 32px -8px rgb(15 23 26 / 0.18);
+  /* Sombras para o fundo escuro: mais densas, para separar superfícies */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.35);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6);
 
   /* Breakpoints usados pelo shell: md = tablet, lg = desktop */
   --breakpoint-md: 48rem;
@@ -104,6 +107,7 @@
     background-color: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);
+    font-weight: var(--font-weight-normal);
     font-size: var(--text-base);
     line-height: var(--text-base--line-height);
   }

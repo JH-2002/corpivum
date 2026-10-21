@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { Logo } from '@/components/brand/Logo';
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/ui/SkipLink';
 import {
   ONBOARDING_EXPIRY_DAYS,
@@ -15,7 +16,7 @@ export default function OnboardingLayout({ children }: { children: ReactNode }) 
       <SkipLink />
       <div className="flex min-h-dvh flex-col items-center px-4 py-10">
         <header className="mb-6 text-center">
-          <p className="text-xl font-bold">{t('common.appName')}</p>
+          <Logo largura={176} rotulo={t('common.appName')} className="mx-auto" />
           <p className="text-sm text-fg-muted">{t('auth.layoutTagline')}</p>
         </header>
         <main

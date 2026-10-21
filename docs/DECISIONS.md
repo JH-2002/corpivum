@@ -1666,3 +1666,92 @@ dizer, sempre visível, que os dados são fictícios e que o app ainda não est�
   sobre o catálogo trocado; faixa fixa também na entrada da apresentação; OI-38 (i) e CHECKLIST 4.0.
 **Consequências.** Trocar o nome é mudar a constante (e, no go-live, publicar novas versões dos textos jurídicos).
 Texto novo com o nome usa `%PRODUTO%`; o teste recusa o nome escrito.
+
+## ADR-0045 — Marca oficial: a imagem original do logotipo (Fase 9a)
+**Contexto.** O redesenho visual (Fase 9) começou recriando o logotipo de referência em SVG com uma figura mais
+neutra (silhueta tirada da média dos modelos do twin, depois variantes "fiel" e "neutra"). Nenhuma versão chegou
+ao acabamento da referência.
+**Decisão do responsável pelo produto (2026-10-21).**
+- **Logo oficial = `docs/brand/logo-referencia.png`, sem redesenho.** É uma marca, não uma meta corporal.
+- **A figura nunca aparece na interface como referência de corpo (LEG-M06):** não fica perto do twin, de medidas,
+  metas, comparações ou de qualquer mensagem de progresso ou celebração (LEG-F05), não serve de silhueta, fallback ou
+  carregamento do twin e não aparece em telas sobre o corpo como ilustração. Uso só como identidade em telas sem
+  dado corporal: entrada, cadastro, onboarding, páginas jurídicas e imagens de compartilhamento. A barra lateral,
+  que acompanha todas as telas (inclusive twin, medidas e metas), usa o ícone sem a figura (40 px).
+- **Tamanho mínimo (pela largura exibida):** logo completo (símbolo + "CORPIVUM") só a partir de 128 px; de 48 a
+  127 px, só o símbolo; abaixo de 48 px (favicon, ícones do app, manifest, qualquer logo pequeno), o favicon aprovado,
+  só o "C" e um ponto, sem a figura (`docs/brand/corpivum-favicon.svg`). Garantido no componente
+  `src/components/brand/Logo.tsx`: a forma sai da largura (`logoForma`), sem opção de forçar outra; teste em
+  `Logo.test.tsx`.
+- **Validação jurídica:** OI-39 `LEGAL-REVIEW` (figura atlética na marca de um app de imagem corporal; imagem
+  gerada por IA, segundo o manifesto C2PA embutido no arquivo: proteção autoral e registro da marca).
+**Arquivos.** `scripts/brand/exportar-logo.mjs` gera `public/brand/` a partir da imagem original, com o Chromium do
+Playwright (sem dependência nova), e copia o favicon para `src/app/icon.svg` e `src/app/apple-icon.png`:
+- **Fundo:** a imagem é brilho sobre preto (fundo medido em 0–1). Alfa = maior canal depois de descontar o preto e
+  cor = canal / alfa, o que inverte a composição sobre preto: brilho e bordas suaves ficam, o preto vira
+  transparência e não sobra halo escuro sobre o fundo do app (`#0b1118`).
+- **Camada de apoio:** sem ela, a metade escura do corpo e os vãos internos ficariam transparentes, e gradientes,
+  brilhos e cartões apareceriam através da figura. Atrás da imagem vai um disco sólido na cor mais escura da imagem
+  (`#000000`), no círculo do símbolo (medido com a grade: centro 628,7 × 515,3, raio 240 px na original), sólido até
+  95% do raio e com borda suave até 98,5%; o brilho de fora do círculo continua transparente. Testado sobre fundo
+  liso, gradiente azul e cartão com brilho, em 128 e 64 px (folha `capturas/logo/teste-fundos.png`).
+- **Saídas:** símbolo (recorte quadrado do "C") e logo completo, em WebP (qualidade 0,9) e PNG com transparência,
+  em 512, 256, 128 e 64 px de largura; ícones do favicon em 16, 32, 48, 180, 192 e 512 px.
+- **Tamanhos (WebP / PNG):** símbolo 512: 39,0 / 217,3 KiB; 256: 15,8 / 65,9; 128: 7,1 / 21,1; 64: 3,4 / 7,2.
+  Logo completo 512: 31,3 / 98,8; 256: 12,3 / 32,1; 128: 5,1 / 11,5; 64: 2,4 / 4,1. Ícones: 0,6 a 18,7 KiB.
+- **Orçamento:** imagens não entram no teto de JS (`perf-budget.json`), mas pesam na carga medida pelo e2e de
+  desempenho. A interface usa WebP em 1× e 2× do tamanho exibido (`srcSet`): o símbolo de 48 px da barra lateral
+  usa o ícone PNG de 48 px (1,7 KiB); o logo de 176 px da entrada baixa 12,3 KiB (1×) ou 31,3 KiB (2×). Os PNG ficam para usos fora
+  do app (compartilhamento, materiais). As exportações não carregam o C2PA do original (só a imagem).
+- **Entrega:** `brand/corpivum-<tipo>-<tamanho>.webp|png`, `icon.svg`, `apple-icon.png` e `manifest.webmanifest`
+  ficam fora do proxy (padrão estrito no `matcher`, como os modelos do ADR-0028): abrem sem sessão (entrada e demo) e
+  não recebem `no-store`. Imagens da marca com `Cache-Control: public, max-age=86400, stale-while-revalidate=604800`
+  (nome sem hash, então sem `immutable`). e2e em `e2e/security-headers.spec.ts` confere o acesso sem sessão e que
+  caminhos parecidos (maiúsculas, outra extensão, sufixo) passam pelo proxy; `favicon.ico` e `robots.txt` também
+  passaram a ter o ponto escapado e `$` no `matcher`.
+- **Estudos descartados:** os scripts das tentativas de redesenho ficam em `scripts/brand/arquivo/` (só registro;
+  escrevem em `capturas/logo/arquivo`, fora do Git).
+**Consequências.** Trocar o logo é trocar a imagem de origem e rodar o exportador. A regra de uso da figura e a de
+tamanho mínimo valem para qualquer tela nova; o monograma de texto (`PRODUCT_MONOGRAM`) saiu.
+
+## ADR-0046 — Tema único escuro e fonte Inter auto-hospedada (Fase 9a)
+**Contexto.** Redesenho visual (Fase 9): o produto passa a ter só o tema escuro, com o azul do logotipo como cor
+principal, e uma fonte um pouco mais grossa.
+**Decisão.**
+- **Tema único escuro.** Saem o tema claro, o seletor em Configurações (`ThemeSelector`), o script que aplicava
+  `.dark` antes da pintura (`THEME_INIT_SCRIPT`, ADR-0006), a variante `dark:` do Tailwind e os textos `theme.*`.
+  `tokens.css` tem um bloco só (`:root`, `color-scheme: dark`) e o viewport declara `themeColor` `#0b1118` e
+  `colorScheme: 'dark'`. A chave antiga `hm.theme` no `localStorage` fica sem uso (não guarda dado pessoal).
+  Substitui o tema claro do ADR-0005 e o ADR-0006.
+- **Paleta.** Fundo `#0b1118` e neutros puxados para o mesmo azul; primária `#4aa8ff` (azul do logotipo clareado
+  para AA sobre o fundo; texto sobre ela `#041a33`), foco `#7cc4ff`. Estados, domínios e holograma do twin mantêm
+  os valores do antigo tema escuro (mistura aditiva). `tests/design/contrast.test.ts` confere todos os pares (texto
+  ≥ 4,5:1; borda, foco e cor de gráfico ≥ 3:1) e falha se voltar um bloco `.dark`. Sombras mais densas para separar
+  superfícies no escuro.
+- **Fonte.** Inter variável (OFL 1.1), do subconjunto latino do `@fontsource-variable/inter` 5.3.0 (Inter v4),
+  reduzida com `fonttools` ao eixo de peso 400–700 e às features usadas (kern, liga, calt, tnum, case, ccmp,
+  locl, mark, mkmk): 27,6 KiB (eram 47), 372 glifos, cobre os acentos do português. Fica em `src/app/fonts/` com a
+  licença e é carregada por `next/font/local`: servida pelo próprio site (CSP `font-src 'self'`; continua sem
+  fonte remota, como no ADR-0005), com preload e métricas da fonte de reserva ajustadas. Pesos: texto 450
+  (`--font-weight-normal`), médio 550, seminegrito 600 e negrito 700. Registro em `docs/ASSETS.md` e
+  `THIRD_PARTY_NOTICES.md`.
+- **`font-display: optional` (orçamento de 2,5 s).** Medido com `pnpm test:perf` (4G lenta, CPU 4×, cache frio,
+  mediana de 5 cargas), "interativo" de `/inicio` e `/demo`:
+
+  | Versão | `/inicio` | `/demo` |
+  |---|---|---|
+  | `main` antes da 9a (3 rodadas) | 2295–2300 ms | 2181–2197 ms |
+  | Inter completa (47 KiB), `swap` | 2458 ms | 2319 ms |
+  | Inter completa, `swap`, sem preload | 2702 ms | — |
+  | Inter reduzida (27,6 KiB), `swap` (3 rodadas) | 2390–2483 ms | 2214–2245 ms |
+  | Inter reduzida, `optional` (2 rodadas, escolhida) | 2331–2355 ms | 2214–2224 ms |
+
+  A troca da fonte de reserva pela Inter no meio da carga refaz o layout com a CPU lenta; com `optional` a página
+  fica com a fonte de reserva quando a Inter não chega no período curto (primeira visita em rede lenta) e passa a
+  usá-la, do cache, na visita seguinte. Custo final: ~40–60 ms em `/inicio`, ~30 ms em `/demo`.
+- **Teste de desempenho.** `e2e/perf.spec.ts` esperava a primeira entrada de LCP sem prazo; quando o clique no
+  botão vinha antes dela, o Chrome parava de registrar o LCP e a carga travava até o tempo do teste. O LCP é só
+  informativo: depois de 3 s sem entrada, a carga segue sem ele.
+- **Testes.** axe roda só no esquema escuro (`e2e/a11y.spec.ts`, `e2e/privacy.spec.ts`); o e2e de tema confere que
+  não há seletor e que o `color-scheme` é escuro. `pnpm capturas` gera só a versão escura.
+**Consequências.** Uma cor nova entra só em `tokens.css` e precisa passar no teste de contraste do tema escuro.

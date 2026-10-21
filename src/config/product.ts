@@ -11,6 +11,3 @@ export const PRODUCT_SLUG = 'corpivum';
 
 /** Marcador do nome nos textos do i18n. */
 export const PRODUCT_NAME_MARKER = '%PRODUTO%';
-
-/** Monograma do logotipo (barra lateral): a inicial do nome. */
-export const PRODUCT_MONOGRAM = PRODUCT_NAME.charAt(0);

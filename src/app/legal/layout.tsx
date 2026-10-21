@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { Logo } from '@/components/brand/Logo';
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/ui/SkipLink';
 
 const LINKS = [
@@ -18,7 +19,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
       <SkipLink />
       <div className="flex min-h-dvh flex-col items-center px-4 py-10">
         <header className="mb-6 flex w-full max-w-3xl flex-col gap-3">
-          <p className="text-xl font-bold">{t('common.appName')}</p>
+          <Logo largura={176} rotulo={t('common.appName')} />
           <nav aria-label={t('legal.nav.label')}>
             <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
               {LINKS.map((link) => (

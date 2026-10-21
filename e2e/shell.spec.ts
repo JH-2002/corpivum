@@ -105,14 +105,14 @@ test.describe('rotas removidas (ADR-0027, ADR-0030)', () => {
 });
 
 test.describe('tema', () => {
-  test('escolha de tema escuro aplica e persiste', async ({ page }) => {
+  test('tema único escuro, sem seletor (ADR-0046)', async ({ page }) => {
     await page.goto('/configuracoes');
-    await page.getByText('Escuro', { exact: true }).click();
-    await expect(page.locator('html')).toHaveClass(/dark/);
-    await page.reload();
-    await expect(page.locator('html')).toHaveClass(/dark/);
-    await page.getByText('Claro', { exact: true }).click();
-    await expect(page.locator('html')).not.toHaveClass(/dark/);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('radio', { name: /claro|escuro|sistema/i })).toHaveCount(0);
+    const scheme = await page.evaluate(
+      () => getComputedStyle(document.documentElement).colorScheme,
+    );
+    expect(scheme).toBe('dark');
   });
 });
 
