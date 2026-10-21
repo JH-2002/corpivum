@@ -1,9 +1,11 @@
+# Atualizações de versão uma vez por mês. As de segurança não seguem este calendário nem o cooldown: o Dependabot
+# abre o PR assim que sai o alerta (alertas e correções automáticas ligados nas configurações do repositório).
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
     open-pull-requests-limit: 10
@@ -17,9 +19,16 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
+    groups:
+      # init e analyze precisam da mesma versão; separados, o CodeQL falha (#34 e #36).
+      codeql-action:
+        patterns: ['github/codeql-action/*']
+      codeql-action-security:
+        applies-to: security-updates
+        patterns: ['github/codeql-action/*']
   - package-ecosystem: docker-compose
     directory: /
     schedule:
