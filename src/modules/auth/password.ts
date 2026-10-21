@@ -1,5 +1,6 @@
 import { argon2, randomBytes } from 'node:crypto';
 import { promisify } from 'node:util';
+import { PRODUCT_SLUG } from '@/config/product';
 import { PASSWORD_MAX, PASSWORD_MIN } from './constants';
 import { constantTimeEqual } from './crypto';
 
@@ -68,6 +69,9 @@ const COMMON = new Set(
     'brasil123456',
     'healthmind360',
     'healthmind123',
+    `${PRODUCT_SLUG}1234`,
+    `${PRODUCT_SLUG}2026`,
+    `${PRODUCT_SLUG}123456`,
     'aaaaaaaaaaaa',
     'abcdefghijkl',
     'abc123abc123',

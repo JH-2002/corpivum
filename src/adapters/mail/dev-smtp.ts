@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { connect, type Socket } from 'node:net';
+import { PRODUCT_NAME } from '@/config/product';
 import { logger as defaultLogger, maskEmail, type Logger } from '@/lib/logger';
 import type { MailMessage, MailProvider, MailTemplateId } from './types';
 
@@ -31,7 +32,7 @@ const SUBJECTS: Record<MailTemplateId, string> = {
 export function renderDevMail(message: MailMessage): { subject: string; text: string } {
   const lines = Object.entries(message.params).map(([key, value]) => `${key}: ${value}`);
   return {
-    subject: `[DEV] HealthMind 360 — ${SUBJECTS[message.template]}`,
+    subject: `[DEV] ${PRODUCT_NAME} — ${SUBJECTS[message.template]}`,
     text: [
       'Mensagem de DESENVOLVIMENTO entregue ao Mailpit local. Em produção o texto final vem do provedor.',
       '',
@@ -59,7 +60,7 @@ export function buildMime(message: MailMessage, id: string, now: Date): string {
   // Linhas começando com "." são duplicadas (dot-stuffing, RFC 5321 §4.5.2).
   const body = text.replace(/\r?\n/g, '\r\n').replace(/^\./gm, '..');
   return [
-    `From: HealthMind 360 (dev) <${FROM}>`,
+    `From: ${PRODUCT_NAME} (dev) <${FROM}>`,
     `To: <${message.to}>`,
     `Subject: ${encodeHeader(subject)}`,
     `Date: ${now.toUTCString()}`,

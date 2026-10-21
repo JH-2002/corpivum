@@ -1625,3 +1625,42 @@ variáveis).
 route handler do app completo precisa de `assertFullApp()` na primeira linha (o teste falha sem ela); nova action
 que valha na demo entra na lista do teste e não pode tocar em sessão, banco nem adaptadores. Voltar a publicar o
 app completo é tirar `DEMO_ONLY` e configurar o ambiente completo, depois do checklist do go-live.
+
+## ADR-0044 — Fase 8b: nome do produto num único lugar e faixa fixa da demonstração
+**Contexto.** Fase 8b do ADR-0043: o produto passa a se chamar **Corpivum**, e a demonstração publicada precisa
+dizer, sempre visível, que os dados são fictícios e que o app ainda não está aberto ao público. O nome antigo
+("HealthMind 360") estava escrito em 12 textos do i18n e em literais do código (PDF, TOTP, nomes de arquivo).
+**Decisão.**
+- **Constante:** `PRODUCT_NAME = 'Corpivum'` e `PRODUCT_SLUG = 'corpivum'` em `src/config/product.ts`. O código usa a
+  constante (criador do PDF, emissor do TOTP, nomes dos arquivos baixados, e-mail de desenvolvimento, mensagem do
+  backup, senhas comuns recusadas).
+- **i18n:** os textos usam o marcador `%PRODUTO%` (fora da sintaxe ICU), trocado pelo nome ao carregar o catálogo
+  (`src/i18n/messages.ts`), usado pelo `next-intl`, pelos relatórios e pelos testes de componente. O título das
+  páginas da demo passa a ser "<página> · Demonstração · Corpivum".
+- **Exceção (ADR-0043 D5):** Política, Termos e consentimento de saúde (`DOCUMENT_MESSAGES`) seguem com "HealthMind
+  360": são versionados por hash, e trocar o nome exige nova versão, migração e arquivo do texto antigo. Fica para o
+  go-live, junto com os textos finais do jurídico (CHECKLIST_GO_LIVE 1.6). No modo só demo eles não aparecem nem vão
+  ao navegador: o layout raiz passa ao `NextIntlClientProvider` o catálogo sem `legal` e `consent`
+  (`demoClientMessages`), que só o app completo usa; antes, o catálogo inteiro (com os rascunhos e os
+  placeholders do controlador) ia no payload de toda página. No app completo os nomes ficam misturados até lá
+  (OI-38 i).
+  Identificadores internos (nome do pacote, banco `healthmind`, `Symbol.for('healthmind.*')`, domínio de dev
+  `healthmind.local`) não são exibidos e ficam como estão.
+- **Teste:** `tests/content/product-name.test.ts` falha se o catálogo escrever o nome, se o nome antigo sobrar fora
+  dos textos versionados, se algum marcador ficar sem troca, se os textos versionados mudarem, se o catálogo do
+  navegador no modo só demo tiver o nome antigo ou placeholders, se o nome tiver sintaxe de ICU, ou se o código
+  (`src`, fora de testes) escrever "HealthMind" ou o nome fora da constante. Com o nome trocado, os avisos
+  `disclaimer.*` seguem iguais aos aprovados e a varredura de alegações proibidas roda de novo. Como o nome entra
+  num aviso aprovado, `src/config/product.ts` entrou no CODEOWNERS dos textos.
+- **Faixa:** `DemoOnlyBanner` ("Demonstração com dados fictícios. O app ainda não está aberto ao público.", chave
+  `demo.notPublicBanner`), `role="note"`, dentro dos cabeçalhos fixos (sticky) do shell da demo e do modo
+  apresentação, e no topo da entrada da apresentação: não sai da tela ao rolar. Só aparece no modo só demo
+  (`DemoOnlyProvider`); no app completo aberto ao público a frase seria falsa. O e2e `demo-only` confere a faixa e o
+  nome em todas as telas da demo e da apresentação, a 390 px e depois de rolar, e que o HTML (com o payload do React)
+  não tem o nome antigo nem placeholders. O 404 do modo só demo não tem a faixa: não mostra dado nenhum e leva a
+  `/demo`.
+- **Revisão de privacidade (sem bloqueantes):** catálogo do navegador sem textos jurídicos no modo só demo; e2e
+  sobre o HTML inteiro; avisos e varredura conferidos também com o nome trocado; CODEOWNERS; testes de componente
+  sobre o catálogo trocado; faixa fixa também na entrada da apresentação; OI-38 (i) e CHECKLIST 4.0.
+**Consequências.** Trocar o nome é mudar a constante (e, no go-live, publicar novas versões dos textos jurídicos).
+Texto novo com o nome usa `%PRODUTO%`; o teste recusa o nome escrito.

@@ -3,6 +3,12 @@
 Todas as strings de UI ficam aqui (`pt-BR.json`), carregadas pelo `next-intl` (ver `src/i18n/request.ts`).
 As chaves são tipadas: usar uma chave inexistente quebra o `pnpm typecheck`.
 
+## Nome do produto
+O nome não é escrito nos textos: use o marcador `%PRODUTO%`, trocado por `PRODUCT_NAME` (`src/config/product.ts`) ao
+carregar o catálogo (`src/i18n/messages.ts`). A exceção são os textos jurídicos versionados (`DOCUMENT_MESSAGES`),
+cobertos por hash, que ainda dizem "HealthMind 360" até o go-live (ADR-0043 D5, ADR-0044). O teste
+`tests/content/product-name.test.ts` garante as duas coisas.
+
 ## Regras
 - Tom acolhedor, direto, sem jargão e sem culpa (§3, §43, LEG-F05).
 - Nenhuma alegação clínica: o teste `tests/content/forbidden-strings.test.ts` varre todos os catálogos

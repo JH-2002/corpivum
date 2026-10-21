@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { exitPresentationAction } from '@/app/presentation-actions';
+import { DemoOnlyBanner } from '@/components/demo/DemoOnlyBanner';
 import { PrivacyModeToggle } from '@/components/privacy-mode/PrivacyModeToggle';
 import { buttonClasses } from '@/components/ui/Button';
 import { MAIN_CONTENT_ID } from '@/components/ui/SkipLink';
@@ -125,6 +126,7 @@ export function PresentationDeck({
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
       <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+        {demo ? <DemoOnlyBanner /> : null}
         <div className="flex min-h-16 flex-wrap items-center gap-2 px-4 py-2 lg:px-6">
           <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">{t('title')}</h1>
           {demo ? (

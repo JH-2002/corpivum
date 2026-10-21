@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { PRODUCT_NAME } from '../../src/config/product';
 import { BODY_ASSETS } from '../../src/modules/twin/bodyAssets';
 import { DEMO_ROUTES, PAGES } from '../routes';
 
@@ -16,6 +17,7 @@ const TOUR_SEEN = {
 };
 /** Cookies de preferência da demo: de sessão, sem identificador (ADR-0021, ADR-0035). */
 const PREFERENCE_COOKIES = ['__Host-hm_period', '__Host-hm_presenting', '__Host-hm_privacy'];
+const BANNER = 'Demonstração com dados fictícios. O app ainda não está aberto ao público.';
 
 const FULL_APP_PAGES = PAGES.map((p) => p.path).filter(
   (p) => p !== '/demo' && !p.startsWith('/demo/'),
@@ -173,6 +175,32 @@ test.describe('a demonstração', () => {
     await page.goto('/demo');
     await page.getByRole('link', { name: 'Sobre esta demonstração' }).first().click();
     await expect(page).toHaveURL(/\/demo\/sobre$/);
+  });
+
+  test('faixa fixa e nome do produto em toda tela, inclusive na apresentação (ADR-0044)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const banner = page.getByRole('note').filter({ hasText: BANNER });
+    for (const path of [...DEMO_ROUTES.map((r) => r.path), '/demo/sobre', '/demo/apresentacao']) {
+      await page.goto(path);
+      await expect(banner, path).toHaveCount(1);
+      await expect(page, path).toHaveTitle(new RegExp(`${PRODUCT_NAME}$`));
+      // O HTML inteiro, com o payload do React: nem nome antigo nem os rascunhos jurídicos do app completo.
+      const html = await page.content();
+      expect(html, path).not.toContain('HealthMind');
+      expect(html, path).not.toMatch(/\{\{[A-Z_]+\}\}/);
+    }
+    // A faixa não sai da tela ao rolar.
+    await page.goto('/demo/sono');
+    await page.mouse.wheel(0, 3000);
+    await expect(banner).toBeInViewport();
+    await page.goto('/demo/apresentacao');
+    await page.getByRole('button', { name: 'Começar apresentação' }).click();
+    await expect(page.getByRole('button', { name: 'Sair da apresentação' })).toBeVisible();
+    await expect(banner).toHaveCount(1);
+    await page.mouse.wheel(0, 3000);
+    await expect(banner).toBeInViewport();
   });
 
   test('o aviso da demonstração: rascunho, responsável e contato, acessível', async ({ page }) => {

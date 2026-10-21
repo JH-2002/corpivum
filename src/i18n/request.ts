@@ -1,5 +1,5 @@
 import { getRequestConfig } from 'next-intl/server';
-import messages from '@messages/pt-BR.json';
+import { messages } from '@/i18n/messages';
 
 export const DEFAULT_LOCALE = 'pt-BR';
 

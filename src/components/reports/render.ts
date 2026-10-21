@@ -1,6 +1,6 @@
 import 'server-only';
 import { createFormatter, createTranslator } from 'next-intl';
-import messages from '@messages/pt-BR.json';
+import { messages } from '@/i18n/messages';
 import { APP_TIME_ZONE } from '@/lib/dates';
 import { formatIsoDate } from '@/lib/period';
 import { buildZip, toCsv, type Cell, type ReportModel } from '@/modules/reports';

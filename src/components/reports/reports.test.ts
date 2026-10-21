@@ -2,7 +2,7 @@
 import { inflateSync } from 'node:zlib';
 import { createFormatter, createTranslator } from 'next-intl';
 import { PDFDocument, PDFArray, PDFName, PDFRawStream, type PDFPage } from 'pdf-lib';
-import messages from '@messages/pt-BR.json';
+import { messages } from '@/i18n/messages';
 import { generateDemoData } from '@/modules/demo/generator';
 import { createDemoSource } from '@/modules/health/source';
 import { buildReport, calendarRange, mentionsInternalValue, readZip } from '@/modules/reports';

@@ -1,6 +1,7 @@
 import type { JobQueue } from '@/adapters/jobs/types';
 import type { KmsProvider } from '@/adapters/kms/types';
 import type { StorageProvider } from '@/adapters/storage/types';
+import { PRODUCT_SLUG } from '@/config/product';
 import { decryptField, encryptField } from '@/lib/crypto/field';
 import { auditAppend } from '@/lib/db/audit';
 import type { Db } from '@/lib/db/client';
@@ -111,9 +112,9 @@ export function exportFilename(job: {
 }): string {
   const ext = EXTENSION[job.format];
   if (job.kind === 'report' && job.range && job.reportPeriod) {
-    return `healthmind360-relatorio-${job.reportPeriod}-${job.range.from}.${ext}`;
+    return `${PRODUCT_SLUG}-relatorio-${job.reportPeriod}-${job.range.from}.${ext}`;
   }
-  return `healthmind360-exportacao-${job.createdAt.slice(0, 10)}.${ext}`;
+  return `${PRODUCT_SLUG}-exportacao-${job.createdAt.slice(0, 10)}.${ext}`;
 }
 
 type JobRow = {
