@@ -16,6 +16,7 @@ import {
   type ReminderRecord,
 } from '@/modules/notifications';
 import { scheduleReminder } from '@/modules/notifications/jobs';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Lembretes (§33, LEG-F05): criar/editar, pausar/retomar, excluir e preferências. Ao salvar ou retomar,
@@ -26,6 +27,7 @@ async function schedule(userId: string, reminder: ReminderRecord): Promise<void>
 }
 
 export async function saveReminderAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = reminderInputSchema.safeParse({
     kind: form.get('kind'),
@@ -53,6 +55,7 @@ export async function saveReminderAction(_prev: FormState, form: FormData): Prom
 }
 
 export async function toggleReminderAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = reminderToggleSchema.safeParse({
     id: form.get('id'),
@@ -70,6 +73,7 @@ export async function toggleReminderAction(form: FormData): Promise<void> {
 }
 
 export async function deleteReminderAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idSchema.safeParse(form.get('id'));
   if (!id.success) return;
@@ -81,6 +85,7 @@ export async function saveReminderPrefsAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const t = await getTranslations();
   if (session.dataMode !== 'own') return { status: 'error', message: t('forms.demoReadOnly') };

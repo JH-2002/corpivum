@@ -1,8 +1,18 @@
 import 'server-only';
 import { getAdapters } from '@/adapters';
+import { ConsoleErrorReporter } from '@/adapters/error-reporter/console';
 import type { ErrorReporter } from '@/adapters/error-reporter/types';
+import { isDemoOnly } from '@/lib/demo-mode';
 import { logger as defaultLogger, type Logger } from '@/lib/logger';
 import { buildRequestErrorReport } from './error-report';
+
+/**
+ * No modo só demo não há adaptadores (ADR-0043): o relatório, já filtrado pela lista de campos, vai só ao log
+ * estruturado, que fica com a hospedagem (D8).
+ */
+function defaultReporter(): ErrorReporter {
+  return isDemoOnly() ? new ConsoleErrorReporter() : getAdapters().errorReporter;
+}
 
 /**
  * Chamado pelo `onRequestError` (src/instrumentation.ts). Monta o relatório por lista de permissão ANTES de
@@ -17,7 +27,7 @@ export async function reportRequestError(
   const logger = deps.logger ?? defaultLogger;
   try {
     const report = buildRequestErrorReport(error, request, context);
-    const reporter = (deps.reporter ?? (() => getAdapters().errorReporter))();
+    const reporter = (deps.reporter ?? defaultReporter)();
     await reporter.captureError(report);
   } catch {
     logger.error('error.report_failed');

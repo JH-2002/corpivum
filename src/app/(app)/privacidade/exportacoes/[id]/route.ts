@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { requireAppSession } from '@/modules/consent/server';
 import { getReportsService } from '@/modules/reports/server';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Download da exportação ou do relatório (LEG-D03, ADR-0032): é o "link" que expira. Só com sessão válida
@@ -13,6 +14,7 @@ const notFound = () =>
   new Response(null, { status: 404, headers: { 'Cache-Control': 'private, no-store' } });
 
 export async function GET(_request: Request, ctx: RouteContext<'/privacidade/exportacoes/[id]'>) {
+  assertFullApp();
   const session = await requireAppSession({ allowPendingUpdate: true });
   const parsed = idSchema.safeParse((await ctx.params).id);
   if (!parsed.success) return notFound();

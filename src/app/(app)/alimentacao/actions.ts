@@ -8,12 +8,14 @@ import { fieldErrorsOf, healthMutate, healthWrite } from '@/modules/health/form-
 import { getHealthServices, setCalorieEstimateEnabled } from '@/modules/health/server';
 import { idSchema } from '@/modules/health/zod';
 import { calorieEstimateSchema, mealInputSchema, waterInputSchema } from '@/modules/nutrition';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Alimentação (§25, LEG-M07, LEG-M08): refeições, água e a preferência da estimativa calórica. Sessão +
  * onboarding, Zod, consentimento (serviço + RLS). A caloria só é aceita com a estimativa ligada.
  */
 export async function saveMealAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = mealInputSchema.safeParse({
     eatenAt: form.get('eatenAt'),
@@ -46,6 +48,7 @@ export async function saveMealAction(_prev: FormState, form: FormData): Promise<
 }
 
 export async function deleteMealAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idSchema.safeParse(form.get('id'));
   if (!id.success) return;
@@ -56,6 +59,7 @@ export async function deleteMealAction(form: FormData): Promise<void> {
 
 /** Água em um toque (quantidade rápida) ou com outra quantidade. Valor inválido é ignorado. */
 export async function addWaterAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = waterInputSchema.safeParse({ day: form.get('day'), ml: form.get('ml') });
   if (!parsed.success) return;
@@ -65,6 +69,7 @@ export async function addWaterAction(form: FormData): Promise<void> {
 }
 
 export async function removeWaterAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idSchema.safeParse(form.get('id'));
   if (!id.success) return;
@@ -75,6 +80,7 @@ export async function removeWaterAction(form: FormData): Promise<void> {
 
 /** Liga ou desliga a estimativa calórica (padrão desligada, LEG-M07). Só com dados próprios. */
 export async function setCalorieEstimateAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   if (session.dataMode !== 'own') return;
   const parsed = calorieEstimateSchema.safeParse({ enabled: form.get('enabled') });

@@ -9,8 +9,10 @@ import { buildDashboard } from '@/modules/health/dashboard';
 import { loadReminders } from '@/modules/health/screens';
 import { maskDashboard } from '@/modules/health/mask';
 import { demoContext } from '@/app/demo/demo-data';
+import { isDemoOnly } from '@/lib/demo-mode';
 
-/** Dashboard de demonstração (§40a). CTA "Começar com meus próprios dados" leva ao cadastro (§40b). */
+/** Dashboard de demonstração (§40a). CTA "Começar com meus próprios dados" leva ao cadastro (§40b);
+ * no modo só demo (ADR-0043), leva ao aviso da demonstração. */
 export default async function DemoHomePage() {
   const t = await getTranslations('demo');
   const { range, today, source, hidden } = await demoContext();
@@ -28,9 +30,16 @@ export default async function DemoHomePage() {
           </h2>
           <p className="text-sm text-fg-muted">{t('introBody')}</p>
         </div>
-        <Link href="/cadastro" className={buttonClasses('primary')}>
-          {t('startOwn')}
-        </Link>
+        {/* Modo só demo (ADR-0043): não há cadastro; o convite vira o aviso da demonstração. */}
+        {isDemoOnly() ? (
+          <Link href="/demo/sobre" className={buttonClasses('secondary')}>
+            {t('aboutLink')}
+          </Link>
+        ) : (
+          <Link href="/cadastro" className={buttonClasses('primary')}>
+            {t('startOwn')}
+          </Link>
+        )}
       </section>
       <Dashboard data={hidden ? maskDashboard(data) : data} mode="publicDemo" hidden={hidden} />
       <UpcomingReminders

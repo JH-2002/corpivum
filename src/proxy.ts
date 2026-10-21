@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { isDemoOnly } from '@/lib/demo-mode';
 import { buildCsp, createNonce } from '@/lib/security/csp';
+import { demoOnlyRoute } from '@/lib/security/demo-routes';
 import { createThrottle, isLoopback, PUBLIC_LIMITS } from '@/lib/security/public-throttle';
 import { clientIp } from '@/modules/auth/client-ip';
 import { isPublicPath, SESSION_COOKIE } from '@/modules/auth/constants';
@@ -77,6 +79,25 @@ export function proxy(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+  // Modo só demo (ADR-0043): só /demo existe; o resto redireciona ou responde 404, sempre com CSP e no-store.
+  if (isDemoOnly()) {
+    const decision = demoOnlyRoute(pathname, request.method, request.headers);
+    if (decision.kind === 'notFound') {
+      return new NextResponse(null, {
+        status: 404,
+        headers: { 'Content-Security-Policy': csp, 'Cache-Control': 'private, no-store' },
+      });
+    }
+    if (decision.kind === 'redirect') {
+      const url = request.nextUrl.clone();
+      url.pathname = decision.to;
+      url.search = '';
+      const res = NextResponse.redirect(url);
+      res.headers.set('Content-Security-Policy', csp);
+      res.headers.set('Cache-Control', 'private, no-store');
+      return res;
+    }
+  }
   const removedTo = REMOVED_ROUTES[pathname.replace(/\/$/, '')];
   const toLogin = !isPublicPath(pathname) && !request.cookies.has(SESSION_COOKIE);
   if (removedTo || toLogin) {

@@ -29,6 +29,7 @@ import {
   setKnownDeviceCookie,
   setSessionCookie,
 } from '@/modules/auth/server';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Server actions públicas de auth (LEG-S04, LEG-F01). O Next verifica a origem de toda server action
@@ -42,6 +43,7 @@ async function passwordMessage(problem: PasswordProblem): Promise<string> {
 
 /** Passo 1 do cadastro. Menor: só um cookie sem identificador; nada vai para banco ou log (LEG-F01). */
 export async function checkAgeAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   // O bloqueio vale também para POST direto à action, não só para a página.
   if (await hasAgeBlockCookie()) redirect('/cadastro/indisponivel');
   const t = await getTranslations('auth.errors');
@@ -62,6 +64,7 @@ export async function checkAgeAction(_prev: FormState, form: FormData): Promise<
 }
 
 export async function signupAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   if (await hasAgeBlockCookie()) redirect('/cadastro/indisponivel');
   const t = await getTranslations('auth.errors');
   const parsed = signupSchema.safeParse(formToObject(form));
@@ -94,6 +97,7 @@ export async function signupAction(_prev: FormState, form: FormData): Promise<Fo
 }
 
 export async function loginAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const t = await getTranslations('auth.errors');
   const parsed = loginSchema.safeParse(formToObject(form));
   if (!parsed.success) return { status: 'error', message: t('invalidCredentials') };
@@ -106,6 +110,7 @@ export async function loginAction(_prev: FormState, form: FormData): Promise<For
 }
 
 export async function verifyMfaAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const t = await getTranslations('auth.errors');
   const parsed = mfaCodeSchema.safeParse(formToObject(form));
   if (!parsed.success) return { status: 'error', fieldErrors: { code: t('invalidCode') } };
@@ -130,6 +135,7 @@ export async function verifyMfaAction(_prev: FormState, form: FormData): Promise
 }
 
 export async function verifyEmailAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const t = await getTranslations('auth');
   const parsed = tokenSchema.safeParse(formToObject(form));
   const ok = parsed.success && (await getAuthService().verifyEmail(parsed.data.token));
@@ -142,6 +148,7 @@ export async function resendVerificationAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
+  assertFullApp();
   const t = await getTranslations('auth');
   const parsed = emailOnlySchema.safeParse(formToObject(form));
   if (!parsed.success) return { status: 'error', fieldErrors: { email: t('errors.emailInvalid') } };
@@ -151,6 +158,7 @@ export async function resendVerificationAction(
 }
 
 export async function forgotPasswordAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const t = await getTranslations('auth');
   const parsed = emailOnlySchema.safeParse(formToObject(form));
   if (!parsed.success) return { status: 'error', fieldErrors: { email: t('errors.emailInvalid') } };
@@ -160,6 +168,7 @@ export async function forgotPasswordAction(_prev: FormState, form: FormData): Pr
 }
 
 export async function resetPasswordAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const t = await getTranslations('auth.errors');
   const parsed = resetSchema.safeParse(formToObject(form));
   if (!parsed.success) {
@@ -180,6 +189,7 @@ export async function resetPasswordAction(_prev: FormState, form: FormData): Pro
 }
 
 export async function logoutAction(): Promise<void> {
+  assertFullApp();
   await getAuthService().logout(await readSessionToken());
   await clearSessionCookie();
   redirect('/entrar?saiu=1');

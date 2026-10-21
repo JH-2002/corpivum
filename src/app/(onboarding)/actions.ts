@@ -10,6 +10,7 @@ import { AVAILABLE_PURPOSES, REQUIRED_DOCUMENTS } from '@/modules/consent';
 import { getConsentService, requireOnboardingExitSession } from '@/modules/consent/server';
 import { runAccountDeletion, runMinorClosure } from '@/modules/privacy/account-exit';
 import { processExportsSoon } from '@/modules/reports/server';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Onboarding §52 e reconsentimento (LEG-C01–C06). Toda action revalida a sessão no banco e toda entrada
@@ -26,6 +27,7 @@ export async function completeOnboardingAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const t = await getTranslations('onboarding.consents');
   const parsed = onboardingSchema.safeParse({
@@ -59,6 +61,7 @@ const dataModeSchema = z.object({ mode: z.enum(['demo', 'own']) });
  * zero (ADR-0021). A escolha pode ser trocada depois pela faixa "Começar com meus dados".
  */
 export async function chooseDataModeAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const parsed = dataModeSchema.safeParse({ mode: form.get('mode') });
   if (!parsed.success) return;
@@ -72,6 +75,7 @@ const updateSchema = z.object({
 });
 
 export async function resolveUpdateAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireVerifiedSession();
   const t = await getTranslations('onboarding.update');
   const decisions: Record<string, FormDataEntryValue> = {};
@@ -103,6 +107,7 @@ export async function deleteAccountFromOnboardingAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
+  assertFullApp();
   const session = await requireOnboardingExitSession();
   const failed = await runAccountDeletion(session.userId, form, { offerExport: false });
   if (failed) return failed;
@@ -114,6 +119,7 @@ export async function closeMinorAccountFromOnboardingAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
+  assertFullApp();
   const session = await requireOnboardingExitSession();
   const failed = await runMinorClosure(session.userId, form);
   if (failed) return failed;

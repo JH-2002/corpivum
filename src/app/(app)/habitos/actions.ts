@@ -9,6 +9,7 @@ import { requireAppSession } from '@/modules/consent/server';
 import { healthMutate } from '@/modules/health/form-result';
 import { getHealthServices, setStreaksEnabled } from '@/modules/health/server';
 import { idSchema } from '@/modules/health/zod';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Hábitos (§22). Toda action revalida a sessão e o onboarding (requireAppSession), valida com Zod e
@@ -24,6 +25,7 @@ function readHabit(form: FormData) {
 }
 
 export async function saveHabitAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const t = await getTranslations('forms');
   if (session.dataMode !== 'own') return { status: 'error', message: t('demoReadOnly') };
@@ -51,6 +53,7 @@ export async function saveHabitAction(_prev: FormState, form: FormData): Promise
 const idForm = (form: FormData) => idSchema.safeParse(form.get('id'));
 
 export async function archiveHabitAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idForm(form);
   if (!id.success) return;
@@ -64,6 +67,7 @@ export async function archiveHabitAction(form: FormData): Promise<void> {
 }
 
 export async function deleteHabitAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idForm(form);
   if (!id.success) return;
@@ -72,6 +76,7 @@ export async function deleteHabitAction(form: FormData): Promise<void> {
 
 /** Check rápido (dashboard e página de hábitos). */
 export async function setHabitCheckAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = habitCheckSchema.safeParse({
     habitId: form.get('habitId'),
@@ -87,6 +92,7 @@ export async function setHabitCheckAction(form: FormData): Promise<void> {
 
 /** Sequências (streaks) desativáveis, sem mensagem punitiva (LEG-F05). */
 export async function setStreaksAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = streaksSchema.safeParse({ enabled: form.get('enabled') });
   if (!parsed.success) return;

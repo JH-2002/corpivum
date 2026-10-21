@@ -80,3 +80,8 @@ test.describe('demo responsivo, sem rolagem horizontal', () => {
     });
   }
 });
+
+test('fora do modo só demo, o aviso da demonstração não existe (ADR-0043)', async ({ request }) => {
+  // O aviso descreve a demo sem cadastro nem banco e outro responsável: no app completo, seria falso.
+  expect((await request.get('/demo/sobre')).status()).toBe(404);
+});

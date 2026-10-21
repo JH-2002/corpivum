@@ -18,7 +18,7 @@ export const RATE_LIMITS = {
   resendIp: { windowSeconds: 60 * 60, max: 5 },
   /**
    * E-mails de cadastro ("já existe uma conta") e de verificação por destinatário: evita assédio. A chave
-   * é a caixa canônica (`canonicalMailbox`, PR1a-R3-M1): `x+1@` e `x.y@gmail.com` contam juntos.
+   * é a caixa canônica (`canonicalMailbox`, PR1a-R3-M1): `x+1@` e, no Gmail, `x.y@` contam juntos.
    */
   registerAccount: { windowSeconds: 60 * 60, max: 3 },
   resendAccount: { windowSeconds: 60 * 60, max: 3 },

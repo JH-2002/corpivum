@@ -42,7 +42,8 @@ export const VIEWPORTS = [
  * Como o teste chega à página: `app` (pessoa do setup, com dados sintéticos), `public` e `demo` (sem sessão),
  * `age-ok` (passou pela data de nascimento), `onboarding` (e-mail confirmado, onboarding no início),
  * `data-choice` (no passo 5), `update` (texto de consentimento novo a rever), `mfa` (2º fator pendente) e
- * `redirect` (não tem tela própria).
+ * `redirect` (não tem tela própria). `demo-only`: só existe no servidor do modo só demo (ADR-0043), coberto por
+ * `e2e/demo-only`.
  */
 export type PageAccess =
   | 'app'
@@ -53,7 +54,8 @@ export type PageAccess =
   | 'data-choice'
   | 'update'
   | 'mfa'
-  | 'redirect';
+  | 'redirect'
+  | 'demo-only';
 
 export interface PageEntry {
   /** Pasta da página em `src/app`, sem `/page.tsx` (`''` para a raiz). */
@@ -84,6 +86,12 @@ export const PAGES: readonly PageEntry[] = [
     title: r.title,
   })),
   { file: 'demo/apresentacao', path: '/demo/apresentacao', access: 'demo' },
+  {
+    file: 'demo/(shell)/sobre',
+    path: '/demo/sobre',
+    access: 'demo-only',
+    title: 'Sobre esta demonstração',
+  },
   { file: '(auth)/entrar', path: '/entrar', access: 'public', title: 'Entrar' },
   { file: '(auth)/entrar/verificacao', path: '/entrar/verificacao', access: 'mfa' },
   {

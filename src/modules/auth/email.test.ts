@@ -7,8 +7,10 @@ describe('canonicalMailbox (PR1a-R3-M1)', () => {
   it.each([
     ['Pessoa@Exemplo.test', 'pessoa@exemplo.test'],
     ['pessoa+promo@exemplo.test', 'pessoa@exemplo.test'],
-    ['p.e.s.s.o.a@gmail.com', 'pessoa@gmail.com'],
-    ['P.essoa+x+y@GoogleMail.com', 'pessoa@gmail.com'],
+    // A regra dos pontos só vale no Gmail, então o domínio é real; "_" não existe em usuário do Gmail, e o
+    // endereço não pertence a ninguém.
+    ['f.i.c.t.i.c.i.a_teste@gmail.com', 'ficticia_teste@gmail.com'],
+    ['F.icticia_teste+x+y@GoogleMail.com', 'ficticia_teste@gmail.com'],
     // Fora do Gmail, pontos fazem parte do endereço.
     ['p.essoa@exemplo.test', 'p.essoa@exemplo.test'],
     // "+" no início não é tag.
@@ -19,7 +21,7 @@ describe('canonicalMailbox (PR1a-R3-M1)', () => {
   });
 
   it('não altera a forma gravada (normalizeEmail)', () => {
-    expect(normalizeEmail('  x+1@Gmail.com ')).toBe('x+1@gmail.com');
+    expect(normalizeEmail('  x+1@Example.COM ')).toBe('x+1@example.com');
   });
 });
 

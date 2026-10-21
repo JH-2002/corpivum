@@ -97,8 +97,9 @@ describe('route handlers dos grupos autenticados validam a sessão (ADR-0032: do
       const bodies = src.split(/\nexport async function /).slice(1);
       expect(bodies.length).toBeGreaterThan(0);
       for (const body of bodies) {
+        // A guarda do modo só demo (ADR-0043) vem antes; a de sessão, logo depois.
         const afterOpen = body.slice(body.indexOf('{\n') + 2);
-        expect(afterOpen.split('\n')[0]).toMatch(ACTION_GUARD);
+        expect(afterOpen.split('\n').slice(0, 2).join('\n')).toMatch(ACTION_GUARD);
       }
     },
   );

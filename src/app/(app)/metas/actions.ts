@@ -9,6 +9,7 @@ import type { GoalWriteResult } from '@/modules/goals/service';
 import { fieldErrorsOf, healthMutate, healthWrite } from '@/modules/health/form-result';
 import { getHealthServices } from '@/modules/health/server';
 import { idSchema } from '@/modules/health/zod';
+import { assertFullApp } from '@/lib/full-app';
 
 /**
  * Metas (§30, LEG-M04, LEG-M06, LEG-M07): criar/editar, arquivar e excluir. O serviço reaplica `checkGoal`
@@ -16,6 +17,7 @@ import { idSchema } from '@/modules/health/zod';
  * números e sem alvo alternativo).
  */
 export async function saveGoalAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = goalInputSchema.safeParse({
     metric: form.get('metric'),
@@ -50,6 +52,7 @@ const archiveSchema = z.object({
 });
 
 export async function archiveGoalAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const parsed = archiveSchema.safeParse({ id: form.get('id'), archived: form.get('archived') });
   if (!parsed.success) return;
@@ -59,6 +62,7 @@ export async function archiveGoalAction(form: FormData): Promise<void> {
 }
 
 export async function deleteGoalAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idSchema.safeParse(form.get('id'));
   if (!id.success) return;

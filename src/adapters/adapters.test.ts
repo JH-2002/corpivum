@@ -142,20 +142,20 @@ describe('ConsoleMailProvider', () => {
     const { records, logger } = captureLogger();
     const mail = new ConsoleMailProvider({ logger, keepOutbox: true });
     await mail.send({
-      to: 'pessoa@exemplo.com',
+      to: 'pessoa@example.com',
       template: 'email-verification',
       params: { url: 'https://local/verificar?token=segredo' },
     });
     expect(mail.outbox).toHaveLength(1);
     const logged = JSON.stringify(records);
     expect(logged).toContain('email-verification');
-    expect(logged).not.toContain('pessoa@exemplo.com');
+    expect(logged).not.toContain('pessoa@example.com');
     expect(logged).not.toContain('segredo');
   });
 
   it('não guarda mensagens (nem tokens) fora de teste', async () => {
     const mail = new ConsoleMailProvider({ logger: captureLogger().logger });
-    await mail.send({ to: 'a@b.com', template: 'password-reset', params: { url: 'x' } });
+    await mail.send({ to: 'a@b.test', template: 'password-reset', params: { url: 'x' } });
     expect(mail.outbox).toHaveLength(0);
   });
 });

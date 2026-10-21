@@ -7,9 +7,11 @@ import { requireAppSession } from '@/modules/consent/server';
 import { fieldErrorsOf, healthMutate, healthWrite } from '@/modules/health/form-result';
 import { getHealthServices } from '@/modules/health/server';
 import { idSchema } from '@/modules/health/zod';
+import { assertFullApp } from '@/lib/full-app';
 
 /** Peso e medidas (§23). Valores informados; IMC só é calculado na leitura (ESTIMADO). */
 export async function saveBodyAction(_prev: FormState, form: FormData): Promise<FormState> {
+  assertFullApp();
   const session = await requireAppSession();
   const raw: Record<string, FormDataEntryValue | null> = { measuredAt: form.get('measuredAt') };
   for (const field of BODY_FIELDS) raw[field] = form.get(field);
@@ -33,6 +35,7 @@ export async function saveBodyAction(_prev: FormState, form: FormData): Promise<
 }
 
 export async function deleteBodyAction(form: FormData): Promise<void> {
+  assertFullApp();
   const session = await requireAppSession();
   const id = idSchema.safeParse(form.get('id'));
   if (!id.success) return;
