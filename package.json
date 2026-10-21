@@ -2,6 +2,7 @@
   "name": "healthmind360",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "packageManager": "pnpm@12.9.1",
   "engines": {
