@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import messages from '@messages/pt-BR.json';
+import { messages } from '@/i18n/messages';
 import {
   ALL_NAV_ITEMS,
   isActivePath,

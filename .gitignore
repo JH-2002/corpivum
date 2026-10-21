@@ -41,3 +41,6 @@ Thumbs.db
 
 # backups e livros cifrados locais (pnpm backup:*; ADR-0040)
 .backups/
+
+# capturas de tela locais da demo (não versionadas)
+/capturas/

@@ -4,6 +4,8 @@ import { getTranslations } from 'next-intl/server';
 import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 import { THEME_INIT_SCRIPT } from '@/components/theme/theme';
+import { demoClientMessages } from '@/i18n/messages';
+import { isDemoOnly } from '@/lib/demo-mode';
 import '@/styles/globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -34,7 +36,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-dvh antialiased">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        {/* Modo só demo (ADR-0044): o navegador não recebe os textos jurídicos do app completo. */}
+        <NextIntlClientProvider messages={isDemoOnly() ? demoClientMessages() : undefined}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );

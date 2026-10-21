@@ -1,6 +1,7 @@
 import type { AgeSignalProvider } from '@/adapters/age-signal/types';
 import type { KmsProvider } from '@/adapters/kms/types';
 import type { MailProvider } from '@/adapters/mail/types';
+import { PRODUCT_NAME } from '@/config/product';
 import { decryptField, encryptField } from '@/lib/crypto/field';
 import { auditAppend } from '@/lib/db/audit';
 import type { Db } from '@/lib/db/client';
@@ -68,7 +69,7 @@ export const SESSION_IDLE_MS = 7 * 24 * 60 * 60 * 1000;
 export const SESSION_TOUCH_MS = 5 * 60 * 1000;
 export const VERIFY_EMAIL_TTL_S = 24 * 60 * 60;
 export const RESET_PASSWORD_TTL_S = 30 * 60;
-const TOTP_ISSUER = 'HealthMind 360';
+const TOTP_ISSUER = PRODUCT_NAME;
 export const TOTP_SETUP_TTL_MS = 15 * 60 * 1000;
 
 /** Eventos do aviso `security-alert` (PR1a-R2-B4: redefinição de senha e novos códigos também avisam). */

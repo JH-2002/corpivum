@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from '../src/config/product';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -61,14 +62,14 @@ test('passo 5: demonstração sem gravar nada e depois "começar com meus dados"
   await page.getByRole('button', { name: 'Começar com meus dados' }).click();
   const dialog = page.getByRole('dialog', { name: 'Começar com os seus dados?' });
   await dialog.getByRole('button', { name: 'Começar com meus dados' }).click();
-  await expect(page.getByRole('heading', { name: 'Boas-vindas ao HealthMind 360' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: `Boas-vindas ao ${PRODUCT_NAME}` })).toBeVisible();
   await expect(page.getByText('Você está vendo dados de demonstração')).toHaveCount(0);
 });
 
 test('passo 5: "começar do zero" leva ao estado vazio acolhedor, sem gráfico', async ({ page }) => {
   await newPerson(page, 'zero', { dataMode: null });
   await page.getByRole('button', { name: 'Começar com meus dados' }).click();
-  await expect(page.getByRole('heading', { name: 'Boas-vindas ao HealthMind 360' })).toBeVisible({
+  await expect(page.getByRole('heading', { name: `Boas-vindas ao ${PRODUCT_NAME}` })).toBeVisible({
     timeout: 15_000,
   });
   await expect(page.locator('.recharts-wrapper')).toHaveCount(0);

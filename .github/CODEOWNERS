@@ -4,6 +4,8 @@
 # clínico com conta no GitHub, adicione-o às linhas correspondentes.
 /messages/                              @JH-2002
 /tests/content/                         @JH-2002
+# Nome do produto: entra nos avisos aprovados (disclaimer.*) pelo marcador %PRODUTO% (ADR-0044).
+/src/config/product.ts                  @JH-2002
 /docs/legal/                            @JH-2002
 /docs/privacy/                          @JH-2002
 /docs/INTENDED_USE.md                   @JH-2002

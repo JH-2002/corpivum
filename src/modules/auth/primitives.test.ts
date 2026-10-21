@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { randomBytes } from 'node:crypto';
+import { PRODUCT_NAME } from '@/config/product';
 import {
   AGE_GATE_VERSION,
   AGE_OK_TTL_SECONDS,
@@ -96,8 +97,8 @@ describe('TOTP (RFC 6238)', () => {
   });
 
   it('URI otpauth sem e-mail', () => {
-    const uri = otpauthUri(randomBytes(20), 'Conta', 'HealthMind 360');
-    expect(uri).toMatch(/^otpauth:\/\/totp\/HealthMind%20360:Conta\?secret=[A-Z2-7]+&issuer=/);
+    const uri = otpauthUri(randomBytes(20), 'Conta', PRODUCT_NAME);
+    expect(uri).toMatch(/^otpauth:\/\/totp\/Corpivum:Conta\?secret=[A-Z2-7]+&issuer=Corpivum/);
   });
 });
 

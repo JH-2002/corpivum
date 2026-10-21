@@ -20,7 +20,6 @@ export default async function DemoAboutPage() {
   // Só no modo só demo: no app completo há cadastro, banco e outro controlador (OI-06).
   if (!isDemoOnly()) notFound();
   const t = await getTranslations('demoAbout');
-  const appName = (await getTranslations('common'))('appName');
   const disclaimer = await getTranslations('disclaimer');
   return (
     <article className="flex max-w-3xl flex-col gap-4">
@@ -32,7 +31,6 @@ export default async function DemoAboutPage() {
           </h2>
           <p>
             {t.rich(`${key}.body`, {
-              appName,
               name: DEMO_RESPONSIBLE.name,
               email: () => (
                 <a href={`mailto:${DEMO_RESPONSIBLE.email}`} className="text-primary underline">

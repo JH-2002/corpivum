@@ -30,7 +30,9 @@ publicação estão na OI-38.
 - [ ] **1.5 (J, C)** Responder o pacote. Cada resposta vai para OPEN_ISSUES ("Resolvidas") e, se mudar o produto, para
   um ADR. Os temas 🔴 bloqueiam a etapa 4.
 - [ ] **1.6 (D)** Aplicar as respostas: textos novos (versões com aviso ou reconsentimento, ADR-0031/0041), prazos,
-  limiares e recursos que mudarem. Testes e `privacy-reviewer` a cada mudança.
+  limiares e recursos que mudarem. Testes e `privacy-reviewer` a cada mudança. Junto, trocar "HealthMind 360" pelo
+  nome do produto (Corpivum) nos textos versionados (Política, Termos, consentimento de saúde), com nova versão,
+  migração e arquivo do texto antigo (ADR-0043 D5, ADR-0044).
 
 - [ ] **1.7 (P)** Incluir um revisor jurídico e um clínico no CODEOWNERS dos textos (`messages/`, `disclaimer.*`) e
   exigir aprovação de Code Owners na branch `main` (OI-13; em repositório privado, exige plano pago do GitHub).
@@ -82,6 +84,8 @@ publicação estão na OI-38.
 
 ## Etapa 4 — Validação
 
+- [ ] **4.0 (D)** Nenhum "HealthMind" nos textos versionados (`DOCUMENT_MESSAGES`): nome do produto atualizado com
+  nova versão (item 1.6, OI-38 i, ADR-0044).
 - [ ] **4.1 (X, D)** Pentest independente num ambiente igual ao de produção, só com dados sintéticos (escopo em
   `docs/security/PENTEST_SCOPE.md`, contexto em `docs/security/THREAT_MODEL.md`), com atenção especial ao **módulo de
   autenticação próprio** (ADR-0014): sessões (fixação e revogação), enumeração de e-mail e diferença de tempo de

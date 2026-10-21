@@ -1,5 +1,5 @@
 /*
- * Design tokens do HealthMind 360 (§5, §6). Fonte única: valores aqui, utilitários Tailwind em globals.css.
+ * Design tokens do app (§5, §6). Fonte única: valores aqui, utilitários Tailwind em globals.css.
  * Todos os pares texto/fundo são verificados em tests/design/contrast.test.ts (WCAG 2.2 AA, LEG-X01).
  * Cores em hexadecimal de 6 dígitos para que o teste consiga ler.
  */

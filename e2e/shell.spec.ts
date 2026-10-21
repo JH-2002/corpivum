@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from '../src/config/product';
 import { expect, test } from '@playwright/test';
 import { createVerifiedUser, e2eEmail, loginWithOwnIp } from './fixtures';
 
@@ -48,7 +49,7 @@ test.describe('estados de tela (§34)', () => {
     await createVerifiedUser(email);
     await loginWithOwnIp(page, email);
     await expect(
-      page.getByRole('heading', { name: 'Boas-vindas ao HealthMind 360' }),
+      page.getByRole('heading', { name: `Boas-vindas ao ${PRODUCT_NAME}` }),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Fazer o primeiro registro' })).toBeVisible();
     await expect(page.locator('.recharts-wrapper')).toHaveCount(0);

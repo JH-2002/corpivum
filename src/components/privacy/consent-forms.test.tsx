@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
-import messages from '@messages/pt-BR.json';
+import { messages } from '@/i18n/messages';
 import { AVAILABLE_PURPOSES } from '@/modules/consent';
 import { Checkbox } from '@/components/forms/Checkbox';
 

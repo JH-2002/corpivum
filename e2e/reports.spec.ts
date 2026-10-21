@@ -67,7 +67,7 @@ test('exportação completa: link autenticado, só do dono, expira (LEG-D03)', a
   expect(href).toMatch(/^\/privacidade\/exportacoes\/[0-9a-f-]{36}$/);
   const res = await a.page.request.get(href);
   expect(res.status()).toBe(200);
-  expect(res.headers()['content-disposition']).toMatch(/^attachment; filename="healthmind360-/);
+  expect(res.headers()['content-disposition']).toMatch(/^attachment; filename="corpivum-/);
   expect(res.headers()['cache-control']).toContain('no-store');
   const text = await res.text();
   const doc = JSON.parse(text) as { schemaVersion: number; tables: Record<string, unknown> };

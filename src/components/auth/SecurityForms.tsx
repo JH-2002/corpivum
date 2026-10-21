@@ -10,6 +10,7 @@ import {
   startMfaAction,
 } from '@/app/(app)/configuracoes/seguranca/actions';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
+import { PRODUCT_SLUG } from '@/config/product';
 import { INITIAL_FORM_STATE, type FormState } from '@/components/forms/form-state';
 import { Button } from '@/components/ui/Button';
 import { PASSWORD_MAX, PASSWORD_MIN } from '@/modules/auth';
@@ -22,7 +23,7 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'healthmind360-codigos-de-recuperacao.txt';
+    a.download = `${PRODUCT_SLUG}-codigos-de-recuperacao.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -1,3 +1,5 @@
+import { PRODUCT_NAME } from '../src/config/product';
+
 /** Rotas do app shell (§9 + Central de Privacidade + Mais), com o título esperado no <h1>. */
 export const ROUTES = [
   { path: '/inicio', title: 'Início' },
@@ -98,7 +100,7 @@ export const PAGES: readonly PageEntry[] = [
     file: '(auth)/cadastro',
     path: '/cadastro',
     access: 'public',
-    title: 'Boas-vindas ao HealthMind 360',
+    title: `Boas-vindas ao ${PRODUCT_NAME}`,
   },
   { file: '(auth)/cadastro/conta', path: '/cadastro/conta', access: 'age-ok' },
   {

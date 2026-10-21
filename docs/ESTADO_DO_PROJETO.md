@@ -1,4 +1,4 @@
-# Estado do projeto — HealthMind 360
+# Estado do projeto — Corpivum (antes HealthMind 360)
 
 > Atualizado em 17/10/2026, no fim da Fase 7 (ADR-0041). Resumo para quem não acompanha o código.
 

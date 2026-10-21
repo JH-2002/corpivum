@@ -4,6 +4,7 @@ import { createReadStream } from 'node:fs';
 import { Transform, Writable, type Readable, type TransformCallback } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { z } from 'zod';
+import { PRODUCT_NAME } from '../../config/product';
 
 /**
  * Arquivo cifrado de backup e de livro de reaplicação (ADR-0040; LEG-S07). Formato:
@@ -124,7 +125,7 @@ async function readEnvelope(file: string): Promise<{ iv: Buffer; tag: Buffer; si
     const header = Buffer.alloc(HEADER_BYTES);
     await handle.read(header, 0, HEADER_BYTES, 0);
     if (!header.subarray(0, BACKUP_MAGIC.length).equals(BACKUP_MAGIC)) {
-      throw new BackupFormatError('não é um arquivo de backup do HealthMind 360');
+      throw new BackupFormatError(`não é um arquivo de backup do ${PRODUCT_NAME}`);
     }
     const tag = Buffer.alloc(TAG_BYTES);
     await handle.read(tag, 0, TAG_BYTES, size - TAG_BYTES);

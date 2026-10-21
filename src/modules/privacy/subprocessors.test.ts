@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
-import messages from '@messages/pt-BR.json';
+import { messages } from '@/i18n/messages';
 import { SUBPROCESSORS } from './subprocessors';
 
 /** LEG-D06: a lista exibida ao titular é a mesma do registro de subprocessadores (docs/privacy). */

@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from '../src/config/product';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -61,7 +62,7 @@ test('cadastro adulto: boas-vindas → idade → conta → e-mail → onboarding
   await page.goto('/cadastro');
   // §52 passo 1: o que o app faz e o que não faz.
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Boas-vindas ao HealthMind 360' }),
+    page.getByRole('heading', { level: 1, name: `Boas-vindas ao ${PRODUCT_NAME}` }),
   ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'O que o app não faz' })).toBeVisible();
   await page.getByLabel('Data de nascimento').fill('1990-05-20');

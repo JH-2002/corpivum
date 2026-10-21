@@ -5,10 +5,11 @@ import { DemoOnlyProvider } from '@/components/demo/DemoOnlyContext';
 import { isDemoOnly } from '@/lib/demo-mode';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('demo');
+  const t = await getTranslations();
+  const suffix = `${t('demo.title')} · ${t('common.appName')}`;
   // Demonstração pública: não indexar (dados fictícios, sem valor de busca).
   return {
-    title: { template: `%s · ${t('title')}`, default: t('title') },
+    title: { template: `%s · ${suffix}`, default: suffix },
     robots: { index: false },
   };
 }

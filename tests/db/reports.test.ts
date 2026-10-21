@@ -177,7 +177,7 @@ describe('exportação completa (LEG-D03)', () => {
 
     const file = await s.download(a.userId, req.jobId);
     expect(file?.contentType).toContain('application/json');
-    expect(file?.filename).toMatch(/^healthmind360-exportacao-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(file?.filename).toMatch(/^corpivum-exportacao-\d{4}-\d{2}-\d{2}\.json$/);
     const json = decoder.decode(file?.body);
     const doc = JSON.parse(json) as {
       account: { email: string };

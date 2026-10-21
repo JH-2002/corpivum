@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { useTranslations } from 'next-intl';
 import { enterPresentationAction } from '@/app/presentation-actions';
+import { DemoOnlyBanner } from '@/components/demo/DemoOnlyBanner';
 import { buttonClasses } from '@/components/ui/Button';
 import { MAIN_CONTENT_ID } from '@/components/ui/SkipLink';
 import { cn } from '@/lib/cn';
@@ -15,26 +16,33 @@ import { presentationHref, type PresentationScreen } from './screens';
 export function PresentationStart({ scope }: { scope: 'app' | 'demo' }) {
   const t = useTranslations('presentation');
   return (
-    <main
-      id={MAIN_CONTENT_ID}
-      className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center gap-4 px-4 py-10"
-    >
-      <h1 className="text-2xl font-semibold">{t('title')}</h1>
-      <p>{t('startBody')}</p>
-      <p className="text-sm text-fg-muted">{t('startPrivacy')}</p>
-      <div className="flex flex-wrap gap-3">
-        <form action={enterPresentationAction}>
-          <input type="hidden" name="scope" value={scope} />
-          <button type="submit" className={buttonClasses('primary')}>
-            <Presentation className="size-4" aria-hidden="true" />
-            {t('start')}
-          </button>
-        </form>
-        <Link href={scope === 'app' ? '/inicio' : '/demo'} className={buttonClasses('secondary')}>
-          {t('back')}
-        </Link>
-      </div>
-    </main>
+    <div className="flex min-h-dvh flex-col">
+      {scope === 'demo' ? (
+        <div className="sticky top-0 z-20">
+          <DemoOnlyBanner />
+        </div>
+      ) : null}
+      <main
+        id={MAIN_CONTENT_ID}
+        className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-4 px-4 py-10"
+      >
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <p>{t('startBody')}</p>
+        <p className="text-sm text-fg-muted">{t('startPrivacy')}</p>
+        <div className="flex flex-wrap gap-3">
+          <form action={enterPresentationAction}>
+            <input type="hidden" name="scope" value={scope} />
+            <button type="submit" className={buttonClasses('primary')}>
+              <Presentation className="size-4" aria-hidden="true" />
+              {t('start')}
+            </button>
+          </form>
+          <Link href={scope === 'app' ? '/inicio' : '/demo'} className={buttonClasses('secondary')}>
+            {t('back')}
+          </Link>
+        </div>
+      </main>
+    </div>
   );
 }
 

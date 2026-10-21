@@ -1,5 +1,6 @@
 import 'server-only';
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from 'pdf-lib';
+import { PRODUCT_NAME } from '@/config/product';
 import type { ReportDocument } from './document';
 
 /**
@@ -188,8 +189,8 @@ export async function renderReportPdf(
   const clean = (text: string) => winAnsi(text, supported);
   doc.setTitle(clean(meta.title), { showInWindowTitleBar: true });
   doc.setLanguage('pt-BR');
-  doc.setCreator('HealthMind 360');
-  doc.setProducer('HealthMind 360');
+  doc.setCreator(PRODUCT_NAME);
+  doc.setProducer(PRODUCT_NAME);
   doc.setCreationDate(meta.created);
   doc.setModificationDate(meta.created);
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { logoutAction } from '@/app/(auth)/actions';
+import { DemoOnlyBanner } from '@/components/demo/DemoOnlyBanner';
 import { useDemoOnly } from '@/components/demo/DemoOnlyContext';
 import {
   PrivacyModeIndicator,
@@ -25,7 +26,8 @@ const menuItemClass =
  * atalho para a Central de Privacidade, menu da conta, modo privacidade (ADR-0035) e indicador DEMO quando
  * em demonstração.
  * `variant="demo"` (demo público, LEG-X02): sem registro rápido, notificações nem conta; CTA para criar
- * conta e link para a Política. No modo só demo (ADR-0043), sem o CTA e com o link "Sobre esta demonstração".
+ * conta e link para a Política. No modo só demo (ADR-0043), sem o CTA, com o link "Sobre esta demonstração" e a
+ * faixa fixa de que o app ainda não está aberto ao público.
  */
 export function Header({
   isDemo = false,
@@ -50,6 +52,7 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+      {variant === 'demo' ? <DemoOnlyBanner /> : null}
       <div className="flex min-h-16 items-center gap-2 px-4 lg:px-6">
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold md:text-xl">{title}</h1>
 
