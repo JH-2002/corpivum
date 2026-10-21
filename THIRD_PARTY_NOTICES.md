@@ -13,6 +13,12 @@ _The code in this repository is © João Henrique Arruda do Carmo, all rights re
 
 A CC0 não exige atribuição; ela é registrada aqui por transparência. O processo de geração, as modificações e os hashes estão em [`docs/ASSETS.md`](docs/ASSETS.md). O corpo de reserva, as versões 2D e o material holográfico são código do próprio projeto.
 
+## Fonte
+
+| Arquivo | Origem | Autor | Licença |
+|---|---|---|---|
+| `src/app/fonts/inter-latin-400-700.woff2` | Inter v4 (pacote `@fontsource-variable/inter` 5.3.0), reduzida ao latino e ao peso 400–700 | The Inter Project Authors | [SIL OFL 1.1](src/app/fonts/LICENSE-Inter.txt) |
+
 ## Atribuição exigida
 
 - **caniuse-lite** (dados do [Can I use](https://caniuse.com), de Alexis Deveria), dependência do Next.js para a compatibilidade com navegadores: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
