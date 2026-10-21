@@ -35,6 +35,13 @@ const nextConfig: NextConfig = {
         source: '/models/:file([a-z0-9-]+\\.[0-9a-f]+\\.glb)',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
+      // Imagens da marca (ADR-0045): nome sem hash, então cache de 1 dia, revalidando em segundo plano.
+      {
+        source: '/brand/:file(corpivum-[a-z]+-[0-9]+\\.(?:webp|png))',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+        ],
+      },
     ];
   },
   reactStrictMode: true,

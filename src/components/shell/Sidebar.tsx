@@ -3,8 +3,8 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { Logo } from '@/components/brand/Logo';
 import { IconButton } from '@/components/ui/IconButton';
-import { PRODUCT_MONOGRAM } from '@/config/product';
 import { cn } from '@/lib/cn';
 import { NavLink } from './NavLink';
 import { DEMO_ITEMS, PRIVACY_ITEM, SIDEBAR_ITEMS, type ShellVariant } from './nav-config';
@@ -30,12 +30,9 @@ export function Sidebar({ variant = 'app' }: { variant?: ShellVariant }) {
       )}
     >
       <div className="flex h-16 items-center gap-2 px-3">
-        <span
-          aria-hidden="true"
-          className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-fg"
-        >
-          {PRODUCT_MONOGRAM}
-        </span>
+        {/* Ícone decorativo ("C" + ponto, sem a figura): a barra fica ao lado do twin, das medidas e das metas
+            (ADR-0045, LEG-M06). O nome do produto está escrito ao lado. */}
+        <Logo largura={40} className="size-10 shrink-0" />
         <span className={cn('truncate font-semibold', labelClassName)}>{t('common.appName')}</span>
       </div>
 

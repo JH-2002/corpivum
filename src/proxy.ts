@@ -125,11 +125,13 @@ export function proxy(request: NextRequest) {
 // Só `models/<nome>.<hash>.glb`: modelos 3D estáticos, sem dado pessoal (ADR-0028). Ficam fora do proxy para
 // o demo público carregá-los sem sessão e o cache imutável não virar `no-store`. Qualquer outro caminho em
 // `/models/` (404, arquivo de outro tipo) passa pelo proxy e recebe CSP. Sem exceção para prefetch (P7-N1).
+// Pelo mesmo motivo ficam fora as imagens da marca (`brand/corpivum-<tipo>-<tamanho>.webp|png`, ADR-0045) e os
+// ícones do app (`icon.svg`, `apple-icon.png`, `manifest.webmanifest`), que a entrada e a demo mostram sem sessão.
 export const config = {
   matcher: [
     {
       source:
-        '/((?!_next/static|_next/image|models/[a-z0-9-]+\\.[0-9a-f]+\\.glb$|favicon.ico|robots.txt).*)',
+        '/((?!_next/static|_next/image|models/[a-z0-9-]+\\.[0-9a-f]+\\.glb$|brand/corpivum-[a-z]+-[0-9]+\\.(?:webp|png)$|icon\\.svg$|apple-icon\\.png$|manifest\\.webmanifest$|favicon\\.ico$|robots\\.txt$).*)',
     },
   ],
 };
