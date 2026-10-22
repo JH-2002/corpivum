@@ -21,12 +21,13 @@ export function HoloLoading({
     <div
       data-testid="twin-holo-loading"
       data-reason={reason}
-      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-4"
+      className="pointer-events-none absolute inset-0 flex items-center justify-center"
     >
+      {/* A figura ocupa ~95% do viewBox: com 93% da altura, fica com ~88% do quadro, como o modelo (9c). */}
       <svg
         viewBox="0 0 60 160"
         aria-hidden
-        className={cn('h-3/5 max-h-72', pulse && 'animate-pulse motion-reduce:animate-none')}
+        className={cn('h-[93%]', pulse && 'animate-pulse motion-reduce:animate-none')}
       >
         <g
           fill="var(--hm-holo-fill)"
@@ -39,7 +40,7 @@ export function HoloLoading({
           <path d="M30 27c-11 0-18 5-19 14l-4 34c-1 4 4 5 5 1l5-28 1 33-2 69c0 5 7 5 7 0l5-55h4l5 55c0 5 7 5 7 0l-2-69 1-33 5 28c1 4 6 3 5-1l-4-34c-1-9-8-14-19-14z" />
         </g>
       </svg>
-      <p className="rounded-md bg-surface/80 px-3 py-1 text-sm text-fg-muted">
+      <p className="absolute bottom-3 rounded-md bg-surface/80 px-3 py-1 text-sm text-fg-muted">
         {t(reason === 'choose' ? 'choose' : 'loading')}
       </p>
     </div>

@@ -20,7 +20,7 @@ import { bodyLayout, type ProfilePoint } from '../layout';
 import type { BodySceneProps, BodySceneStatus } from '../types';
 import { preloadAllBodyModels } from './assets';
 import { BodyModelMesh } from './BodyModelMesh';
-import { regionHandlers, TwinCanvas, Turntable } from './common';
+import { CameraFit, cameraDistanceFor, regionHandlers, TwinCanvas, Turntable } from './common';
 import { HologramMaterial, regionHoloState, useHoloTheme } from './Hologram';
 
 const toVectors = (points: readonly ProfilePoint[]) => points.map(([r, y]) => new Vector2(r, y));
@@ -132,10 +132,11 @@ export function BodyScene(props: BodySceneProps) {
     <div className="relative h-full w-full" data-twin-status={!model ? 'choose' : status}>
       <TwinCanvas
         compact={compact}
-        cameraZ={3.6}
+        cameraZ={cameraDistanceFor(props.shape.heightM)}
         onContextLost={onContextLost}
         onContextRestored={onContextRestored}
       >
+        <CameraFit heightM={props.shape.heightM} />
         <Turntable angle={angle} instant={instant}>
           {content}
         </Turntable>

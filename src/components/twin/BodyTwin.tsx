@@ -3,11 +3,13 @@
 import { useTranslations } from 'next-intl';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
+import { usePrivacyHiddenNow } from '@/components/privacy-mode/PrivacyModeProvider';
 import { cn } from '@/lib/cn';
 import {
   bodyShape,
   bodySnapshotAt,
   demoTwinRows,
+  withoutMeasures,
   firstMeasure,
   outOfDrawingRange,
   measurementDays,
@@ -55,18 +57,28 @@ export function BodyTwin({
   usePreloadBodyScene();
   // No demo, medidas fictícias coerentes com a variante escolhida (só no navegador, ADR-0028); sem escolha,
   // a série original.
+  // Dados próprios com o modo privacidade ligado: forma de referência já no clique, antes de a tela recarregar
+  // do servidor (que manda as linhas sem medidas, ADR-0035). Na demo, a forma fictícia continua.
+  const hiddenNow = usePrivacyHiddenNow() || hidden;
+  const referenceOnly = !demo && hiddenNow;
   const { rows, latestHeightCm } = useMemo(
     () =>
-      demo && model
-        ? demoTwinRows(inputRows, inputHeightCm, model)
-        : { rows: inputRows, latestHeightCm: inputHeightCm },
-    [demo, inputRows, inputHeightCm, model],
+      referenceOnly
+        ? { rows: withoutMeasures(inputRows), latestHeightCm: null }
+        : demo && model
+          ? demoTwinRows(inputRows, inputHeightCm, model)
+          : { rows: inputRows, latestHeightCm: inputHeightCm },
+    [referenceOnly, demo, inputRows, inputHeightCm, model],
   );
   const days = useMemo(() => measurementDays(rows), [rows]);
   const [index, setIndex] = useState(Math.max(0, days.length - 1));
-  const [selected, setSelected] = useState<BodyRegion | null>(null);
+  // Abre com a primeira região que tem medida na data mais recente, como o twin do início (9c).
+  const [selected, setSelected] = useState<BodyRegion | null>(() => {
+    const latest = bodySnapshotAt(rows, '9999-12-31', latestHeightCm);
+    return BODY_REGION_ORDER.find((r) => latest.values[REGION_FIELD[r]] !== undefined) ?? null;
+  });
   const [hover, setHover] = useState<HoverInfo<BodyRegion> | null>(null);
-  const hideValues = hidden;
+  const hideValues = hiddenNow;
   const turntable = useTurntable(VIEW_ANGLE.front);
   const compact = useCompact();
   const fmt = useTwinFormat(hideValues);

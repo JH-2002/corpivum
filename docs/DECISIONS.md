@@ -1880,3 +1880,20 @@ capturas da 9a, também: medidas de todas as regiões em várias datas na demo, 
   conta real sem padrão) e do `TwinHero` (painel, troca de região, privacidade, selos); e2e do horário do three.js
   (só depois do `load`), da troca holograma → modelo sem corpo em código, das regiões por clique e teclado, do 2D sem
   WebGL, do celular com e sem economia de dados e da conta real que pergunta o modelo; axe.
+
+**Ajustes depois das capturas da 9c (emenda deste ADR).**
+- **Demo coerente:** toda medição fictícia do corpo traz as cinco circunferências (o twin, o início e o Antes × Agora
+  contam as mesmas datas; nenhuma região "sem registro" numa data de medição). Com dados reais, a data "antes" padrão
+  do Antes × Agora é a primeira com todas as regiões (`firstCompleteDay`); sem nenhuma completa, a primeira.
+- **Modo privacidade, forma do corpo:** com dados próprios, a tela do twin, o Antes × Agora, o twin do início e o
+  modo apresentação já recebiam do servidor as medidas zeradas (`maskBodyScreen`): o modelo fica na forma de
+  referência, e a forma real não chega ao navegador. Faltava o instante entre ligar o modo e a recarga: agora o
+  cliente troca para a forma de referência e esconde os números no próprio clique (`usePrivacyHiddenNow`,
+  `withoutMeasures`). Na demo a forma fictícia continua; só os números ficam ocultos.
+- **Enquadramento:** o corpo ocupa ~88 % da altura do quadro (`BODY_FILL`) no 3D (câmera calculada pela altura do
+  corpo, `CameraFit`), no 2D (recorte do SVG na altura do corpo) e na silhueta de carregamento.
+- **Tela do twin** abre com a primeira região que tem medida (Peito), como o início.
+- **Datas do Antes × Agora** no estilo do seletor do app (`ChoiceMenu`: botão com a data atual e lista de rádios).
+- **Capturas:** acima de 7680 px físicos o Chrome headless repetia trechos da página na imagem (era a "página
+  recomeçando" no meio). `pnpm capturas` passa a salvar páginas altas em partes (`_parte-N`). Não era conteúdo
+  duplicado na página.

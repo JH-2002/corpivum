@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { Group } from 'three';
 import type { SceneCommon } from '../types';
+import { BODY_FILL } from '../framing';
 import { HoloClock } from './Hologram';
 
 /**
@@ -31,7 +32,7 @@ export function TwinCanvas({
     <Canvas
       frameloop="demand"
       dpr={compact ? [1, 1.5] : [1, 2]}
-      camera={{ position: [0, cameraY, cameraZ], fov: 35, near: 0.1, far: 50 }}
+      camera={{ position: [0, cameraY, cameraZ], fov: FOV_DEG, near: 0.1, far: 50 }}
       gl={{ antialias: !compact, alpha: true, powerPreference: 'low-power' }}
       aria-hidden
       onCreated={({ gl }) => {
@@ -46,6 +47,26 @@ export function TwinCanvas({
       {children}
     </Canvas>
   );
+}
+
+/** Campo de visão vertical da câmera, em graus. */
+const FOV_DEG = 35;
+
+/** Distância da câmera para um corpo de `heightM` metros ocupar `BODY_FILL` da altura do quadro. */
+export function cameraDistanceFor(heightM: number, fill = BODY_FILL): number {
+  return heightM / fill / (2 * Math.tan(((FOV_DEG / 2) * Math.PI) / 180));
+}
+
+/** Ajusta a câmera quando a altura do corpo muda (o `camera` do Canvas só vale na criação). */
+export function CameraFit({ heightM }: { heightM: number }) {
+  const camera = useThree((s) => s.camera);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    camera.position.set(0, 0, cameraDistanceFor(heightM));
+    camera.updateProjectionMatrix();
+    invalidate();
+  }, [camera, heightM, invalidate]);
+  return null;
 }
 
 /**

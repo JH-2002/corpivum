@@ -34,6 +34,8 @@ const PAGES = [
   ['sobre', '/demo/sobre'],
 ];
 const SCREENS = ['painel', 'twin', 'timeline', 'relatorio'];
+/** Altura máxima de uma imagem, em pixels físicos (abaixo do limite de textura do Chrome headless). */
+const MAX_SHOT_PX = 7680;
 const SIZES = [
   { name: 'desktop-1440', viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
   {
@@ -171,16 +173,30 @@ async function capture() {
         const page = await context.newPage();
         const shot = async (name) => {
           await settle(page);
-          // Janela da altura da página: barras fixas (lateral, navegação) ficam onde a pessoa as vê.
+          // Janela da altura da página: barras fixas (lateral, navegação) ficam onde a pessoa as vê. Acima de
+          // MAX_SHOT_PX pixels físicos o Chrome headless repete trechos da página na imagem (limite de textura):
+          // a página sai em partes (`_parte-1`, `_parte-2`...), cada uma uma janela rolada até o seu trecho.
           const height = await page.evaluate(() => document.documentElement.scrollHeight);
+          const chunk = Math.floor(MAX_SHOT_PX / size.deviceScaleFactor);
+          const parts = Math.ceil(height / chunk);
+          const file = (part) =>
+            path.join(
+              OUT,
+              `${name}_${size.name}_${themeName}${parts > 1 ? `_parte-${part}` : ''}.png`,
+            );
           await page.setViewportSize({
             width: size.viewport.width,
-            height: Math.max(height, size.viewport.height),
+            height: Math.max(Math.min(height, chunk), size.viewport.height),
           });
           await settle(page);
-          await page.screenshot({ path: path.join(OUT, `${name}_${size.name}_${themeName}.png`) });
+          for (let part = 1; part <= parts; part += 1) {
+            await page.evaluate((y) => window.scrollTo(0, y), (part - 1) * chunk);
+            await page.waitForTimeout(200);
+            await page.screenshot({ path: file(part) });
+            count++;
+          }
+          await page.evaluate(() => window.scrollTo(0, 0));
           await page.setViewportSize(size.viewport);
-          count++;
         };
         for (const [name, url] of PAGES) {
           await page.goto(BASE + url);

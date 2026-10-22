@@ -10,7 +10,15 @@ import {
 } from './morph';
 import { BODY_REGIONS, COMPARE_FIELDS, type BodyRegion } from './regions';
 import { bodyShape } from './shape';
-import { bodySnapshotAt, compareSnapshots, measurementDays, toTwinRows } from './snapshot';
+import {
+  bodySnapshotAt,
+  compareSnapshots,
+  firstCompleteDay,
+  measurementDays,
+  toTwinRows,
+  withoutMeasures,
+  type TwinRow,
+} from './snapshot';
 
 /** Dados sintéticos (CLAUDE.md regra 6). */
 const records = [
@@ -189,5 +197,38 @@ describe('Antes × Agora (§16)', () => {
       delta: -0.2,
       direction: 'down',
     });
+  });
+});
+
+describe('ajustes da 9c: datas completas e forma de referência', () => {
+  const row = (day: string, values: Partial<Record<string, number | null>>) =>
+    ({
+      day,
+      weightKg: null,
+      heightCm: null,
+      chestCm: null,
+      armCm: null,
+      waistCm: null,
+      hipCm: null,
+      thighCm: null,
+      ...values,
+    }) as TwinRow;
+  const full = { chestCm: 95, armCm: 30, waistCm: 85, hipCm: 98, thighCm: 56 };
+
+  it('"antes" padrão é a primeira data com todas as regiões; sem nenhuma completa, a primeira', () => {
+    const rows = [
+      row('2026-09-28', { weightKg: 74 }),
+      row('2026-10-05', { ...full, weightKg: 73.8 }),
+    ];
+    expect(firstCompleteDay(rows)).toBe('2026-10-05');
+    expect(firstCompleteDay([row('2026-09-28', { weightKg: 74 })])).toBe('2026-09-28');
+    expect(firstCompleteDay([])).toBeNull();
+  });
+
+  it('withoutMeasures mantém as datas e tira toda medida (forma de referência)', () => {
+    const out = withoutMeasures([row('2026-10-05', { ...full, weightKg: 73.8, heightCm: 170 })]);
+    expect(out).toHaveLength(1);
+    expect(out[0]?.day).toBe('2026-10-05');
+    expect(Object.entries(out[0] ?? {}).filter(([k, v]) => k !== 'day' && v !== null)).toEqual([]);
   });
 });

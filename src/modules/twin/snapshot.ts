@@ -37,6 +37,31 @@ export function hasRegionMeasures(records: readonly BodyRecord[]): boolean {
   return records.some((r) => Object.values(REGION_FIELD).some((f) => r[f] !== null));
 }
 
+/**
+ * Primeiro dia do período em que a medição tem todas as regiões (data "antes" padrão do Antes × Agora, 9c):
+ * comparar com um dia sem circunferências mostraria "sem registro". Sem nenhum dia completo, o primeiro dia.
+ */
+export function firstCompleteDay(records: readonly TwinRow[]): string | null {
+  const days = measurementDays(records);
+  const complete = days.find((day) =>
+    Object.values(REGION_FIELD).every((field) =>
+      records.some((r) => r.day === day && r[field] !== null && r[field] !== undefined),
+    ),
+  );
+  return complete ?? days[0] ?? null;
+}
+
+/**
+ * Linhas sem nenhuma medida (só as datas), para a forma de referência no modo privacidade (ADR-0035). O servidor
+ * já manda assim depois de recarregar; no cliente, vale também no instante entre ligar o modo e a recarga.
+ */
+export function withoutMeasures(records: readonly TwinRow[]): TwinRow[] {
+  return records.map((r) => ({
+    day: r.day,
+    ...Object.fromEntries(COMPARE_FIELDS.map((f) => [f, null])),
+  }));
+}
+
 /** Dias com medição no período, em ordem: as posições do controle de datas (§15). */
 export function measurementDays(records: readonly TwinRow[]): string[] {
   return [...new Set(records.map((r) => r.day))].sort();

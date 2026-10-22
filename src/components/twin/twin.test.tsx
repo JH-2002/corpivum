@@ -5,8 +5,12 @@ import { bodyEntry, day, TODAY } from '@/modules/insights/fixtures';
 import { BODY_MODEL_STORAGE_KEY, DEMO_BODY_MODEL_STORAGE_KEY, toTwinRows } from '@/modules/twin';
 import { findForbiddenTerms } from '../../../tests/content/forbidden-terms';
 import { renderWithIntl } from '../../../tests/render';
+import { PrivacyModeProvider } from '@/components/privacy-mode/PrivacyModeProvider';
 import { BodyTwin } from './BodyTwin';
 import { TwinBodyView } from './TwinViews';
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock('@/app/privacy-mode-actions', () => ({ setPrivacyModeAction: vi.fn() }));
 
 /**
  * Health Twin (ADR-0026). O jsdom não tem WebGL: os testes passam pela versão 2D, com os mesmos
@@ -244,5 +248,46 @@ describe('espera do modelo em holograma (ADR-0028, revisão de carregamento)', (
     expect(
       screen.getByText('O corpo em 3D aparece depois que você escolher o modelo.'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('ajustes da 9c na tela do twin', () => {
+  const full = [
+    bodyEntry(day(0), { weightKg: 70, heightCm: 172 }),
+    bodyEntry(day(6), {
+      weightKg: 71,
+      chestCm: 95,
+      armCm: 30,
+      waistCm: 81.5,
+      hipCm: 96,
+      thighCm: 56,
+    }),
+  ];
+
+  it('abre com a primeira região que tem medida (Peito), como o início', () => {
+    window.localStorage.setItem(BODY_MODEL_STORAGE_KEY, 'feminine');
+    renderWithIntl(
+      <BodyTwin rows={toTwinRows(full)} latestHeightCm={null} demo={false} describedBy="x" />,
+    );
+    const body = screen.getByRole('region', { name: /corpo em 3D/ });
+    expect(within(body).getByRole('button', { name: 'Peito' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(body).toHaveTextContent('95 cm');
+    window.localStorage.clear();
+  });
+
+  it('modo privacidade ligado no cliente, antes da recarga: medidas próprias já somem', () => {
+    window.localStorage.setItem(BODY_MODEL_STORAGE_KEY, 'feminine');
+    renderWithIntl(
+      <PrivacyModeProvider initialHidden>
+        <BodyTwin rows={toTwinRows(full)} latestHeightCm={null} demo={false} describedBy="x" />
+      </PrivacyModeProvider>,
+    );
+    const body = screen.getByRole('region', { name: /corpo em 3D/ });
+    expect(body).not.toHaveTextContent('95 cm');
+    expect(body).not.toHaveTextContent('81,5');
+    window.localStorage.clear();
   });
 });
