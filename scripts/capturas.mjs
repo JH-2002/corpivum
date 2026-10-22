@@ -2,11 +2,12 @@
 // 1. build de produção com DEMO_ONLY=true (pule com --sem-build se o build já é desse modo);
 // 2. sobe `next start` sem nenhuma credencial do app completo, como no e2e `demo-only`;
 // 3. captura cada tela da demo e do modo apresentação em desktop (1440 px) e celular (390 px), temas claro e
-//    escuro, em `capturas/` (fora do Git), como `<tela>_<tamanho>_<tema>.png`;
+//    escuro, em `capturas/` (fora do Git), como `<tela>_<tamanho>_<tema>.png`, depois de apagar tudo o que a
+//    pasta tinha, menos `capturas/logo/`;
 // 4. encerra o servidor e tudo o que ele abriu, inclusive se a captura falhar.
 // Dados 100% fictícios (gerador em memória): nada de banco nem de dado real.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { lstatSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +17,8 @@ import { DEMO_BODY_MODEL_STORAGE_KEY } from '../src/modules/twin/bodyModel.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'capturas');
+/** O que a limpeza da pasta preserva (arte da marca, fora das capturas). */
+const KEEP = new Set(['logo']);
 const PORT = Number(process.env.CAPTURAS_PORT ?? 3300);
 const BASE = `http://localhost:${PORT}`;
 const skipBuild = process.argv.includes('--sem-build');
@@ -147,9 +150,12 @@ async function settle(page) {
 }
 
 async function capture() {
+  // Pasta limpa a cada rodada (nada de `_parte-N` ou vídeos de rodadas anteriores), menos `capturas/logo/`.
   mkdirSync(OUT, { recursive: true });
-  for (const file of readdirSync(OUT).filter((f) => f.endsWith('.png')))
-    rmSync(path.join(OUT, file));
+  // Pasta trocada por um link: a limpeza apagaria o destino, então para aqui.
+  if (lstatSync(OUT).isSymbolicLink()) fail(`${OUT} é um link; use uma pasta comum`);
+  for (const entry of readdirSync(OUT).filter((name) => !KEEP.has(name)))
+    rmSync(path.join(OUT, entry), { recursive: true, force: true });
   // WebGL por software, como nos e2e do twin: sem ele o headless mostra o twin em 2D.
   const browser = await chromium.launch({
     args: ['--lang=pt-BR', '--enable-unsafe-swiftshader', '--use-angle=swiftshader'],
