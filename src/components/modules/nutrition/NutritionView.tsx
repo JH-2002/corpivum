@@ -254,6 +254,7 @@ export function NutritionView({
                 key: 'meals',
                 label: t('mealsSeries'),
                 kind: 'bar',
+                integer: true,
                 color: 'var(--hm-domain-nutrition)',
               },
             ]}

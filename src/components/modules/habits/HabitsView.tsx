@@ -153,6 +153,7 @@ export function HabitsView({
                 kind: 'bar',
                 color: 'var(--hm-primary)',
                 decimals: 0,
+                integer: true,
               },
               {
                 key: 'scheduled',
@@ -161,6 +162,7 @@ export function HabitsView({
                 color: 'var(--hm-fg-muted)',
                 dash: '4 4',
                 decimals: 0,
+                integer: true,
               },
             ]}
           />

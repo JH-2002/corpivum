@@ -1,5 +1,6 @@
 import { useFormatter, useTranslations } from 'next-intl';
 import { deleteBodyAction } from '@/app/(app)/corpo/actions';
+import { paddedDomain } from '@/components/charts/domain';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
@@ -16,6 +17,9 @@ import type { DateRange } from '@/lib/period';
 import { bodyInsights, bodyInsightsHidden } from '@/modules/insights';
 import { BODY_FIELDS, change, latest, type BodyField, type BodyRecord } from '@/modules/body';
 import { BodyForm } from './BodyForm';
+
+/** Faixa mínima dos eixos: ±2 kg e ±2 cm, para variações pequenas não parecerem grandes (LEG-M06). */
+const MIN_SPAN = 4;
 
 const GIRTHS: BodyField[] = ['waistCm', 'hipCm', 'armCm', 'thighCm', 'chestCm'];
 const GIRTH_STYLE: Record<string, { color: string; dash?: string }> = {
@@ -143,6 +147,10 @@ export function BodyView({
                 guide="weight"
                 describedBy={summaryTextId('body')}
                 data={records.map((r) => ({ day: r.day, weightKg: r.weightKg }))}
+                leftDomain={paddedDomain(
+                  records.map((r) => r.weightKg),
+                  { minSpan: MIN_SPAN },
+                )}
                 series={[
                   {
                     key: 'weightKg',
@@ -163,6 +171,10 @@ export function BodyView({
                     day: r.day,
                     ...Object.fromEntries(usedGirths.map((f) => [f, r[f]])),
                   }))}
+                  leftDomain={paddedDomain(
+                    records.flatMap((r) => usedGirths.map((f) => r[f])),
+                    { minSpan: MIN_SPAN },
+                  )}
                   series={usedGirths.map((f) => ({
                     key: f,
                     label: t(`fields.${f}`),

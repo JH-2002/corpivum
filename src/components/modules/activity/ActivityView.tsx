@@ -226,6 +226,7 @@ export function ActivityView({
                           kind: 'line',
                           color: 'var(--hm-domain-activity)',
                           decimals: 1,
+                          integer: !withLoad,
                         },
                       ]}
                     />

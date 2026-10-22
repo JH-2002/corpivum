@@ -14,6 +14,7 @@ import {
   type TooltipValueType,
 } from 'recharts';
 import type { ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
+import { yAxisConfig } from './domain';
 import { formatNumber, shortDay } from './format';
 import { usePrefersReducedMotion } from './reduced-motion';
 import type { ChartRow, ChartSeries } from './TimeChart';
@@ -45,6 +46,8 @@ export function TimeChartPlot({
   const reduced = usePrefersReducedMotion();
   const longDate = (iso: string) =>
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'medium', timeZone: 'UTC' });
+  const left = yAxisConfig(data, visible, 'left', leftDomain, formatNumber);
+  const right = yAxisConfig(data, visible, 'right', rightDomain, formatNumber);
 
   function TooltipBody({
     active,
@@ -75,7 +78,7 @@ export function TimeChartPlot({
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
         data={[...data]}
-        margin={{ top: 8, right: 8, bottom: 0, left: -12 }}
+        margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
         accessibilityLayer={false}
       >
         <CartesianGrid stroke="var(--hm-border)" strokeDasharray="3 3" vertical={false} />
@@ -87,17 +90,21 @@ export function TimeChartPlot({
         />
         <YAxis
           yAxisId="left"
-          domain={leftDomain ?? ['auto', 'auto']}
+          domain={left.domain}
+          allowDecimals={left.allowDecimals}
+          tickFormatter={(v: number) => formatNumber(v, left.decimals)}
           tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}
-          width={44}
+          width={left.width}
         />
         {hasRight ? (
           <YAxis
             yAxisId="right"
             orientation="right"
-            domain={rightDomain ?? ['auto', 'auto']}
+            domain={right.domain}
+            allowDecimals={right.allowDecimals}
+            tickFormatter={(v: number) => formatNumber(v, right.decimals)}
             tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}
-            width={36}
+            width={right.width}
           />
         ) : null}
         <Tooltip content={TooltipBody} cursor={{ stroke: 'var(--hm-border-strong)' }} />
