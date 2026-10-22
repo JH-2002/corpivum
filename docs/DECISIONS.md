@@ -1641,7 +1641,7 @@ dizer, sempre visível, que os dados são fictícios e que o app ainda não est�
   360": são versionados por hash, e trocar o nome exige nova versão, migração e arquivo do texto antigo. Fica para o
   go-live, junto com os textos finais do jurídico (CHECKLIST_GO_LIVE 1.6). No modo só demo eles não aparecem nem vão
   ao navegador: o layout raiz passa ao `NextIntlClientProvider` o catálogo sem `legal` e `consent`
-  (`demoClientMessages`), que só o app completo usa; antes, o catálogo inteiro (com os rascunhos e os
+  (`demoClientMessages`; desde o ADR-0052, `clientMessages` por rota, com a mesma exclusão), que só o app completo usa; antes, o catálogo inteiro (com os rascunhos e os
   placeholders do controlador) ia no payload de toda página. No app completo os nomes ficam misturados até lá
   (OI-38 i).
   Identificadores internos (nome do pacote, banco `healthmind`, `Symbol.for('healthmind.*')`, domínio de dev
@@ -1947,3 +1947,40 @@ espalhados na 9d e na 9e; o produto pediu um PR só de correções antes da 9d.
   previsto" no nome do check, que também passa a dizer a data (antes dizia "hoje" em todos os dias).
 **Consequências.** O plano do redesenho tira esses itens da 9d e da 9e. O ADR-0049 continua valendo; os números
 dos próximos ADRs da Fase 9 andam um.
+
+## ADR-0052 — Mensagens do navegador por rota (Fase 9, antes da 9d)
+**Contexto.** O layout raiz entregava ao `NextIntlClientProvider` o catálogo inteiro (`messages/pt-BR.json`, 88 KB,
+27 KB em gzip) em toda página: sem `messages`, o provedor do next-intl lê tudo da configuração da requisição. A
+maior parte é texto de componentes de servidor (Central de Privacidade, resumos, textos jurídicos), que não
+precisa ir ao navegador. No modo só demo já se tiravam `legal` e `consent` (ADR-0044).
+**Decisão.**
+- **Shell:** o provedor raiz recebe só os namespaces dos componentes de cliente de layouts, `error`, `loading` e
+  `not-found` (`shellMessages`).
+- **Página:** cada `page.tsx` exporta `withRouteMessages('<pasta>', Página)`, que envolve a página num provedor
+  com só os namespaces dos componentes de cliente dela (`routeMessages`). Um provedor interno substitui as
+  mensagens (não soma), então o conjunto da página é completo para o que está dentro dela; o shell fica com o
+  provedor raiz. A raiz (`/`, só redirecionamento) não precisa.
+- **Mapa gerado:** `scripts/i18n-client-namespaces.ts` (`pnpm i18n:client`) segue os imports a partir de cada
+  página e dos arquivos do shell; a partir de um arquivo `'use client'`, junta os namespaces de `useTranslations`
+  (literal, prefixo fixo de template, ou o primeiro trecho das chaves de um tradutor sem namespace). Argumento não
+  literal num componente de cliente faz a análise falhar. Pega ramos (`twin.body`), não só o namespace inteiro.
+  O resultado fica em `src/i18n/client-namespaces.generated.ts`.
+- **Modo só demo:** `legal` e `consent` continuam fora de todo conjunto.
+- **Testes:** o mapa gerado tem de bater com a análise do código (esqueceu de rodar `pnpm i18n:client` = teste
+  vermelho); toda página com componente de cliente traduzido usa `withRouteMessages` com a própria pasta;
+  `pickMessages`; demo sem textos jurídicos. e2e (`i18n-client.spec`): todas as rotas do app e da demo, o registro
+  rápido e a entrada da apresentação sem `MISSING_MESSAGE` no console (conferido tirando `nav` do mapa: o teste
+  falha).
+- **Medida** (build de produção, local, HTML com o payload RSC embutido):
+
+  | Página | Antes | Depois |
+  |---|---|---|
+  | `/inicio` (conta com dados) | 204,6 KB (46,2 KB gzip) | 131,6 KB (25,6 KB gzip) |
+  | `/demo` | 192,8 KB (44,4 KB gzip) | 119,7 KB (23,8 KB gzip) |
+  | `/privacidade` | 212,2 KB (45,7 KB gzip) | 155,8 KB (29,4 KB gzip) |
+  | `/demo/corpo` | 188,0 KB (42,6 KB gzip) | 110,7 KB (21,1 KB gzip) |
+
+  O JS de entrada não muda (`check:perf-budget`: `/inicio` 178,6 KiB, `/demo` 176,2 KiB).
+**Consequências.** Componente de cliente novo com texto: rodar `pnpm i18n:client` (o teste lembra). Texto de
+servidor nunca vai ao navegador por acaso. Navegar entre páginas baixa as mensagens da página nova no payload RSC,
+como já acontecia com o resto da página.
