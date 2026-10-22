@@ -1,5 +1,5 @@
 import { round } from '@/lib/stats';
-import type { BodyField, BodyRecord } from './types';
+import { BODY_FIELDS, type BodyField, type BodyRecord } from './types';
 
 /**
  * Métricas de corpo (§23), funções puras. IMC é ESTIMADO (cálculo direto) e exibido com texto neutro,
@@ -56,4 +56,38 @@ export function series(
     const v = r[field];
     return v === null ? [] : [{ day: r.day, value: v }];
   });
+}
+
+export interface HistoryRow {
+  record: BodyRecord;
+  /** Campos a mostrar nesta data (só os registrados nela, sem repetir o que a tela já mostra). */
+  fields: BodyField[];
+}
+
+/**
+ * Linhas do histórico de medições, da mais recente à mais antiga, sem dado duplicado na tela: cada data mostra só
+ * os campos registrados nela; a altura só aparece quando muda; o peso e a altura mais recentes ficam fora, porque
+ * já estão nos blocos de estado atual. Linha sem campo continua (dá para editar ou apagar o registro).
+ */
+export function historyRows(records: readonly BodyRecord[]): HistoryRow[] {
+  const lastWith = (field: BodyField) => records.findLast((r) => r[field] !== null)?.id;
+  const inTiles: Partial<Record<BodyField, string | undefined>> = {
+    weightKg: lastWith('weightKg'),
+    heightCm: lastWith('heightCm'),
+  };
+  let previousHeight: number | null = null;
+  const rows = records.map((record) => {
+    const fields = BODY_FIELDS.filter((field) => {
+      const value = record[field];
+      if (value === null) return false;
+      if (field === 'heightCm') {
+        const unchanged = value === previousHeight;
+        previousHeight = value;
+        if (unchanged) return false;
+      }
+      return inTiles[field] !== record.id;
+    });
+    return { record, fields };
+  });
+  return rows.reverse();
 }

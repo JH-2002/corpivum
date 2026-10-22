@@ -49,11 +49,9 @@
   --color-info-soft: var(--hm-info-soft);
 
   --color-sleep: var(--hm-domain-sleep);
-  --color-series-amber: var(--hm-series-amber);
   --color-activity: var(--hm-domain-activity);
   --color-nutrition: var(--hm-domain-nutrition);
   --color-body: var(--hm-domain-body);
-  --color-series-violet: var(--hm-series-violet);
 
   /* Tipografia: Inter variável auto-hospedada (ADR-0046), 6 tamanhos */
   --font-sans:

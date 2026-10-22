@@ -108,12 +108,7 @@ export function ScheduleChart({
               width={40}
             />
             <Tooltip content={TooltipBody} />
-            <Bar
-              dataKey="span"
-              fill="var(--hm-domain-sleep)"
-              radius={3}
-              isAnimationActive={!reduced}
-            />
+            <Bar dataKey="span" fill="var(--hm-chart-1)" radius={3} isAnimationActive={!reduced} />
           </BarChart>
         </ResponsiveContainer>
       </div>

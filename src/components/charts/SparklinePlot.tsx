@@ -7,9 +7,11 @@ import { usePrefersReducedMotion } from './reduced-motion';
 export function SparklinePlot({
   data,
   color,
+  domain,
 }: {
   data: ReadonlyArray<{ day: string; value: number | null }>;
   color: string;
+  domain?: [number, number];
 }) {
   const reduced = usePrefersReducedMotion();
   return (
@@ -19,7 +21,7 @@ export function SparklinePlot({
         margin={{ top: 4, right: 2, bottom: 4, left: 2 }}
         accessibilityLayer={false}
       >
-        <YAxis hide domain={['dataMin', 'dataMax']} />
+        <YAxis hide domain={domain ?? ['dataMin', 'dataMax']} />
         <Line
           dataKey="value"
           stroke={color}

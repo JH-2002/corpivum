@@ -3,13 +3,20 @@ import { deleteActivityAction } from '@/app/(app)/atividade/actions';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
-import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
+import {
+  formatDecimal,
+  formatDuration,
+  formatMeasure,
+  TREND_ARROW,
+  trendOf,
+} from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { StatTile } from '@/components/health/StatTile';
+import { WeeklyList } from '@/components/health/WeeklyList';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
-import { toLocalDateTime } from '@/lib/dates';
+import { groupByWeek, toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import {
   activeDays,
@@ -151,7 +158,7 @@ export function ActivityView({
                 label: t('minutesSeries'),
                 unit: 'min',
                 kind: 'bar',
-                color: 'var(--hm-domain-activity)',
+                color: 'var(--hm-chart-1)',
               },
             ]}
           />
@@ -224,8 +231,9 @@ export function ActivityView({
                             : t('progression.repsSeries'),
                           unit: withLoad ? 'kg' : undefined,
                           kind: 'line',
-                          color: 'var(--hm-domain-activity)',
+                          color: 'var(--hm-chart-1)',
                           decimals: 1,
+                          integer: !withLoad,
                         },
                       ]}
                     />
@@ -238,67 +246,82 @@ export function ActivityView({
             <h2 id="activity-list" className="text-base font-semibold">
               {t('listTitle')}
             </h2>
-            <ul className="flex flex-col gap-3">
-              {[...records].reverse().map((r) => {
-                const label = `${longDay(r.day)}, ${t(`types.${r.type}`)}`;
-                return (
-                  <li key={r.id} className="rounded-lg border border-border bg-surface p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <h3 className="font-semibold">{longDay(r.day)}</h3>
-                      <ConfidenceBadge level={level('INFORMADO')} />
-                    </div>
-                    <p className="tabular">
-                      {t('entrySummary', {
-                        type: t(`types.${r.type}`),
-                        time: r.time,
-                        duration: formatDuration(r.durationMin),
-                      })}
-                    </p>
-                    <p className="text-sm text-fg-muted">
-                      {[
-                        r.distanceKm !== null
-                          ? t('entryDistance', { km: formatDecimal(r.distanceKm) })
-                          : null,
-                        r.intensity !== null ? t('entryIntensity', { value: r.intensity }) : null,
-                        r.sets.length > 0 ? t('entrySets', { count: r.sets.length }) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                    {r.sets.length > 0 ? (
-                      <ul className="mt-1 list-disc pl-5 text-sm">
-                        {r.sets.map((s) => (
-                          <li key={s.setIndex} className="tabular">
-                            {s.loadKg !== null
-                              ? t('entrySet', {
-                                  exercise: s.exercise,
-                                  reps: s.reps,
-                                  load: `${formatDecimal(s.loadKg)} kg`,
-                                })
-                              : t('entrySetNoLoad', { exercise: s.exercise, reps: s.reps })}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    {r.note ? <p className="mt-1 text-sm whitespace-pre-line">{r.note}</p> : null}
-                    {own ? (
-                      <div className="mt-2">
-                        <EntryActions
-                          id={r.id}
-                          itemLabel={label}
-                          deleteAction={deleteActivityAction}
-                        >
-                          <ActivityForm
-                            maxDateTime={maxDateTime}
-                            values={{ ...r, startedAt: toLocalDateTime(new Date(r.startedAt)) }}
-                          />
-                        </EntryActions>
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+            <WeeklyList
+              weeks={groupByWeek([...records].reverse(), (r) => r.day).map((w) => ({
+                start: w.start,
+                end: w.end,
+                content: (
+                  <ul className="flex flex-col gap-3">
+                    {w.items.map((r) => {
+                      const label = `${longDay(r.day)}, ${t(`types.${r.type}`)}`;
+                      return (
+                        <li key={r.id} className="rounded-lg border border-border bg-surface p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <h4 className="font-semibold">{longDay(r.day)}</h4>
+                            <ConfidenceBadge level={level('INFORMADO')} />
+                          </div>
+                          <p className="tabular">
+                            {t('entrySummary', {
+                              type: t(`types.${r.type}`),
+                              time: r.time,
+                              duration: formatDuration(r.durationMin),
+                            })}
+                          </p>
+                          <p className="text-sm text-fg-muted">
+                            {[
+                              r.distanceKm !== null
+                                ? t('entryDistance', { km: formatDecimal(r.distanceKm) })
+                                : null,
+                              r.intensity !== null
+                                ? t('entryIntensity', { value: r.intensity })
+                                : null,
+                              r.sets.length > 0 ? t('entrySets', { count: r.sets.length }) : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                          {r.sets.length > 0 ? (
+                            <ul className="mt-1 list-disc pl-5 text-sm">
+                              {r.sets.map((s) => (
+                                <li key={s.setIndex} className="tabular">
+                                  {s.loadKg !== null
+                                    ? t('entrySet', {
+                                        exercise: s.exercise,
+                                        reps: s.reps,
+                                        load: formatMeasure(s.loadKg, 'kg'),
+                                      })
+                                    : t('entrySetNoLoad', { exercise: s.exercise, reps: s.reps })}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                          {r.note ? (
+                            <p className="mt-1 text-sm whitespace-pre-line">{r.note}</p>
+                          ) : null}
+                          {own ? (
+                            <div className="mt-2">
+                              <EntryActions
+                                id={r.id}
+                                itemLabel={label}
+                                deleteAction={deleteActivityAction}
+                              >
+                                <ActivityForm
+                                  maxDateTime={maxDateTime}
+                                  values={{
+                                    ...r,
+                                    startedAt: toLocalDateTime(new Date(r.startedAt)),
+                                  }}
+                                />
+                              </EntryActions>
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ),
+              }))}
+            />
           </section>
         </>
       )}

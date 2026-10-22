@@ -86,6 +86,20 @@ export function createActivityService(deps: HealthDeps) {
       });
     },
 
+    /**
+     * Só os dias com atividade registrada (Índice, ADR-0050): lê apenas o horário de início, sem séries, notas
+     * nem decifrar nada (minimização).
+     */
+    async days(userId: string, range: DateRange): Promise<string[]> {
+      return deps.run(userId, async (tx) => {
+        const rows = await tx.activityEntry.findMany({
+          where: { startedAt: rangeBounds(range, deps.timeZone) },
+          select: { startedAt: true },
+        });
+        return [...new Set(rows.map((r) => localDay(r.startedAt, deps.timeZone)))].sort();
+      });
+    },
+
     async create(userId: string, input: ActivityInput): Promise<ActivityWriteResult> {
       const startedAt = instant(input);
       if (!startedAt) return { ok: false, error: 'future' };

@@ -171,7 +171,7 @@
     "reportFooter": "Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.",
     "riskSupport": "Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).",
     "draftLegal": "RASCUNHO — revisão jurídica obrigatória.",
-    "wellbeingScore": "O Índice de Bem-Estar resume seus registros de sono, hábitos e a constância dos registros. Não usa peso nem medidas, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.",
+    "wellbeingScore": "O Índice de Bem-Estar resume seus registros de sono, hábitos, as semanas com atividade física registrada e a constância dos registros. Não usa peso, medidas, duração nem intensidade de atividade, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.",
     "demoData": "Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.",
     "bodyModel": "Representação aproximada a partir das medidas que você informou. Não é avaliação corporal nem de saúde."
   },
@@ -694,6 +694,11 @@
       "intro": "Serviços que tratam dados em nome do %PRODUTO%. Banco de dados, armazenamento, filas e execução do servidor ficam no Brasil."
     }
   },
+  "weekly": {
+    "title": "Semana de {from} a {to}",
+    "more": "Ver mais semanas",
+    "count": "Mostrando {shown} de {total, plural, one {# semana} other {# semanas}}"
+  },
   "charts": {
     "legend": "Séries do gráfico (clique para mostrar ou ocultar)",
     "seriesOn": "visível",
@@ -830,6 +835,7 @@
     "howFooter": "Versão do cálculo: {version}. Mudanças no cálculo geram uma versão nova, documentada.",
     "weightValue": "{nominal} (efetivo: {effective})",
     "included": "{count, plural, one {Incluído (# registro)} other {Incluído (# registros)}}",
+    "includedDays": "{count, plural, one {Incluído (# dia com atividade)} other {Incluído (# dias com atividade)}}",
     "col": {
       "component": "Componente",
       "value": "Valor",
@@ -852,7 +858,7 @@
       },
       "activity": {
         "name": "Atividade física",
-        "rule": "Minutos ativos em relação à sua própria meta. Entra quando o registro de atividade estiver disponível."
+        "rule": "Semanas com pelo menos uma atividade física registrada, desde o seu primeiro registro de qualquer tipo no período (sono, hábito ou atividade). Precisa de 3 dias com atividade ou mais. Uma atividade na semana já conta a semana: dias de descanso não reduzem o valor, e duração e intensidade não entram."
       },
       "logging": {
         "name": "Constância de registro",
@@ -1071,6 +1077,10 @@
     "notDone": "Não feito",
     "checkLabel": "Marcar \"{name}\" como feito hoje",
     "uncheckLabel": "Desmarcar \"{name}\" de hoje",
+    "checkDayLabel": "Marcar \"{name}\" como feito em {date}",
+    "uncheckDayLabel": "Desmarcar \"{name}\" de {date}",
+    "dayState": "{name}, {date}: {state}",
+    "notScheduled": "não previsto",
     "newTitle": "Criar hábito",
     "exampleName": "Ler antes de dormir",
     "listTitle": "Seus hábitos",
@@ -1238,7 +1248,9 @@
   },
   "body": {
     "newTitle": "Registrar peso e medidas",
-    "listTitle": "Medições",
+    "listTitle": "Histórico de medições",
+    "historyIntro": "Cada data mostra só o que foi registrado nela. O peso e a altura mais recentes estão nos blocos acima.",
+    "historyInTiles": "Os valores desta data estão nos blocos acima.",
     "weightChart": "Peso no período",
     "girthChart": "Medidas no período",
     "fields": {
@@ -1254,6 +1266,7 @@
     "stats": {
       "weight": "Peso mais recente",
       "on": "em {date}",
+      "heightBefore": "informada antes do período",
       "change": "Variação no período",
       "changeHint": "Diferença entre o primeiro e o último peso do período.",
       "height": "Altura"

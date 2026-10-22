@@ -171,3 +171,28 @@ export function weekStart(iso: string): string {
 export function weekToDate(today: string): DateRange {
   return { from: weekStart(today), to: today };
 }
+
+export interface WeekGroup<T> {
+  /** Segunda-feira da semana. */
+  start: string;
+  /** Domingo da semana. */
+  end: string;
+  items: T[];
+}
+
+/**
+ * Agrupa itens por semana (segunda a domingo), da semana mais recente para a mais antiga, mantendo a ordem dos
+ * itens dentro de cada semana. Só apresentação: nenhum item entra ou sai.
+ */
+export function groupByWeek<T>(items: readonly T[], dayOf: (item: T) => string): WeekGroup<T>[] {
+  const weeks = new Map<string, T[]>();
+  for (const item of items) {
+    const start = weekStart(dayOf(item));
+    const list = weeks.get(start);
+    if (list) list.push(item);
+    else weeks.set(start, [item]);
+  }
+  return [...weeks.entries()]
+    .sort(([a], [b]) => (a < b ? 1 : a > b ? -1 : 0))
+    .map(([start, list]) => ({ start, end: addDays(start, 6), items: list }));
+}

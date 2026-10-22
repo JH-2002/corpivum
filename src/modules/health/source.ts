@@ -32,6 +32,8 @@ export interface HealthDataSource {
   ): Promise<MealRecord[]>;
   water(range: DateRange): Promise<WaterRecord[]>;
   activities(range: DateRange, opts?: { withText?: boolean }): Promise<ActivityRecord[]>;
+  /** Só os dias com atividade registrada (sem séries nem notas), para o Índice. */
+  activityDays(range: DateRange): Promise<string[]>;
   goals(opts?: { includeArchived?: boolean }): Promise<GoalRecord[]>;
   reminders(): Promise<ReminderRecord[]>;
   reminderPrefs(): Promise<ReminderPrefs>;
@@ -71,6 +73,9 @@ export function createDemoSource(data: DemoDataset): HealthDataSource {
       data.activities
         .filter((r) => inRange(r.day, range))
         .map((r) => (opts?.withText ? r : { ...r, note: null })),
+    activityDays: async (range) => [
+      ...new Set(data.activities.filter((r) => inRange(r.day, range)).map((r) => r.day)),
+    ],
     goals: async () => data.goals,
     reminders: async () => data.reminders,
     reminderPrefs: async () => DEFAULT_REMINDER_PREFS,

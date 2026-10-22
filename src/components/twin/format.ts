@@ -1,7 +1,12 @@
 'use client';
 
 import { useFormatter, useTranslations } from 'next-intl';
-import { formatDecimal } from '@/components/health/format';
+import {
+  formatDecimal,
+  formatMeasure,
+  formatSignedMeasure,
+  type MeasureUnit,
+} from '@/components/health/format';
 
 /** "+1,2" / "−0,8" / "0". */
 export const signedDecimal = (v: number) =>
@@ -21,8 +26,8 @@ export function useTwinFormat(hideValues: boolean) {
     hiddenText: tc('hidden'),
     longDay: (iso: string) =>
       format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'long', timeZone: 'UTC' }),
-    value: (v: number, unit: string) => (hideValues ? tc('hidden') : `${formatDecimal(v)} ${unit}`),
-    signed: (v: number, unit: string) =>
-      hideValues ? tc('hidden') : `${signedDecimal(v)} ${unit}`,
+    value: (v: number, unit: MeasureUnit) => (hideValues ? tc('hidden') : formatMeasure(v, unit)),
+    signed: (v: number, unit: MeasureUnit) =>
+      hideValues ? tc('hidden') : formatSignedMeasure(v, unit),
   };
 }

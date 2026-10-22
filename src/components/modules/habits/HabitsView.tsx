@@ -13,6 +13,7 @@ import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
+import { cn } from '@/lib/cn';
 import { addDays, previousRange, WEEK_ORDER } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import {
@@ -63,12 +64,14 @@ export function HabitsView({
   );
   const done = (habitId: string, day: string) =>
     streakChecks.some((c) => c.habitId === habitId && c.day === day);
-  const shortDay = (iso: string) =>
-    format.dateTime(new Date(`${iso}T12:00:00Z`), {
-      weekday: 'short',
-      day: '2-digit',
-      timeZone: 'UTC',
-    });
+  const at = (iso: string) => new Date(`${iso}T12:00:00Z`);
+  /** "seg" (sem o ponto da abreviação). */
+  const weekdayShort = (iso: string) =>
+    format.dateTime(at(iso), { weekday: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
+  const dayNumber = (iso: string) => format.dateTime(at(iso), { day: 'numeric', timeZone: 'UTC' });
+  /** "segunda-feira, 20 de outubro": nome acessível do check do dia. */
+  const dayName = (iso: string) =>
+    format.dateTime(at(iso), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
   const frequencyText = (h: HabitRecord) =>
     h.frequency === 'weekdays'
       ? t('frequencyWeekdays', {
@@ -151,16 +154,18 @@ export function HabitsView({
                 key: 'done',
                 label: t('chartDone'),
                 kind: 'bar',
-                color: 'var(--hm-primary)',
+                color: 'var(--hm-chart-1)',
                 decimals: 0,
+                integer: true,
               },
               {
                 key: 'scheduled',
                 label: t('chartScheduled'),
                 kind: 'line',
-                color: 'var(--hm-fg-muted)',
+                color: 'var(--hm-chart-neutral)',
                 dash: '4 4',
                 decimals: 0,
+                integer: true,
               },
             ]}
           />
@@ -195,21 +200,45 @@ export function HabitsView({
                     </p>
                     <div>
                       <p className="mb-1 text-sm font-semibold">{t('lastDays')}</p>
-                      <ul className="flex flex-wrap gap-2">
-                        {lastDays.map((day) => (
-                          <li key={day} className="flex flex-col items-center gap-1 text-xs">
-                            <span className={isScheduled(h, day) ? '' : 'text-fg-muted'}>
-                              {shortDay(day)}
-                            </span>
-                            <HabitCheckButton
-                              habitId={h.id}
-                              name={`${h.name} (${shortDay(day)})`}
-                              day={day}
-                              done={done(h.id, day)}
-                              readOnly={!own}
-                            />
-                          </li>
-                        ))}
+                      {/* Grade de 7 colunas: dia em cima, check embaixo. Dia fora da agenda: borda
+                          tracejada, texto esmaecido e "não previsto" no nome (não só a cor). */}
+                      <ul className="grid grid-cols-7 gap-1">
+                        {lastDays.map((day) => {
+                          const scheduled = isScheduled(h, day);
+                          const date = scheduled
+                            ? dayName(day)
+                            : `${dayName(day)}, ${t('notScheduled')}`;
+                          return (
+                            <li
+                              key={day}
+                              className={cn(
+                                'flex min-w-0 flex-col items-center gap-1 rounded-md border py-1 text-xs',
+                                scheduled
+                                  ? 'border-transparent'
+                                  : 'border-dashed border-border-strong',
+                              )}
+                            >
+                              <span
+                                aria-hidden="true"
+                                className={cn(
+                                  'flex flex-col items-center leading-tight',
+                                  scheduled ? '' : 'text-fg-muted',
+                                )}
+                              >
+                                <span>{weekdayShort(day)}</span>
+                                <span className="tabular font-semibold">{dayNumber(day)}</span>
+                              </span>
+                              <HabitCheckButton
+                                habitId={h.id}
+                                name={h.name}
+                                day={day}
+                                done={done(h.id, day)}
+                                readOnly={!own}
+                                date={date}
+                              />
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                     {own ? (

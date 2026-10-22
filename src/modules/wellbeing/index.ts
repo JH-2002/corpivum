@@ -6,6 +6,7 @@ export {
   computeWellbeingScore,
   SCORE_COMPONENTS,
   SCORE_V2,
+  SCORE_V3,
   SCORE_VERSION,
   type ExclusionReason,
   type ScoreComponent,

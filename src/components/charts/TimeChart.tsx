@@ -24,12 +24,14 @@ export interface ChartSeries {
   label: string;
   unit?: string;
   kind: 'line' | 'bar';
-  /** Cor por token (ex.: `var(--hm-domain-sleep)`). Nunca é o único canal: há padrão de linha e rótulo. */
+  /** Cor por token (ex.: `var(--hm-chart-1)`). Nunca é o único canal: há padrão de linha e rótulo. */
   color: string;
   /** Padrão de traço da linha (`stroke-dasharray`). */
   dash?: string;
   axis?: 'left' | 'right';
   decimals?: number;
+  /** Contagem (refeições, sessões, hábitos): eixo só com números inteiros. */
+  integer?: boolean;
 }
 
 /** Linha do gráfico: o dia e os valores das séries (número, ou `null` sem registro). */
@@ -42,6 +44,7 @@ export interface TimeChartProps<T extends ChartRow> {
   series: readonly ChartSeries[];
   badge: ConfidenceLevel;
   height?: number;
+  /** Ignorado no eixo que tem barras: barras sempre começam em zero. */
   leftDomain?: [number, number];
   rightDomain?: [number, number];
   /** Estilo compacto (sem eixo Y à direita no mobile). */

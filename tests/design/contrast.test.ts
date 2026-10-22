@@ -1,7 +1,8 @@
 // @vitest-environment node
 /**
  * Contraste WCAG 2.2 AA dos tokens de cor do tema único escuro (§6, LEG-X01, ADR-0046).
- * Texto: >= 4.5:1. Componentes de UI e foco (bordas de campo, anel de foco, cor de domínio em gráficos): >= 3:1.
+ * Texto: >= 4.5:1. Componentes de UI e foco (bordas de campo, anel de foco): >= 3:1. Marcas dos gráficos (linhas,
+ * barras) da paleta `chart-*`: >= 3:1 (WCAG 1.4.11) e cores vizinhas distinguíveis entre si.
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -35,6 +36,28 @@ export function contrastRatio(a: string, b: string): number {
 }
 
 const SURFACES = ['bg', 'surface', 'surface-muted'];
+/** Ordem fixa das séries num gráfico com várias séries. */
+const CHART_PALETTE = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'];
+
+/** Distância perceptual OKLab × 100 (a mesma escala do validador da skill dataviz). */
+function oklabDistance(a: string, b: string): number {
+  const lab = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => {
+      const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * bl);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * bl);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * bl);
+    return [
+      0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+      1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+    ];
+  };
+  const [x, y] = [lab(a), lab(b)];
+  return 100 * Math.hypot(x[0]! - y[0]!, x[1]! - y[1]!, x[2]! - y[2]!);
+}
 
 /** [primeiro plano, fundo, mínimo] */
 const PAIRS: Array<[string, string, number]> = [
@@ -54,9 +77,9 @@ const PAIRS: Array<[string, string, number]> = [
       s,
       4.5,
     ]),
-    // Tons de série dos gráficos (antes cores de humor e diário, ADR-0027).
-    ['series-amber', s, 4.5],
-    ['series-violet', s, 4.5],
+    // Paleta dos gráficos: marcas gráficas, não texto (o texto dos gráficos usa fg e fg-muted).
+    ...CHART_PALETTE.map((c): [string, string, number] => [c, s, 3]),
+    ['chart-neutral', s, 3],
   ]),
   ['primary-fg', 'primary', 4.5],
   ['primary-fg', 'primary-hover', 4.5],
@@ -83,6 +106,14 @@ describe('contraste no tema escuro', () => {
     expect(a, `token ausente: ${fg}`).toBeDefined();
     expect(b, `token ausente: ${bg}`).toBeDefined();
     expect(contrastRatio(a!, b!)).toBeGreaterThanOrEqual(min);
+  });
+
+  it('cores vizinhas da paleta dos gráficos são distinguíveis (OKLab ΔE >= 15)', () => {
+    for (let i = 1; i < CHART_PALETTE.length; i++) {
+      const a = tokens.get(CHART_PALETTE[i - 1]!)!;
+      const b = tokens.get(CHART_PALETTE[i]!)!;
+      expect(oklabDistance(a, b), `${a} × ${b}`).toBeGreaterThanOrEqual(15);
+    }
   });
 
   it('define todos os 10 neutros', () => {

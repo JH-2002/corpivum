@@ -1,7 +1,7 @@
 import { eachDay } from '@/lib/dates';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
 import type { SleepRecord } from '@/modules/sleep';
-import { computeWellbeingScore, SCORE_V2, SCORE_VERSION, type ScoreInput } from './score';
+import { computeWellbeingScore, SCORE_V2, SCORE_V3, SCORE_VERSION, type ScoreInput } from './score';
 
 const RANGE = { from: '2026-10-01', to: '2026-10-10' };
 
@@ -37,16 +37,18 @@ function input(over: Partial<ScoreInput> = {}): ScoreInput {
     habits: [],
     checks: [],
     loggedDays: new Set(),
+    activityDays: new Set(),
     ...over,
   };
 }
 
-describe('Índice de Bem-Estar v2 (§14, LEG-D08, ADR-0027)', () => {
-  it('é versionado e os pesos nominais somam 1', () => {
-    expect(SCORE_VERSION).toBe(2);
-    const sum = Object.values(SCORE_V2.weights).reduce((a, b) => a + b, 0);
+describe('Índice de Bem-Estar v3 (§14, LEG-D08, ADR-0027, ADR-0050)', () => {
+  it('é versionado, os pesos nominais somam 1 e são os mesmos da v2', () => {
+    expect(SCORE_VERSION).toBe(3);
+    const sum = Object.values(SCORE_V3.weights).reduce((a, b) => a + b, 0);
     expect(sum).toBeCloseTo(1, 10);
-    expect(Object.isFrozen(SCORE_V2)).toBe(true);
+    expect(SCORE_V3.weights).toEqual(SCORE_V2.weights);
+    expect(Object.isFrozen(SCORE_V3)).toBe(true);
   });
 
   it('não tem componente de humor nem de peso', () => {
@@ -58,7 +60,7 @@ describe('Índice de Bem-Estar v2 (§14, LEG-D08, ADR-0027)', () => {
     const s = computeWellbeingScore(input());
     expect(s.value).toBeNull();
     expect(s.partial).toBe(true);
-    expect(s.components.find((c) => c.id === 'activity')?.reason).toBe('not_available');
+    expect(s.components.find((c) => c.id === 'activity')?.reason).toBe('insufficient_data');
     expect(s.components.find((c) => c.id === 'habits')?.reason).toBe('no_habits');
     expect(s.components.find((c) => c.id === 'sleepRegularity')?.reason).toBe('insufficient_data');
   });
@@ -75,7 +77,7 @@ describe('Índice de Bem-Estar v2 (§14, LEG-D08, ADR-0027)', () => {
     );
     // Todos 100 (horário idêntico, todos os checks, registro diário).
     expect(s.value).toBe(100);
-    expect(s.partial).toBe(true); // atividade fora até existir o módulo
+    expect(s.partial).toBe(true); // sem atividade registrada
     const included = s.components.filter((c) => c.included);
     expect(included.map((c) => c.id)).toEqual(['sleepRegularity', 'habits', 'logging']);
     const eff = included.reduce((a, c) => a + (c.effectiveWeight ?? 0), 0);
@@ -127,5 +129,50 @@ describe('Índice de Bem-Estar v2 (§14, LEG-D08, ADR-0027)', () => {
     const days = eachDay(RANGE);
     const i = input({ sleep: days.map((d) => sleep(d)), loggedDays: new Set(days) });
     expect(computeWellbeingScore(i)).toEqual(computeWellbeingScore(i));
+  });
+});
+
+describe('Índice v3: atividade pela regularidade de registro (ADR-0050, LEG-M07)', () => {
+  const days = eachDay(RANGE);
+  const full = (activityDays: string[]) =>
+    computeWellbeingScore(
+      input({
+        sleep: days.map((d) => sleep(d)),
+        habits: [HABIT],
+        checks: days.map((d): HabitCheckRecord => ({ habitId: 'h1', day: d })),
+        loggedDays: new Set(days),
+        activityDays: new Set(activityDays),
+      }),
+    );
+
+  it('com atividade registrada, o Índice fica completo (sem "parcial")', () => {
+    const s = full(days);
+    expect(s.partial).toBe(false);
+    expect(s.components.every((c) => c.included)).toBe(true);
+    expect(s.value).toBe(100);
+  });
+
+  it('conta semanas com alguma atividade: dias de descanso não reduzem, fazer mais não aumenta', () => {
+    // RANGE: 2026-10-01 (quinta) a 2026-10-10 (sábado) = 2 semanas (28/09–04/10 e 05/10–11/10).
+    const twoPerWeek = full(['2026-10-01', '2026-10-03', '2026-10-06', '2026-10-08']);
+    expect(twoPerWeek.components.find((c) => c.id === 'activity')?.value).toBe(100);
+    expect(full(days).components.find((c) => c.id === 'activity')?.value).toBe(100);
+    // Só a segunda semana com atividade: metade.
+    const oneWeek = full(['2026-10-05', '2026-10-06', '2026-10-07']);
+    expect(oneWeek.components.find((c) => c.id === 'activity')?.value).toBe(50);
+    expect(oneWeek.components.find((c) => c.id === 'activity')?.sample).toBe(3);
+  });
+
+  it('menos de 3 dias com atividade: fora, com motivo', () => {
+    const s = full(days.slice(0, 2));
+    const a = s.components.find((c) => c.id === 'activity');
+    expect(a?.included).toBe(false);
+    expect(a?.reason).toBe('insufficient_data');
+    expect(s.partial).toBe(true);
+  });
+
+  it('dias fora do período não contam', () => {
+    const s = full(['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01']);
+    expect(s.components.find((c) => c.id === 'activity')?.included).toBe(false);
   });
 });

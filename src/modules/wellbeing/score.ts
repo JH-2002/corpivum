@@ -1,4 +1,4 @@
-import { eachDay, rangeLength } from '@/lib/dates';
+import { daysBetween, eachDay, rangeLength, weekStart } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { clamp } from '@/lib/stats';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
@@ -14,6 +14,7 @@ import { scheduleSpreadMinutes, type SleepRecord } from '@/modules/sleep';
  * documentada em docs/WELLBEING_SCORE.md. Componentes sem dados suficientes ficam fora do cálculo e os
  * pesos são renormalizados entre os incluídos ("dados parciais").
  */
+/** v2 (ADR-0027): histórica. Atividade sempre fora. */
 export const SCORE_V2 = Object.freeze({
   version: 2,
   /** Pesos da v1 sem humor e energia, renormalizados na mesma proporção (0,25 : 0,2 : 0,15 : 0,15). */
@@ -32,7 +33,18 @@ export const SCORE_V2 = Object.freeze({
   minIncluded: 2,
 });
 
-export const SCORE_VERSION = SCORE_V2.version;
+/**
+ * v3 (ADR-0050): mesmos pesos e limiares da v2; a atividade entra pela regularidade de registro (semanas com
+ * alguma atividade registrada), sem meta de frequência, intensidade, volume nem calorias (LEG-M07).
+ */
+export const SCORE_V3 = Object.freeze({
+  ...SCORE_V2,
+  version: 3,
+  /** Mínimo de dias com atividade registrada no período para o componente entrar. */
+  minActivityDays: 3,
+});
+
+export const SCORE_VERSION = SCORE_V3.version;
 
 export const SCORE_COMPONENTS = ['sleepRegularity', 'habits', 'activity', 'logging'] as const;
 export type ScoreComponentId = (typeof SCORE_COMPONENTS)[number];
@@ -71,13 +83,15 @@ export interface ScoreInput {
   checks: HabitCheckRecord[];
   /** Dias com registro de sono ou check no período. Medições do corpo não entram (LEG-M06). */
   loggedDays: ReadonlySet<string>;
+  /** Dias com atividade física registrada no período (só a data: duração e intensidade não entram). */
+  activityDays: ReadonlySet<string>;
 }
 
 type Partial0 = Omit<ScoreComponent, 'weight' | 'effectiveWeight'>;
 
 function sleepRegularity(input: ScoreInput): Partial0 {
   const sample = input.sleep.length;
-  const spread = sample >= SCORE_V2.minSleepRecords ? scheduleSpreadMinutes(input.sleep) : null;
+  const spread = sample >= SCORE_V3.minSleepRecords ? scheduleSpreadMinutes(input.sleep) : null;
   if (spread === null) {
     return {
       id: 'sleepRegularity',
@@ -87,7 +101,7 @@ function sleepRegularity(input: ScoreInput): Partial0 {
       reason: 'insufficient_data',
     };
   }
-  const value = Math.round(clamp(100 * (1 - spread / SCORE_V2.sleepSpreadZeroAt), 0, 100));
+  const value = Math.round(clamp(100 * (1 - spread / SCORE_V3.sleepSpreadZeroAt), 0, 100));
   return { id: 'sleepRegularity', included: true, value, sample, reason: null };
 }
 
@@ -99,15 +113,35 @@ function habits(input: ScoreInput): Partial0 {
   }
   const expected = active.reduce((acc, h) => acc + expectedOccurrences(h, input.range), 0);
   const rate = completionRate(active, input.checks, input.range);
-  if (expected < SCORE_V2.minExpectedHabitChecks || rate === null) {
+  if (expected < SCORE_V3.minExpectedHabitChecks || rate === null) {
     return { id: 'habits', included: false, value: null, sample, reason: 'insufficient_data' };
   }
   return { id: 'habits', included: true, value: Math.round(rate * 100), sample, reason: null };
 }
 
-/** Atividade física ainda não tem módulo (Fase 4): fica fora, sempre, até lá. */
-function activity(): Partial0 {
-  return { id: 'activity', included: false, value: null, sample: 0, reason: 'not_available' };
+/**
+ * Regularidade de registro de atividade: semanas (segunda a domingo) com pelo menos uma atividade registrada ÷
+ * semanas desde a do primeiro registro do período (sono, check ou atividade) até a do fim dele. Uma atividade
+ * por semana já conta a semana inteira: dias de descanso não reduzem o valor e fazer mais não aumenta (LEG-M07).
+ */
+function activity(input: ScoreInput): Partial0 {
+  const days = eachDay(input.range).filter((d) => input.activityDays.has(d));
+  const sample = days.length;
+  const first = eachDay(input.range).find(
+    (d) => input.activityDays.has(d) || input.loggedDays.has(d),
+  );
+  if (sample < SCORE_V3.minActivityDays || !first) {
+    return { id: 'activity', included: false, value: null, sample, reason: 'insufficient_data' };
+  }
+  const weeks = daysBetween(weekStart(first), weekStart(input.range.to)) / 7 + 1;
+  const activeWeeks = new Set(days.map(weekStart)).size;
+  return {
+    id: 'activity',
+    included: true,
+    value: Math.round(clamp((activeWeeks / weeks) * 100, 0, 100)),
+    sample,
+    reason: null,
+  };
 }
 
 /**
@@ -130,25 +164,25 @@ function logging(input: ScoreInput): Partial0 {
   };
 }
 
-/** Calcula o Índice v2. Determinístico: mesmos registros e período → mesmo resultado. */
+/** Calcula o Índice v3. Determinístico: mesmos registros e período → mesmo resultado. */
 export function computeWellbeingScore(input: ScoreInput): WellbeingScore {
-  const raw = [sleepRegularity(input), habits(input), activity(), logging(input)];
+  const raw = [sleepRegularity(input), habits(input), activity(input), logging(input)];
   const includedWeight = raw
     .filter((c) => c.included)
-    .reduce((acc, c) => acc + SCORE_V2.weights[c.id], 0);
+    .reduce((acc, c) => acc + SCORE_V3.weights[c.id], 0);
   const components: ScoreComponent[] = raw.map((c) => ({
     ...c,
-    weight: SCORE_V2.weights[c.id],
+    weight: SCORE_V3.weights[c.id],
     effectiveWeight:
-      c.included && includedWeight > 0 ? SCORE_V2.weights[c.id] / includedWeight : null,
+      c.included && includedWeight > 0 ? SCORE_V3.weights[c.id] / includedWeight : null,
   }));
   const included = components.filter((c) => c.included);
   const value =
-    included.length >= SCORE_V2.minIncluded
+    included.length >= SCORE_V3.minIncluded
       ? Math.round(included.reduce((acc, c) => acc + (c.value ?? 0) * (c.effectiveWeight ?? 0), 0))
       : null;
   return {
-    version: SCORE_V2.version,
+    version: SCORE_V3.version,
     range: input.range,
     value,
     partial: included.length < components.length,

@@ -5,7 +5,13 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { Sparkline } from '@/components/charts/Sparkline';
 import { TimeChart } from '@/components/charts/TimeChart';
-import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
+import {
+  formatDecimal,
+  formatDuration,
+  formatMeasure,
+  TREND_ARROW,
+  trendOf,
+} from '@/components/health/format';
 import { HabitCheckButton } from '@/components/health/HabitCheckButton';
 import { ScoreReviewForm } from '@/components/health/ScoreReviewForm';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
@@ -282,7 +288,7 @@ export function Dashboard({
                 : null
             }
             origin={t('origins.sleep', { count: cards.sleep.count })}
-            spark={<Sparkline data={cards.sleep.spark} color="var(--hm-domain-sleep)" />}
+            spark={<Sparkline data={cards.sleep.spark} color="var(--hm-chart-1)" />}
           />
           <DomainCard
             title={t('cards.habits')}
@@ -300,7 +306,7 @@ export function Dashboard({
                 : null
             }
             origin={t('origins.habits', { count: cards.habits.activeHabits })}
-            spark={<Sparkline data={cards.habits.spark} color="var(--hm-primary)" />}
+            spark={<Sparkline data={cards.habits.spark} color="var(--hm-chart-1)" />}
           />
           <DomainCard
             title={t('cards.body')}
@@ -313,7 +319,7 @@ export function Dashboard({
               hidden ? (
                 <Masked hidden />
               ) : cards.body.weightKg !== null ? (
-                `${formatDecimal(cards.body.weightKg)} kg`
+                formatMeasure(cards.body.weightKg, 'kg')
               ) : null
             }
             variation={
@@ -325,7 +331,9 @@ export function Dashboard({
             }
             origin={t('origins.body')}
             spark={
-              hidden ? null : <Sparkline data={cards.body.spark} color="var(--hm-domain-body)" />
+              hidden ? null : (
+                <Sparkline data={cards.body.spark} color="var(--hm-chart-1)" minSpan={4} />
+              )
             }
           />
         </div>
@@ -345,7 +353,7 @@ export function Dashboard({
               label: t('combined.sleep'),
               unit: 'h',
               kind: 'bar',
-              color: 'var(--hm-domain-sleep)',
+              color: 'var(--hm-chart-1)',
             },
           ]}
         />
