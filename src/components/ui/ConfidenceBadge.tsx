@@ -23,14 +23,24 @@ const STYLES: Record<
 /**
  * Selo de origem do dado. Texto + ícone (cor nunca é o único canal) e dica acessível
  * exibida em foco ou hover, que fecha com Esc (WCAG 1.4.13).
+ * DEMO é discreto por padrão: só o ícone (o nome acessível e a dica dizem "Demo"), porque a página inteira já
+ * se anuncia como demonstração (pílula no cabeçalho e faixa). Continua em cada dado (regra 7), com alvo de 24 px.
+ * `full` mostra o texto mesmo no DEMO.
  */
-export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
+export function ConfidenceBadge({
+  level,
+  full = false,
+}: {
+  level: ConfidenceLevel;
+  full?: boolean;
+}) {
   const t = useTranslations('badges');
   // A dica aparece por CSS em hover/foco (e continua visível com o ponteiro sobre ela);
   // o estado só registra o fechamento por Esc até o próximo foco.
   const [dismissed, setDismissed] = useState(false);
   const hintId = useId();
   const { icon: Icon, className } = STYLES[level];
+  const compact = level === 'DEMO' && !full;
 
   return (
     <span className="group relative inline-flex" data-dismissed={dismissed || undefined}>
@@ -42,13 +52,14 @@ export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
         onKeyDown={(event) => {
           if (event.key === 'Escape') setDismissed(true);
         }}
+        data-compact={compact || undefined}
         className={cn(
-          'inline-flex min-h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold tracking-wide uppercase',
-          className,
+          'inline-flex min-h-6 items-center rounded-full text-xs font-semibold tracking-wide uppercase',
+          compact ? 'min-w-6 justify-center text-fg-muted' : cn('gap-1 px-2', className),
         )}
       >
-        <Icon className="size-3.5" aria-hidden="true" />
-        {t(level)}
+        <Icon className={compact ? 'size-4' : 'size-3.5'} aria-hidden="true" />
+        {compact ? null : t(level)}
       </button>
       <span
         id={hintId}

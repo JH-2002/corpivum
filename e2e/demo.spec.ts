@@ -41,10 +41,13 @@ test('dados com selo DEMO, formulários só de exemplo e com caminho para criar 
   await page.goto('/demo');
   await expect(page.getByRole('banner')).toContainText('DEMO');
   await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
-  // Todo selo exibido é DEMO.
+  // Todo selo exibido é DEMO (discreto: só o ícone, com o nome acessível).
   const badges = page.getByRole('button', { name: /^Origem do dado:/ });
   expect(await badges.count()).toBeGreaterThan(5);
-  for (const name of await badges.allTextContents()) expect(name.trim()).toBe('Demo');
+  for (const name of await badges.evaluateAll((els) =>
+    els.map((e) => e.getAttribute('aria-label')),
+  ))
+    expect(name).toBe('Origem do dado: Demo');
   await expect(page.getByRole('button', { name: 'Pedir revisão' })).toHaveCount(0);
 
   // Formulário de exemplo (9b): preenchido, com todos os campos e o envio desativados.

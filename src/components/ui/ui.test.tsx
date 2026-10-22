@@ -49,11 +49,28 @@ describe('StateView', () => {
 });
 
 describe('ConfidenceBadge', () => {
-  it.each(CONFIDENCE_LEVELS)('%s tem texto visível e dica associada', (level) => {
+  it.each(CONFIDENCE_LEVELS)('%s tem nome acessível e dica associada', (level) => {
     renderWithIntl(<ConfidenceBadge level={level} />);
     const badge = screen.getByRole('button');
     expect(badge).toHaveAccessibleName(expect.stringContaining('Origem do dado'));
     expect(badge).toHaveAccessibleDescription(/.+/);
+  });
+
+  it('níveis reais mostram o texto; DEMO é só o ícone, com o mesmo nome acessível', () => {
+    renderWithIntl(
+      <>
+        <ConfidenceBadge level="INFORMADO" />
+        <ConfidenceBadge level="DEMO" />
+        <ConfidenceBadge level="DEMO" full />
+      </>,
+    );
+    const [real, demo, demoFull] = screen.getAllByRole('button');
+    expect(real).toHaveTextContent('Informado');
+    expect(demo).toHaveTextContent('');
+    expect(demo).toHaveAccessibleName('Origem do dado: Demo');
+    expect(demo).toHaveAccessibleDescription('Dado fictício de demonstração.');
+    expect(demo).toHaveClass('min-h-6', 'min-w-6');
+    expect(demoFull).toHaveTextContent('Demo');
   });
 
   it('Esc dispensa a dica até o próximo foco', async () => {
