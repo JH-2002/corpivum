@@ -53,6 +53,23 @@ function resolveImport(from: string, spec: string): string | null {
   return null;
 }
 
+/** `'use client'` no topo, depois de comentários e linhas em branco (sem regex com retrocesso). */
+export function isClientModule(code: string): boolean {
+  let rest = code;
+  for (;;) {
+    rest = rest.trimStart();
+    if (rest.startsWith('//')) {
+      const end = rest.indexOf('\n');
+      rest = end < 0 ? '' : rest.slice(end + 1);
+    } else if (rest.startsWith('/*')) {
+      const end = rest.indexOf('*/', 2);
+      rest = end < 0 ? '' : rest.slice(end + 2);
+    } else {
+      return rest.startsWith("'use client'") || rest.startsWith('"use client"');
+    }
+  }
+}
+
 const cache = new Map<string, Parsed>();
 
 function parse(file: string): Parsed {
@@ -82,9 +99,7 @@ function parse(file: string): Parsed {
     else if (prefix) namespaces.add(prefix[1]!);
     else dynamic.push(a);
   }
-  // A diretiva pode vir depois de comentários e linhas em branco.
-  const client = /^(?:\s|\/\/[^\n]*\n|\/\*[\s\S]*?\*\/)*['"]use client['"]/.test(code);
-  const parsed = { client, imports, namespaces, dynamic };
+  const parsed = { client: isClientModule(code), imports, namespaces, dynamic };
   cache.set(file, parsed);
   return parsed;
 }

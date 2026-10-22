@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
-import { pageFiles, routeKey, scan } from '../../scripts/i18n-client-namespaces';
+import { isClientModule, pageFiles, routeKey, scan } from '../../scripts/i18n-client-namespaces';
 import { pickMessages, routeMessages, shellMessages } from './client-messages';
 import { ROUTE_NAMESPACES, SHELL_NAMESPACES } from './client-namespaces.generated';
 
@@ -65,5 +65,14 @@ describe('avisos obrigatórios chegam aos componentes de cliente (regra 9, LEG-M
       expect(ROUTE_NAMESPACES[route]).toEqual(expect.arrayContaining(['disclaimer', 'guardrails']));
     }
     expect(SHELL_NAMESPACES).toEqual(expect.arrayContaining(['disclaimer', 'demo']));
+  });
+});
+
+describe('isClientModule', () => {
+  it("reconhece 'use client' depois de comentários e linhas em branco", () => {
+    expect(isClientModule("'use client';\nx")).toBe(true);
+    expect(isClientModule('// cabeçalho\n/* bloco\n */\n\n"use client";')).toBe(true);
+    expect(isClientModule("import x from 'y';\n'use client';")).toBe(false);
+    expect(isClientModule('/* sem fim')).toBe(false);
   });
 });
