@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Orbit } from 'lucide-react';
+import { Box, Info, Orbit } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { useTranslations } from 'next-intl';
@@ -88,6 +88,7 @@ export function TwinHero({
 }) {
   const t = useTranslations('twin.hero');
   const tb = useTranslations('twin.body');
+  const td = useTranslations('disclaimer');
   const [model] = useBodyModel(demo);
   const { rows, latestHeightCm } = useMemo(
     () =>
@@ -170,10 +171,14 @@ export function TwinHero({
             <Orbit className="size-5 text-primary" aria-hidden="true" />
             {t('title')}
           </h2>
-          <p className="text-sm text-fg-muted">{t('subtitle')}</p>
+          {/* Modo privacidade com dados próprios: as medidas não chegam e o modelo fica na forma de referência. */}
+          <p className="text-sm text-fg-muted">
+            {t(hidden && !demo ? 'subtitleReference' : 'subtitle')}
+          </p>
         </div>
         <ConfidenceBadge level={level('INFORMADO')} />
       </div>
+      <TwinHeroDisclaimer text={td('bodyModel')} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div
@@ -289,6 +294,16 @@ export function TwinHero({
         </div>
       </div>
     </section>
+  );
+}
+
+/** O mesmo aviso da tela do twin (`disclaimer.bodyModel`): representação aproximada, não é avaliação corporal. */
+export function TwinHeroDisclaimer({ text }: { text: string }) {
+  return (
+    <p className="flex gap-2 text-sm text-fg-muted" data-testid="body-disclaimer">
+      <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+      {text}
+    </p>
   );
 }
 

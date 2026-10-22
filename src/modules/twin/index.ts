@@ -41,6 +41,7 @@ export {
   compareSnapshots,
   firstMeasure,
   measurementDays,
+  hasRegionMeasures,
   toTwinRows,
   type BodySnapshot,
   type Direction,

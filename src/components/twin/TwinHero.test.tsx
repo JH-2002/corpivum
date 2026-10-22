@@ -41,6 +41,10 @@ describe('twin no início (ADR-0049)', () => {
     const hero = screen.getByRole('region', { name: 'Seu corpo no período' });
     expect(hero).not.toHaveTextContent('81,5');
     expect(hero).toHaveTextContent(/oculto/);
+    expect(hero).toHaveTextContent('forma de referência');
+    expect(within(hero).getByTestId('body-disclaimer')).toHaveTextContent(
+      'Não é avaliação corporal',
+    );
   });
 
   it('demo: selos DEMO e nenhuma pergunta de modelo', () => {

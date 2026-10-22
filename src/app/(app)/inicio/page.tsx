@@ -8,7 +8,7 @@ import { readPreviewState, type PageSearchParams } from '@/components/shell/Modu
 import { readPeriod } from '@/lib/period-server';
 import { readPrivacyMode } from '@/lib/privacy-mode-server';
 import { maskBodyScreen, maskDashboard } from '@/modules/health/mask';
-import { toTwinRows } from '@/modules/twin';
+import { hasRegionMeasures, toTwinRows } from '@/modules/twin';
 import { requireAppSession } from '@/modules/consent/server';
 import { UpcomingReminders } from '@/components/modules/reminders/UpcomingReminders';
 import { buildDashboard } from '@/modules/health/dashboard';
@@ -59,7 +59,11 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
             hidden={hidden}
             twin={
               twinBody
-                ? { rows: toTwinRows(twinBody.records), latestHeightCm: twinBody.latestHeightCm }
+                ? {
+                    rows: toTwinRows(twinBody.records),
+                    latestHeightCm: twinBody.latestHeightCm,
+                    hasRegions: hasRegionMeasures(data?.body ?? []),
+                  }
                 : undefined
             }
             emptyAction={<OpenQuickLogButton>{t('pages.home.cta')}</OpenQuickLogButton>}

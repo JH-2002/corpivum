@@ -1,6 +1,6 @@
 'use client';
 
-import { Orbit } from 'lucide-react';
+import { Info, Orbit } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import type { ComponentProps } from 'react';
@@ -14,6 +14,7 @@ import { useIdleStart } from './useIdleStart';
  */
 export function TwinHeroPlaceholder() {
   const t = useTranslations('twin.hero');
+  const td = useTranslations('disclaimer');
   return (
     <section
       aria-labelledby="twin-hero-title"
@@ -27,6 +28,10 @@ export function TwinHeroPlaceholder() {
         </h2>
         <p className="text-sm text-fg-muted">{t('subtitle')}</p>
       </div>
+      <p className="flex gap-2 text-sm text-fg-muted">
+        <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+        {td('bodyModel')}
+      </p>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="relative h-[min(62vh,640px)] min-h-[340px] overflow-hidden rounded-lg border border-border bg-surface">
           <HoloLoading pulse={false} />

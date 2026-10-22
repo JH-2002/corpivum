@@ -1831,8 +1831,11 @@ capturas da 9a, também: medidas de todas as regiões em várias datas na demo, 
   grande (≈ 62vh, até 640 px) e, ao lado (embaixo no celular), lista de regiões com `aria-pressed` e o painel da
   região: medida com unidade, data, variação desde a primeira medida do período (tom neutro, sem cor de bom ou ruim,
   LEG-M06), sparkline da região e selos INFORMADO/ESTIMADO ou DEMO. Começa na primeira região com medida. "Abrir
-  twin completo" leva à tela do twin. Sem medidas no período, fica o atalho antigo. Modo privacidade: como na tela
-  do twin (medidas próprias nem saem do servidor; na demo, só os números ficam ocultos).
+  twin completo" leva à tela do twin. O mesmo aviso da tela do twin (`disclaimer.bodyModel`: representação
+  aproximada, não é avaliação corporal nem de saúde) fica no hero e no esqueleto. Sem nenhuma circunferência no
+  período (`hasRegionMeasures`, decidido no servidor antes de mascarar), fica o atalho antigo. Modo privacidade: como
+  na tela do twin (medidas próprias nem saem do servidor e o subtítulo diz que o modelo está na forma de
+  referência; na demo, só os números ficam ocultos).
 - **Carga sem "pulo".** O HTML traz um esqueleto (`TwinHeroPlaceholder`) com o mesmo cartão e a mesma área do
   modelo, com a silhueta holográfica (`HoloLoading`). Depois do evento `load` e de um tempo ocioso
   (`useIdleStart`), chega o twin interativo, num chunk próprio, e só então a cena 3D (`LazyBodyScene`, ainda o único

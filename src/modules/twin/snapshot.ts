@@ -1,6 +1,6 @@
 import type { BodyField, BodyRecord } from '@/modules/body';
 import { round } from '@/lib/stats';
-import { COMPARE_FIELDS } from './regions';
+import { COMPARE_FIELDS, REGION_FIELD } from './regions';
 
 /** Valor informado e o dia do registro de onde veio (`null` = registro anterior ao período). */
 export interface MeasureValue {
@@ -26,6 +26,15 @@ export function toTwinRows(records: readonly BodyRecord[]): TwinRow[] {
     day: r.day,
     ...Object.fromEntries(COMPARE_FIELDS.map((f) => [f, r[f]])),
   }));
+}
+
+/**
+ * Alguma medição do período tem circunferência de uma região do corpo (ADR-0049): sem nenhuma, o início mostra
+ * só o atalho para o twin. Calculado no servidor, antes de mascarar o modo privacidade: o booleano não diz mais
+ * do que as datas e a quantidade de registros que já aparecem (PR3-B3).
+ */
+export function hasRegionMeasures(records: readonly BodyRecord[]): boolean {
+  return records.some((r) => Object.values(REGION_FIELD).some((f) => r[f] !== null));
 }
 
 /** Dias com medição no período, em ordem: as posições do controle de datas (§15). */

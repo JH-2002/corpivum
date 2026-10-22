@@ -104,6 +104,12 @@ test('ligado, nenhum valor do corpo nem calorias no texto e no HTML das telas', 
     await page.goto(screen.path);
     await expect(page.getByRole('heading', { level: 1, name: screen.title })).toBeVisible();
     await expect(page.getByText('Modo privacidade ativo.')).toBeVisible();
+    if (screen.path === '/inicio') {
+      // O twin do início chega depois da carga (ADR-0049): varre com ele na tela.
+      const hero = page.locator('[data-tour="twin-hero"]');
+      await expect(hero).toContainText('forma de referência');
+      await expect(hero.getByRole('button', { name: 'Cintura' })).toBeVisible();
+    }
     const text = await page.locator('main').innerText();
     expect(text, screen.path).not.toMatch(UNIT_VALUE);
     // O desenho dos gráficos (coordenadas do SVG) fica de fora; os dados que alimentariam um gráfico estão

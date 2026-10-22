@@ -8,7 +8,7 @@ import { UpcomingReminders } from '@/components/modules/reminders/UpcomingRemind
 import { buildDashboard } from '@/modules/health/dashboard';
 import { loadReminders } from '@/modules/health/screens';
 import { maskDashboard } from '@/modules/health/mask';
-import { toTwinRows } from '@/modules/twin';
+import { hasRegionMeasures, toTwinRows } from '@/modules/twin';
 import { demoContext } from '@/app/demo/demo-data';
 import { isDemoOnly } from '@/lib/demo-mode';
 
@@ -47,7 +47,11 @@ export default async function DemoHomePage() {
         data={hidden ? maskDashboard(data) : data}
         mode="publicDemo"
         hidden={hidden}
-        twin={{ rows: toTwinRows(body), latestHeightCm: height }}
+        twin={{
+          rows: toTwinRows(body),
+          latestHeightCm: height,
+          hasRegions: hasRegionMeasures(body),
+        }}
       />
       <UpcomingReminders
         reminders={reminders.reminders}
