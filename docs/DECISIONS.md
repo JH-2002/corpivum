@@ -1809,6 +1809,11 @@ destaque. Parte do sistema de movimento previsto para a 9f é antecipada aqui (a
   interface, sem dado pessoal, como a antiga chave de tema). Marca `<html data-motion="reduced">`, e o CSS aplica o
   mesmo corte de animações da preferência do sistema. Sem script inicial: o efeito só reage ao mouse depois da
   hidratação, então não há "piscar".
+- **Inventário do navegador.** `hm.motion` entra em `/demo/sobre` (`demoAbout.browser`, RASCUNHO) e na ROPA (T2b,
+  junto com `hm_tour_demo_seen` e `hm.twin.bodyModel`); o `/demo/sobre` deixa de dizer que não há formulário e diz só que os formulários de
+  exemplo (ADR-0047) não enviam nada; cookies de preferência e registros da hospedagem seguem nas seções próprias. A Política v2 é texto versionado (hash em `policy_versions`) e não muda:
+  a inclusão de `hm.motion`, e a retirada do "tema de cores" (ADR-0046), ficam para a próxima versão (OI-40).
+  `tests/content/browser-storage-inventory.test.ts` falha se uma chave de `localStorage` do código faltar na ROPA.
 - **Orçamento:** `check:perf-budget` OK. `pnpm test:perf` local deu `/inicio` 2570 ms com o efeito e 2572 ms na
   `main` sem ele, na mesma máquina (que hoje mede acima da CI): sem custo mensurável. O gate é o job de performance
   da CI.

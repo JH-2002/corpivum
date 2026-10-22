@@ -46,7 +46,7 @@ disponibilidade).
 ```
  Navegador ──TLS──▶ Hospedagem (proxy/CDN, logs) ──▶ App Next.js (Node, região BR)
    │  cookies __Host-*                                 │  proxy.ts: CSP com nonce, redireciona sem cookie
-   │  localStorage (tema, variante do twin, tour)      │  requireSession: sessão validada no banco a cada requisição
+   │  localStorage (variante do twin, tour, animações) │  requireSession: sessão validada no banco a cada requisição
    │                                                   │
    │                                     ┌─────────────┼──────────────┬─────────────────┐
    │                                     ▼             ▼              ▼                 ▼
@@ -156,7 +156,7 @@ F6 app ↔ ferramenta de erros · F7 operador ↔ banco · F8 backups · F9 buil
 
 | STRIDE | Ameaça | Controle atual | Residual |
 |---|---|---|---|
-| I | Aparelho compartilhado | Sessões listáveis e revogáveis; sair apaga os cookies; `no-store` | Baixa: a variante do twin e o tema ficam no `localStorage` (sem dado de saúde) |
+| I | Aparelho compartilhado | Sessões listáveis e revogáveis; sair apaga os cookies; `no-store` | Baixa: a variante do twin, o tour visto e a opção de animações ficam no `localStorage` (sem dado de saúde) |
 | I | Valores vistos em público (A5) | Modo privacidade e modo apresentação (ADR-0035) | Baixa: datas e quantidade de registros continuam visíveis (PR3-B3, OI-36 b) |
 
 ## 6. Fora de escopo
