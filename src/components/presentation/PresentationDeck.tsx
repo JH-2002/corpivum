@@ -10,6 +10,7 @@ import { exitPresentationAction } from '@/app/presentation-actions';
 import { DemoOnlyBanner } from '@/components/demo/DemoOnlyBanner';
 import { PrivacyModeToggle } from '@/components/privacy-mode/PrivacyModeToggle';
 import { buttonClasses } from '@/components/ui/Button';
+import { focusProgrammatically } from '@/components/ui/programmatic-focus';
 import { MAIN_CONTENT_ID } from '@/components/ui/SkipLink';
 import { cn } from '@/lib/cn';
 import {
@@ -82,7 +83,7 @@ export function PresentationDeck({
 
   // Foco no título a cada troca de tela ou de dados: o leitor de tela anuncia o conteúdo novo.
   useEffect(() => {
-    titleRef.current?.focus();
+    focusProgrammatically(titleRef.current);
   }, [screen, own]);
 
   useEffect(() => {
@@ -172,11 +173,7 @@ export function PresentationDeck({
           <p className="text-sm text-fg-muted">
             {t('position', { current: index + 1, total, name: screenName })}
           </p>
-          <h2
-            ref={titleRef}
-            tabIndex={-1}
-            className="text-xl font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
+          <h2 ref={titleRef} tabIndex={-1} className="text-xl font-semibold">
             {screenName}
           </h2>
           {children}

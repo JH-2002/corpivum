@@ -1,15 +1,15 @@
 import { PRODUCT_NAME } from '../src/config/product';
 import { expect, test } from '@playwright/test';
 import { createVerifiedUser, e2eEmail, loginWithOwnIp } from './fixtures';
+import { choosePeriod, expectPeriod } from './period';
 
 test.describe('seletor de período global (§10)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('mostra o intervalo em texto e persiste ao trocar de página', async ({ page }) => {
     await page.goto('/inicio');
-    const select = page.getByLabel('Período', { exact: true });
-    await expect(select).toHaveValue('30d');
-    await select.selectOption('7d');
+    await expectPeriod(page, '30 dias');
+    await choosePeriod(page, '7 dias');
     await expect(page.getByText(/^\d{2}\/\d{2}\/\d{4} a \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
 
     await page
@@ -17,15 +17,15 @@ test.describe('seletor de período global (§10)', () => {
       .getByRole('link', { name: 'Sono' })
       .click();
     await expect(page.getByRole('heading', { level: 1, name: 'Sono' })).toBeVisible();
-    await expect(page.getByLabel('Período', { exact: true })).toHaveValue('7d');
+    await expectPeriod(page, '7 dias');
 
     await page.reload();
-    await expect(page.getByLabel('Período', { exact: true })).toHaveValue('7d');
+    await expectPeriod(page, '7 dias');
   });
 
   test('personalizado valida o intervalo e aplica datas válidas', async ({ page }) => {
     await page.goto('/inicio');
-    await page.getByLabel('Período', { exact: true }).selectOption('custom');
+    await choosePeriod(page, 'Personalizado');
     await page.getByLabel('De', { exact: true }).fill('2026-03-10');
     await page.getByLabel('Até', { exact: true }).fill('2026-03-01');
     await page.getByRole('button', { name: 'Aplicar' }).click();
@@ -119,4 +119,27 @@ test.describe('tema', () => {
 test('/ redireciona para /inicio', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveURL(/\/inicio$/);
+});
+
+test.describe('foco no título na troca de rota (9b, WCAG 2.4.3 e 2.4.7)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('o foco vai ao <h1>; sem moldura depois de clique, com anel depois de tecla', async ({
+    page,
+  }) => {
+    await page.goto('/inicio');
+    const sidebar = page.getByRole('navigation', { name: 'Navegação principal' });
+    const outline = () =>
+      page.getByRole('heading', { level: 1 }).evaluate((el) => getComputedStyle(el).outlineStyle);
+
+    await sidebar.getByRole('link', { name: 'Sono' }).click();
+    const sleep = page.getByRole('heading', { level: 1, name: 'Sono' });
+    await expect(sleep).toBeFocused();
+    expect(await outline()).toBe('none');
+
+    await sidebar.getByRole('link', { name: 'Hábitos' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { level: 1, name: 'Hábitos' })).toBeFocused();
+    expect(await outline()).not.toBe('none');
+  });
 });
