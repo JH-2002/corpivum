@@ -1,12 +1,21 @@
 import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/cn';
 
 /**
  * Estado de espera do twin no estilo holograma (ADR-0028, revisão de carregamento): silhueta suave com as
  * cores `--hm-holo-*`, pulsando devagar; parada com `prefers-reduced-motion`. Não é o corpo da pessoa nem o
  * corpo gerado em código: só um contorno genérico. Fica por cima do canvas, sem capturar o ponteiro.
- * `reason`: carregando (chunk 3D ou modelo `.glb`) ou aguardando a escolha do modelo.
+ * `reason`: carregando (chunk 3D ou modelo `.glb`) ou aguardando a escolha do modelo. `pulse={false}`: parada,
+ * como no twin do início (ADR-0049): a pulsação desde o primeiro quadro custava ~200 ms no "interativo" com a CPU
+ * lenta.
  */
-export function HoloLoading({ reason = 'loading' }: { reason?: 'loading' | 'choose' }) {
+export function HoloLoading({
+  reason = 'loading',
+  pulse = true,
+}: {
+  reason?: 'loading' | 'choose';
+  pulse?: boolean;
+}) {
   const t = useTranslations('twin.viewer');
   return (
     <div
@@ -17,7 +26,7 @@ export function HoloLoading({ reason = 'loading' }: { reason?: 'loading' | 'choo
       <svg
         viewBox="0 0 60 160"
         aria-hidden
-        className="h-3/5 max-h-72 animate-pulse motion-reduce:animate-none"
+        className={cn('h-3/5 max-h-72', pulse && 'animate-pulse motion-reduce:animate-none')}
       >
         <g
           fill="var(--hm-holo-fill)"

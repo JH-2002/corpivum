@@ -25,4 +25,11 @@ export interface BodySceneProps extends SceneCommon<BodyRegion> {
   shape: BodyShape;
   /** Variante de visualização (preferência do navegador, ADR-0028); `null` = ainda sem escolha. */
   model: BodyModel | null;
+  /**
+   * Estado do desenho, o mesmo de `data-twin-status` (ADR-0049): o twin do início troca o holograma pela cena
+   * quando sai de `loading`/`choose` (modelo pronto, ou o corpo em código como fallback real).
+   */
+  onStatus?: (status: BodySceneStatus) => void;
 }
+
+export type BodySceneStatus = 'choose' | 'loading' | 'ready' | 'error' | 'timeout';

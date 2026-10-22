@@ -13,6 +13,8 @@ import { Masked } from '@/components/privacy-mode/Masked';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { TiltCard } from '@/components/ui/TiltCard';
+import { LazyTwinHero } from '@/components/twin/LazyTwinHero';
+import type { TwinRow } from '@/modules/twin';
 import type { DashboardData } from '@/modules/health/dashboard';
 import { ScoreExplanation } from './ScoreExplanation';
 
@@ -158,6 +160,7 @@ export function Dashboard({
   emptyAction,
   hidden = false,
   links = true,
+  twin,
 }: {
   data: DashboardData;
   mode: DashboardMode;
@@ -165,6 +168,8 @@ export function Dashboard({
   emptyAction?: ReactNode;
   hidden?: boolean;
   links?: boolean;
+  /** Medidas do período para o twin do início (ADR-0049); só dia e medidas (`toTwinRows`). */
+  twin?: { rows: TwinRow[]; latestHeightCm: number | null };
 }) {
   const t = useTranslations('dashboard');
   const tp = useTranslations('pages.home');
@@ -204,6 +209,16 @@ export function Dashboard({
 
   const content = (
     <div className="flex flex-col gap-6">
+      {/* Twin como destaque do início (9c); fora do modo apresentação, que tem a própria tela do corpo. */}
+      {twinHref && twin && twin.rows.length > 0 ? (
+        <LazyTwinHero
+          rows={twin.rows}
+          latestHeightCm={twin.latestHeightCm}
+          demo={mode !== 'own'}
+          hidden={hidden}
+          href={twinHref}
+        />
+      ) : null}
       {/* Resumo em texto por regras, destaques e, se for o caso, apoio (ADR-0025). */}
       <PeriodInsights insights={data.insights} demo={mode !== 'own'} />
 
@@ -338,7 +353,8 @@ export function Dashboard({
 
       <TodayHabits data={data} mode={mode} links={links} />
 
-      {twinHref ? (
+      {/* Sem medidas no período, o twin não tem destaque: fica o atalho para a tela dele. */}
+      {twinHref && !(twin && twin.rows.length > 0) ? (
         <TiltCard className="rounded-lg border border-border bg-surface hover:bg-surface-muted">
           {/* Sem prefetch: a tela do twin baixa o 3D só quando aberta (ADR-0026). */}
           <Link href={twinHref} prefetch={false} className="flex items-center gap-3 rounded-lg p-4">

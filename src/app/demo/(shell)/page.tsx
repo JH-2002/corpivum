@@ -8,6 +8,7 @@ import { UpcomingReminders } from '@/components/modules/reminders/UpcomingRemind
 import { buildDashboard } from '@/modules/health/dashboard';
 import { loadReminders } from '@/modules/health/screens';
 import { maskDashboard } from '@/modules/health/mask';
+import { toTwinRows } from '@/modules/twin';
 import { demoContext } from '@/app/demo/demo-data';
 import { isDemoOnly } from '@/lib/demo-mode';
 
@@ -18,6 +19,7 @@ export default async function DemoHomePage() {
   const { range, today, source, hidden } = await demoContext();
   const data = await buildDashboard(source, range, today);
   const reminders = await loadReminders(source);
+  const [body, height] = await Promise.all([source.body(range), source.latestHeightCm()]);
   return (
     <div className="flex flex-col gap-6">
       <section
@@ -41,7 +43,12 @@ export default async function DemoHomePage() {
           </Link>
         )}
       </section>
-      <Dashboard data={hidden ? maskDashboard(data) : data} mode="publicDemo" hidden={hidden} />
+      <Dashboard
+        data={hidden ? maskDashboard(data) : data}
+        mode="publicDemo"
+        hidden={hidden}
+        twin={{ rows: toTwinRows(body), latestHeightCm: height }}
+      />
       <UpcomingReminders
         reminders={reminders.reminders}
         prefs={reminders.prefs}

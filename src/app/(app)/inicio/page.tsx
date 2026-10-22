@@ -7,7 +7,8 @@ import { OpenQuickLogButton } from '@/components/shell/OpenQuickLogButton';
 import { readPreviewState, type PageSearchParams } from '@/components/shell/ModulePage';
 import { readPeriod } from '@/lib/period-server';
 import { readPrivacyMode } from '@/lib/privacy-mode-server';
-import { maskDashboard } from '@/modules/health/mask';
+import { maskBodyScreen, maskDashboard } from '@/modules/health/mask';
+import { toTwinRows } from '@/modules/twin';
 import { requireAppSession } from '@/modules/consent/server';
 import { UpcomingReminders } from '@/components/modules/reminders/UpcomingReminders';
 import { buildDashboard } from '@/modules/health/dashboard';
@@ -34,8 +35,18 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
       ? await view.source.session(async (s) => ({
           dashboard: await buildDashboard(s, range, today),
           reminders: await loadReminders(s),
+          body: await s.body(range),
+          height: await s.latestHeightCm(),
         }))
       : null;
+  // Twin do início (ADR-0049): no modo privacidade, medidas próprias não saem do servidor (forma de referência),
+  // como na tela do twin; no demo, só os números ficam ocultos.
+  const own = view.kind === 'data' && view.mode === 'own';
+  const twinBody = data
+    ? hidden && own
+      ? maskBodyScreen(data.body)
+      : { records: data.body, latestHeightCm: data.height }
+    : null;
   // Só com o painel na tela; se a leitura falhar, o tour não abre sozinho (e o painel não cai).
   const tourSeen = data ? await hasSeenTour(session.userId).catch(() => true) : true;
   return (
@@ -46,6 +57,11 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
             data={hidden ? maskDashboard(data.dashboard) : data.dashboard}
             mode={view.mode}
             hidden={hidden}
+            twin={
+              twinBody
+                ? { rows: toTwinRows(twinBody.records), latestHeightCm: twinBody.latestHeightCm }
+                : undefined
+            }
             emptyAction={<OpenQuickLogButton>{t('pages.home.cta')}</OpenQuickLogButton>}
           />
           <UpcomingReminders

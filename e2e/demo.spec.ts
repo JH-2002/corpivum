@@ -163,7 +163,8 @@ test.describe('cartões com inclinação (ADR-0048)', () => {
     await page.goto('/demo');
     const card = page.locator('[data-tilt]').first();
     await expect(card).toBeVisible();
-    expect(await page.locator('[data-tilt]').count()).toBeGreaterThanOrEqual(4);
+    // O painel do twin chega depois da carga (ADR-0049): 3 indicadores + o painel da região.
+    await expect.poll(() => page.locator('[data-tilt]').count()).toBeGreaterThanOrEqual(4);
     const box = await card.boundingBox();
     if (!box) throw new Error('cartão sem caixa');
     await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.1);

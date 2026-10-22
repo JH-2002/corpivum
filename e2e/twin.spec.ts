@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { BODY_ASSETS } from '../src/modules/twin/bodyAssets';
+import { DEMO_BODY_MODEL } from '../src/modules/twin/bodyModel';
 import {
   createVerifiedUser,
   DEMO_TOUR_SEEN_STATE,
@@ -50,18 +51,47 @@ async function disableWebGL(page: Page) {
   });
 }
 
-/** Scripts baixados pela página que contêm o three.js. */
-function collectThreeScripts(page: Page): string[] {
-  const found: string[] = [];
+/** Scripts baixados pela página que contêm o three.js, com a hora (relógio do sistema) em que a resposta chegou. */
+function collectThreeScripts(page: Page): Array<{ url: string; at: number }> {
+  const found: Array<{ url: string; at: number }> = [];
   page.on('response', async (response) => {
     if (response.request().resourceType() !== 'script') return;
+    const at = Date.now();
     const body = await response.text().catch(() => '');
-    if (body.includes('WebGLRenderer')) found.push(response.url());
+    if (body.includes('WebGLRenderer')) found.push({ url: response.url(), at });
   });
   return found;
 }
 
 const viewer = (page: Page) => page.locator('[data-twin-mode]').first();
+
+/** Modelo da pessoa fictícia (ADR-0049). */
+const DEMO_MODEL = DEMO_BODY_MODEL;
+
+/** Registra todo valor de `data-twin-model` que o canvas chegou a ter, desde o início da página. */
+async function trackDrawnModels(page: Page) {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __twinModels: string[] }).__twinModels = seen;
+    new MutationObserver((records) => {
+      for (const r of records) {
+        const v = (r.target as HTMLElement).getAttribute('data-twin-model');
+        if (v) seen.push(v);
+      }
+    }).observe(document, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-twin-model'],
+    });
+  });
+}
+const drawn = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __twinModels: string[] }).__twinModels);
+
+/** Troca de modelo da demo guardada antes de a página abrir (chave da demo, ADR-0049). */
+async function demoModel(page: Page, model: 'feminine' | 'masculine') {
+  await page.addInitScript((m) => localStorage.setItem('hm.demo.twin.bodyModel', m), model);
+}
 
 /** Pedidos de modelos 3D (/models/*.glb) feitos pela página. */
 function collectModelRequests(page: Page): string[] {
@@ -77,17 +107,26 @@ test.describe('demo público', () => {
   test.use({ storageState: DEMO_TOUR_SEEN_STATE });
 
   test.describe('com WebGL', () => {
-    test('o dashboard não baixa o three.js; a tela do twin baixa sob demanda', async ({ page }) => {
+    test('início: o three.js só chega depois da carga, e o holograma troca pelo modelo sem "pulo" (ADR-0049)', async ({
+      page,
+    }) => {
       const three = collectThreeScripts(page);
+      await trackDrawnModels(page);
       await page.goto('/demo');
-      await expect(page.getByRole('heading', { level: 1, name: 'Início' })).toBeVisible();
-      await page.waitForLoadState('networkidle');
-      expect(three).toEqual([]);
-
-      await page.goto('/demo/twin');
-      await expect(viewer(page)).toHaveAttribute('data-twin-mode', '3d');
-      await expect(viewer(page).locator('canvas')).toBeVisible();
-      await expect.poll(() => three.length).toBeGreaterThan(0);
+      // O holograma já vem no HTML, antes de qualquer JS do 3D.
+      const hero = page.locator('[data-tour="twin-hero"]');
+      await expect(hero.getByTestId('twin-holo-loading').first()).toBeAttached();
+      await expectModel(hero.locator('canvas'), DEMO_MODEL);
+      await expect(hero).toHaveAttribute('data-twin-hero-ready', '');
+      // Nenhum script do three.js chegou antes do fim da carga da página (o JS de entrada não tem 3D).
+      const loadEnd = await page.evaluate(() => {
+        const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        return performance.timeOrigin + nav.loadEventEnd;
+      });
+      expect(three.length).toBeGreaterThan(0);
+      for (const script of three) expect(script.at, script.url).toBeGreaterThanOrEqual(loadEnd);
+      expect(await drawn(page)).not.toContain('geometry');
+      await expectNoAxeViolations(page);
     });
 
     test('corpo 3D: vistas, restaurar, datas, regiões e Antes × Agora', async ({ page }) => {
@@ -131,7 +170,7 @@ test.describe('demo público', () => {
       await expectNoAxeViolations(page);
     });
 
-    test('modelo do corpo: pergunta na primeira vez; os dois .glb já ao abrir a tela (ADR-0028, OI-24)', async ({
+    test('demo: a pessoa fictícia já tem modelo, sem pergunta; os dois .glb sempre (ADR-0049, OI-24)', async ({
       page,
     }) => {
       const all = Object.values(BODY_ASSETS)
@@ -139,29 +178,33 @@ test.describe('demo público', () => {
         .sort();
       expect(all).toHaveLength(2);
       const models = collectModelRequests(page);
+      // O início também baixa os dois modelos (depois da carga): pelos pedidos, o servidor não sabe qual
+      // corpo a pessoa vê.
       await page.goto('/demo');
-      await page.waitForLoadState('networkidle');
-      expect(models).toEqual([]);
+      await expect.poll(() => [...new Set(models)].sort()).toEqual(all);
 
       await page.goto('/demo/twin');
       const canvas = viewer(page).locator('canvas');
       await expect(viewer(page)).toHaveAttribute('data-holo-animated', 'true');
-      // Sem padrão: pergunta e mostra só o estado de espera (nunca o corpo em código). Os dois modelos já
-      // são pré-carregados ao abrir a tela: pelos pedidos, o servidor não sabe qual corpo a pessoa vê.
-      const prompt = page.getByRole('region', { name: 'Qual modelo você prefere ver?' });
-      await expect(prompt).toContainText('Só muda a aparência; fica salvo neste navegador.');
-      await expect(viewer(page).getByTestId('twin-holo-loading')).toHaveAttribute(
-        'data-reason',
-        'choose',
+      await expect(page.getByRole('region', { name: 'Qual modelo você prefere ver?' })).toHaveCount(
+        0,
       );
-      await expect(canvas).not.toHaveAttribute('data-twin-model', /.+/);
-      await expect.poll(() => [...new Set(models)].sort()).toEqual(all);
+      await expectModel(canvas, DEMO_MODEL);
       await expectNoAxeViolations(page);
 
       const preloaded = models.length;
-      await prompt.getByRole('button', { name: 'Feminino' }).click();
-      await expect(prompt).toHaveCount(0);
+      await page
+        .getByRole('group', { name: 'Modelo do corpo' })
+        .getByRole('radio', { name: 'Feminino' })
+        .check();
       await expectModel(canvas, 'feminine');
+      // A troca na demo fica em chave própria: não vira a escolha de uma conta neste navegador.
+      expect(
+        await page.evaluate(() => [
+          localStorage.getItem('hm.demo.twin.bodyModel'),
+          localStorage.getItem('hm.twin.bodyModel'),
+        ]),
+      ).toEqual(['feminine', null]);
       // Escolher não pede nada novo: os arquivos já vieram na pré-carga (cache por arquivo).
       expect(models).toHaveLength(preloaded);
       const response = await page.request.get(all[0] ?? '');
@@ -180,39 +223,16 @@ test.describe('demo público', () => {
           .getByRole('group', { name: 'Modelo do corpo' })
           .getByRole('radio', { name: 'Masculino' }),
       ).toBeChecked();
-      await expect(page.getByRole('region', { name: 'Qual modelo você prefere ver?' })).toHaveCount(
-        0,
-      );
       await expectModel(viewer(page).locator('canvas'), 'masculine');
-      await expectNoAxeViolations(page);
     });
     test.describe('carregamento do modelo (ADR-0028, revisão de carregamento)', () => {
-      /** Registra todo valor de `data-twin-model` que o canvas chegou a ter, desde o início da página. */
-      async function trackDrawnModels(page: Page) {
-        await page.addInitScript(() => {
-          const seen: string[] = [];
-          (window as unknown as { __twinModels: string[] }).__twinModels = seen;
-          new MutationObserver((records) => {
-            for (const r of records) {
-              const v = (r.target as HTMLElement).getAttribute('data-twin-model');
-              if (v) seen.push(v);
-            }
-          }).observe(document, {
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['data-twin-model'],
-          });
-          localStorage.setItem('hm.twin.bodyModel', 'feminine');
-        });
-      }
-      const drawn = (page: Page) =>
-        page.evaluate(() => (window as unknown as { __twinModels: string[] }).__twinModels);
       const status = (page: Page) => page.locator('[data-twin-status]').first();
 
       test('carga normal: espera em holograma e depois o modelo; o corpo em código nunca aparece', async ({
         page,
       }) => {
         await trackDrawnModels(page);
+        await demoModel(page, 'feminine');
         // Rede lenta: o estado de espera fica visível por um tempo.
         await page.route('**/models/*.glb', async (route) => {
           await new Promise((r) => setTimeout(r, 1500));
@@ -232,6 +252,7 @@ test.describe('demo público', () => {
 
       test('erro ao carregar: o corpo em código entra como fallback', async ({ page }) => {
         await trackDrawnModels(page);
+        await demoModel(page, 'feminine');
         await page.route('**/models/*.glb', (route) => route.abort());
         await page.goto('/demo/twin');
         await expect(viewer(page).locator('canvas')).toHaveAttribute('data-twin-model', 'geometry');
@@ -244,6 +265,7 @@ test.describe('demo público', () => {
       }) => {
         test.setTimeout(60_000);
         await trackDrawnModels(page);
+        await demoModel(page, 'feminine');
         const held: Array<() => Promise<void>> = [];
         await page.route('**/models/*.glb', (route) => {
           held.push(() => route.continue());
@@ -262,6 +284,7 @@ test.describe('demo público', () => {
         page,
       }) => {
         await trackDrawnModels(page);
+        await demoModel(page, 'feminine');
         await page.goto('/demo/twin');
         const canvas = viewer(page).locator('canvas');
         await expectModel(canvas, 'feminine');
@@ -377,5 +400,97 @@ test.describe('conta', () => {
     await page.goto('/twin');
     await expect(page.getByRole('heading', { name: 'Autorização revogada' })).toBeVisible();
     await expect(page.locator('[data-twin-mode]')).toHaveCount(0);
+  });
+});
+
+test.describe('twin no início (9c, ADR-0049)', () => {
+  test.use({ storageState: DEMO_TOUR_SEEN_STATE });
+  const hero = (page: Page) => page.locator('[data-tour="twin-hero"]');
+
+  test('regiões por clique e por teclado atualizam o painel com medida, data e selo', async ({
+    page,
+  }) => {
+    await page.goto('/demo');
+    await expectModel(hero(page).locator('canvas'), DEMO_MODEL);
+    const panel = hero(page).locator('[aria-live="polite"]');
+    const waist = hero(page).getByRole('button', { name: 'Cintura' });
+    await waist.click();
+    await expect(waist).toHaveAttribute('aria-pressed', 'true');
+    await expect(panel).toContainText('Cintura');
+    await expect(panel).toContainText(/\d+(,\d)? cm/);
+    await expect(panel).toContainText(/Registrada em/);
+    await expect(panel.getByRole('button', { name: /Origem do dado: Demo/ }).first()).toBeVisible();
+    await hero(page).getByRole('button', { name: 'Quadril' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(panel).toContainText('Quadril');
+    await expect(hero(page).getByRole('link', { name: 'Abrir twin completo' })).toHaveAttribute(
+      'href',
+      '/demo/twin',
+    );
+    await expectNoAxeViolations(page);
+  });
+
+  test('sem WebGL: 2D interativo, sem canvas', async ({ page }) => {
+    await disableWebGL(page);
+    await page.goto('/demo');
+    await expect(hero(page).locator('[data-twin-mode]')).toHaveAttribute('data-twin-mode', '2d');
+    await expect(hero(page).locator('canvas')).toHaveCount(0);
+    await hero(page).getByTestId('body-2d').locator('[data-region="thigh"]').first().click();
+    await expect(hero(page).getByRole('button', { name: 'Coxa' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  for (const saveData of [true, false]) {
+    test(`celular ${saveData ? 'com' : 'sem'} economia de dados`, async ({ browser }) => {
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+        storageState: DEMO_TOUR_SEEN_STATE,
+      });
+      const page = await context.newPage();
+      await page.addInitScript((on) => {
+        Object.defineProperty(navigator, 'connection', {
+          value: { saveData: on, effectiveType: '4g' },
+        });
+      }, saveData);
+      await page.goto('/demo');
+      const view3d = hero(page).getByRole('button', { name: 'Ver em 3D' });
+      if (saveData) {
+        await expect(hero(page).locator('[data-twin-mode]')).toHaveAttribute(
+          'data-twin-mode',
+          '2d',
+        );
+        await expect(view3d).toBeVisible();
+        await view3d.click();
+      } else {
+        await expect(view3d).toHaveCount(0);
+      }
+      await expectModel(hero(page).locator('canvas'), DEMO_MODEL);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      ).toBeLessThanOrEqual(0);
+      await context.close();
+    });
+  }
+});
+
+test.describe('twin no início: conta real (ADR-0049)', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('dados próprios: pergunta o modelo (sem padrão) e usa selos INFORMADO', async ({ page }) => {
+    const email = e2eEmail('twin-hero');
+    const userId = await createVerifiedUser(email, E2E_PASSWORD);
+    await loginWithOwnIp(page, email);
+    await seedSyntheticHealthData(userId);
+    await page.goto('/inicio');
+    const hero = page.locator('[data-tour="twin-hero"]');
+    await expect(hero.getByRole('region', { name: 'Qual modelo você prefere ver?' })).toBeVisible();
+    await expect(
+      hero.getByRole('button', { name: 'Origem do dado: Informado' }).first(),
+    ).toBeVisible();
+    await expect(hero.getByRole('button', { name: 'Origem do dado: Demo' })).toHaveCount(0);
   });
 });
