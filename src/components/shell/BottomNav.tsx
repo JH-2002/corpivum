@@ -8,9 +8,9 @@ import type { Route } from 'next';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import {
-  DEMO_ITEMS,
+  BOTTOM_NAV_HREFS,
+  DEMO_MORE_ITEMS,
   isActivePath,
-  isItemActive,
   MORE_ITEMS,
   type ShellVariant,
 } from './nav-config';
@@ -24,23 +24,28 @@ function BottomLink({
   label,
   icon: Icon,
   active,
-  fixedWidth = false,
 }: {
   href: Route;
   label: string;
   icon: LucideIcon;
   active: boolean;
-  /** Largura fixa (barra com rolagem própria, sem rolar a página). */
-  fixedWidth?: boolean;
 }) {
   return (
-    <li className={fixedWidth ? 'flex w-[4.5rem] flex-none' : 'flex flex-1'}>
+    <li className="flex flex-1">
       <Link
         href={href}
         aria-current={active ? 'page' : undefined}
         className={cn(itemClass, active ? 'font-semibold text-primary' : 'text-fg-muted')}
       >
-        <Icon className="size-5" aria-hidden="true" />
+        {/* Ativo: cor + fundo em pílula atrás do ícone + sublinhado (a cor nunca é o único canal, §9). */}
+        <span
+          className={cn(
+            'flex h-7 w-12 items-center justify-center rounded-full',
+            active && 'bg-primary-soft',
+          )}
+        >
+          <Icon className="size-5" aria-hidden="true" />
+        </span>
         <span className={cn(active && 'underline decoration-2 underline-offset-4')}>{label}</span>
       </Link>
     </li>
@@ -48,45 +53,17 @@ function BottomLink({
 }
 
 /**
- * Navegação inferior do demo público: só os módulos com dados de demonstração (LEG-X02). Com mais itens
- * que cabem em 320px, a própria barra rola na horizontal (a página não).
+ * Navegação inferior em telas < 768px (§7): Início · Twin · Registrar · Timeline · Mais, igual no app e no demo
+ * público (9b). Cabe em 320px sem rolagem; os demais módulos ficam no "Mais".
  */
-function DemoBottomNav() {
-  const t = useTranslations('nav');
-  const pathname = usePathname();
-  return (
-    <nav
-      aria-label={t('mobileLabel')}
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
-    >
-      <ul className="flex items-stretch gap-0.5 overflow-x-auto px-1 py-1">
-        {DEMO_ITEMS.map((item) => (
-          <BottomLink
-            fixedWidth
-            key={item.key}
-            href={item.href}
-            label={t(item.key === 'twin' ? 'twinShort' : item.key)}
-            icon={item.icon}
-            active={isItemActive(pathname, item)}
-          />
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-/** Navegação inferior em telas < 768px (§7): Início, Registrar, Twin, Timeline, Mais. */
 export function BottomNav({ variant = 'app' }: { variant?: ShellVariant }) {
-  if (variant === 'demo') return <DemoBottomNav />;
-  return <AppBottomNav />;
-}
-
-function AppBottomNav() {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const { openQuickLog } = useShell();
+  const hrefs = BOTTOM_NAV_HREFS[variant];
+  const moreItems = variant === 'demo' ? DEMO_MORE_ITEMS : MORE_ITEMS;
   const moreActive =
-    pathname === '/mais' || MORE_ITEMS.some((item) => isActivePath(pathname, item.href));
+    pathname === hrefs.more || moreItems.some((item) => isActivePath(pathname, item.href));
 
   return (
     <nav
@@ -95,10 +72,16 @@ function AppBottomNav() {
     >
       <ul className="flex items-stretch gap-1 px-1 py-1">
         <BottomLink
-          href="/inicio"
+          href={hrefs.home}
           label={t('home')}
           icon={House}
-          active={isActivePath(pathname, '/inicio')}
+          active={isActivePath(pathname, hrefs.home, variant === 'demo')}
+        />
+        <BottomLink
+          href={hrefs.twin}
+          label={t('twinShort')}
+          icon={Orbit}
+          active={isActivePath(pathname, hrefs.twin)}
         />
         <li className="flex flex-1">
           <button
@@ -107,25 +90,19 @@ function AppBottomNav() {
             aria-haspopup="dialog"
             className={cn(itemClass, 'font-semibold text-primary')}
           >
-            <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-fg">
+            <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-fg shadow-md">
               <Plus className="size-5" aria-hidden="true" />
             </span>
             {t('log')}
           </button>
         </li>
         <BottomLink
-          href="/twin"
-          label={t('twinShort')}
-          icon={Orbit}
-          active={isActivePath(pathname, '/twin')}
-        />
-        <BottomLink
-          href="/timeline"
+          href={hrefs.timeline}
           label={t('timeline')}
           icon={History}
-          active={isActivePath(pathname, '/timeline')}
+          active={isActivePath(pathname, hrefs.timeline)}
         />
-        <BottomLink href="/mais" label={t('more')} icon={Ellipsis} active={moreActive} />
+        <BottomLink href={hrefs.more} label={t('more')} icon={Ellipsis} active={moreActive} />
       </ul>
     </nav>
   );

@@ -7,7 +7,14 @@ import { Logo } from '@/components/brand/Logo';
 import { IconButton } from '@/components/ui/IconButton';
 import { cn } from '@/lib/cn';
 import { NavLink } from './NavLink';
-import { DEMO_ITEMS, PRIVACY_ITEM, SIDEBAR_ITEMS, type ShellVariant } from './nav-config';
+import {
+  ACCOUNT_KEYS,
+  ALL_NAV_ITEMS,
+  DEMO_ITEMS,
+  SIDEBAR_ITEMS,
+  type NavItem,
+  type ShellVariant,
+} from './nav-config';
 
 const NAV_ID = 'sidebar-navegacao';
 
@@ -17,7 +24,10 @@ const NAV_ID = 'sidebar-navegacao';
  * `demo`: só os módulos do demo público (LEG-X02).
  */
 export function Sidebar({ variant = 'app' }: { variant?: ShellVariant }) {
-  const items = variant === 'demo' ? DEMO_ITEMS : SIDEBAR_ITEMS;
+  const items =
+    variant === 'demo' ? DEMO_ITEMS : SIDEBAR_ITEMS.filter((i) => !ACCOUNT_KEYS.includes(i.key));
+  const accountItems =
+    variant === 'demo' ? [] : ALL_NAV_ITEMS.filter((i) => ACCOUNT_KEYS.includes(i.key));
   const t = useTranslations();
   const [expanded, setExpanded] = useState(false);
   const labelClassName = expanded ? undefined : 'md:max-lg:sr-only';
@@ -51,21 +61,48 @@ export function Sidebar({ variant = 'app' }: { variant?: ShellVariant }) {
         </IconButton>
       </div>
 
-      <nav id={NAV_ID} aria-label={t('nav.mainLabel')} className="flex-1 overflow-y-auto px-3 py-2">
-        <ul className="flex flex-col gap-1">
-          {items.map((item) => (
-            <li key={item.key}>
-              <NavLink navKey={item.key} labelClassName={labelClassName} variant={variant} />
-            </li>
-          ))}
-        </ul>
-        {variant === 'app' ? (
-          <>
-            <hr className="my-3 border-border" />
-            <NavLink navKey={PRIVACY_ITEM.key} labelClassName={labelClassName} />
-          </>
+      {/* `min-h-0`: em tela baixa o próprio menu rola, sem empurrar a página (9b). */}
+      <nav
+        id={NAV_ID}
+        aria-label={t('nav.mainLabel')}
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-2"
+      >
+        <NavGroup items={items} labelClassName={labelClassName} variant={variant} />
+        {accountItems.length > 0 ? (
+          <div className="mt-auto pt-3">
+            <hr className="mb-3 border-border" />
+            <p
+              className={cn(
+                'px-3 pb-1 text-xs font-semibold tracking-wide text-fg-muted uppercase',
+                labelClassName,
+              )}
+            >
+              {t('nav.accountGroup')}
+            </p>
+            <NavGroup items={accountItems} labelClassName={labelClassName} variant={variant} />
+          </div>
         ) : null}
       </nav>
     </aside>
+  );
+}
+
+function NavGroup({
+  items,
+  labelClassName,
+  variant,
+}: {
+  items: readonly NavItem[];
+  labelClassName?: string;
+  variant: ShellVariant;
+}) {
+  return (
+    <ul className="flex flex-col gap-1">
+      {items.map((item) => (
+        <li key={item.key}>
+          <NavLink navKey={item.key} labelClassName={labelClassName} variant={variant} />
+        </li>
+      ))}
+    </ul>
   );
 }
