@@ -1837,8 +1837,9 @@ capturas da 9a, também: medidas de todas as regiões em várias datas na demo, 
   na tela do twin (medidas próprias nem saem do servidor e o subtítulo diz que o modelo está na forma de
   referência; na demo, só os números ficam ocultos).
 - **Carga sem "pulo".** O HTML traz um esqueleto (`TwinHeroPlaceholder`) com o mesmo cartão e a mesma área do
-  modelo, com a silhueta holográfica (`HoloLoading`). Depois do evento `load` e de um tempo ocioso
-  (`useIdleStart`), chega o twin interativo, num chunk próprio, e só então a cena 3D (`LazyBodyScene`, ainda o único
+  modelo, com a silhueta holográfica (`HoloLoading`). Depois do evento `load`, de uma folga de 1,2 s e de um tempo
+  ocioso (`useIdleStart`; sem a folga, a CI mediu o "interativo" de `/inicio` em 2527–2578 ms, porque o trabalho do
+  three.js caía em cima do primeiro toque), chega o twin interativo, num chunk próprio, e só então a cena 3D (`LazyBodyScene`, ainda o único
   ponto que importa o three.js). A cena entra por baixo da silhueta e as duas trocam só em `opacity` (~300 ms)
   quando o modelo está desenhado (`onStatus` da cena = `data-twin-status` fora de `loading`/`choose`); com menos
   movimento, a troca é imediata. O corpo em código continua só como fallback real. Sem WebGL: 2D interativo.
