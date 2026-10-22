@@ -9,6 +9,7 @@ import {
   seedSyntheticHealthData,
   withAdmin,
 } from './fixtures';
+import { choosePeriod, expectPeriod } from './period';
 
 /**
  * Fase 2 (ADR-0021): passo 5 do onboarding (§52.5), registros de sono, hábitos e corpo
@@ -86,7 +87,7 @@ test('sono: registrar, editar e excluir', async ({ page }) => {
   await expect(page.getByRole('status').getByText('Registro salvo.')).toBeVisible();
 
   // O período padrão (30 dias) pode não incluir a data: usa um intervalo personalizado.
-  await page.getByLabel('Período', { exact: true }).selectOption('custom');
+  await choosePeriod(page, 'Personalizado');
   await page.getByLabel('De', { exact: true }).fill('2026-09-01');
   await page.getByLabel('Até', { exact: true }).fill('2026-10-05');
   await page.getByRole('button', { name: 'Aplicar' }).click();
@@ -156,7 +157,7 @@ test('dashboard com dados: período global, explicação e pedido de revisão do
   await expect(page.locator('.recharts-wrapper').first()).toBeVisible();
   await expectNoAxeViolations(page);
 
-  await page.getByLabel('Período', { exact: true }).selectOption('7d');
+  await choosePeriod(page, '7 dias');
   await expect
     .poll(
       async () =>
@@ -164,7 +165,7 @@ test('dashboard com dados: período global, explicação e pedido de revisão do
     )
     .toContain('7d');
   await page.reload();
-  await expect(page.getByLabel('Período', { exact: true })).toHaveValue('7d');
+  await expectPeriod(page, '7 dias');
   await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
 
   await page.getByText('Como é calculado', { exact: true }).click();
