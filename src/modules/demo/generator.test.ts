@@ -68,6 +68,20 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     expect(d.todayHabits).toHaveLength(3);
   });
 
+  it.each([7, 30, 90])(
+    'Índice e dashboard completos nos últimos %i dias, sem "parcial" (ADR-0050)',
+    async (n) => {
+      for (const today of [TODAY, '2026-11-15', '2027-02-03']) {
+        const demo = generateDemoData(today, TZ);
+        const range = { from: addDays(today, -(n - 1)), to: today };
+        const d = await buildDashboard(createDemoSource(demo), range, today);
+        expect(d.state, today).toBe('ok');
+        expect(d.score.partial, today).toBe(false);
+        expect(d.score.components.every((c) => c.included)).toBe(true);
+      }
+    },
+  );
+
   it('período sem dados vira no-data', async () => {
     const src = createDemoSource(data);
     const old = { from: '2020-01-01', to: '2020-01-31' };

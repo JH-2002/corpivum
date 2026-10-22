@@ -1,16 +1,29 @@
 # Índice de Bem-Estar: fórmulas
 
-> Fonte da verdade: `src/modules/wellbeing/score.ts` (`SCORE_V2`), testes em
+> Fonte da verdade: `src/modules/wellbeing/score.ts` (`SCORE_V3`), testes em
 > `src/modules/wellbeing/score.test.ts`. Requisitos: §14, LEG-D08. `LEGAL-REVIEW` e revisão clínica dos
 > textos antes do lançamento (OPEN_ISSUES OI-09).
 
 ## O que é e o que não é
 Número de 0 a 100 que resume os **registros da própria pessoa** no período selecionado: regularidade do
-sono, cumprimento de hábitos, atividade (quando houver o módulo) e constância de registro. **Não é avaliação
+sono, cumprimento de hábitos, regularidade do registro de atividade física e constância de registro. **Não é avaliação
 de saúde**: não usa referência populacional, não classifica, não indica risco nem condição. **Peso e medidas
 nunca entram** (LEG-M06). Selo na interface: ESTIMADO (cálculo direto a partir de dados informados).
 
-## Versão 2 (`score_version = 2`, vigente, ADR-0027)
+## Versão 3 (`score_version = 3`, vigente, ADR-0050)
+
+A v2 com o componente atividade ligado. Pesos, limiares e os outros componentes não mudaram.
+
+| Componente | Peso | Entra quando | Cálculo (0–100) |
+|---|---|---|---|
+| Atividade (`activity`) | 0,20 | ≥ 3 dias com atividade registrada no período | Dias com atividade registrada ÷ dias desde o primeiro registro do período (sono, check ou atividade) até o fim dele. Conta só a data: duração, intensidade, distância, carga e calorias não entram (LEG-M07). Não há meta de volume. |
+
+Por que regularidade de registro, e não minutos em relação a uma meta (proposta antiga da OI-28): a meta de
+atividade é opcional, e medir volume premiaria fazer mais, o que o produto não incentiva (LEG-M07). O texto do
+componente diz que conta só a regularidade do registro. Na demo, com atividade em todo o período, o Índice deixa de
+aparecer como "dados parciais".
+
+## Versão 2 (`score_version = 2`, histórica, ADR-0027)
 
 A v1 sem o componente humor e energia (removido do produto). Os pesos restantes foram renormalizados na mesma
 proporção da v1 (0,25 : 0,20 : 0,15 : 0,15) e arredondados para somar 1. Limiares e fórmulas dos componentes
@@ -20,7 +33,7 @@ não mudaram.
 |---|---|
 | Regularidade do sono (`sleepRegularity`) | 0,33 |
 | Hábitos (`habits`) | 0,27 |
-| Atividade (`activity`) | 0,20 (fora até existir o módulo de atividade) |
+| Atividade (`activity`) | 0,20 (sempre fora na v2) |
 | Constância de registro (`logging`) | 0,20 |
 
 Na constância de registro, dias só com medição do corpo não contam: pesar mais vezes não sobe o Índice

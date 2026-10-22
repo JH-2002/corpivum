@@ -213,6 +213,7 @@ export async function buildReport(
         habits,
         checks,
         loggedDays: new Set([...sleep.map((r) => r.day), ...checks.map((r) => r.day)]),
+        activityDays: new Set(activities.map((r) => r.day)),
       }),
       sections,
       charts,

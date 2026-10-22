@@ -88,6 +88,8 @@ export interface DashboardData {
 
 interface Loaded extends PeriodRecords {
   body: BodyRecord[];
+  /** Dias com atividade registrada (Índice v3): só as datas, sem duração nem intensidade. */
+  activityDays: ReadonlySet<string>;
 }
 
 async function load(
@@ -95,17 +97,19 @@ async function load(
   range: DateRange,
   habits: HabitRecord[],
 ): Promise<Loaded> {
-  const [sleep, checks, body] = await Promise.all([
+  const [sleep, checks, body, activities] = await Promise.all([
     source.sleep(range),
     source.checks(range),
     source.body(range),
+    source.activities(range),
   ]);
   const loggedDays = new Set<string>([
     ...sleep.map((r) => r.day),
     ...checks.map((r) => r.day),
     ...body.map((r) => r.day),
   ]);
-  return { range, sleep, habits, checks, body, loggedDays };
+  const activityDays = new Set(activities.map((r) => r.day));
+  return { range, sleep, habits, checks, body, loggedDays, activityDays };
 }
 
 /** Registros do Índice: os mesmos do período, com a constância contada sem as medições do corpo. */
@@ -207,8 +211,8 @@ export async function buildDashboard(
       streak: streaksEnabled ? currentStreak(h, streakChecks, today) : null,
     }));
 
-  // "Parcial" = algum domínio sem registro no período. A atividade (fora do Índice v1 por não existir
-  // ainda) não conta aqui; o card do Índice mostra os próprios componentes fora do cálculo.
+  // "Parcial" = algum domínio dos cards sem registro no período. O card do Índice mostra os próprios
+  // componentes fora do cálculo.
   const hasData = now.loggedDays.size > 0;
   const missingDomain = Object.values(cards).some((c) => c.state === 'no-data');
   const state: DashboardState = !hasAny
