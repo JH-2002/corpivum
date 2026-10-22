@@ -229,10 +229,11 @@ test.describe('a demonstração', () => {
       expect((await res.body()).byteLength).toBe(asset.bytes);
     }
     await page.goto('/demo/twin');
+    // A pessoa fictícia já tem modelo (ADR-0049); a troca usa o seletor.
     await page
-      .getByRole('region', { name: 'Qual modelo você prefere ver?' })
-      .getByRole('button', { name: 'Feminino' })
-      .click();
+      .getByRole('group', { name: 'Modelo do corpo' })
+      .getByRole('radio', { name: 'Feminino' })
+      .check();
     await expect(page.locator('[data-twin-mode] canvas').first()).toHaveAttribute(
       'data-twin-model',
       'feminine',

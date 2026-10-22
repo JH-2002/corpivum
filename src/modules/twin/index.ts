@@ -7,11 +7,14 @@
 export {
   BODY_MODEL_STORAGE_KEY,
   BODY_MODELS,
+  DEMO_BODY_MODEL,
+  DEMO_BODY_MODEL_STORAGE_KEY,
   parseBodyModel,
   type BodyAsset,
   type BodyModel,
   type MeasurePlane,
 } from './bodyModel';
+export { canAutoload3D, type DeviceSignals } from './autoload';
 export { DEMO_TWIN_PROFILES, demoTwinRows } from './demoProfiles';
 export {
   bodyMorphWeights,

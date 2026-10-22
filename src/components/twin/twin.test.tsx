@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { generateDemoData } from '@/modules/demo/generator';
 import { bodyEntry, day, TODAY } from '@/modules/insights/fixtures';
-import { BODY_MODEL_STORAGE_KEY, toTwinRows } from '@/modules/twin';
+import { BODY_MODEL_STORAGE_KEY, DEMO_BODY_MODEL_STORAGE_KEY, toTwinRows } from '@/modules/twin';
 import { findForbiddenTerms } from '../../../tests/content/forbidden-terms';
 import { renderWithIntl } from '../../../tests/render';
 import { BodyTwin } from './BodyTwin';
@@ -99,17 +99,33 @@ describe('corpo 3D (§15, §16)', () => {
     window.localStorage.clear();
   });
 
-  it('demo: medidas do perfil da variante escolhida; sem escolha, a série original', async () => {
+  it('demo: a pessoa fictícia já tem modelo, sem pergunta; a troca não vira a escolha da conta (ADR-0049)', async () => {
     window.localStorage.clear();
     const user = userEvent.setup();
     renderWithIntl(
       <BodyTwin rows={toTwinRows(records)} latestHeightCm={null} demo describedBy="x" />,
     );
     const body = screen.getByRole('region', { name: /corpo em 3D/ });
+    expect(within(body).queryByRole('heading', { name: /Qual modelo/ })).toBeNull();
     await user.click(within(body).getByRole('button', { name: 'Cintura' }));
-    expect(body).toHaveTextContent('81,5 cm');
-    await user.click(screen.getByRole('button', { name: 'Feminino' }));
+    // Perfil do modelo da demo (masculino): cintura de referência 80 cm.
+    expect(body).toHaveTextContent('80 cm');
+    expect(screen.getByRole('radio', { name: 'Masculino' })).toBeChecked();
+    await user.click(screen.getByRole('radio', { name: 'Feminino' }));
     expect(body).toHaveTextContent('68 cm');
+    expect(window.localStorage.getItem(DEMO_BODY_MODEL_STORAGE_KEY)).toBe('feminine');
+    expect(window.localStorage.getItem(BODY_MODEL_STORAGE_KEY)).toBeNull();
+    window.localStorage.clear();
+  });
+
+  it('conta real sem escolha: pergunta o modelo, mesmo depois de trocar na demo', () => {
+    window.localStorage.clear();
+    window.localStorage.setItem(DEMO_BODY_MODEL_STORAGE_KEY, 'feminine');
+    renderWithIntl(
+      <BodyTwin rows={toTwinRows(records)} latestHeightCm={null} demo={false} describedBy="x" />,
+    );
+    expect(screen.getAllByRole('button', { name: 'Feminino' }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('radio', { name: 'Feminino' })).toBeNull();
     window.localStorage.clear();
   });
   it('medida além da faixa do desenho: o painel avisa, sem número do modelo (ADR-0028)', async () => {

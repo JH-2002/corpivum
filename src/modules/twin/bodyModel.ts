@@ -12,6 +12,14 @@ export type BodyModel = (typeof BODY_MODELS)[number];
 
 export const BODY_MODEL_STORAGE_KEY = 'hm.twin.bodyModel';
 
+/**
+ * Demonstração (ADR-0049, emenda o ADR-0028): a pessoa fictícia já tem um modelo, inclusive no modo
+ * apresentação, para a demo abrir com o 3D sem perguntar. A troca feita na demo fica numa chave própria e nunca
+ * vira a escolha da conta real; contas reais continuam sem padrão (`parseBodyModel`).
+ */
+export const DEMO_BODY_MODEL: BodyModel = 'masculine';
+export const DEMO_BODY_MODEL_STORAGE_KEY = 'hm.demo.twin.bodyModel';
+
 const bodyModelSchema = z.enum(BODY_MODELS).nullable().catch(null);
 
 /** Valor do storage → modelo escolhido; ausente, inválido ou de versão antiga ("neutral") = sem escolha. */
