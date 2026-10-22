@@ -7,7 +7,7 @@
 // 4. encerra o servidor e tudo o que ele abriu, inclusive se a captura falhar.
 // Dados 100% fictícios (gerador em memória): nada de banco nem de dado real.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { lstatSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -152,6 +152,8 @@ async function settle(page) {
 async function capture() {
   // Pasta limpa a cada rodada (nada de `_parte-N` ou vídeos de rodadas anteriores), menos `capturas/logo/`.
   mkdirSync(OUT, { recursive: true });
+  // Pasta trocada por um link: a limpeza apagaria o destino, então para aqui.
+  if (lstatSync(OUT).isSymbolicLink()) fail(`${OUT} é um link; use uma pasta comum`);
   for (const entry of readdirSync(OUT).filter((name) => !KEEP.has(name)))
     rmSync(path.join(OUT, entry), { recursive: true, force: true });
   // WebGL por software, como nos e2e do twin: sem ele o headless mostra o twin em 2D.
