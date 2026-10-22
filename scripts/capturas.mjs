@@ -132,6 +132,14 @@ async function waitForServer(server) {
 
 async function settle(page) {
   await page.waitForLoadState('networkidle');
+  // Twin do início (ADR-0049): chega depois da carga; espera o interativo e, com 3D, o modelo desenhado.
+  if (await page.locator('section[aria-labelledby="twin-hero-title"]').count()) {
+    const mode = page.locator('[data-tour="twin-hero"] [data-twin-mode]');
+    await mode.waitFor({ timeout: 30_000 });
+    if ((await mode.getAttribute('data-twin-mode')) === '3d') {
+      await page.locator('[data-twin-hero-ready]').waitFor({ timeout: 30_000 });
+    }
+  }
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout((await page.locator('canvas').count()) ? 2500 : 400);
 }
@@ -140,7 +148,10 @@ async function capture() {
   mkdirSync(OUT, { recursive: true });
   for (const file of readdirSync(OUT).filter((f) => f.endsWith('.png')))
     rmSync(path.join(OUT, file));
-  const browser = await chromium.launch({ args: ['--lang=pt-BR'] });
+  // WebGL por software, como nos e2e do twin: sem ele o headless mostra o twin em 2D.
+  const browser = await chromium.launch({
+    args: ['--lang=pt-BR', '--enable-unsafe-swiftshader', '--use-angle=swiftshader'],
+  });
   let count = 0;
   try {
     for (const size of SIZES) {
