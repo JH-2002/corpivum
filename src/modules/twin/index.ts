@@ -39,8 +39,10 @@ export { bodyShape, TORSO_DEPTH_RATIO, type BodyShape } from './shape';
 export {
   bodySnapshotAt,
   compareSnapshots,
+  firstCompleteDay,
   firstMeasure,
   measurementDays,
+  withoutMeasures,
   hasRegionMeasures,
   toTwinRows,
   type BodySnapshot,

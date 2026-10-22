@@ -2,12 +2,14 @@
 
 import { useTranslations } from 'next-intl';
 import { useCallback, useId, useMemo, useState } from 'react';
+import { ChoiceMenu } from '@/components/ui/ChoiceMenu';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { cn } from '@/lib/cn';
 import {
   bodyShape,
   bodySnapshotAt,
   compareSnapshots,
+  firstCompleteDay,
   measurementDays,
   REGION_FIELD,
   type BodyRegion,
@@ -50,7 +52,7 @@ export function BodyCompare({
   const tb = useTranslations('twin.body');
   const tf = useTranslations('body.fields');
   const days = useMemo(() => measurementDays(rows), [rows]);
-  const [before, setBefore] = useState(days[0] ?? '');
+  const [before, setBefore] = useState(() => firstCompleteDay(rows) ?? '');
   const [after, setAfter] = useState(days[days.length - 1] ?? '');
   const [showing, setShowing] = useState<Side>('after');
   const [selected, setSelected] = useState<BodyRegion | null>(null);
@@ -143,21 +145,14 @@ export function BodyCompare({
     </div>
   );
 
+  const dateOptions = days.map((d) => ({ value: d, label: fmt.longDay(d) }));
   const dateSelect = (side: Side) => (
-    <label className="flex flex-col gap-1 text-sm font-semibold">
-      {t(side === 'before' ? 'pickBefore' : 'pickAfter')}
-      <select
-        value={side === 'before' ? before : after}
-        onChange={(e) => (side === 'before' ? setBefore : setAfter)(e.target.value)}
-        className="min-h-11 rounded-md border border-border-strong bg-surface px-3 font-normal"
-      >
-        {days.map((d) => (
-          <option key={d} value={d}>
-            {fmt.longDay(d)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <ChoiceMenu
+      label={t(side === 'before' ? 'pickBefore' : 'pickAfter')}
+      value={side === 'before' ? before : after}
+      options={dateOptions}
+      onChange={side === 'before' ? setBefore : setAfter}
+    />
   );
 
   return (

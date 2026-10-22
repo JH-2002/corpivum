@@ -65,6 +65,11 @@ export function PrivacyModeProvider({
   return <PrivacyModeContext.Provider value={value}>{children}</PrivacyModeContext.Provider>;
 }
 
+/** Modo privacidade pedido agora, ou `false` fora de um provedor (ex.: testes de componente). */
+export function usePrivacyHiddenNow(): boolean {
+  return useContext(PrivacyModeContext)?.hidden ?? false;
+}
+
 export function usePrivacyMode(): PrivacyModeContextValue {
   const context = useContext(PrivacyModeContext);
   if (!context) throw new Error('usePrivacyMode precisa estar dentro de <PrivacyModeProvider>');

@@ -18,6 +18,7 @@ import { Sparkline } from '@/components/charts/Sparkline';
 import { Button, buttonClasses } from '@/components/ui/Button';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { TiltCard } from '@/components/ui/TiltCard';
+import { usePrivacyHiddenNow } from '@/components/privacy-mode/PrivacyModeProvider';
 import { cn } from '@/lib/cn';
 import { useFinePointer, useMotionPreference } from '@/lib/motion/motion';
 import {
@@ -25,6 +26,7 @@ import {
   bodySnapshotAt,
   canAutoload3D,
   demoTwinRows,
+  withoutMeasures,
   firstMeasure,
   REGION_FIELD,
   type BodyRegion,
@@ -90,12 +92,18 @@ export function TwinHero({
   const tb = useTranslations('twin.body');
   const td = useTranslations('disclaimer');
   const [model] = useBodyModel(demo);
+  // Dados próprios com o modo privacidade ligado: forma de referência já no clique, antes de a tela recarregar
+  // do servidor (que manda as linhas sem medidas, ADR-0035). Na demo, a forma fictícia continua.
+  const hiddenNow = usePrivacyHiddenNow() || hidden;
+  const referenceOnly = !demo && hiddenNow;
   const { rows, latestHeightCm } = useMemo(
     () =>
-      demo && model
-        ? demoTwinRows(inputRows, inputHeightCm, model)
-        : { rows: inputRows, latestHeightCm: inputHeightCm },
-    [demo, inputRows, inputHeightCm, model],
+      referenceOnly
+        ? { rows: withoutMeasures(inputRows), latestHeightCm: null }
+        : demo && model
+          ? demoTwinRows(inputRows, inputHeightCm, model)
+          : { rows: inputRows, latestHeightCm: inputHeightCm },
+    [referenceOnly, demo, inputRows, inputHeightCm, model],
   );
   const snapshot = useMemo(
     () => bodySnapshotAt(rows, '9999-12-31', latestHeightCm),
@@ -109,7 +117,7 @@ export function TwinHero({
   const clearHover = useCallback(() => setHover(null), []);
   const turntable = useTurntable(VIEW_ANGLE.front);
   const compact = useCompact();
-  const fmt = useTwinFormat(hidden);
+  const fmt = useTwinFormat(hiddenNow);
   const level = (l: ConfidenceLevel): ConfidenceLevel => (demo ? 'DEMO' : l);
   const panelId = useId();
 
@@ -173,7 +181,7 @@ export function TwinHero({
           </h2>
           {/* Modo privacidade com dados próprios: as medidas não chegam e o modelo fica na forma de referência. */}
           <p className="text-sm text-fg-muted">
-            {t(hidden && !demo ? 'subtitleReference' : 'subtitle')}
+            {t(referenceOnly ? 'subtitleReference' : 'subtitle')}
           </p>
         </div>
         <ConfidenceBadge level={level('INFORMADO')} />
@@ -284,7 +292,7 @@ export function TwinHero({
               rows={rows}
               snapshot={snapshot}
               name={regionName(selected)}
-              hidden={hidden}
+              hidden={hiddenNow}
               level={level}
             />
           </TiltCard>

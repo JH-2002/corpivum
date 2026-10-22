@@ -150,14 +150,13 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
 
     skipRemovedJournal(rand);
 
-    // Corpo: uma medição por semana; altura na primeira e na mais recente; circunferências de todas as regiões
-    // a cada 2 semanas (9c: o twin do início mostra a evolução de cada região). Só as semanas "mensais" usam
+    // Corpo: uma medição por semana, sempre com as circunferências de todas as regiões (o twin, o início e o
+    // Antes × Agora contam as mesmas datas); altura na primeira e na mais recente. Só as semanas "mensais" usam
     // `rand()` (como antes); as outras usam um ruído fixo por dia, para não mudar a sequência dos demais dados
     // (corpo 3D, ADR-0026). Variações pequenas e neutras, sem trajetória de "transformação" (LEG-M06).
     weight += (rand() - 0.55) * 0.25;
     if (wd === 1 || i === 0) {
       const monthly = i === 0 || i % 28 < 7;
-      const girths = monthly || i % 14 < 7;
       const noise = (k: number) => (monthly ? rand() - 0.5 : fixedNoise(i, k));
       body.push({
         id: `demo-body-${i}`,
@@ -165,11 +164,11 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
         day,
         weightKg: round(weight, 1),
         heightCm: i === 0 ? 170 : null,
-        waistCm: girths ? round(86 - progress * 2 + noise(1), 1) : null,
-        hipCm: girths ? round(98 + noise(2), 1) : null,
-        armCm: girths ? round(30 - progress * 0.4, 1) : null,
-        thighCm: girths ? round(56 - progress * 0.8, 1) : null,
-        chestCm: girths ? round(95 - progress * 1.2, 1) : null,
+        waistCm: round(86 - progress * 2 + noise(1), 1),
+        hipCm: round(98 + noise(2), 1),
+        armCm: round(30 - progress * 0.4, 1),
+        thighCm: round(56 - progress * 0.8, 1),
+        chestCm: round(95 - progress * 1.2, 1),
         bodyFatPct: null,
       });
     }

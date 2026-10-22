@@ -1,6 +1,7 @@
 'use client';
 
 import type { BodyRegion, BodyShape } from '@/modules/twin';
+import { BODY_FILL } from '../framing';
 import { bodyLayout, nearestView, type ProfilePoint } from '../layout';
 
 /** Margem do desenho (m) e altura máxima desenhada (igual ao limite do 3D). */
@@ -26,10 +27,13 @@ export function BodySilhouette2D({
   const layout = bodyLayout(shape);
   const side = nearestView(angle) === 'side';
   const depth = side ? layout.depth : 1;
-  const width = 1.4;
+  const width = 1.2;
   const cx = width / 2;
   // SVG cresce para baixo: y_svg = topo − y.
   const top = MAX_H + PAD;
+  // Recorte na altura do corpo: ele ocupa `BODY_FILL` (~88%) da altura do quadro, como no 3D (9c).
+  const frame = layout.height / BODY_FILL;
+  const margin = (frame - layout.height) / 2;
   const Y = (y: number) => top - y;
   const missing = new Set(shape.missing);
 
@@ -56,7 +60,7 @@ export function BodySilhouette2D({
 
   return (
     <svg
-      viewBox={`0 0 ${width} ${top + PAD}`}
+      viewBox={`0 ${top - layout.height - margin} ${width} ${frame}`}
       className="h-full w-full"
       aria-hidden
       data-testid="body-2d"
