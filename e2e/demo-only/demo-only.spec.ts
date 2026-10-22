@@ -241,3 +241,14 @@ test.describe('a demonstração', () => {
     );
   });
 });
+
+test('nenhuma página da demo leva os textos jurídicos em rascunho ao navegador (ADR-0044, ADR-0052)', async ({
+  request,
+}) => {
+  for (const path of [...DEMO_ROUTES.map((r) => r.path), '/demo/apresentacao']) {
+    const html = await (await request.get(path)).text();
+    // HTML e payload RSC embutido: sem placeholders do controlador nem ramos de `legal`/`consent`.
+    expect(html, path).not.toMatch(/\{\{[A-Z_]+\}\}/);
+    expect(html, path).not.toMatch(/\?"subprocessorsPage\?"|\?"privacyPolicy\?":\{/);
+  }
+});

@@ -10,7 +10,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import raw from '@messages/pt-BR.json';
 import { PRODUCT_NAME, PRODUCT_NAME_MARKER } from '@/config/product';
-import { demoClientMessages, messages } from '@/i18n/messages';
+import { routeMessages, shellMessages, type ClientRoute } from '@/i18n/client-messages';
+import { ROUTE_NAMESPACES } from '@/i18n/client-namespaces.generated';
+import { messages } from '@/i18n/messages';
 import { DOCUMENT_MESSAGES } from '@/modules/consent/catalog';
 import { APPROVED_DISCLAIMERS } from './approved-disclaimers';
 import { findForbiddenTerms } from './forbidden-terms';
@@ -86,7 +88,10 @@ describe('nome do produto num único lugar', () => {
   });
 
   it('no modo só demo, o navegador não recebe os textos jurídicos', () => {
-    const client = JSON.stringify(demoClientMessages());
+    const client = JSON.stringify([
+      shellMessages(true),
+      ...Object.keys(ROUTE_NAMESPACES).map((r) => routeMessages(r as ClientRoute, true)),
+    ]);
     expect(client).not.toMatch(OLD_NAME);
     expect(client).not.toMatch(/\{\{[A-Z_]+\}\}/);
     expect(client).toContain(PRODUCT_NAME);

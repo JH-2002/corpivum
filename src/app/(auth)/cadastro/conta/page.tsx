@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { SignupForm } from '@/components/auth/AuthForms';
 import { hasAgeBlockCookie, readAgeOkCookie } from '@/modules/auth/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.signup');
@@ -10,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Passo 2: só com o cookie assinado de adulto do passo 1 (validado de novo na action). */
-export default async function SignupAccountPage() {
+async function SignupAccountPage() {
   if (await hasAgeBlockCookie()) redirect('/cadastro/indisponivel');
   if (!(await readAgeOkCookie())) redirect('/cadastro');
 
@@ -22,3 +23,5 @@ export default async function SignupAccountPage() {
     </>
   );
 }
+
+export default withRouteMessages('(auth)/cadastro/conta', SignupAccountPage);

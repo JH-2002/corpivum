@@ -6,17 +6,14 @@ import { loadTimeline } from '@/modules/health/screens';
 import { buildTimeline, parseTimelineDomain } from '@/modules/timeline';
 import { maskTimeline } from '@/modules/health/mask';
 import { demoContext } from '@/app/demo/demo-data';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
   return { title: t('timeline') };
 }
 
-export default async function DemoTimelinePage({
-  searchParams,
-}: {
-  searchParams: PageSearchParams;
-}) {
+async function DemoTimelinePage({ searchParams }: { searchParams: PageSearchParams }) {
   const { range, today, source, hidden } = await demoContext();
   const domain = parseTimelineDomain((await searchParams).dominio);
   const data = await loadTimeline(source, range);
@@ -33,3 +30,5 @@ export default async function DemoTimelinePage({
     />
   );
 }
+
+export default withRouteMessages('demo/(shell)/timeline', DemoTimelinePage);

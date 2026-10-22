@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { TwinBodyView } from '@/components/twin/TwinViews';
 import { demoContext } from '@/app/demo/demo-data';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('twin');
@@ -9,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Corpo 3D no demo público: só dados fictícios, sem sessão e sem banco (LEG-X02). */
-export default async function DemoTwinPage() {
+async function DemoTwinPage() {
   const { range, today, source, hidden } = await demoContext();
   const [records, height] = await Promise.all([source.body(range), source.latestHeightCm()]);
   return (
@@ -25,3 +26,5 @@ export default async function DemoTwinPage() {
     </div>
   );
 }
+
+export default withRouteMessages('demo/(shell)/twin', DemoTwinPage);

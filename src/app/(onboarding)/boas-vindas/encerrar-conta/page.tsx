@@ -10,6 +10,7 @@ import {
   ONBOARDING_EXPIRY_DAYS,
   ONBOARDING_EXPIRY_NOTICE_DAYS,
 } from '@/modules/privacy/onboarding-expiry';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('onboarding.exit');
@@ -21,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * confirmado: excluir a conta ou encerrá-la por ser menor de 18 nunca depende de aceitar os Termos nem de
  * fazer as escolhas de consentimento. Mesmas confirmações da Central (senha, 2º fator se ligado, frase).
  */
-export default async function OnboardingExitPage() {
+async function OnboardingExitPage() {
   const session = await requireOnboardingExitSession();
   const { mfaEnabled } = await getAuthService().getSecurityOverview(session.userId);
   const env = getEnv();
@@ -83,3 +84,5 @@ export default async function OnboardingExitPage() {
     </div>
   );
 }
+
+export default withRouteMessages('(onboarding)/boas-vindas/encerrar-conta', OnboardingExitPage);

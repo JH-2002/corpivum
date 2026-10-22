@@ -8,13 +8,14 @@ import { requireAppSession } from '@/modules/consent/server';
 import { maskNutritionScreen } from '@/modules/health/mask';
 import { loadNutrition } from '@/modules/health/screens';
 import { readPrivacyMode } from '@/lib/privacy-mode-server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
   return { title: t('nutrition') };
 }
 
-export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
+async function Page({ searchParams }: { searchParams: PageSearchParams }) {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
   const session = await requireAppSession();
   const preview = await readPreviewState(searchParams);
@@ -38,3 +39,5 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
     </HealthFrame>
   );
 }
+
+export default withRouteMessages('(app)/alimentacao', Page);

@@ -15,6 +15,7 @@ import { isPresenting } from '@/lib/presentation-server';
 import { readPrivacyMode } from '@/lib/privacy-mode-server';
 import { requireAppSession } from '@/modules/consent/server';
 import { createDemoSourceFor } from '@/modules/health/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('presentation');
@@ -26,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * padrão; "meus dados" é opcional e só com consentimento ativo (`healthView`). Entra sempre com o modo
  * privacidade ligado (`enterPresentationAction`); quem abre o endereço direto passa pela entrada.
  */
-export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
+async function Page({ searchParams }: { searchParams: PageSearchParams }) {
   // Validação da sessão em cada página (LEG-S04), como nas telas do shell.
   const session = await requireAppSession();
   if (!(await isPresenting())) return <PresentationStart scope="app" />;
@@ -62,3 +63,5 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
     </PrivacyModeProvider>
   );
 }
+
+export default withRouteMessages('(presentation)/apresentacao', Page);

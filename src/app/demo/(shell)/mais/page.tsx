@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { NavLink } from '@/components/shell/NavLink';
 import { DEMO_MORE_ITEMS } from '@/components/shell/nav-config';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('pages.more');
@@ -9,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** "Mais" do demo público (9b): os módulos do demo que não cabem na barra inferior (LEG-X02). */
-export default async function DemoMorePage() {
+async function DemoMorePage() {
   const t = await getTranslations('nav');
   return (
     <nav aria-label={t('moreTitle')}>
@@ -23,3 +24,5 @@ export default async function DemoMorePage() {
     </nav>
   );
 }
+
+export default withRouteMessages('demo/(shell)/mais', DemoMorePage);

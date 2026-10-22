@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { DraftBanner } from '@/components/privacy/LegalDocument';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('legal.dpo');
@@ -8,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Encarregado e canal de contato (LEG-G03). Nome e contato a definir (OI-12). */
-export default async function DpoPage() {
+async function DpoPage() {
   const t = await getTranslations('legal.dpo');
   return (
     <article className="flex flex-col gap-4">
@@ -18,3 +19,5 @@ export default async function DpoPage() {
     </article>
   );
 }
+
+export default withRouteMessages('legal/encarregado', DpoPage);

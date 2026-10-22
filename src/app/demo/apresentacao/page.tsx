@@ -8,6 +8,7 @@ import { PresentationStart } from '@/components/presentation/PresentationParts';
 import { parsePresentationScreen } from '@/components/presentation/screens';
 import type { PageSearchParams } from '@/components/shell/ModulePage';
 import { isPresenting } from '@/lib/presentation-server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('presentation');
@@ -18,11 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Modo apresentação do demo público (§45, LEG-X02, ADR-0035): só dados fictícios, sem sessão e sem banco.
  * Entra sempre com o modo privacidade ligado; quem abre o endereço direto passa pela entrada.
  */
-export default async function DemoPresentationPage({
-  searchParams,
-}: {
-  searchParams: PageSearchParams;
-}) {
+async function DemoPresentationPage({ searchParams }: { searchParams: PageSearchParams }) {
   if (!(await isPresenting())) return <PresentationStart scope="demo" />;
   const screen = parsePresentationScreen((await searchParams).tela);
   const { range, today, source, hidden } = await demoContext();
@@ -41,3 +38,5 @@ export default async function DemoPresentationPage({
     </PrivacyModeProvider>
   );
 }
+
+export default withRouteMessages('demo/apresentacao', DemoPresentationPage);

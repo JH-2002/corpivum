@@ -11,10 +11,11 @@ import { maskDashboard } from '@/modules/health/mask';
 import { hasRegionMeasures, toTwinRows } from '@/modules/twin';
 import { demoContext } from '@/app/demo/demo-data';
 import { isDemoOnly } from '@/lib/demo-mode';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 /** Dashboard de demonstração (§40a). CTA "Começar com meus próprios dados" leva ao cadastro (§40b);
  * no modo só demo (ADR-0043), leva ao aviso da demonstração. */
-export default async function DemoHomePage() {
+async function DemoHomePage() {
   const t = await getTranslations('demo');
   const { range, today, source, hidden } = await demoContext();
   const data = await buildDashboard(source, range, today);
@@ -68,3 +69,5 @@ export default async function DemoHomePage() {
     </div>
   );
 }
+
+export default withRouteMessages('demo/(shell)', DemoHomePage);

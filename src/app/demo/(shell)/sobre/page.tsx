@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { DraftBanner } from '@/components/privacy/LegalDocument';
 import { DEMO_RESPONSIBLE } from '@/config/demo';
 import { isDemoOnly } from '@/lib/demo-mode';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('demoAbout');
@@ -16,7 +17,7 @@ const SECTIONS = ['what', 'notCollected', 'browser', 'hosting', 'contact'] as co
  * Aviso da demonstração pública (ADR-0043, LEG-X02): o que é, o que não é coletado, as preferências guardadas
  * no navegador, os registros técnicos da hospedagem e o responsável. Só existe no modo só demo. RASCUNHO, `LEGAL-REVIEW` (OI-38).
  */
-export default async function DemoAboutPage() {
+async function DemoAboutPage() {
   // Só no modo só demo: no app completo há cadastro, banco e outro controlador (OI-06).
   if (!isDemoOnly()) notFound();
   const t = await getTranslations('demoAbout');
@@ -45,3 +46,5 @@ export default async function DemoAboutPage() {
     </article>
   );
 }
+
+export default withRouteMessages('demo/(shell)/sobre', DemoAboutPage);

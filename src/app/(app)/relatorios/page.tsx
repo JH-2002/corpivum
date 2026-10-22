@@ -16,6 +16,7 @@ import {
   reportPeriodSchema,
 } from '@/modules/reports';
 import { getReportsService } from '@/modules/reports/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -28,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Modo privacidade (ADR-0035): o relatório na tela sai com os valores do corpo ocultos e o arquivo começa
  * com "ocultar" marcado.
  */
-export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
+async function Page({ searchParams }: { searchParams: PageSearchParams }) {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
   const session = await requireAppSession();
   const preview = await readPreviewState(searchParams);
@@ -82,3 +83,5 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
     </HealthFrame>
   );
 }
+
+export default withRouteMessages('(app)/relatorios', Page);

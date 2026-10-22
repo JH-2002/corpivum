@@ -5,6 +5,7 @@ import { EnableMfa } from '@/components/auth/SecurityForms';
 import { buttonClasses } from '@/components/ui/Button';
 import { getAuthService } from '@/modules/auth/server';
 import { requireOnboardingSession } from '@/modules/consent/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('onboarding.security');
@@ -12,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** §52 passo 3: oferta de MFA, opcional. Segue para as escolhas de privacidade. */
-export default async function OnboardingSecurityPage() {
+async function OnboardingSecurityPage() {
   const session = await requireOnboardingSession();
   const { mfaEnabled } = await getAuthService().getSecurityOverview(session.userId);
   const t = await getTranslations('onboarding');
@@ -28,3 +29,5 @@ export default async function OnboardingSecurityPage() {
     </div>
   );
 }
+
+export default withRouteMessages('(onboarding)/boas-vindas/seguranca', OnboardingSecurityPage);

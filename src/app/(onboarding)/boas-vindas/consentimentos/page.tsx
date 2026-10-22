@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { OnboardingConsentForm } from '@/components/privacy/OnboardingForms';
 import { AVAILABLE_PURPOSES } from '@/modules/consent';
 import { requireOnboardingSession } from '@/modules/consent/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('onboarding.consents');
@@ -10,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** §52 passo 4: consentimentos por finalidade, nunca pré-marcados (LEG-C01–C05). */
-export default async function OnboardingConsentsPage() {
+async function OnboardingConsentsPage() {
   await requireOnboardingSession();
   const t = await getTranslations('onboarding');
   return (
@@ -22,3 +23,5 @@ export default async function OnboardingConsentsPage() {
     </div>
   );
 }
+
+export default withRouteMessages('(onboarding)/boas-vindas/consentimentos', OnboardingConsentsPage);

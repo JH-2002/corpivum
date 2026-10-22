@@ -3,13 +3,14 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { LoginForm } from '@/components/auth/AuthForms';
 import { getCurrentSession } from '@/modules/auth/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.login');
   return { title: t('title') };
 }
 
-export default async function LoginPage({
+async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -33,3 +34,5 @@ export default async function LoginPage({
     </>
   );
 }
+
+export default withRouteMessages('(auth)/entrar', LoginPage);

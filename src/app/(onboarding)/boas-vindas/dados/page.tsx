@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { buttonClasses } from '@/components/ui/Button';
 import { requireDataChoiceSession } from '@/modules/consent/server';
 import { chooseDataModeAction } from '../../actions';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('onboarding.dataChoice');
@@ -13,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * §52 passo 5: explorar com dados de demonstração (fictícios, gerados em memória, nada gravado) ou começar
  * do zero (ADR-0021). Dá para trocar depois pela faixa "Começar com meus dados".
  */
-export default async function OnboardingDataChoicePage() {
+async function OnboardingDataChoicePage() {
   await requireDataChoiceSession();
   const t = await getTranslations('onboarding');
   return (
@@ -60,3 +61,5 @@ export default async function OnboardingDataChoicePage() {
     </div>
   );
 }
+
+export default withRouteMessages('(onboarding)/boas-vindas/dados', OnboardingDataChoicePage);

@@ -3,13 +3,14 @@ import { getTranslations } from 'next-intl/server';
 import { BodyView } from '@/components/modules/body/BodyView';
 import { maskBodyScreen } from '@/modules/health/mask';
 import { demoContext } from '@/app/demo/demo-data';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
   return { title: t('body') };
 }
 
-export default async function DemoBodyPage() {
+async function DemoBodyPage() {
   const { range, today, source, hidden } = await demoContext();
   const [raw, rawHeight] = await Promise.all([source.body(range), source.latestHeightCm()]);
   const { records, latestHeightCm: height } = hidden
@@ -26,3 +27,5 @@ export default async function DemoBodyPage() {
     />
   );
 }
+
+export default withRouteMessages('demo/(shell)/corpo', DemoBodyPage);

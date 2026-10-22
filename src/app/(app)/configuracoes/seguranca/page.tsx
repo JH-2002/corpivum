@@ -12,6 +12,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { getAuthService } from '@/modules/auth/server';
 import { requireAppSession } from '@/modules/consent/server';
 import { revokeOtherSessionsAction, revokeSessionAction } from './actions';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.security');
@@ -39,7 +40,7 @@ function Card({
 }
 
 /** Segurança da conta (§46, LEG-S04): sessões ativas, verificação em duas etapas e senha. */
-export default async function SecurityPage() {
+async function SecurityPage() {
   // Trocar a senha ou mexer no MFA nunca depende de aceitar uma versão nova (P7-B3, LEG-C06).
   const session = await requireAppSession({ allowPendingUpdate: true });
   const service = getAuthService();
@@ -125,3 +126,5 @@ export default async function SecurityPage() {
     </div>
   );
 }
+
+export default withRouteMessages('(app)/configuracoes/seguranca', SecurityPage);

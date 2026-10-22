@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.signup');
@@ -7,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Mensagem neutra e acolhedora para menores de 18 (LEG-F01). Nada foi guardado. */
-export default async function SignupUnavailablePage() {
+async function SignupUnavailablePage() {
   const t = await getTranslations('auth.signup');
   return (
     <>
@@ -17,3 +18,5 @@ export default async function SignupUnavailablePage() {
     </>
   );
 }
+
+export default withRouteMessages('(auth)/cadastro/indisponivel', SignupUnavailablePage);

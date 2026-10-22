@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { LinkTokenGate } from '@/components/auth/LinkToken';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.reset');
   return { title: t('title') };
 }
 
-export default async function ResetPasswordPage({
+async function ResetPasswordPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -41,3 +42,5 @@ export default async function ResetPasswordPage({
     </>
   );
 }
+
+export default withRouteMessages('(auth)/redefinir-senha', ResetPasswordPage);
