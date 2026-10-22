@@ -40,6 +40,7 @@ export function TwinViewport<R extends string>({
   onDrag,
   scene,
   fallback,
+  prefer2D = false,
   className = 'h-[360px] sm:h-[460px]',
 }: {
   label: string;
@@ -50,6 +51,8 @@ export function TwinViewport<R extends string>({
   onDrag: (radians: number) => void;
   scene: (onFail: () => void) => ReactNode;
   fallback: ReactNode;
+  /** Mostra o 2D mesmo com WebGL (celular que não carrega o 3D sozinho, ADR-0049). */
+  prefer2D?: boolean;
   className?: string;
 }) {
   const t = useTranslations('twin.viewer');
@@ -58,7 +61,7 @@ export function TwinViewport<R extends string>({
   const [box, setBox] = useState<{ left: number; top: number; width: number } | null>(null);
   const lastX = useRef<number | null>(null);
   const reduced = usePrefersReducedMotion();
-  const use3D = support === 'yes' && !failed;
+  const use3D = support === 'yes' && !failed && !prefer2D;
 
   useEffect(() => {
     if (!hover) return;

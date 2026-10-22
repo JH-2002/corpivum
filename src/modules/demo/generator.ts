@@ -150,28 +150,41 @@ export function generateDemoData(today: string, timeZone: string): DemoDataset {
 
     skipRemovedJournal(rand);
 
-    // Corpo: uma medição por semana; altura e circunferências na primeira e a cada 4 semanas. Peito,
-    // braço e coxa sem `rand()`, para não mudar a sequência dos demais dados (corpo 3D, ADR-0026).
+    // Corpo: uma medição por semana; altura na primeira e na mais recente; circunferências de todas as regiões
+    // a cada 2 semanas (9c: o twin do início mostra a evolução de cada região). Só as semanas "mensais" usam
+    // `rand()` (como antes); as outras usam um ruído fixo por dia, para não mudar a sequência dos demais dados
+    // (corpo 3D, ADR-0026). Variações pequenas e neutras, sem trajetória de "transformação" (LEG-M06).
     weight += (rand() - 0.55) * 0.25;
     if (wd === 1 || i === 0) {
       const monthly = i === 0 || i % 28 < 7;
+      const girths = monthly || i % 14 < 7;
+      const noise = (k: number) => (monthly ? rand() - 0.5 : fixedNoise(i, k));
       body.push({
         id: `demo-body-${i}`,
         measuredAt: fromLocalDateTime(`${day}T07:30`, timeZone).toISOString(),
         day,
         weightKg: round(weight, 1),
         heightCm: i === 0 ? 170 : null,
-        waistCm: monthly ? round(86 - progress * 2 + (rand() - 0.5), 1) : null,
-        hipCm: monthly ? round(98 + (rand() - 0.5), 1) : null,
-        armCm: monthly ? round(30 - progress * 0.4, 1) : null,
-        thighCm: monthly ? round(56 - progress * 0.8, 1) : null,
-        chestCm: monthly ? round(95 - progress * 1.2, 1) : null,
+        waistCm: girths ? round(86 - progress * 2 + noise(1), 1) : null,
+        hipCm: girths ? round(98 + noise(2), 1) : null,
+        armCm: girths ? round(30 - progress * 0.4, 1) : null,
+        thighCm: girths ? round(56 - progress * 0.8, 1) : null,
+        chestCm: girths ? round(95 - progress * 1.2, 1) : null,
         bodyFatPct: null,
       });
     }
   });
+  // A altura também na medição mais recente: o "atual" não aponta para o primeiro dia do período.
+  const lastBody = body.at(-1);
+  if (lastBody && lastBody.heightCm === null) lastBody.heightCm = 170;
 
   return { today, sleep, habits, checks, body, ...generateRoutine(days, start, timeZone) };
+}
+
+/** Ruído fixo em [-0,5; 0,5) por dia e campo, sem consumir o gerador pseudoaleatório. */
+function fixedNoise(i: number, k: number): number {
+  const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
+  return x - Math.floor(x) - 0.5;
 }
 
 /**

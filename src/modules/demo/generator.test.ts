@@ -39,6 +39,17 @@ describe('dados de demonstração (LEG-X02, §40)', () => {
     }
   });
 
+  it('mede todas as regiões em várias datas e a altura também na medição mais recente (9c)', () => {
+    for (const field of ['chestCm', 'armCm', 'waistCm', 'hipCm', 'thighCm'] as const) {
+      const days = data.body.filter((r) => r[field] !== null).map((r) => r.day);
+      expect(days.length, field).toBeGreaterThanOrEqual(5);
+      // Últimos 30 dias (período padrão): pelo menos duas datas por região, para a sparkline do twin.
+      expect(days.filter((d) => d >= addDays(TODAY, -29)).length, field).toBeGreaterThanOrEqual(2);
+    }
+    expect(data.body.at(-1)?.heightCm).toBe(170);
+    expect(data.body[0]?.heightCm).toBe(170);
+  });
+
   it('não contém dado de contato nem identificador pessoal', () => {
     const text = JSON.stringify(data);
     expect(text).not.toMatch(/@|\b\d{3}\.\d{3}\.\d{3}-\d{2}\b|\(\d{2}\)\s?\d{4,5}-\d{4}/);

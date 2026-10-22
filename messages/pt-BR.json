@@ -1276,6 +1276,14 @@
   },
   "twin": {
     "title": "Corpo 3D",
+    "hero": {
+      "title": "Seu corpo no período",
+      "subtitle": "Escolha uma região para ver a medida, a data e como ela variou. A forma vem só das medidas informadas.",
+      "subtitleReference": "Modo privacidade ligado: o modelo fica na forma de referência, sem as suas medidas.",
+      "view3d": "Ver em 3D",
+      "openFull": "Abrir twin completo",
+      "sparkline": "{count, plural, one {# medição no período} other {# medições no período}}"
+    },
     "viewer": {
       "loading": "Carregando o modelo 3D…",
       "fallback": "Este navegador não exibe 3D aqui. Você está vendo uma versão 2D com as mesmas informações.",

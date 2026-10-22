@@ -7,6 +7,8 @@ import { cn } from '@/lib/cn';
 import {
   BODY_MODEL_STORAGE_KEY,
   BODY_MODELS,
+  DEMO_BODY_MODEL,
+  DEMO_BODY_MODEL_STORAGE_KEY,
   parseBodyModel,
   type BodyModel,
 } from '@/modules/twin';
@@ -14,10 +16,15 @@ import {
 /**
  * Modelo de visualização do corpo (ADR-0028): preferência de interface só no navegador, sem padrão assumido
  * (`null` até a pessoa escolher). Não vai ao servidor, não entra em cálculo e não é dado de sexo ou gênero.
+ * `demo` (ADR-0049): a pessoa fictícia começa com `DEMO_BODY_MODEL`, e a troca fica em chave própria.
  */
-export function useBodyModel(): [BodyModel | null, (model: BodyModel) => void] {
-  const [raw, setRaw] = useStoredValue('local', BODY_MODEL_STORAGE_KEY);
-  return [parseBodyModel(raw), setRaw];
+export function useBodyModel(demo = false): [BodyModel | null, (model: BodyModel) => void] {
+  const [raw, setRaw] = useStoredValue(
+    'local',
+    demo ? DEMO_BODY_MODEL_STORAGE_KEY : BODY_MODEL_STORAGE_KEY,
+  );
+  const model = parseBodyModel(raw);
+  return [demo ? (model ?? DEMO_BODY_MODEL) : model, setRaw];
 }
 
 const option = (selected: boolean) =>
@@ -34,6 +41,7 @@ const option = (selected: boolean) =>
  */
 export function BodyModelPrompt() {
   const t = useTranslations('twin.bodyModel');
+  // Só contas reais perguntam: a demo já tem modelo (ADR-0049).
   const [, setModel] = useBodyModel();
   const id = useId();
   return (
@@ -65,9 +73,9 @@ export function BodyModelPrompt() {
 }
 
 /** Troca do modelo depois da primeira escolha. */
-export function BodyModelPicker() {
+export function BodyModelPicker({ demo = false }: { demo?: boolean }) {
   const t = useTranslations('twin.bodyModel');
-  const [model, setModel] = useBodyModel();
+  const [model, setModel] = useBodyModel(demo);
   const name = useId();
   return (
     <fieldset className="flex flex-col gap-2" aria-describedby={`${name}-hint`}>

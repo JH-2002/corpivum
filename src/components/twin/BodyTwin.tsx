@@ -50,7 +50,7 @@ export function BodyTwin({
   hidden?: boolean;
 }) {
   const t = useTranslations('twin.body');
-  const [model] = useBodyModel();
+  const [model] = useBodyModel(demo);
   // Modelos, decodificador e chunk 3D começam a baixar assim que a tela abre (com WebGL).
   usePreloadBodyScene();
   // No demo, medidas fictícias coerentes com a variante escolhida (só no navegador, ADR-0028); sem escolha,
@@ -151,7 +151,7 @@ export function BodyTwin({
                 setIndex(Math.max(0, days.length - 1));
               }}
             />
-            {model ? <BodyModelPicker /> : null}
+            {model ? <BodyModelPicker demo={demo} /> : null}
             {days.length > 1 && day ? (
               <div className="flex flex-col gap-1">
                 <label htmlFor={sliderId} className="text-sm font-semibold">

@@ -27,10 +27,14 @@ export function TiltCard({
   children,
   className,
   as: Tag = 'div',
+  id,
+  'aria-live': ariaLive,
 }: {
   children: ReactNode;
   className?: string;
   as?: 'div' | 'article' | 'section';
+  id?: string;
+  'aria-live'?: 'polite';
 }) {
   const fine = useFinePointer();
   const { reduced } = useMotionPreference();
@@ -65,6 +69,8 @@ export function TiltCard({
   return (
     <Tag
       ref={ref as never}
+      id={id}
+      aria-live={ariaLive}
       data-tilt={enabled ? '' : undefined}
       onPointerMove={enabled ? onPointerMove : undefined}
       onPointerLeave={enabled ? onPointerLeave : undefined}

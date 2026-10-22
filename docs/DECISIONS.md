@@ -1821,3 +1821,62 @@ destaque. Parte do sistema de movimento previsto para a 9f é antecipada aqui (a
   app) e da persistência da opção; e2e com mouse (inclina e volta), com a opção (desliga e persiste após recarregar),
   em contexto de toque e com `reducedMotion: 'reduce'`; axe sem violações. `scripts/video-tilt.mjs` grava
   `capturas/tilt-inicio.webm` para revisão visual.
+
+## ADR-0049 — Twin como destaque do início, 3D adiado e modelo fixo da pessoa da demo (Fase 9c)
+**Contexto.** Redesenho visual (Fase 9): o twin deixa de ser só uma tela à parte e vira o destaque do início, sem
+estourar o orçamento de 2,5 s (ADR-0039) nem mostrar o corpo em código na carga normal (ADR-0028). Revendo as
+capturas da 9a, também: medidas de todas as regiões em várias datas na demo, e a pessoa fictícia já com um modelo.
+**Decisão.**
+- **Hero no início** (`TwinHero`, app e demo; fora do modo apresentação, que tem tela própria do corpo): corpo
+  grande (≈ 62vh, até 640 px) e, ao lado (embaixo no celular), lista de regiões com `aria-pressed` e o painel da
+  região: medida com unidade, data, variação desde a primeira medida do período (tom neutro, sem cor de bom ou ruim,
+  LEG-M06), sparkline da região e selos INFORMADO/ESTIMADO ou DEMO. Começa na primeira região com medida. "Abrir
+  twin completo" leva à tela do twin. O mesmo aviso da tela do twin (`disclaimer.bodyModel`: representação
+  aproximada, não é avaliação corporal nem de saúde) fica no hero e no esqueleto. Sem nenhuma circunferência no
+  período (`hasRegionMeasures`, decidido no servidor antes de mascarar), fica o atalho antigo. Modo privacidade: como
+  na tela do twin (medidas próprias nem saem do servidor e o subtítulo diz que o modelo está na forma de
+  referência; na demo, só os números ficam ocultos).
+- **Carga sem "pulo".** O HTML traz um esqueleto (`TwinHeroPlaceholder`) com o mesmo cartão e a mesma área do
+  modelo, com a silhueta holográfica (`HoloLoading`). Depois do evento `load`, de uma folga de 1,2 s e de um tempo
+  ocioso (`useIdleStart`; sem a folga, a CI mediu o "interativo" de `/inicio` em 2527–2578 ms, porque o trabalho do
+  three.js caía em cima do primeiro toque), chega o twin interativo, num chunk próprio, e só então a cena 3D (`LazyBodyScene`, ainda o único
+  ponto que importa o three.js). A cena entra por baixo da silhueta e as duas trocam só em `opacity` (~300 ms)
+  quando o modelo está desenhado (`onStatus` da cena = `data-twin-status` fora de `loading`/`choose`); com menos
+  movimento, a troca é imediata. O corpo em código continua só como fallback real. Sem WebGL: 2D interativo.
+  **Emenda o ADR-0026:** o three.js passa a ser baixado também no início, mas só depois da carga da página, nunca
+  no JS de entrada (`check:perf-budget` e o e2e de horários garantem).
+- **Silhueta parada no início.** A pulsação da silhueta desde o primeiro quadro custava ~210 ms no "interativo"
+  com a CPU 4× mais lenta (medido: 2785 ms com ela, 2527 ms sem). No hero ela fica parada (`pulse={false}`); na
+  tela do twin, continua pulsando.
+- **Celular** (`(pointer: coarse)`): o 3D carrega sozinho se `canAutoload3D` permitir (sem economia de dados, rede
+  não `slow-2g`/`2g`/`3g`, memória ≥ 4 GB e ≥ 4 núcleos quando o navegador informa; sinal ausente conta como
+  "permite"). Se não, 2D interativo e o botão "Ver em 3D". Desktop com WebGL: sempre. Os sinais são só lidos, nada
+  é guardado nem enviado.
+- **Giro acompanhando o mouse** de até ~9° (0,16 rad), com o amortecimento do próprio `Turntable`; desligado em
+  toque, durante o arrasto e com menos movimento (sistema ou "Reduzir animações", ADR-0048). O painel da região é
+  um `TiltCard` (o tilt pedido para o "quadro do twin").
+- **Modelo da pessoa fictícia** (`DEMO_BODY_MODEL`, masculino). **Emenda o ADR-0028:** na demo (pública ou dentro
+  da conta) e na apresentação com dados de demonstração, o twin abre com esse modelo, sem perguntar. A troca feita
+  na demo fica em `hm.demo.twin.bodyModel` e nunca vira a escolha da conta (`hm.twin.bodyModel`); contas reais
+  continuam sem padrão. A nova chave entra na ROPA (T2b), em RETENTION e no teste de inventário do navegador.
+- **Dados da demo:** circunferências de todas as regiões a cada 2 semanas (6–7 datas nos 90 dias, pelo menos 2 nos
+  últimos 30) e a altura também na medição mais recente. As semanas extras usam um ruído fixo por dia, sem consumir
+  o gerador pseudoaleatório: os demais dados fictícios não mudam.
+- **Orçamento** (`pnpm test:perf`, build de produção, 4G lenta, CPU 4×, mediana de 5; WebGL por software no teste,
+  como no `twin.spec`). Gate na CI; a máquina local mede ~10 % acima:
+
+  | Cenário | `main` (CI) | 9c (CI) | 9c (local) | 3D pronto (CI) |
+  |---|---|---|---|---|
+  | `/inicio`, celular 412 px | 2241 ms | 2412 ms | 2513 ms | 8544 ms |
+  | `/demo`, celular 412 px | 2110 ms | 2131 ms | 2281 ms | 8514 ms |
+  | `/inicio`, desktop 1440 px | — | 2427 ms | 2547 ms | 8633 ms |
+
+  Custo no `/inicio`: ~170 ms, dentro da meta de 2,5 s, com ~90 ms de folga. É o ponto a vigiar nas próximas
+  sub-fases.
+  JS de entrada: `/inicio` 177,6 KiB e `/demo` 175,3 KiB (eram 176,8 e 174,5). O "3D pronto" inclui baixar o
+  chunk do three.js e os dois `.glb` na rede lenta e desenhar por software; é informativo, sem meta. O
+  `perf.spec` ganhou o cenário desktop e a medida do 3D pronto; o gate continua sendo o job de performance da CI.
+- **Testes:** unitários de `canAutoload3D`, do gerador (regiões em várias datas), do modelo da demo (chave separada,
+  conta real sem padrão) e do `TwinHero` (painel, troca de região, privacidade, selos); e2e do horário do three.js
+  (só depois do `load`), da troca holograma → modelo sem corpo em código, das regiões por clique e teclado, do 2D sem
+  WebGL, do celular com e sem economia de dados e da conta real que pergunta o modelo; axe.

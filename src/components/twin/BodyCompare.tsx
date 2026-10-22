@@ -56,7 +56,7 @@ export function BodyCompare({
   const [selected, setSelected] = useState<BodyRegion | null>(null);
   const [hover, setHover] = useState<{ side: Side; info: HoverInfo<BodyRegion> } | null>(null);
   const turntable = useTurntable(VIEW_ANGLE.front);
-  const [model] = useBodyModel();
+  const [model] = useBodyModel(demo);
   const compact = useCompact();
   const fmt = useTwinFormat(hideValues);
   const level = (l: ConfidenceLevel): ConfidenceLevel => (demo ? 'DEMO' : l);

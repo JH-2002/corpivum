@@ -12,7 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import { DEMO_FORBIDDEN_VARS } from '../src/lib/demo-env.ts';
-import { BODY_MODEL_STORAGE_KEY } from '../src/modules/twin/bodyModel.ts';
+import { DEMO_BODY_MODEL_STORAGE_KEY } from '../src/modules/twin/bodyModel.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'capturas');
@@ -175,11 +175,15 @@ async function capture() {
           await page.goto(BASE + url);
           await shot(name);
         }
-        // Twin com o modelo 3D escolhido; a captura `twin` acima mostra a escolha da primeira visita.
-        await page.evaluate((key) => localStorage.setItem(key, 'feminine'), BODY_MODEL_STORAGE_KEY);
+        // Twin com o outro modelo (troca guardada na chave da demo); a captura `twin` acima mostra o da pessoa
+        // fictícia (ADR-0049).
+        await page.evaluate(
+          (key) => localStorage.setItem(key, 'feminine'),
+          DEMO_BODY_MODEL_STORAGE_KEY,
+        );
         await page.goto(`${BASE}/demo/twin`);
         await shot('twin-com-modelo');
-        await page.evaluate((key) => localStorage.removeItem(key), BODY_MODEL_STORAGE_KEY);
+        await page.evaluate((key) => localStorage.removeItem(key), DEMO_BODY_MODEL_STORAGE_KEY);
         await page.goto(`${BASE}/demo/apresentacao`);
         await shot('apresentacao-entrada');
         await page.getByRole('button', { name: 'Começar apresentação' }).click();

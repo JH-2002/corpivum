@@ -30,7 +30,7 @@ usa os mesmos, salvo decisão registrada em ADR.
 | Backups do banco | `BACKUP_RETENTION_DAYS` = 30 dias, ≤ `PURGE_DAYS` (LEG-S07) | Expiração no provedor (CHECKLIST) | — |
 | Livros de reaplicação (`pnpm backup:ledger`, ADR-0040; IDs, provas e registros de acesso com IP) | Mesmo prazo dos backups: um IP pode sobreviver no livro até `BACKUP_RETENTION_DAYS` além dos 180 dias | Expiração no storage só de acréscimo (CHECKLIST) | — |
 | Cookies de preferência (`__Host-hm_period`, `__Host-hm_privacy`, `__Host-hm_presenting`) | Até fechar o navegador | Cookies de sessão, sem identificador | — |
-| Preferências no `localStorage` (`hm_tour_demo_seen`, `hm.twin.bodyModel`, `hm.motion`) | Até a pessoa limpar os dados do navegador | Só no aparelho, nunca enviadas ao servidor; sem identificador (ADR-0025, ADR-0028, ADR-0048) | — |
+| Preferências no `localStorage` (`hm_tour_demo_seen`, `hm.twin.bodyModel`, `hm.demo.twin.bodyModel`, `hm.motion`) | Até a pessoa limpar os dados do navegador | Só no aparelho, nunca enviadas ao servidor; sem identificador (ADR-0025, ADR-0028, ADR-0048, ADR-0049) | — |
 
 Os jobs recorrentes usam `singletonKey` (várias instâncias não duplicam) e se reagendam ao terminar, mesmo após
 falha. Payloads só com IDs; logs só com contagens (LEG-R04).

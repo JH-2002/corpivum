@@ -17,7 +17,7 @@ import { BODY_ASSETS } from '@/modules/twin/bodyAssets';
 import type { BodyRegion } from '@/modules/twin';
 import { HoloLoading } from '../HoloLoading';
 import { bodyLayout, type ProfilePoint } from '../layout';
-import type { BodySceneProps } from '../types';
+import type { BodySceneProps, BodySceneStatus } from '../types';
 import { preloadAllBodyModels } from './assets';
 import { BodyModelMesh } from './BodyModelMesh';
 import { regionHandlers, TwinCanvas, Turntable } from './common';
@@ -61,7 +61,7 @@ type ModelStatus = 'loading' | 'ready' | 'error' | 'timeout';
  *   Contexto perdido e não restaurado em `CONTEXT_RESTORE_TIMEOUT_MS`: `onFail` (versão 2D).
  */
 export function BodyScene(props: BodySceneProps) {
-  const { model, angle, instant, compact, onFail } = props;
+  const { model, angle, instant, compact, onFail, onStatus } = props;
   const asset = model ? BODY_ASSETS[model] : undefined;
   const file = asset?.file ?? null;
   const [state, setState] = useState<{ file: string | null; status: ModelStatus }>({
@@ -120,6 +120,13 @@ export function BodyScene(props: BodySceneProps) {
     );
   }
   const waiting = context === 'ok' && (!model || (asset !== undefined && status === 'loading'));
+  // Corpo em código no lugar do modelo (contexto restaurado ou variante sem arquivo) também conta como pronto.
+  const shown: BodySceneStatus = !model
+    ? 'choose'
+    : context === 'restored' || !asset
+      ? 'error'
+      : status;
+  useEffect(() => onStatus?.(shown), [shown, onStatus]);
 
   return (
     <div className="relative h-full w-full" data-twin-status={!model ? 'choose' : status}>

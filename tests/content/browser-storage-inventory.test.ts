@@ -33,7 +33,12 @@ describe('inventário do armazenamento no navegador', () => {
   ];
 
   it('encontra as chaves conhecidas', () => {
-    expect(keys.sort()).toEqual(['hm.motion', 'hm.twin.bodyModel', 'hm_tour_demo_seen']);
+    expect(keys.sort()).toEqual([
+      'hm.demo.twin.bodyModel',
+      'hm.motion',
+      'hm.twin.bodyModel',
+      'hm_tour_demo_seen',
+    ]);
   });
 
   it('toda chave está na ROPA', () => {
