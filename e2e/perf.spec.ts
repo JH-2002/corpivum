@@ -29,6 +29,8 @@ interface Load {
   /** Multiplicador de CPU aplicado e o tempo do teste fixo da máquina antes da carga. */
   rate?: number;
   benchmark?: number;
+  /** Tempo até o twin do início trocar o holograma pelo modelo 3D desenhado (ADR-0049), em ms. */
+  twin3d?: number;
 }
 const KBIT = 1000 / 8;
 
@@ -37,6 +39,9 @@ test.skip(
   'Só no build de produção: E2E_PROD=1 pnpm test:perf (o dev server não representa o app publicado).',
 );
 test.describe.configure({ mode: 'serial' });
+// WebGL por software (SwiftShader), como em twin.spec: sem ele o headless não tem WebGL, e o twin do início
+// ficaria no 2D, sem medir o custo do 3D (ADR-0049). Num aparelho de verdade o desenho é na GPU.
+test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] } });
 
 /**
  * Mesmo trabalho fixo de JavaScript (ordenar números, montar textos, criar objetos), no navegador e sem
@@ -131,41 +136,73 @@ async function timeToInteractive(page: Page, path: string): Promise<Load> {
   );
 }
 
+/** Espera o twin do início ficar pronto (modelo 3D desenhado) e devolve o tempo desde a navegação. */
+async function twinReadyMs(page: Page): Promise<number> {
+  await page.locator('[data-twin-hero-ready]').waitFor({ timeout: 60_000 });
+  return page.evaluate(() => Math.round(performance.now()));
+}
+
 const median = (values: number[]) =>
   [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0;
 
-for (const { name, path, storageState } of [
+/**
+ * Celular (412px, toque) e desktop. O twin do início carrega o 3D sozinho nos dois (ADR-0049): a rede é declarada
+ * como 4G sem economia de dados, o caso em que o celular carrega o 3D. Além do "interativo", mede o tempo até o
+ * modelo 3D estar desenhado (informativo, sem meta).
+ */
+const DEVICES = {
+  celular: { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true },
+  desktop: { viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false },
+} as const;
+
+for (const { name, path, storageState, device } of [
   {
     name: 'dashboard da pessoa (dados sintéticos de 90 dias)',
     path: '/inicio',
     storageState: STORAGE_STATE,
+    device: 'celular',
   },
-  { name: 'dashboard do demo público', path: '/demo', storageState: DEMO_TOUR_SEEN_STATE },
+  {
+    name: 'dashboard do demo público',
+    path: '/demo',
+    storageState: DEMO_TOUR_SEEN_STATE,
+    device: 'celular',
+  },
+  {
+    name: 'dashboard da pessoa no desktop',
+    path: '/inicio',
+    storageState: STORAGE_STATE,
+    device: 'desktop',
+  },
 ] as const) {
   test(`${name}: interativo em até ${budget.dashboard.maxInteractiveMs} ms (4G, CPU 4×)`, async ({
     browser,
   }, testInfo) => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000);
     const results: Load[] = [];
     for (let i = 0; i < RUNS; i += 1) {
       // Contexto novo a cada carga: cache e conexões frios, como na primeira visita do dia.
-      const context = await browser.newContext({
-        storageState,
-        viewport: { width: 412, height: 915 },
-        isMobile: true,
-        hasTouch: true,
+      const context = await browser.newContext({ storageState, ...DEVICES[device] });
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator, 'connection', {
+          value: { saveData: false, effectiveType: '4g' },
+        });
+        // Conta real: sem modelo escolhido o twin só pergunta (ADR-0028); mede quem já escolheu.
+        localStorage.setItem('hm.twin.bodyModel', 'feminine');
       });
       const page = await context.newPage();
       const cpu = await cpuRate(page);
       await throttle(page, cpu.rate);
-      results.push({ ...(await timeToInteractive(page, path)), ...cpu });
+      const load = await timeToInteractive(page, path);
+      results.push({ ...load, ...cpu, twin3d: await twinReadyMs(page) });
       await context.close();
     }
     const tti = Math.round(median(results.map((r) => r.tti)));
     const lcp = Math.round(median(results.map((r) => r.lcp).filter((v) => !Number.isNaN(v))));
+    const twin3d = Math.round(median(results.map((r) => r.twin3d ?? 0)));
     testInfo.annotations.push({
       type: 'perf',
-      description: `${path}: interativo ${tti} ms, LCP ${lcp} ms`,
+      description: `${path} (${device}): interativo ${tti} ms, LCP ${lcp} ms, 3D pronto ${twin3d} ms`,
     });
     console.log(
       `[perf] ${path} cargas (primeiro byte / fim do HTML / fim do JS / interativo, ms): ` +
@@ -177,7 +214,7 @@ for (const { name, path, storageState } of [
           .join(', '),
     );
     console.log(
-      `[perf] ${path}: interativo ${tti} ms (cargas: ${results.map((r) => Math.round(r.tti)).join(', ')}), LCP ${lcp} ms`,
+      `[perf] ${path} (${device}): interativo ${tti} ms (cargas: ${results.map((r) => Math.round(r.tti)).join(', ')}), LCP ${lcp} ms, 3D pronto ${twin3d} ms (cargas: ${results.map((r) => r.twin3d).join(', ')})`,
     );
     expect(tti).toBeLessThanOrEqual(budget.dashboard.maxInteractiveMs);
   });
