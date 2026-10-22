@@ -1051,6 +1051,12 @@
       }
     }
   },
+  "motion": {
+    "reduce": "Reduzir animações",
+    "on": "Ligado",
+    "off": "Desligado",
+    "hint": "Desliga os efeitos de movimento, como a inclinação dos cartões. O sistema também pode pedir isso."
+  },
   "help": {
     "menu": "Ajuda",
     "tour": "Fazer o tour do painel",
@@ -1141,11 +1147,11 @@
     },
     "notCollected": {
       "title": "O que não é coletado",
-      "body": "Não há conta, formulário nem banco de dados: a demonstração não grava nada do que você faz. Não usamos analytics, publicidade nem rastreadores de terceiros. Veja abaixo o que fica no seu navegador e o que a hospedagem registra."
+      "body": "Não há conta nem banco de dados. Os formulários são só de exemplo e não enviam nada. Não usamos analytics, publicidade nem rastreadores de terceiros. Veja abaixo o que fica no seu navegador e o que a hospedagem registra."
     },
     "browser": {
       "title": "Preferências no navegador",
-      "body": "Para lembrar o período escolhido, o modo privacidade e o modo apresentação, a demonstração usa cookies de sessão, sem identificador, criados só quando você muda uma dessas opções e apagados ao fechar o navegador. O próprio navegador guarda, sem enviar para o servidor, que você já viu o tour e qual modelo do corpo 3D você escolheu."
+      "body": "Para lembrar o período escolhido, o modo privacidade e o modo apresentação, a demonstração usa cookies de sessão, sem identificador, criados só quando você muda uma dessas opções e apagados ao fechar o navegador. O próprio navegador guarda, sem enviar para o servidor, que você já viu o tour, qual modelo do corpo 3D você escolheu e se você pediu para reduzir as animações."
     },
     "hosting": {
       "title": "Registros técnicos da hospedagem",

@@ -85,7 +85,8 @@ publicação estão na OI-38.
 ## Etapa 4 — Validação
 
 - [ ] **4.0 (D)** Nenhum "HealthMind" nos textos versionados (`DOCUMENT_MESSAGES`): nome do produto atualizado com
-  nova versão (item 1.6, OI-38 i, ADR-0044).
+  nova versão (item 1.6, OI-38 i, ADR-0044). Na mesma versão da Política, a seção 9 cita `hm.motion` e não cita mais o
+  "tema de cores" (OI-40, OI-30).
 - [ ] **4.1 (X, D)** Pentest independente num ambiente igual ao de produção, só com dados sintéticos (escopo em
   `docs/security/PENTEST_SCOPE.md`, contexto em `docs/security/THREAT_MODEL.md`), com atenção especial ao **módulo de
   autenticação próprio** (ADR-0014): sessões (fixação e revogação), enumeração de e-mail e diferença de tempo de

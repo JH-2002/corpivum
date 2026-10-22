@@ -30,7 +30,7 @@
 | 1 | Enquadramento regulatório (ANVISA) | OI-07 | 🔴 | Sim |
 | 2 | Controlador, encarregado e foro | OI-06, OI-12 | 🔴 | Não |
 | 3 | Bases legais e consentimento | OI-01, OI-16, OI-32, PR4-M3 | 🔴 | Não |
-| 4 | Textos públicos, versões e avisos | OI-08, OI-30, OI-36 | 🔴 | Parcial |
+| 4 | Textos públicos, versões e avisos | OI-08, OI-30, OI-36, OI-38 e, OI-40 | 🔴 | Parcial |
 | 5 | Retenção e registros de acesso | OI-04, OI-06, OI-14 b, OI-17, PR1b-M2 | 🔴 | Não |
 | 6 | Direitos do titular | OI-18, OI-20, OI-31, OI-33, OI-34, PR2-N1 | 🟠 | Não |
 | 7 | Menores de idade | OI-02 | 🔴 | Não |
@@ -129,7 +129,7 @@ citá-los (versão não substancial, tema 4.2). Só é preciso confirmar que a r
 do titular, de uma finalidade que nunca foi exercida dispensa comunicação individual (o aviso da Política v3 menciona
 a mudança; cada revogação fica no AuditLog sem ator). Pergunta registrada como OI-30 (f), `LEGAL-REVIEW`.
 
-## 4. Textos públicos, versões e avisos — OI-08, OI-30, OI-36 🔴
+## 4. Textos públicos, versões e avisos — OI-08, OI-30, OI-36, OI-38 e, OI-40 🔴
 
 ### 4.1 Textos finais (OI-08)
 **Pergunta.** Revisar e aprovar a Política de Privacidade v3, os Termos de Uso v2, o consentimento de dados de bem-estar e os
@@ -165,14 +165,17 @@ não substancial, é aceitável?
 **Impacto.** Novo aceite: basta publicar a mesma versão como substancial (o mecanismo existe). E-mail: um envio único
 pelo provedor de e-mail (tema 8), sem conteúdo de saúde.
 
-### 4.3 Cookies e preferências (OI-36)
+### 4.3 Cookies e preferências (OI-36, OI-38 e, OI-40)
 **Pergunta.** O app usa só cookies necessários (sessão, aparelho conhecido, verificação de idade) e cookies de sessão
-de preferências pedidas pela própria pessoa (período, modo privacidade, modo apresentação), sem identificador; tema,
-aparência do modelo 3D e tour da demonstração ficam só no navegador. A descrição da Política v2 (seção 9) basta, sem
+de preferências pedidas pela própria pessoa (período, modo privacidade, modo apresentação), sem identificador; aparência
+do modelo 3D (`hm.twin.bodyModel`), tour da demonstração (`hm_tour_demo_seen`) e a opção "Reduzir animações"
+(`hm.motion`) ficam só no `localStorage` do navegador, nunca enviados. A descrição da Política v2 (seção 9) basta, sem
 banner nem consentimento? Os textos do modo privacidade (`privacyMode.*`, "ocultos em todas as telas") prometem o
 que o app faz?
 
 **Impacto.** Se exigir banner: componente novo, sem mudar o tratamento. Ajuste de texto: nova versão da Política.
+A próxima versão já tem pendência registrada (OI-40): incluir `hm.motion` e tirar o "tema de cores", que não existe
+mais (ADR-0046).
 
 ## 5. Retenção e registros de acesso — OI-04, OI-06, OI-14 b, OI-17, PR1b-M2 🔴
 

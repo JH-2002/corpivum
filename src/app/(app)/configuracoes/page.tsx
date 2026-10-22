@@ -6,6 +6,7 @@ import {
   resolvePreviewState,
   type PageSearchParams,
 } from '@/components/shell/ModulePage';
+import { ReduceMotionToggle } from '@/components/ui/ReduceMotionToggle';
 import { requireAppSession } from '@/modules/consent/server';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -32,6 +33,9 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
             {t('link')}
           </Link>
           <p className="text-sm text-fg-muted">{t('linkDescription')}</p>
+        </section>
+        <section className="rounded-lg border border-border bg-surface p-3 shadow-sm">
+          <ReduceMotionToggle />
         </section>
       </div>
     </ModulePage>

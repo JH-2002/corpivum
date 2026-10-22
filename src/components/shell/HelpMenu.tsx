@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { SupportNotice } from '@/components/health/SupportNotice';
 import { EnterPresentationForm } from '@/components/presentation/PresentationParts';
 import { CONFIDENCE_LEVELS } from '@/components/ui/ConfidenceBadge';
+import { ReduceMotionToggle } from '@/components/ui/ReduceMotionToggle';
 import { Disclosure } from './Disclosure';
 
 /**
@@ -33,6 +34,7 @@ export function HelpMenu({ tourHref }: { tourHref: '/inicio?tour=1' | '/demo?tou
         {t('tour')}
       </Link>
       <EnterPresentationForm scope={scope} className={MENU_ITEM} />
+      <ReduceMotionToggle className="mt-1" />
       <section
         aria-labelledby="help-badges"
         className="mt-2 border-t border-border px-3 pt-2 text-sm"
