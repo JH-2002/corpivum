@@ -152,6 +152,16 @@
   }
 }
 
+/* Opção "Reduzir animações" do app (ADR-0048): o mesmo corte da preferência do sistema. */
+[data-motion='reduced'] *,
+[data-motion='reduced'] *::before,
+[data-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
 /* Formulário de exemplo do demo (9b): campos e botão desativados continuam legíveis (contraste AA) e o botão
    aparece apagado pela forma (fundo neutro, borda tracejada), não pela transparência. Fora de @layer: vence
    os utilitários do botão (`disabled:opacity-60`, `bg-primary`). */
