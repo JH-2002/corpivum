@@ -1755,3 +1755,36 @@ principal, e uma fonte um pouco mais grossa.
 - **Testes.** axe roda só no esquema escuro (`e2e/a11y.spec.ts`, `e2e/privacy.spec.ts`); o e2e de tema confere que
   não há seletor e que o `color-scheme` é escuro. `pnpm capturas` gera só a versão escura.
 **Consequências.** Uma cor nova entra só em `tokens.css` e precisa passar no teste de contraste do tema escuro.
+
+## ADR-0047 — Navegação, "Registrar" sempre visível e formulários de exemplo na demo (Fase 9b)
+**Contexto.** Redesenho visual (Fase 9). A barra inferior da demo tinha 9 itens com rolagem horizontal, a demo não
+mostrava como registrar dados (só um aviso no lugar dos formulários) e, revendo as capturas da 9a, o seletor de
+período ainda era o `<select>` nativo e o foco ao trocar de tela não era tratado.
+**Decisão.**
+- **Barra inferior única** (`BottomNav`): Início · Twin · Registrar (central) · Timeline · Mais, igual no app e na
+  demo, sem rolagem. A demo ganha `/demo/mais` com os outros módulos (`DEMO_MORE_ITEMS`). O item ativo tem cor,
+  pílula atrás do ícone e sublinhado (a cor nunca é o único canal).
+- **Sidebar** com dois grupos: módulos e "Conta" (relatórios, configurações, Central de Privacidade); o próprio menu
+  rola em tela baixa.
+- **"Registrar" na demo** abre o mesmo `QuickLogDialog` (variante `demo`), que leva aos formulários da própria demo.
+  **Emenda o ADR-0021** ("demo sem formulários"): os formulários aparecem como **exemplo** (`ExampleForm`),
+  preenchidos com dados fictícios dentro de um `<fieldset disabled>` (campos e envio desativados de uma vez), com o
+  aviso fixo "na demonstração nada é salvo". Nada é enviado ao servidor (regras 4 e 6; LEG-X02), em duas camadas:
+  no navegador, os formulários em modo `example` saem sem a server action (o ID dela não vai para o HTML da demo) e
+  o envio é impedido; no servidor, um POST forjado continua barrado por `assertFullApp` (modo só demo),
+  `requireAppSession` (sem sessão) e `healthWrite` (conta em modo demonstração). O e2e confere que nenhuma
+  requisição além de GET sai durante o fluxo. Os exemplos não sugerem meta: sem calorias e sem
+  valor-alvo de meta (LEG-M07); o de medidas repete a última medição da pessoa fictícia (vazio no modo privacidade).
+  Metas entra no registro rápido (app e demo); a água fica fora da variante demo, que não tem exemplo para ela.
+- **Foco na troca de rota** (`useRouteFocus`): o foco vai ao `<h1>` do cabeçalho (WCAG 2.4.3); a primeira carga e
+  um diálogo aberto não mudam o foco. O foco por código (título, tela da apresentação, exemplo do registro rápido)
+  passa por `focusProgrammatically`: depois de clique ou toque o alvo ganha `data-focus-quiet` e fica sem moldura;
+  depois de tecla, o anel de `:focus-visible` aparece como sempre (WCAG 2.4.7). A decisão usa a última interação, e
+  não a heurística do navegador para foco por script, que varia.
+- **Seletor de período** em botões segmentados feitos de rádios nativos (`role="radiogroup"`, setas trocam a opção,
+  nome pelo rótulo); a opção atual tem preenchimento, peso e ícone de check. Abaixo de 640px as opções ficam num menu
+  (botão com a opção atual + lista), que fecha com Esc, clique fora ou foco saindo; pelo teclado as setas não o
+  fecham. Cookie, `aria-live` do intervalo e presets não mudam.
+- **Testes.** Unitários de `nav-config`, `PeriodSelector`, `useRouteFocus`, `focusProgrammatically` e
+  `ExampleForm`; e2e da barra da demo em 320/390px, do "Registrar" na demo sem envio e do foco no título com mouse e
+  com teclado; `e2e/period.ts` concentra a escolha de período dos e2e. axe cobre `/demo/mais`.
