@@ -1862,15 +1862,17 @@ capturas da 9a, também: medidas de todas as regiões em várias datas na demo, 
 - **Dados da demo:** circunferências de todas as regiões a cada 2 semanas (6–7 datas nos 90 dias, pelo menos 2 nos
   últimos 30) e a altura também na medição mais recente. As semanas extras usam um ruído fixo por dia, sem consumir
   o gerador pseudoaleatório: os demais dados fictícios não mudam.
-- **Orçamento** (`pnpm test:perf` local, build de produção, 4G lenta, CPU 4×, mediana de 5; WebGL por software no
-  teste, como no `twin.spec`; nesta máquina a `main` mede ~10 % acima da CI):
+- **Orçamento** (`pnpm test:perf`, build de produção, 4G lenta, CPU 4×, mediana de 5; WebGL por software no teste,
+  como no `twin.spec`). Gate na CI; a máquina local mede ~10 % acima:
 
-  | Cenário | `main` | 9c | 3D pronto |
-  |---|---|---|---|
-  | `/inicio`, celular 412 px | 2519 ms | 2529 ms | 7065 ms |
-  | `/demo`, celular 412 px | — | 2281 ms | 7661 ms |
-  | `/inicio`, desktop 1440 px | — | 2547 ms | 7097 ms |
+  | Cenário | `main` (CI) | 9c (CI) | 9c (local) | 3D pronto (CI) |
+  |---|---|---|---|---|
+  | `/inicio`, celular 412 px | 2241 ms | 2412 ms | 2513 ms | 8544 ms |
+  | `/demo`, celular 412 px | 2110 ms | 2131 ms | 2281 ms | 8514 ms |
+  | `/inicio`, desktop 1440 px | — | 2427 ms | 2547 ms | 8633 ms |
 
+  Custo no `/inicio`: ~170 ms, dentro da meta de 2,5 s, com ~90 ms de folga. É o ponto a vigiar nas próximas
+  sub-fases.
   JS de entrada: `/inicio` 177,6 KiB e `/demo` 175,3 KiB (eram 176,8 e 174,5). O "3D pronto" inclui baixar o
   chunk do three.js e os dois `.glb` na rede lenta e desenhar por software; é informativo, sem meta. O
   `perf.spec` ganhou o cenário desktop e a medida do 3D pronto; o gate continua sendo o job de performance da CI.
