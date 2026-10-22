@@ -5,8 +5,27 @@ export interface PaddedDomainOptions {
   minSpan: number;
   /** Folga em cada ponta quando os dados excedem a faixa mínima (fração da amplitude). */
   pad?: number;
-  /** Os limites são arredondados para fora, em múltiplos deste passo. */
+  /** Passo mínimo dos tiques; os limites são arredondados para fora, em múltiplos do passo. */
   step?: number;
+}
+
+/** Até 4 intervalos entre tiques. */
+const MAX_INTERVALS = 4;
+
+/** Passo "redondo" (1, 2 ou 5 × 10^n) para cobrir `span` em até 4 intervalos, nunca menor que `min`. */
+export function niceStep(span: number, min = 0): number {
+  const raw = Math.max(span / MAX_INTERVALS, min, Number.EPSILON);
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const nice = [1, 2, 5, 10].map((m) => m * magnitude).find((s) => s >= raw - 1e-9)!;
+  return Math.max(nice, min);
+}
+
+/** Tiques de `lo` a `hi` (inclusive) num passo redondo: nenhum tique avulso no topo. */
+export function niceTicks([lo, hi]: [number, number]): number[] {
+  const step = niceStep(hi - lo);
+  const ticks: number[] = [];
+  for (let v = lo; v <= hi + step / 1e6; v += step) ticks.push(Math.round(v * 1e6) / 1e6);
+  return ticks;
 }
 
 /**
@@ -36,10 +55,16 @@ export function paddedDomain(
     lo = min - extra;
     hi = max + extra;
   }
-  lo = Math.floor(lo / step) * step;
-  hi = Math.ceil(hi / step) * step;
   if (min >= 0) lo = Math.max(0, lo);
-  return [lo, hi];
+  // Limites em múltiplos de um passo redondo: os tiques caem certinhos nas pontas (72, 74, 76, 78).
+  let tick = niceStep(hi - lo, step);
+  let [a, b] = [Math.floor(lo / tick) * tick, Math.ceil(hi / tick) * tick];
+  // Arredondar para fora pode pedir um passo maior (mais de 4 intervalos).
+  while ((b - a) / tick > MAX_INTERVALS + 1e-9) {
+    tick = niceStep(b - a, tick * 1.0001);
+    [a, b] = [Math.floor(lo / tick) * tick, Math.ceil(hi / tick) * tick];
+  }
+  return [a, b];
 }
 
 /** Largura do eixo Y (px) para caber o maior rótulo formatado, com piso de 44 px. */
@@ -61,6 +86,8 @@ export interface AxisSeries {
 
 export interface YAxisConfig {
   domain: AxisDomain;
+  /** Tiques explícitos quando o domínio é fixo (o recharts dividiria em passos quebrados). */
+  ticks?: number[];
   allowDecimals: boolean;
   decimals: number;
   width: number;
@@ -82,9 +109,8 @@ export function yAxisConfig(
   const onAxis = series.filter((s) => (s.axis ?? 'left') === axis);
   const integer = onAxis.length > 0 && onAxis.every((s) => s.integer);
   const decimals = integer ? 0 : Math.max(0, ...onAxis.map((s) => s.decimals ?? 1));
-  const finalDomain: AxisDomain = onAxis.some((s) => s.kind === 'bar')
-    ? [0, 'auto']
-    : (domain ?? ['auto', 'auto']);
+  const hasBar = onAxis.some((s) => s.kind === 'bar');
+  const fixed = hasBar ? undefined : domain;
   const values = data.flatMap((row) =>
     onAxis
       .map((s) => (row as Record<string, unknown>)[s.key])
@@ -94,5 +120,11 @@ export function yAxisConfig(
   const labels = extremes.length
     ? [format(Math.min(...extremes), decimals), format(Math.max(...extremes), decimals)]
     : [];
-  return { domain: finalDomain, allowDecimals: !integer, decimals, width: axisWidth(labels) };
+  return {
+    domain: hasBar ? [0, 'auto'] : (fixed ?? ['auto', 'auto']),
+    ticks: fixed ? niceTicks(fixed) : undefined,
+    allowDecimals: !integer,
+    decimals,
+    width: axisWidth(labels),
+  };
 }

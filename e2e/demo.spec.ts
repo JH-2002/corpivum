@@ -65,18 +65,60 @@ test('dados com selo DEMO, formulários só de exemplo e com caminho para criar 
   await expect(page).toHaveURL(/\/cadastro$/);
 });
 
-test('"Como é calculado" explica componentes, pesos e exclusões', async ({ page }) => {
+test('"Como é calculado" explica componentes e pesos; na demo o Índice é completo (ADR-0050)', async ({
+  page,
+}) => {
   await page.goto('/demo');
+  await expect(page.getByText(/^Dados parciais/)).toHaveCount(0);
   await page.getByText('Como é calculado', { exact: true }).click();
   const table = page.getByRole('table', { name: /Componentes do Índice de Bem-Estar/ });
   await expect(table).toBeVisible();
   await expect(table.getByText('Regularidade do sono')).toBeVisible();
-  await expect(table.getByText('Fora: ainda não registrado no app')).toBeVisible();
+  await expect(table.getByText('Atividade física', { exact: true })).toBeVisible();
+  await expect(table.getByText(/^Fora:/)).toHaveCount(0);
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 
 // axe do demo nos dois temas: a11y.spec.ts (inventário de todas as páginas, 7d).
+
+test('gráfico de peso com rótulos inteiros em pt-BR e eixo com faixa mínima (revisão da 9a)', async ({
+  page,
+}) => {
+  await page.goto('/demo/corpo');
+  const chart = page.getByRole('region', { name: 'Peso no período' });
+  // O desenho (recharts) chega num chunk próprio, depois da hidratação.
+  await chart.scrollIntoViewIfNeeded();
+  const ticks = chart.locator('text.recharts-cartesian-axis-tick-value[orientation="left"]');
+  await expect(ticks.first()).toBeVisible({ timeout: 15_000 });
+  const box = await chart.boundingBox();
+  const labels = await ticks.allTextContents();
+  // Números em pt-BR (vírgula decimal), nunca cortados à esquerda do cartão.
+  for (const label of labels) expect(label).toMatch(/^\d+(,\d+)?$/);
+  for (const tick of await ticks.all()) {
+    expect((await tick.boundingBox())!.x).toBeGreaterThanOrEqual(box!.x);
+  }
+  const values = labels.map((l) => Number(l.replace(',', '.')));
+  expect(Math.max(...values) - Math.min(...values)).toBeGreaterThanOrEqual(4);
+});
+
+test('"Últimos 7 dias" dos hábitos em uma linha de 7 colunas a 320 px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto('/demo/habitos');
+  const grid = page.getByText('Últimos 7 dias').first().locator('xpath=following-sibling::ul[1]');
+  const cells = grid.locator(':scope > li');
+  await expect(cells).toHaveCount(7);
+  const tops = await cells.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+  expect(new Set(tops).size).toBe(1);
+  const sizes = await cells.evaluateAll((els) =>
+    els.map((e) => e.lastElementChild!.getBoundingClientRect().width),
+  );
+  for (const w of sizes) expect(w).toBeGreaterThanOrEqual(24);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+});
 
 test.describe('demo responsivo, sem rolagem horizontal', () => {
   for (const viewport of VIEWPORTS) {

@@ -91,6 +91,7 @@ export function TimeChartPlot({
         <YAxis
           yAxisId="left"
           domain={left.domain}
+          ticks={left.ticks}
           allowDecimals={left.allowDecimals}
           tickFormatter={(v: number) => formatNumber(v, left.decimals)}
           tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}
@@ -101,6 +102,7 @@ export function TimeChartPlot({
             yAxisId="right"
             orientation="right"
             domain={right.domain}
+            ticks={right.ticks}
             allowDecimals={right.allowDecimals}
             tickFormatter={(v: number) => formatNumber(v, right.decimals)}
             tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}

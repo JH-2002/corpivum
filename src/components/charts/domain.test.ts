@@ -1,9 +1,9 @@
-import { axisWidth, paddedDomain, yAxisConfig } from './domain';
+import { axisWidth, niceStep, niceTicks, paddedDomain, yAxisConfig } from './domain';
 import { formatNumber } from './format';
 
 describe('paddedDomain (faixa mínima do eixo, LEG-M06)', () => {
   it('variação pequena: faixa de ±2 em torno da média, arredondada para fora', () => {
-    expect(paddedDomain([73.9, 74.1, 73.95], { minSpan: 4 })).toEqual([71, 76]);
+    expect(paddedDomain([73.9, 74.1, 73.95], { minSpan: 4 })).toEqual([70, 76]);
   });
 
   it('a faixa desliza para conter todos os valores', () => {
@@ -14,7 +14,7 @@ describe('paddedDomain (faixa mínima do eixo, LEG-M06)', () => {
   });
 
   it('dados que excedem a faixa: ajusta aos dados com folga', () => {
-    expect(paddedDomain([60, 80], { minSpan: 4 })).toEqual([58, 82]);
+    expect(paddedDomain([60, 80], { minSpan: 4 })).toEqual([50, 90]);
   });
 
   it('ignora nulos e, sem valores, deixa o eixo automático', () => {
@@ -24,6 +24,30 @@ describe('paddedDomain (faixa mínima do eixo, LEG-M06)', () => {
 
   it('não vai abaixo de zero com valores positivos', () => {
     expect(paddedDomain([0.5, 1], { minSpan: 4 })![0]).toBe(0);
+  });
+});
+
+describe('tiques redondos', () => {
+  it('passo 1, 2 ou 5 × 10^n em até 4 intervalos', () => {
+    expect(niceStep(5)).toBe(2);
+    expect(niceStep(4)).toBe(1);
+    expect(niceStep(40)).toBe(10);
+    expect(niceStep(0.8)).toBe(0.2);
+  });
+
+  it('os limites de paddedDomain caem nos tiques, sem tique avulso', () => {
+    for (const values of [
+      [73.9, 74.1],
+      [70, 70, 73.5],
+      [60, 80],
+      [84.2, 85.1, 31.5],
+    ]) {
+      const domain = paddedDomain(values, { minSpan: 4 })!;
+      const ticks = niceTicks(domain);
+      expect(ticks[0]).toBe(domain[0]);
+      expect(ticks.at(-1)).toBe(domain[1]);
+      expect(ticks.length).toBeLessThanOrEqual(5);
+    }
   });
 });
 
@@ -39,8 +63,9 @@ describe('yAxisConfig', () => {
   });
 
   it('linha usa o domínio informado', () => {
-    const c = yAxisConfig(data, [{ key: 'kg', kind: 'line' }], 'left', [71, 76], formatNumber);
-    expect(c.domain).toEqual([71, 76]);
+    const c = yAxisConfig(data, [{ key: 'kg', kind: 'line' }], 'left', [72, 76], formatNumber);
+    expect(c.domain).toEqual([72, 76]);
+    expect(c.ticks).toEqual([72, 73, 74, 75, 76]);
   });
 
   it('contagens: eixo sem decimais', () => {
