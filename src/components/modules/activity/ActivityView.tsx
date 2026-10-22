@@ -151,7 +151,7 @@ export function ActivityView({
                 label: t('minutesSeries'),
                 unit: 'min',
                 kind: 'bar',
-                color: 'var(--hm-domain-activity)',
+                color: 'var(--hm-chart-1)',
               },
             ]}
           />
@@ -224,7 +224,7 @@ export function ActivityView({
                             : t('progression.repsSeries'),
                           unit: withLoad ? 'kg' : undefined,
                           kind: 'line',
-                          color: 'var(--hm-domain-activity)',
+                          color: 'var(--hm-chart-1)',
                           decimals: 1,
                           integer: !withLoad,
                         },

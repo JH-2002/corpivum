@@ -23,11 +23,11 @@ const MIN_SPAN = 4;
 
 const GIRTHS: BodyField[] = ['waistCm', 'hipCm', 'armCm', 'thighCm', 'chestCm'];
 const GIRTH_STYLE: Record<string, { color: string; dash?: string }> = {
-  waistCm: { color: 'var(--hm-domain-body)' },
-  hipCm: { color: 'var(--hm-series-violet)', dash: '6 4' },
-  armCm: { color: 'var(--hm-domain-activity)', dash: '2 3' },
-  thighCm: { color: 'var(--hm-series-amber)', dash: '8 3 2 3' },
-  chestCm: { color: 'var(--hm-domain-sleep)', dash: '1 4' },
+  waistCm: { color: 'var(--hm-chart-1)' },
+  hipCm: { color: 'var(--hm-chart-2)', dash: '6 4' },
+  armCm: { color: 'var(--hm-chart-3)', dash: '2 3' },
+  thighCm: { color: 'var(--hm-chart-4)', dash: '8 3 2 3' },
+  chestCm: { color: 'var(--hm-chart-5)', dash: '1 4' },
 };
 
 /** Exemplo do formulário na demonstração: o valor mais recente de cada campo (no modo privacidade, vazio). */
@@ -157,7 +157,7 @@ export function BodyView({
                     label: t('fields.weightKg'),
                     unit: 'kg',
                     kind: 'line',
-                    color: 'var(--hm-domain-body)',
+                    color: 'var(--hm-chart-1)',
                   },
                 ]}
               />
@@ -180,7 +180,7 @@ export function BodyView({
                     label: t(`fields.${f}`),
                     unit: 'cm',
                     kind: 'line' as const,
-                    color: GIRTH_STYLE[f]?.color ?? 'var(--hm-domain-body)',
+                    color: GIRTH_STYLE[f]?.color ?? 'var(--hm-chart-1)',
                     dash: GIRTH_STYLE[f]?.dash,
                   }))}
                 />

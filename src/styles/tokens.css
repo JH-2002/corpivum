@@ -51,13 +51,23 @@
   --hm-info: #7db4f5;
   --hm-info-soft: #13263d;
 
-  /* Domínios */
+  /* Domínios: só ícones e identidade fora dos gráficos */
   --hm-domain-sleep: #a5b4fc;
-  --hm-series-amber: #fcd34d;
   --hm-domain-activity: #86efac;
   --hm-domain-nutrition: #fdba74;
   --hm-domain-body: #93c5fd;
-  --hm-series-violet: #c4b5fd;
+
+  /*
+   * Paleta única dos gráficos: azul da marca primeiro; as outras cores só quando um gráfico tem várias séries,
+   * nesta ordem fixa. Validada como conjunto (skill dataviz: faixa de luminosidade, croma, separação entre
+   * vizinhas para daltonismo e visão normal, >= 3:1 sobre as superfícies). Neutro: referência/previsto.
+   */
+  --hm-chart-1: #3987e5;
+  --hm-chart-2: #199e70;
+  --hm-chart-3: #9085e9;
+  --hm-chart-4: #d55181;
+  --hm-chart-5: #c98500;
+  --hm-chart-neutral: #8a9aa9;
 
   /* Holograma do twin (ADR-0028): mistura aditiva sobre o fundo escuro. */
   /* Brilho do cartão com inclinação (ADR-0048): azul da marca, translúcido, atrás do texto. */

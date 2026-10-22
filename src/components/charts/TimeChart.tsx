@@ -24,7 +24,7 @@ export interface ChartSeries {
   label: string;
   unit?: string;
   kind: 'line' | 'bar';
-  /** Cor por token (ex.: `var(--hm-domain-sleep)`). Nunca é o único canal: há padrão de linha e rótulo. */
+  /** Cor por token (ex.: `var(--hm-chart-1)`). Nunca é o único canal: há padrão de linha e rótulo. */
   color: string;
   /** Padrão de traço da linha (`stroke-dasharray`). */
   dash?: string;

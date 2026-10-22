@@ -4,13 +4,7 @@ import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import type { ReportModel } from '@/modules/reports';
 import { reportDocument, type ReportTranslate } from './document';
 
-const CHART_COLOR = {
-  sleep: 'var(--hm-domain-sleep)',
-  activity: 'var(--hm-domain-activity)',
-  weight: 'var(--hm-domain-body)',
-} as const;
-
-const CHART_OF: Partial<Record<string, keyof typeof CHART_COLOR>> = {
+const CHART_OF: Partial<Record<string, 'sleep' | 'activity' | 'weight'>> = {
   sleep: 'sleep',
   activity: 'activity',
   body: 'weight',
@@ -106,7 +100,7 @@ export function ReportView({ model, generatedOn }: { model: ReportModel; generat
                     label: chartDoc.title,
                     unit: chart.unit,
                     kind: chart.id === 'activity' ? 'bar' : 'line',
-                    color: CHART_COLOR[chart.id],
+                    color: 'var(--hm-chart-1)',
                   },
                 ]}
               />

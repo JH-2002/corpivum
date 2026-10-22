@@ -255,7 +255,7 @@ export function NutritionView({
                 label: t('mealsSeries'),
                 kind: 'bar',
                 integer: true,
-                color: 'var(--hm-domain-nutrition)',
+                color: 'var(--hm-chart-1)',
               },
             ]}
           />
@@ -271,7 +271,7 @@ export function NutritionView({
                 label: t('waterSeries'),
                 unit: 'ml',
                 kind: 'bar',
-                color: 'var(--hm-domain-nutrition)',
+                color: 'var(--hm-chart-1)',
               },
             ]}
           />

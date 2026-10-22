@@ -383,7 +383,7 @@ function HeroRegionPanel({
       ) : null}
       {series.length > 1 ? (
         <>
-          <Sparkline data={series} color="var(--hm-primary)" />
+          <Sparkline data={series} color="var(--hm-chart-1)" minSpan={4} />
           <p className="text-xs text-fg-muted">{th('sparkline', { count: series.length })}</p>
         </>
       ) : null}

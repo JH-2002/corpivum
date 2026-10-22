@@ -130,7 +130,7 @@ export function SleepView({
                 label: t('hours'),
                 unit: 'h',
                 kind: 'bar',
-                color: 'var(--hm-domain-sleep)',
+                color: 'var(--hm-chart-1)',
               },
             ]}
           />

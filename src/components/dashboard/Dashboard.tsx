@@ -282,7 +282,7 @@ export function Dashboard({
                 : null
             }
             origin={t('origins.sleep', { count: cards.sleep.count })}
-            spark={<Sparkline data={cards.sleep.spark} color="var(--hm-domain-sleep)" />}
+            spark={<Sparkline data={cards.sleep.spark} color="var(--hm-chart-1)" />}
           />
           <DomainCard
             title={t('cards.habits')}
@@ -300,7 +300,7 @@ export function Dashboard({
                 : null
             }
             origin={t('origins.habits', { count: cards.habits.activeHabits })}
-            spark={<Sparkline data={cards.habits.spark} color="var(--hm-primary)" />}
+            spark={<Sparkline data={cards.habits.spark} color="var(--hm-chart-1)" />}
           />
           <DomainCard
             title={t('cards.body')}
@@ -325,7 +325,9 @@ export function Dashboard({
             }
             origin={t('origins.body')}
             spark={
-              hidden ? null : <Sparkline data={cards.body.spark} color="var(--hm-domain-body)" />
+              hidden ? null : (
+                <Sparkline data={cards.body.spark} color="var(--hm-chart-1)" minSpan={4} />
+              )
             }
           />
         </div>
@@ -345,7 +347,7 @@ export function Dashboard({
               label: t('combined.sleep'),
               unit: 'h',
               kind: 'bar',
-              color: 'var(--hm-domain-sleep)',
+              color: 'var(--hm-chart-1)',
             },
           ]}
         />
