@@ -1788,3 +1788,31 @@ período ainda era o `<select>` nativo e o foco ao trocar de tela não era trata
 - **Testes.** Unitários de `nav-config`, `PeriodSelector`, `useRouteFocus`, `focusProgrammatically` e
   `ExampleForm`; e2e da barra da demo em 320/390px, do "Registrar" na demo sem envio e do foco no título com mouse e
   com teclado; `e2e/period.ts` concentra a escolha de período dos e2e. axe cobre `/demo/mais`.
+
+## ADR-0048 — Cartões com inclinação e opção "Reduzir animações" (Fase 9b, ajuste)
+**Contexto.** Pedido depois da 9b, antes da 9c: inclinação leve com brilho que segue o cursor nos cartões curtos de
+destaque. Parte do sistema de movimento previsto para a 9f é antecipada aqui (a preferência de movimento e a opção
+"Reduzir animações"); a 9f reaproveita esta base.
+**Decisão.**
+- **`TiltCard`** (`src/components/ui/TiltCard.tsx`): inclinação de no máximo 6° (`tiltFor`, função pura) e brilho
+  azul translúcido (`--hm-tilt-glow`) que acompanha o cursor. Anima só `transform` e `opacity`, direto no estilo do
+  elemento num quadro por movimento (sem renderizar o React de novo); `isolate` + brilho em `-z-10` deixam o brilho
+  entre o fundo e o texto. O brilho é `aria-hidden` e não captura o ponteiro; conteúdo, links e foco não mudam.
+- **Onde:** indicadores do início (`DomainCard`), "Destaques do período" (`StatTile` com `tilt`), cartão do twin no
+  início (agora também na demo, sem prefetch para não antecipar a tela do 3D, ADR-0026) e entrada do modo
+  apresentação. O efeito é igual em todos os indicadores e não depende do valor: não é comemoração nem destaque de
+  peso ou medida (LEG-M06).
+- **Quando liga:** só com mouse ou trackpad (`(hover: hover) and (pointer: fine)` e `pointerType === 'mouse'`).
+  Desligado em telas de toque, com `prefers-reduced-motion` e com a opção do app.
+- **Opção "Reduzir animações"** (`src/lib/motion/motion.ts`, `ReduceMotionToggle`): botão com `aria-pressed` em
+  Configurações e no menu de ajuda (vale na demo). Guardada no `localStorage` (`hm.motion`, só preferência de
+  interface, sem dado pessoal, como a antiga chave de tema). Marca `<html data-motion="reduced">`, e o CSS aplica o
+  mesmo corte de animações da preferência do sistema. Sem script inicial: o efeito só reage ao mouse depois da
+  hidratação, então não há "piscar".
+- **Orçamento:** `check:perf-budget` OK. `pnpm test:perf` local deu `/inicio` 2570 ms com o efeito e 2572 ms na
+  `main` sem ele, na mesma máquina (que hoje mede acima da CI): sem custo mensurável. O gate é o job de performance
+  da CI.
+- **Testes:** unitários de `tiltFor`, de quando o efeito liga (mouse, toque, `prefers-reduced-motion`, opção do
+  app) e da persistência da opção; e2e com mouse (inclina e volta), com a opção (desliga e persiste após recarregar),
+  em contexto de toque e com `reducedMotion: 'reduce'`; axe sem violações. `scripts/video-tilt.mjs` grava
+  `capturas/tilt-inicio.webm` para revisão visual.
