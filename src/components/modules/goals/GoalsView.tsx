@@ -1,7 +1,7 @@
 import { useFormatter, useTranslations } from 'next-intl';
 import { archiveGoalAction, deleteGoalAction } from '@/app/(app)/metas/actions';
 import { SubmitButton } from '@/components/forms/FormFields';
-import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
+import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
 import { GuardrailNotice } from '@/components/health/GuardrailNotice';
 import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
@@ -244,7 +244,21 @@ export function GoalsView({
             }}
           />
         ) : (
-          <DemoReadOnlyNotice publicDemo={mode === 'publicDemo'} />
+          <ExampleForm publicDemo={mode === 'publicDemo'}>
+            {/* Sem valor-alvo no exemplo: a meta é sempre da pessoa (LEG-M07). */}
+            <GoalForm
+              example
+              habits={habitOptions}
+              estimateEnabled={estimateEnabled}
+              minDay={minDay}
+              values={{
+                metric: 'activity_minutes_week',
+                targetValue: null,
+                habitId: null,
+                targetDay: null,
+              }}
+            />
+          </ExampleForm>
         )}
       </section>
 

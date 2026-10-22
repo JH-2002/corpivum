@@ -11,6 +11,7 @@
   },
   "nav": {
     "mainLabel": "Navegação principal",
+    "accountGroup": "Conta",
     "mobileLabel": "Navegação inferior",
     "collapse": "Recolher menu lateral",
     "expand": "Expandir menu lateral",
@@ -46,12 +47,14 @@
     "open": "Registrar",
     "title": "O que você quer registrar?",
     "description": "Escolha o tipo de registro. Leva poucos segundos.",
+    "demoDescription": "Escolha o tipo para ver o formulário de exemplo. Na demonstração nada é salvo.",
     "sleep": "Sono",
     "habit": "Hábito",
     "body": "Peso e medidas",
     "meal": "Refeição",
     "water": "Água",
-    "activity": "Atividade"
+    "activity": "Atividade",
+    "goal": "Meta"
   },
   "period": {
     "label": "Período",
@@ -60,6 +63,7 @@
     "90d": "90 dias",
     "12m": "12 meses",
     "custom": "Personalizado",
+    "menuLabel": "Período: {current}. Trocar período",
     "from": "De",
     "to": "Até",
     "apply": "Aplicar",
@@ -1062,6 +1066,7 @@
     "checkLabel": "Marcar \"{name}\" como feito hoje",
     "uncheckLabel": "Desmarcar \"{name}\" de hoje",
     "newTitle": "Criar hábito",
+    "exampleName": "Ler antes de dormir",
     "listTitle": "Seus hábitos",
     "archivedTitle": "Arquivados",
     "emptyTitle": "Nenhum hábito ativo",
@@ -1123,6 +1128,7 @@
     "introTitle": "Demonstração com dados fictícios",
     "introBody": "Explore o %PRODUTO% com 90 dias de registros inventados. Nada aqui pertence a uma pessoa real e nada é gravado.",
     "startOwn": "Começar com meus próprios dados",
+    "exampleNotice": "Exemplo preenchido com dados fictícios: na demonstração nada é salvo.",
     "readOnlyDemoOnly": "Esta é uma demonstração pública com dados fictícios. Nada pode ser registrado aqui.",
     "aboutLink": "Sobre esta demonstração",
     "notPublicBanner": "Demonstração com dados fictícios. O app ainda não está aberto ao público."
@@ -1371,6 +1377,7 @@
   "nutrition": {
     "intro": "O app registra o que você informa, do jeito que você quiser. Ele não avalia a comida nem sugere cardápio.",
     "newTitle": "Registrar refeição",
+    "exampleDescription": "Arroz, feijão, salada e frango",
     "listTitle": "Refeições registradas",
     "categories": {
       "breakfast": "Café da manhã",

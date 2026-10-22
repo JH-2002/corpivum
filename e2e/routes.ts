@@ -29,6 +29,7 @@ export const DEMO_ROUTES = [
   { path: '/demo/metas', title: 'Metas' },
   { path: '/demo/timeline', title: 'Timeline' },
   { path: '/demo/twin', title: 'Health Twin' },
+  { path: '/demo/mais', title: 'Mais' },
 ] as const;
 
 export const VIEWPORTS = [

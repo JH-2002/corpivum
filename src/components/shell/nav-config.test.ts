@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { messages } from '@/i18n/messages';
 import {
+  ACCOUNT_KEYS,
   ALL_NAV_ITEMS,
+  BOTTOM_NAV_HREFS,
+  DEMO_ITEMS,
+  DEMO_MORE_ITEMS,
   isActivePath,
   MORE_ITEMS,
   NAV_ITEMS_BY_KEY,
@@ -50,5 +54,23 @@ describe('nav-config', () => {
     expect(isActivePath('/sonolencia', '/sono')).toBe(false);
     expect(navItemForPath('/corpo')?.key).toBe('body');
     expect(navItemForPath('/inexistente')).toBeUndefined();
+  });
+
+  it('a barra inferior tem as mesmas 4 rotas no app e no demo, e o demo fica só em /demo (9b)', () => {
+    expect(Object.keys(BOTTOM_NAV_HREFS.app)).toEqual(Object.keys(BOTTOM_NAV_HREFS.demo));
+    for (const href of Object.values(BOTTOM_NAV_HREFS.demo)) expect(href).toMatch(/^\/demo(\/|$)/);
+    expect(BOTTOM_NAV_HREFS.app.more).toBe('/mais');
+  });
+
+  it('"Mais" do demo tem os módulos do demo que não estão na barra, todos dentro de /demo', () => {
+    const keys = DEMO_MORE_ITEMS.map((i) => i.key);
+    expect(keys).toEqual(['body', 'sleep', 'habits', 'nutrition', 'activity', 'goals']);
+    expect(keys).toHaveLength(DEMO_ITEMS.length - 3);
+    for (const item of DEMO_MORE_ITEMS) expect(item.href).toMatch(/^\/demo\//);
+  });
+
+  it('o grupo "Conta" da sidebar tem relatórios, configurações e Central de Privacidade', () => {
+    for (const key of ACCOUNT_KEYS) expect(NAV_ITEMS_BY_KEY[key]).toBeDefined();
+    expect(ACCOUNT_KEYS).toContain('privacy');
   });
 });

@@ -1,7 +1,7 @@
 import { useFormatter, useTranslations } from 'next-intl';
 import { deleteSleepAction } from '@/app/(app)/sono/actions';
 import { TimeChart } from '@/components/charts/TimeChart';
-import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
+import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal, formatDuration } from '@/components/health/format';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
@@ -78,7 +78,19 @@ export function SleepView({
             }}
           />
         ) : (
-          <DemoReadOnlyNotice publicDemo={mode === 'publicDemo'} />
+          <ExampleForm publicDemo={mode === 'publicDemo'}>
+            <SleepForm
+              example
+              maxDateTime={maxDateTime}
+              values={{
+                bedAt: `${addDays(today, -1)}T23:00`,
+                wakeAt: `${today}T07:00`,
+                quality: 4,
+                awakenings: 1,
+                note: null,
+              }}
+            />
+          </ExampleForm>
         )}
       </section>
 

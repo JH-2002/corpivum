@@ -6,7 +6,7 @@ import {
 } from '@/app/(app)/habitos/actions';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { SubmitButton } from '@/components/forms/FormFields';
-import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
+import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
 import { HabitCheckButton } from '@/components/health/HabitCheckButton';
 import type { HealthMode } from '@/components/health/HealthPage';
@@ -105,7 +105,17 @@ export function HabitsView({
         {own ? (
           <HabitForm values={{ name: '', frequency: 'daily', weekdays: [], timesPerWeek: null }} />
         ) : (
-          <DemoReadOnlyNotice publicDemo={mode === 'publicDemo'} />
+          <ExampleForm publicDemo={mode === 'publicDemo'}>
+            <HabitForm
+              example
+              values={{
+                name: t('exampleName'),
+                frequency: 'daily',
+                weekdays: [],
+                timesPerWeek: null,
+              }}
+            />
+          </ExampleForm>
         )}
       </section>
 

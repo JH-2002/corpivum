@@ -41,3 +41,16 @@ describe('formulário de medidas: como medir (protocolo do modelo 3D, ADR-0028)'
     expect(screen.getByLabelText(/^Peso/)).not.toHaveAccessibleDescription(/Como medir/);
   });
 });
+
+describe('formulário de medidas em modo exemplo (demo, ADR-0047)', () => {
+  it('sai sem a server action e o envio é impedido', () => {
+    const { container } = renderWithIntl(
+      <BodyForm values={{ ...empty, weightKg: 73.9 }} maxDateTime="2026-10-09T23:59" example />,
+    );
+    const form = container.querySelector('form');
+    expect(form).not.toHaveAttribute('action');
+    const submit = new Event('submit', { cancelable: true, bubbles: true });
+    form?.dispatchEvent(submit);
+    expect(submit.defaultPrevented).toBe(true);
+  });
+});

@@ -7,7 +7,7 @@ import {
 } from '@/app/(app)/alimentacao/actions';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { SubmitButton } from '@/components/forms/FormFields';
-import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
+import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
@@ -104,7 +104,24 @@ export function NutritionView({
             }}
           />
         ) : (
-          <DemoReadOnlyNotice publicDemo={mode === 'publicDemo'} />
+          <ExampleForm publicDemo={mode === 'publicDemo'}>
+            {/* Sem calorias no exemplo: nada que sugira meta ou restrição (LEG-M07). */}
+            <MealForm
+              example
+              maxDateTime={maxDateTime}
+              estimateEnabled={estimateEnabled}
+              values={{
+                eatenAt: maxDateTime,
+                category: 'lunch',
+                description: t('exampleDescription'),
+                hunger: 3,
+                fullness: 3,
+                satisfaction: 4,
+                kcalEstimate: null,
+                note: null,
+              }}
+            />
+          </ExampleForm>
         )}
       </section>
 

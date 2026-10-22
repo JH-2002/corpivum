@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useActionState } from 'react';
 import { saveActivityAction } from '@/app/(app)/atividade/actions';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
-import { INITIAL_FORM_STATE } from '@/components/forms/form-state';
+import { INITIAL_FORM_STATE, preventSubmit } from '@/components/forms/form-state';
 import { SelectField, TextAreaField } from '@/components/forms/HealthFields';
 import {
   ACTIVITY_TYPES,
@@ -34,16 +34,24 @@ const BLANK_ROWS = 4;
 export function ActivityForm({
   values,
   maxDateTime,
+  example = false,
 }: {
   values: ActivityFormValues;
   maxDateTime: string;
+  /** Exemplo da demo (ADR-0047): o `<form>` sai sem a server action e não envia nada. */
+  example?: boolean;
 }) {
   const t = useTranslations('activity');
   const [state, action] = useActionState(saveActivityAction, INITIAL_FORM_STATE);
   const err = state.fieldErrors ?? {};
   const rows = Math.min(MAX_SETS, values.sets.length + BLANK_ROWS);
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form
+      action={example ? undefined : action}
+      onSubmit={example ? preventSubmit : undefined}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField

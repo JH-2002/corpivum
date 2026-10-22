@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useActionState, useState } from 'react';
 import { saveHabitAction } from '@/app/(app)/habitos/actions';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
-import { INITIAL_FORM_STATE } from '@/components/forms/form-state';
+import { INITIAL_FORM_STATE, preventSubmit } from '@/components/forms/form-state';
 import { OptionGroup, SelectField } from '@/components/forms/HealthFields';
 import { WEEK_ORDER } from '@/lib/dates';
 import { HABIT_FREQUENCIES, type HabitFrequency } from '@/modules/habits';
@@ -18,13 +18,25 @@ export interface HabitFormValues {
 }
 
 /** Criar/editar hábito (§22). O nome é cifrado (pode revelar dado de saúde, LEG-S02). */
-export function HabitForm({ values }: { values: HabitFormValues }) {
+export function HabitForm({
+  values,
+  example = false,
+}: {
+  values: HabitFormValues;
+  /** Exemplo da demo (ADR-0047): o `<form>` sai sem a server action e não envia nada. */
+  example?: boolean;
+}) {
   const t = useTranslations('habits');
   const [state, action] = useActionState(saveHabitAction, INITIAL_FORM_STATE);
   const [frequency, setFrequency] = useState<HabitFrequency>(values.frequency);
   const err = state.fieldErrors ?? {};
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form
+      action={example ? undefined : action}
+      onSubmit={example ? preventSubmit : undefined}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <TextField
         name="name"

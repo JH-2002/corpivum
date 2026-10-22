@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { Header } from '@/components/shell/Header';
+import { QuickLogDialog } from '@/components/shell/QuickLogDialog';
 import { ShellProvider } from '@/components/shell/ShellProvider';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { MAIN_CONTENT_ID, SkipLink } from '@/components/ui/SkipLink';
@@ -11,8 +12,9 @@ import { PrivacyModeProvider } from '@/components/privacy-mode/PrivacyModeProvid
 
 /**
  * Demo público sem login (LEG-X02, §40, ADR-0021). Dados 100% fictícios gerados em memória, selo DEMO em
- * tudo, sem banco, sem formulários e sem coleta além dos registros técnicos da hospedagem. Cookies: só as
- * preferências de período e do modo privacidade (sessão, sem identificador; ADR-0021, ADR-0035).
+ * tudo, sem banco, formulários só como exemplo (sem envio, ADR-0047) e sem coleta além dos registros técnicos
+ * da hospedagem. Cookies: só as preferências de período e do modo privacidade (sessão, sem identificador;
+ * ADR-0021, ADR-0035).
  */
 export default async function DemoShellLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations('disclaimer');
@@ -40,6 +42,7 @@ export default async function DemoShellLayout({ children }: { children: ReactNod
           </div>
         </div>
         <BottomNav variant="demo" />
+        <QuickLogDialog variant="demo" />
       </ShellProvider>
     </PrivacyModeProvider>
   );
