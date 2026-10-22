@@ -16,10 +16,11 @@ A v2 com o componente atividade ligado. Pesos, limiares e os outros componentes 
 
 | Componente | Peso | Entra quando | Cálculo (0–100) |
 |---|---|---|---|
-| Atividade (`activity`) | 0,20 | ≥ 3 dias com atividade registrada no período | Dias com atividade registrada ÷ dias desde o primeiro registro do período (sono, check ou atividade) até o fim dele. Conta só a data: duração, intensidade, distância, carga e calorias não entram (LEG-M07). Não há meta de volume. |
+| Atividade (`activity`) | 0,20 | ≥ 3 dias com atividade registrada no período | Semanas (segunda a domingo) com pelo menos uma atividade registrada ÷ semanas desde a do primeiro registro do período (sono, check ou atividade) até a do fim dele. Uma atividade na semana já conta a semana inteira. Conta só a data: duração, intensidade, distância, carga e calorias não entram (LEG-M07). |
 
-Por que regularidade de registro, e não minutos em relação a uma meta (proposta antiga da OI-28): a meta de
-atividade é opcional, e medir volume premiaria fazer mais, o que o produto não incentiva (LEG-M07). O texto do
+Por que semanas com registro, e não minutos em relação a uma meta (proposta antiga da OI-28) nem dias ativos: a
+meta de atividade é opcional; medir volume premiaria fazer mais; e contar dias faria o valor só chegar a 100 com
+atividade todos os dias, o que penalizaria o descanso (revisão de privacidade da 9d0, LEG-M07, LEG-M08). O texto do
 componente diz que conta só a regularidade do registro. Na demo, com atividade em todo o período, o Índice deixa de
 aparecer como "dados parciais".
 

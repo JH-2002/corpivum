@@ -17,7 +17,7 @@ export const APPROVED_DISCLAIMERS: Readonly<Record<string, string>> = {
   // Fase 2 (ADR-0021): aviso do Índice de Bem-Estar (§14, LEG-D08) e do demo (LEG-X02). Índice v2 sem
   // humor e energia (ADR-0027). Índice v3 com a regularidade do registro de atividade (ADR-0050). LEGAL-REVIEW, OI-09.
   'disclaimer.wellbeingScore':
-    'O Índice de Bem-Estar resume seus registros de sono, hábitos, a regularidade do registro de atividade física e a constância dos registros. Não usa peso, medidas, duração nem intensidade de atividade, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
+    'O Índice de Bem-Estar resume seus registros de sono, hábitos, as semanas com atividade física registrada e a constância dos registros. Não usa peso, medidas, duração nem intensidade de atividade, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.',
   'disclaimer.demoData':
     'Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.',
   // Fase 3 (ADR-0026): aviso do corpo 3D (§15, LEG-M04). LEGAL-REVIEW, OI-09.

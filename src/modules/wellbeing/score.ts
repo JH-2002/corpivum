@@ -1,4 +1,4 @@
-import { eachDay, rangeLength } from '@/lib/dates';
+import { daysBetween, eachDay, rangeLength, weekStart } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { clamp } from '@/lib/stats';
 import type { HabitCheckRecord, HabitRecord } from '@/modules/habits';
@@ -34,8 +34,8 @@ export const SCORE_V2 = Object.freeze({
 });
 
 /**
- * v3 (ADR-0050): mesmos pesos e limiares da v2; a atividade entra pela regularidade de registro (dias com
- * atividade registrada), sem meta de intensidade, volume nem calorias (LEG-M07).
+ * v3 (ADR-0050): mesmos pesos e limiares da v2; a atividade entra pela regularidade de registro (semanas com
+ * alguma atividade registrada), sem meta de frequência, intensidade, volume nem calorias (LEG-M07).
  */
 export const SCORE_V3 = Object.freeze({
   ...SCORE_V2,
@@ -120,8 +120,9 @@ function habits(input: ScoreInput): Partial0 {
 }
 
 /**
- * Regularidade de registro de atividade: dias com atividade registrada ÷ dias desde o primeiro registro (de
- * qualquer tipo) do período até o fim dele, como a constância. Conta dias, não minutos nem intensidade.
+ * Regularidade de registro de atividade: semanas (segunda a domingo) com pelo menos uma atividade registrada ÷
+ * semanas desde a do primeiro registro do período (sono, check ou atividade) até a do fim dele. Uma atividade
+ * por semana já conta a semana inteira: dias de descanso não reduzem o valor e fazer mais não aumenta (LEG-M07).
  */
 function activity(input: ScoreInput): Partial0 {
   const days = eachDay(input.range).filter((d) => input.activityDays.has(d));
@@ -132,11 +133,12 @@ function activity(input: ScoreInput): Partial0 {
   if (sample < SCORE_V3.minActivityDays || !first) {
     return { id: 'activity', included: false, value: null, sample, reason: 'insufficient_data' };
   }
-  const span = rangeLength({ from: first, to: input.range.to });
+  const weeks = daysBetween(weekStart(first), weekStart(input.range.to)) / 7 + 1;
+  const activeWeeks = new Set(days.map(weekStart)).size;
   return {
     id: 'activity',
     included: true,
-    value: Math.round(clamp((sample / span) * 100, 0, 100)),
+    value: Math.round(clamp((activeWeeks / weeks) * 100, 0, 100)),
     sample,
     reason: null,
   };

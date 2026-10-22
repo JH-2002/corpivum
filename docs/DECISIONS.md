@@ -1903,9 +1903,13 @@ capturas da 9a, também: medidas de todas as regiões em várias datas na demo, 
 o componente `activity` (peso 0,20) estava sempre fora desde a v1 (OI-28). A proposta antiga era medir minutos em
 relação à meta da pessoa, mas a meta de atividade é opcional e medir volume premiaria fazer mais (LEG-M07).
 **Decisão.** `SCORE_V3` (`score_version = 3`), com os mesmos pesos e limiares da v2. A atividade entra pela
-**regularidade de registro**: dias com atividade registrada ÷ dias desde o primeiro registro do período (sono,
-check ou atividade) até o fim dele, com no mínimo 3 dias. Só a data entra: duração, intensidade, distância, carga e
-calorias não. O dashboard e o relatório passam só o conjunto de datas (`activityDays`). Vale para contas reais e
+**regularidade de registro**: semanas (segunda a domingo) com pelo menos uma atividade registrada ÷ semanas desde a
+do primeiro registro do período (sono, check ou atividade) até a do fim dele, com no mínimo 3 dias com atividade.
+Uma atividade na semana já conta a semana: dias de descanso não reduzem o valor e fazer mais não aumenta. A
+primeira versão contava dias ativos ÷ dias, o que só chegava a 100 com atividade todo dia; a revisão de
+privacidade (risco LEG-M07) trocou por semanas antes do merge. Só a data entra: duração, intensidade, distância,
+carga e calorias não. O dashboard lê só as datas (`activityDays`, sem séries nem notas e sem decifrar nada); o
+relatório reaproveita a leitura que já fazia. Vale para contas reais e
 para a demo; na demo o Índice e o dashboard ficam completos em 7, 30 e 90 dias (teste do gerador e e2e).
 Textos: regra do componente e `disclaimer.wellbeingScore` atualizados (aprovação em `approved-disclaimers.ts`).
 Pedidos de revisão continuam guardando a versão usada.

@@ -52,7 +52,7 @@ export function ScoreExplanation({ score }: { score: WellbeingScore }) {
                   </td>
                   <td className="border-b border-border p-2 align-top">
                     {c.included
-                      ? t('included', { count: c.sample })
+                      ? t(c.id === 'activity' ? 'includedDays' : 'included', { count: c.sample })
                       : t(`excluded.${c.reason ?? 'insufficient_data'}`)}
                   </td>
                 </tr>

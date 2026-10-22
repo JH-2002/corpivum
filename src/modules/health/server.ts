@@ -122,6 +122,7 @@ export function createOwnSource(
     meals: (range, opts) => s.nutrition.listMeals(userId, range, opts),
     water: (range) => s.nutrition.listWater(userId, range),
     activities: (range, opts) => s.activity.list(userId, range, opts),
+    activityDays: (range) => s.activity.days(userId, range),
     goals: (opts) => s.goals.list(userId, opts),
     reminders: () => s.reminders.list(userId),
     reminderPrefs: () => s.reminders.prefs(userId),

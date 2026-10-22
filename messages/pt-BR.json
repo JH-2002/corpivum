@@ -171,7 +171,7 @@
     "reportFooter": "Gerado em {date}. Material de autoacompanhamento, não é laudo nem avaliação clínica.",
     "riskSupport": "Se você está passando por um momento difícil, você não precisa enfrentar isso sozinho(a). O CVV atende 24 horas pelo telefone 188, de graça. Em emergência, ligue 192 (SAMU).",
     "draftLegal": "RASCUNHO — revisão jurídica obrigatória.",
-    "wellbeingScore": "O Índice de Bem-Estar resume seus registros de sono, hábitos, a regularidade do registro de atividade física e a constância dos registros. Não usa peso, medidas, duração nem intensidade de atividade, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.",
+    "wellbeingScore": "O Índice de Bem-Estar resume seus registros de sono, hábitos, as semanas com atividade física registrada e a constância dos registros. Não usa peso, medidas, duração nem intensidade de atividade, não é avaliação de saúde, não indica condição e não substitui profissional de saúde.",
     "demoData": "Demonstração com dados 100% fictícios, gerados para apresentar o app. Nenhum dado de pessoa real. Nada do que você vê aqui é gravado em conta nenhuma.",
     "bodyModel": "Representação aproximada a partir das medidas que você informou. Não é avaliação corporal nem de saúde."
   },
@@ -835,6 +835,7 @@
     "howFooter": "Versão do cálculo: {version}. Mudanças no cálculo geram uma versão nova, documentada.",
     "weightValue": "{nominal} (efetivo: {effective})",
     "included": "{count, plural, one {Incluído (# registro)} other {Incluído (# registros)}}",
+    "includedDays": "{count, plural, one {Incluído (# dia com atividade)} other {Incluído (# dias com atividade)}}",
     "col": {
       "component": "Componente",
       "value": "Valor",
@@ -857,7 +858,7 @@
       },
       "activity": {
         "name": "Atividade física",
-        "rule": "Dias com atividade física registrada desde o seu primeiro registro no período (precisa de 3 dias ou mais). Conta só a regularidade do registro: duração e intensidade não entram."
+        "rule": "Semanas com pelo menos uma atividade física registrada, desde o seu primeiro registro de qualquer tipo no período (sono, hábito ou atividade). Precisa de 3 dias com atividade ou mais. Uma atividade na semana já conta a semana: dias de descanso não reduzem o valor, e duração e intensidade não entram."
       },
       "logging": {
         "name": "Constância de registro",

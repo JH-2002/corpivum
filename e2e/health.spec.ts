@@ -181,7 +181,7 @@ test('dashboard com dados: período global, explicação e pedido de revisão do
       [userId],
     ),
   );
-  expect(rows).toEqual([{ kind: 'automated_review', score_version: 2, days: 6 }]);
+  expect(rows).toEqual([{ kind: 'automated_review', score_version: 3, days: 6 }]);
 });
 
 test('após revogar os dados de bem-estar, nenhuma tela de saúde mostra dados', async ({ page }) => {

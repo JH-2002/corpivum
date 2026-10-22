@@ -152,11 +152,15 @@ describe('Índice v3: atividade pela regularidade de registro (ADR-0050, LEG-M07
     expect(s.value).toBe(100);
   });
 
-  it('conta dias com atividade desde o primeiro registro do período', () => {
-    // 5 de 10 dias.
-    const s = full(days.filter((_, i) => i % 2 === 0));
-    expect(s.components.find((c) => c.id === 'activity')?.value).toBe(50);
-    expect(s.components.find((c) => c.id === 'activity')?.sample).toBe(5);
+  it('conta semanas com alguma atividade: dias de descanso não reduzem, fazer mais não aumenta', () => {
+    // RANGE: 2026-10-01 (quinta) a 2026-10-10 (sábado) = 2 semanas (28/09–04/10 e 05/10–11/10).
+    const twoPerWeek = full(['2026-10-01', '2026-10-03', '2026-10-06', '2026-10-08']);
+    expect(twoPerWeek.components.find((c) => c.id === 'activity')?.value).toBe(100);
+    expect(full(days).components.find((c) => c.id === 'activity')?.value).toBe(100);
+    // Só a segunda semana com atividade: metade.
+    const oneWeek = full(['2026-10-05', '2026-10-06', '2026-10-07']);
+    expect(oneWeek.components.find((c) => c.id === 'activity')?.value).toBe(50);
+    expect(oneWeek.components.find((c) => c.id === 'activity')?.sample).toBe(3);
   });
 
   it('menos de 3 dias com atividade: fora, com motivo', () => {

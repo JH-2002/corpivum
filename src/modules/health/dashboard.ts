@@ -97,19 +97,18 @@ async function load(
   range: DateRange,
   habits: HabitRecord[],
 ): Promise<Loaded> {
-  const [sleep, checks, body, activities] = await Promise.all([
+  const [sleep, checks, body, activityDays] = await Promise.all([
     source.sleep(range),
     source.checks(range),
     source.body(range),
-    source.activities(range),
+    source.activityDays(range),
   ]);
   const loggedDays = new Set<string>([
     ...sleep.map((r) => r.day),
     ...checks.map((r) => r.day),
     ...body.map((r) => r.day),
   ]);
-  const activityDays = new Set(activities.map((r) => r.day));
-  return { range, sleep, habits, checks, body, loggedDays, activityDays };
+  return { range, sleep, habits, checks, body, loggedDays, activityDays: new Set(activityDays) };
 }
 
 /** Registros do Índice: os mesmos do período, com a constância contada sem as medições do corpo. */
