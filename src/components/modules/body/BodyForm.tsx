@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useActionState } from 'react';
 import { saveBodyAction } from '@/app/(app)/corpo/actions';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
-import { INITIAL_FORM_STATE } from '@/components/forms/form-state';
+import { INITIAL_FORM_STATE, preventSubmit } from '@/components/forms/form-state';
 import { BODY_FIELDS, BODY_RANGES, type BodyField } from '@/modules/body';
 
 export type BodyFormValues = { id?: string; measuredAt: string } & Record<BodyField, number | null>;
@@ -34,12 +34,26 @@ const HOW_TO_MEASURE = {
 type GirthField = keyof typeof HOW_TO_MEASURE;
 
 /** Medição (§23): todos os campos opcionais, pelo menos um preenchido. Vírgula decimal aceita. */
-export function BodyForm({ values, maxDateTime }: { values: BodyFormValues; maxDateTime: string }) {
+export function BodyForm({
+  values,
+  maxDateTime,
+  example = false,
+}: {
+  values: BodyFormValues;
+  maxDateTime: string;
+  /** Exemplo da demo (ADR-0047): o `<form>` sai sem a server action e não envia nada. */
+  example?: boolean;
+}) {
   const t = useTranslations('body');
   const [state, action] = useActionState(saveBodyAction, INITIAL_FORM_STATE);
   const err = state.fieldErrors ?? {};
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form
+      action={example ? undefined : action}
+      onSubmit={example ? preventSubmit : undefined}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <TextField
         name="measuredAt"

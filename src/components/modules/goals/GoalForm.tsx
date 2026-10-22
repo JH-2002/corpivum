@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { saveGoalAction } from '@/app/(app)/metas/actions';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/FormFields';
-import { INITIAL_FORM_STATE, type FormState } from '@/components/forms/form-state';
+import { INITIAL_FORM_STATE, preventSubmit, type FormState } from '@/components/forms/form-state';
 import { SelectField } from '@/components/forms/HealthFields';
 import { GuardrailNotice } from '@/components/health/GuardrailNotice';
 import { GOAL_METRICS, type GoalMetric } from '@/modules/goals';
@@ -51,12 +51,15 @@ export function GoalForm({
   habits,
   estimateEnabled,
   minDay,
+  example = false,
 }: {
   values: GoalFormValues;
   habits: ReadonlyArray<{ id: string; name: string }>;
   estimateEnabled: boolean;
   /** Primeiro dia aceito no prazo (amanhã). */
   minDay: string;
+  /** Exemplo da demo (ADR-0047): o `<form>` sai sem a server action e não envia nada. */
+  example?: boolean;
 }) {
   const t = useTranslations('goals');
   const [state, action] = useActionState(saveGoalAction, INITIAL_FORM_STATE);
@@ -67,7 +70,8 @@ export function GoalForm({
   const metrics = GOAL_METRICS.filter((m) => m !== 'kcal_reference_day' || estimateEnabled);
   return (
     <form
-      action={action}
+      action={example ? undefined : action}
+      onSubmit={example ? preventSubmit : undefined}
       className="flex flex-col gap-4"
       noValidate
       // Depois da ação o React reseta o formulário: a métrica volta ao valor inicial junto com o select.

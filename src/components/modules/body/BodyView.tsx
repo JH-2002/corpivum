@@ -1,7 +1,7 @@
 import { useFormatter, useTranslations } from 'next-intl';
 import { deleteBodyAction } from '@/app/(app)/corpo/actions';
 import { TimeChart } from '@/components/charts/TimeChart';
-import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
+import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
@@ -25,6 +25,13 @@ const GIRTH_STYLE: Record<string, { color: string; dash?: string }> = {
   thighCm: { color: 'var(--hm-series-amber)', dash: '8 3 2 3' },
   chestCm: { color: 'var(--hm-domain-sleep)', dash: '1 4' },
 };
+
+/** Exemplo do formulário na demonstração: o valor mais recente de cada campo (no modo privacidade, vazio). */
+function exampleBody(records: BodyRecord[]): Record<BodyField, number | null> {
+  return Object.fromEntries(
+    BODY_FIELDS.map((field) => [field, latest(records, field)?.value ?? null]),
+  ) as Record<BodyField, number | null>;
+}
 
 /**
  * Tela de peso e medidas (§23): registro, valores mais recentes, evolução e lista editável. Sem IMC: é valor
@@ -77,7 +84,14 @@ export function BodyView({
         {own ? (
           <BodyForm maxDateTime={maxDateTime} values={{ measuredAt: maxDateTime, ...empty }} />
         ) : (
-          <DemoReadOnlyNotice publicDemo={mode === 'publicDemo'} />
+          <ExampleForm publicDemo={mode === 'publicDemo'}>
+            {/* Exemplo com a última medição da pessoa fictícia (nada de meta, LEG-M07). */}
+            <BodyForm
+              example
+              maxDateTime={maxDateTime}
+              values={{ measuredAt: maxDateTime, ...empty, ...exampleBody(records) }}
+            />
+          </ExampleForm>
         )}
       </section>
 

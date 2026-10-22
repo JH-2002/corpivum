@@ -119,6 +119,12 @@
     border-radius: 2px;
   }
 
+  /* Foco movido por código depois de clique ou toque (título, seção, tela da apresentação; 9b): sem moldura.
+     Depois de tecla o atributo não existe e vale o :focus-visible acima. */
+  [data-focus-quiet]:focus {
+    outline: none;
+  }
+
   /* Alvo do passo atual do tour do painel (ADR-0025): contorno além do diálogo, não só cor de fundo */
   [data-tour-active] {
     outline: 3px solid var(--color-focus);
@@ -144,4 +150,18 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Formulário de exemplo do demo (9b): campos e botão desativados continuam legíveis (contraste AA) e o botão
+   aparece apagado pela forma (fundo neutro, borda tracejada), não pela transparência. Fora de @layer: vence
+   os utilitários do botão (`disabled:opacity-60`, `bg-primary`). */
+[data-example-form] :disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  color: var(--color-fg);
+}
+[data-example-form] button:disabled {
+  background-color: var(--color-surface-muted);
+  color: var(--color-fg-muted);
+  border: 1px dashed var(--color-border-strong);
 }

@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { DEMO_TOUR_SEEN_STATE, foreignRowsSince } from './fixtures';
 import { DEMO_ROUTES, VIEWPORTS } from './routes';
+import { choosePeriod } from './period';
 
 /**
  * Demo público sem login (LEG-X02, §40, ADR-0021): dados fictícios com selo DEMO, sem formulários, sem
@@ -19,7 +20,7 @@ test('o demo não cria sessão nem grava nada no banco', async ({ page, context 
   }
   // Troca de período: só a preferência de interface, em cookie de sessão.
   await page.goto('/demo');
-  await page.getByLabel('Período', { exact: true }).selectOption('7d');
+  await choosePeriod(page, '7 dias');
   await expect(page.getByText(/^\d{2}\/\d{2}\/\d{4} a \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
   await expect
     .poll(async () => (await context.cookies()).map((c) => c.name))
@@ -34,7 +35,9 @@ test('o demo não cria sessão nem grava nada no banco', async ({ page, context 
   expect(Object.entries(written).filter(([, n]) => n !== 0)).toEqual([]);
 });
 
-test('dados com selo DEMO, sem formulários e com caminho para criar conta', async ({ page }) => {
+test('dados com selo DEMO, formulários só de exemplo e com caminho para criar conta', async ({
+  page,
+}) => {
   await page.goto('/demo');
   await expect(page.getByRole('banner')).toContainText('DEMO');
   await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
@@ -44,9 +47,15 @@ test('dados com selo DEMO, sem formulários e com caminho para criar conta', asy
   for (const name of await badges.allTextContents()) expect(name.trim()).toBe('Demo');
   await expect(page.getByRole('button', { name: 'Pedir revisão' })).toHaveCount(0);
 
+  // Formulário de exemplo (9b): preenchido, com todos os campos e o envio desativados.
   await page.goto('/demo/sono');
-  await expect(page.getByRole('textbox')).toHaveCount(0);
-  await expect(page.getByText(/demonstração pública com dados fictícios/)).toBeVisible();
+  const example = page.locator('#novo');
+  await expect(example.getByText(/na demonstração nada é salvo/)).toBeVisible();
+  await expect(example.getByText(/demonstração pública com dados fictícios/)).toBeVisible();
+  expect(await example.locator('input, select, textarea, button').count()).toBeGreaterThan(0);
+  for (const control of await example.locator('input, select, textarea, button').all()) {
+    await expect(control).toBeDisabled();
+  }
 
   await page.goto('/demo');
   await page.getByRole('link', { name: 'Começar com meus próprios dados' }).click();
@@ -84,4 +93,66 @@ test.describe('demo responsivo, sem rolagem horizontal', () => {
 test('fora do modo só demo, o aviso da demonstração não existe (ADR-0043)', async ({ request }) => {
   // O aviso descreve a demo sem cadastro nem banco e outro responsável: no app completo, seria falso.
   expect((await request.get('/demo/sobre')).status()).toBe(404);
+});
+
+test.describe('demo: navegação inferior igual à do app e "Registrar" em modo exemplo (9b)', () => {
+  for (const width of [320, 390]) {
+    test(`${width}px: 5 itens, sem rolagem, e "Mais" com os outros módulos`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/demo');
+      const bottom = page.getByRole('navigation', { name: 'Navegação inferior' });
+      const items = bottom.getByRole('listitem');
+      await expect(items).toHaveCount(5);
+      await expect(bottom.getByRole('button', { name: 'Registrar' })).toBeVisible();
+      const barOverflow = await bottom
+        .getByRole('list')
+        .evaluate((el) => el.scrollWidth - el.clientWidth);
+      expect(barOverflow).toBeLessThanOrEqual(0);
+      const pageOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(pageOverflow).toBeLessThanOrEqual(0);
+
+      await bottom.getByRole('link', { name: 'Mais' }).click();
+      await expect(page).toHaveURL(/\/demo\/mais$/);
+      await expect(bottom.getByRole('link', { name: 'Mais' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      await page.getByRole('main').getByRole('link', { name: 'Sono' }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Sono' })).toBeVisible();
+      await expect(page).toHaveURL(/\/demo\/sono$/);
+    });
+  }
+
+  test('"Registrar" abre o diálogo e leva ao exemplo, sem nenhum envio ao servidor', async ({
+    page,
+  }) => {
+    const sent: string[] = [];
+    page.on('request', (req) => {
+      if (req.method() !== 'GET' && req.method() !== 'HEAD')
+        sent.push(`${req.method()} ${req.url()}`);
+    });
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/demo');
+      const trigger =
+        width < 768
+          ? page.getByRole('navigation', { name: 'Navegação inferior' }).getByRole('button', {
+              name: 'Registrar',
+            })
+          : page.getByRole('banner').getByRole('button', { name: 'Registrar' });
+      await trigger.click();
+      const dialog = page.getByRole('dialog', { name: 'O que você quer registrar?' });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByText(/nada é salvo/)).toBeVisible();
+      await expect(dialog.getByRole('link', { name: 'Meta' })).toBeVisible();
+      await dialog.getByRole('link', { name: 'Peso e medidas' }).click();
+      await expect(page).toHaveURL(/\/demo\/corpo#novo$/);
+      await expect(page.locator('#novo [data-example-focus]')).toBeFocused();
+      await expect(page.locator('#novo').getByRole('button', { name: /Salvar/ })).toBeDisabled();
+    }
+    // Nenhum POST (formulário, server action) saiu da demo (regras 4 e 6).
+    expect(sent).toEqual([]);
+  });
 });

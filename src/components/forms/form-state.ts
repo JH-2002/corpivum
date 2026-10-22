@@ -10,3 +10,8 @@ export interface FormState {
 }
 
 export const INITIAL_FORM_STATE: FormState = { status: 'idle' };
+
+/** Formulário de exemplo da demo (ADR-0047): mesmo sem `action`, o envio nativo (GET na própria rota) não acontece. */
+export function preventSubmit(event: { preventDefault: () => void }): void {
+  event.preventDefault();
+}

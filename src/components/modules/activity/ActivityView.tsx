@@ -1,7 +1,7 @@
 import { useFormatter, useTranslations } from 'next-intl';
 import { deleteActivityAction } from '@/app/(app)/atividade/actions';
 import { TimeChart } from '@/components/charts/TimeChart';
-import { DemoReadOnlyNotice } from '@/components/health/DemoModeBanner';
+import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
@@ -94,7 +94,21 @@ export function ActivityView({
             }}
           />
         ) : (
-          <DemoReadOnlyNotice publicDemo={mode === 'publicDemo'} />
+          <ExampleForm publicDemo={mode === 'publicDemo'}>
+            <ActivityForm
+              example
+              maxDateTime={maxDateTime}
+              values={{
+                startedAt: maxDateTime,
+                type: 'walking',
+                durationMin: 30,
+                intensity: null,
+                distanceKm: null,
+                note: null,
+                sets: [],
+              }}
+            />
+          </ExampleForm>
         )}
       </section>
 

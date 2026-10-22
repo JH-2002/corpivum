@@ -8,6 +8,7 @@ import {
   type LucideIcon,
   Moon,
   Scale,
+  Target,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -17,21 +18,46 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useId, useRef } from 'react';
 import { useDialogFocusLoop } from '@/components/ui/dialog-focus';
 import { IconButton } from '@/components/ui/IconButton';
+import { focusProgrammatically } from '@/components/ui/programmatic-focus';
+import type { ShellVariant } from './nav-config';
 import { useShell } from './ShellProvider';
 
-type QuickLogKey = 'sleep' | 'habit' | 'body' | 'meal' | 'water' | 'activity';
+type QuickLogKey = 'sleep' | 'habit' | 'body' | 'meal' | 'water' | 'activity' | 'goal';
 
-const ITEMS: ReadonlyArray<{ key: QuickLogKey; href: Route; icon: LucideIcon; tone: string }> = [
+interface QuickLogItem {
+  key: QuickLogKey;
+  href: Route;
+  icon: LucideIcon;
+  tone: string;
+}
+
+const ITEMS: readonly QuickLogItem[] = [
   { key: 'sleep', href: '/sono#novo', icon: Moon, tone: 'text-sleep' },
   { key: 'habit', href: '/habitos#novo', icon: ListChecks, tone: 'text-primary' },
   { key: 'body', href: '/corpo#novo', icon: Scale, tone: 'text-body' },
   { key: 'meal', href: '/alimentacao#novo', icon: Apple, tone: 'text-nutrition' },
   { key: 'water', href: '/alimentacao', icon: Droplet, tone: 'text-info' },
   { key: 'activity', href: '/atividade#novo', icon: Activity, tone: 'text-activity' },
+  { key: 'goal', href: '/metas#novo', icon: Target, tone: 'text-primary' },
 ];
 
+/**
+ * Demo público (9b): os mesmos tipos, levando aos formulários de exemplo do demo (`ExampleForm`), onde nada é
+ * enviado. A água fica de fora: no demo não há registro de exemplo para ela.
+ */
+const DEMO_ITEMS: readonly QuickLogItem[] = [
+  { key: 'sleep', href: '/demo/sono#novo', icon: Moon, tone: 'text-sleep' },
+  { key: 'habit', href: '/demo/habitos#novo', icon: ListChecks, tone: 'text-primary' },
+  { key: 'body', href: '/demo/corpo#novo', icon: Scale, tone: 'text-body' },
+  { key: 'meal', href: '/demo/alimentacao#novo', icon: Apple, tone: 'text-nutrition' },
+  { key: 'activity', href: '/demo/atividade#novo', icon: Activity, tone: 'text-activity' },
+  { key: 'goal', href: '/demo/metas#novo', icon: Target, tone: 'text-primary' },
+];
+
+/** Primeiro campo ativo; no formulário de exemplo do demo (campos desativados), o próprio exemplo. */
 const FIELD =
-  'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
+  'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), ' +
+  '[data-example-focus]';
 /** Até ~2 s de quadros esperando a tela nova aparecer (navegação pelo cliente com streaming). */
 const MAX_FRAMES = 120;
 
@@ -50,7 +76,7 @@ function focusTarget(hash: string | null): () => void {
     const field = scope?.querySelector<HTMLElement>(FIELD);
     const target = field ?? (hash && !scope ? null : document.querySelector<HTMLElement>('main'));
     if (closed && target) {
-      target.focus();
+      focusProgrammatically(target);
       return;
     }
     tries += 1;
@@ -65,7 +91,7 @@ function focusTarget(hash: string | null): () => void {
  * Esc fecha e o foco volta ao elemento que abriu. Escolher um tipo leva direto ao formulário do módulo
  * (≤ 3 cliques, §3), com o foco no primeiro campo.
  */
-export function QuickLogDialog() {
+export function QuickLogDialog({ variant = 'app' }: { variant?: ShellVariant }) {
   const t = useTranslations('quickLog');
   const tc = useTranslations('common');
   const { quickLogOpen, closeQuickLog } = useShell();
@@ -120,7 +146,7 @@ export function QuickLogDialog() {
             {t('title')}
           </h2>
           <p id={descriptionId} className="text-sm text-fg-muted">
-            {t('description')}
+            {t(variant === 'demo' ? 'demoDescription' : 'description')}
           </p>
         </div>
         <IconButton label={tc('close')} onClick={closeQuickLog}>
@@ -128,7 +154,7 @@ export function QuickLogDialog() {
         </IconButton>
       </div>
       <ul className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
-        {ITEMS.map(({ key, href, icon: Icon, tone }) => (
+        {(variant === 'demo' ? DEMO_ITEMS : ITEMS).map(({ key, href, icon: Icon, tone }) => (
           <li key={key}>
             <Link
               href={href}

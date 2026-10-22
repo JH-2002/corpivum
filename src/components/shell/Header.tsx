@@ -4,6 +4,7 @@ import { Bell, CircleUser, Info, LogOut, Plus, Settings, ShieldCheck, User } fro
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useRef } from 'react';
 import { logoutAction } from '@/app/(auth)/actions';
 import { DemoOnlyBanner } from '@/components/demo/DemoOnlyBanner';
 import { useDemoOnly } from '@/components/demo/DemoOnlyContext';
@@ -17,6 +18,7 @@ import { HelpMenu } from './HelpMenu';
 import { DEMO_ITEMS, navItemForPath, type ShellVariant } from './nav-config';
 import { PeriodSelector } from './PeriodSelector';
 import { useShell } from './ShellProvider';
+import { useRouteFocus } from './useRouteFocus';
 
 const menuItemClass =
   'flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm hover:bg-surface-muted';
@@ -25,8 +27,8 @@ const menuItemClass =
  * Header (§8 + adendo): título da página, seletor de período, registro rápido, notificações,
  * atalho para a Central de Privacidade, menu da conta, modo privacidade (ADR-0035) e indicador DEMO quando
  * em demonstração.
- * `variant="demo"` (demo público, LEG-X02): sem registro rápido, notificações nem conta; CTA para criar
- * conta e link para a Política. No modo só demo (ADR-0043), sem o CTA, com o link "Sobre esta demonstração" e a
+ * `variant="demo"` (demo público, LEG-X02): registro rápido em modo exemplo (9b), sem notificações nem conta;
+ * CTA para criar conta e link para a Política. No modo só demo (ADR-0043), sem o CTA, com o link "Sobre esta demonstração" e a
  * faixa fixa de que o app ainda não está aberto ao público.
  */
 export function Header({
@@ -40,9 +42,11 @@ export function Header({
   const pathname = usePathname();
   const { openQuickLog } = useShell();
   const demoOnly = useDemoOnly();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useRouteFocus(titleRef);
   const current = navItemForPath(pathname, variant === 'demo' ? DEMO_ITEMS : undefined);
   const title =
-    pathname === '/mais'
+    pathname === '/mais' || pathname === '/demo/mais'
       ? t('pages.more.title')
       : pathname === '/demo/sobre'
         ? t('header.aboutDemo')
@@ -54,7 +58,14 @@ export function Header({
     <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
       {variant === 'demo' ? <DemoOnlyBanner /> : null}
       <div className="flex min-h-16 items-center gap-2 px-4 lg:px-6">
-        <h1 className="min-w-0 flex-1 truncate text-lg font-semibold md:text-xl">{title}</h1>
+        <h1
+          ref={titleRef}
+          id="page-title"
+          tabIndex={-1}
+          className="min-w-0 flex-1 truncate text-lg font-semibold md:text-xl"
+        >
+          {title}
+        </h1>
 
         {isDemo ? (
           <span
@@ -82,8 +93,10 @@ export function Header({
               )}
             </Link>
             <HelpMenu tourHref="/demo?tour=1" />
+            {/* Registrar também no demo (9b): abre os formulários de exemplo, onde nada é enviado. */}
+            <QuickLogButton onQuickLog={openQuickLog} />
             {demoOnly ? null : (
-              <Link href="/cadastro" className={buttonClasses('primary', 'shrink-0')}>
+              <Link href="/cadastro" className={buttonClasses('secondary', 'shrink-0')}>
                 {t('demo.createAccount')}
               </Link>
             )}
@@ -108,18 +121,25 @@ export function Header({
 const iconLinkClass =
   'inline-flex size-11 items-center justify-center rounded-md text-fg hover:bg-surface-muted';
 
+/** Registro rápido no topo (tablet e desktop); no mobile ele fica no centro da navegação inferior. */
+function QuickLogButton({ onQuickLog }: { onQuickLog: () => void }) {
+  const t = useTranslations('quickLog');
+  return (
+    <div className="hidden md:block">
+      <Button onClick={onQuickLog} aria-haspopup="dialog" className="shrink-0">
+        <Plus className="size-4" aria-hidden="true" />
+        {t('open')}
+      </Button>
+    </div>
+  );
+}
+
 /** Ações da área logada: registro rápido, privacidade, notificações e conta. */
 function AppActions({ onQuickLog }: { onQuickLog: () => void }) {
   const t = useTranslations();
   return (
     <>
-      {/* No mobile o registro rápido fica na navegação inferior. */}
-      <div className="hidden md:block">
-        <Button onClick={onQuickLog} aria-haspopup="dialog">
-          <Plus className="size-4" aria-hidden="true" />
-          {t('quickLog.open')}
-        </Button>
-      </div>
+      <QuickLogButton onQuickLog={onQuickLog} />
 
       <Link
         href="/privacidade"
