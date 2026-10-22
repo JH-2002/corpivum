@@ -1897,3 +1897,49 @@ capturas da 9a, também: medidas de todas as regiões em várias datas na demo, 
 - **Capturas:** acima de 7680 px físicos o Chrome headless repetia trechos da página na imagem (era a "página
   recomeçando" no meio). `pnpm capturas` passa a salvar páginas altas em partes (`_parte-N`). Não era conteúdo
   duplicado na página.
+
+## ADR-0050 — Índice de Bem-Estar v3: atividade pela regularidade de registro (correções da 9a)
+**Contexto.** Revendo as capturas da 9a, o Índice da demo aparecia como "dados parciais" em todo período, porque
+o componente `activity` (peso 0,20) estava sempre fora desde a v1 (OI-28). A proposta antiga era medir minutos em
+relação à meta da pessoa, mas a meta de atividade é opcional e medir volume premiaria fazer mais (LEG-M07).
+**Decisão.** `SCORE_V3` (`score_version = 3`), com os mesmos pesos e limiares da v2. A atividade entra pela
+**regularidade de registro**: dias com atividade registrada ÷ dias desde o primeiro registro do período (sono,
+check ou atividade) até o fim dele, com no mínimo 3 dias. Só a data entra: duração, intensidade, distância, carga e
+calorias não. O dashboard e o relatório passam só o conjunto de datas (`activityDays`). Vale para contas reais e
+para a demo; na demo o Índice e o dashboard ficam completos em 7, 30 e 90 dias (teste do gerador e e2e).
+Textos: regra do componente e `disclaimer.wellbeingScore` atualizados (aprovação em `approved-disclaimers.ts`).
+Pedidos de revisão continuam guardando a versão usada.
+**Consequências.** `docs/WELLBEING_SCORE.md` ganha a seção v3; OI-28 passa a aberta só pela revisão jurídica e
+clínica (`LEGAL-REVIEW`, OI-09). O motivo `not_available` fica no tipo, sem uso na v3.
+
+## ADR-0051 — Correções da revisão das capturas da 9a: gráficos, listas, selos, Corpo e unidades
+**Contexto.** Dos 14 ajustes pedidos depois das capturas da 9a, 4 entraram na 9b e na 9c. Os outros 10 estavam
+espalhados na 9d e na 9e; o produto pediu um PR só de correções antes da 9d.
+**Decisão.**
+- **Eixos (itens 1–3):** `paddedDomain` dá ao peso e às medidas uma faixa mínima de 4 (±2 kg ou cm) em torno da
+  média, com limites em múltiplos de um passo redondo e tiques explícitos (`niceTicks`); variações pequenas não
+  ocupam o gráfico inteiro (LEG-M06). As sparklines de medidas usam a mesma faixa. O eixo Y tem largura pelo maior
+  rótulo formatado em pt-BR (sem a margem negativa que cortava "73,95"). Eixo com barra começa em zero, ignorando
+  qualquer domínio; o `ScheduleChart` (horários) é exceção, porque é intervalo de horário. Séries de contagem
+  (`integer`) têm eixo só com inteiros.
+- **Paleta (item 4):** tokens `chart-1..5` e `chart-neutral`. Gráfico de uma série usa sempre o azul `chart-1`; as
+  outras cores só aparecem em gráficos com várias séries (circunferências), sempre nessa ordem e com traços
+  distintos. A paleta foi validada como conjunto com a skill dataviz no fundo escuro (faixa de luminosidade, croma,
+  separação entre vizinhas para daltonismo e visão normal, >= 3:1 sobre `bg`, `surface` e `surface-muted`). Os tokens
+  de domínio ficam só para ícones; `series-amber` e `series-violet` saíram. O `contrast.test` cobre marcas a 3:1 e
+  vizinhas a OKLab ΔE >= 15. Grade e eixos continuam discretos (abaixo de 3:1, de propósito: não são informação).
+- **Listas por semana (item 8):** `groupByWeek` (segunda a domingo) e `WeeklyList` em Alimentação, Atividade,
+  Timeline e no histórico de Corpo: 2 semanas, "Ver mais" revela mais 2, foco no título da primeira semana nova e
+  contador. Só apresentação. Sem JavaScript, ficam as 2 semanas mais recentes (o período inteiro continua nos
+  gráficos e nas tabelas alternativas).
+- **Selo DEMO (item 9):** discreto por padrão (só o ícone, 16 px, alvo de 24 px), com o mesmo nome acessível e a
+  mesma dica; continua em cada dado (regra 7). `full` mostra o texto. A pílula do cabeçalho e a faixa continuam.
+- **Corpo (item 10):** os blocos são o estado atual (a altura diz quando foi informada); a lista vira "Histórico de
+  medições" por semana, só com os campos de cada data, sem repetir a altura nem o peso e a altura dos blocos
+  (`historyRows`). A tabela alternativa dos gráficos continua.
+- **Unidades (item 11):** `formatMeasure`/`MEASURE_UNITS` em toda medida exibida (Corpo, twin, início, carga dos
+  exercícios, metas na timeline). A parte dos campos de formulário (unidade, "como medir", exemplo) segue na 9d.
+- **Hábitos (item 12):** "Últimos 7 dias" em grade de 7 colunas; dia fora da agenda com borda tracejada e "não
+  previsto" no nome do check, que também passa a dizer a data (antes dizia "hoje" em todos os dias).
+**Consequências.** O plano do redesenho tira esses itens da 9d e da 9e. O ADR-0049 continua valendo; os números
+dos próximos ADRs da Fase 9 andam um.
