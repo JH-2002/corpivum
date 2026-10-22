@@ -4,7 +4,7 @@ import { SubmitButton } from '@/components/forms/FormFields';
 import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
 import { GuardrailNotice } from '@/components/health/GuardrailNotice';
-import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
+import { formatDecimal, TREND_ARROW, trendOf } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodSummary } from '@/components/insights/PeriodInsights';
 import { HiddenEditNotice } from '@/components/privacy-mode/Masked';
@@ -12,6 +12,7 @@ import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { addDays } from '@/lib/dates';
 import type { GoalMetric, GoalProgress, GoalRecord } from '@/modules/goals';
+import { formatGoalValue } from './goal-value';
 import { isBodyValueGoal } from '@/modules/health/mask';
 import type { GuardrailReason } from '@/modules/guardrails';
 import type { HabitRecord } from '@/modules/habits';
@@ -65,12 +66,8 @@ export function GoalsView({
       ? `${t(`metrics.${g.metric}`)}: ${habitName(g.habitId)}`
       : t(`metrics.${g.metric}`);
 
-  const valueText = (metric: GoalMetric, value: number) => {
-    if (metric === 'sleep_avg_minutes' || metric === 'activity_minutes_week') {
-      return formatDuration(value);
-    }
-    return `${formatDecimal(value)} ${t(`units.${metric}`)}`;
-  };
+  const valueText = (metric: GoalMetric, value: number) =>
+    formatGoalValue(metric, value, (m) => t(`units.${m}`));
 
   function Progress({ goal }: { goal: GoalRecord }) {
     const p = byId.get(goal.id);

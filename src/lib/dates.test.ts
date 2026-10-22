@@ -3,6 +3,7 @@ import {
   dayStart,
   daysBetween,
   eachDay,
+  groupByWeek,
   fromLocalDateTime,
   localDay,
   localTime,
@@ -59,5 +60,26 @@ describe('datas no fuso da pessoa', () => {
     const b = rangeBounds({ from: '2026-10-01', to: '2026-10-01' }, TZ);
     expect(b.gte.toISOString()).toBe('2026-10-01T03:00:00.000Z');
     expect(b.lt.toISOString()).toBe('2026-10-02T03:00:00.000Z');
+  });
+});
+
+describe('groupByWeek', () => {
+  it('agrupa de segunda a domingo, da semana mais recente para a mais antiga', () => {
+    // 2026-10-12 é segunda; 2026-10-18, domingo.
+    const days = ['2026-10-19', '2026-10-18', '2026-10-12', '2026-10-11', '2026-10-20'];
+    const weeks = groupByWeek(days, (d) => d);
+    expect(weeks.map((w) => [w.start, w.end])).toEqual([
+      ['2026-10-19', '2026-10-25'],
+      ['2026-10-12', '2026-10-18'],
+      ['2026-10-05', '2026-10-11'],
+    ]);
+    expect(weeks[0]?.items).toEqual(['2026-10-19', '2026-10-20']);
+    expect(weeks[1]?.items).toEqual(['2026-10-18', '2026-10-12']);
+  });
+
+  it('não perde nem inventa itens', () => {
+    expect(groupByWeek([], (d: string) => d)).toEqual([]);
+    const days = ['2026-10-01', '2026-10-02', '2026-10-30'];
+    expect(groupByWeek(days, (d) => d).flatMap((w) => w.items)).toHaveLength(3);
   });
 });

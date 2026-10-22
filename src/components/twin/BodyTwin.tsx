@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCallback, useId, useMemo, useState } from 'react';
+import type { MeasureUnit } from '@/components/health/format';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { usePrivacyHiddenNow } from '@/components/privacy-mode/PrivacyModeProvider';
 import { cn } from '@/lib/cn';
@@ -331,7 +332,7 @@ function MeasureLine({
 }: {
   label: string;
   value: number | null;
-  unit: string;
+  unit: MeasureUnit;
   hint?: string;
   hideValues: boolean;
   badge: ConfidenceLevel;

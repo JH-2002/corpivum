@@ -4,9 +4,12 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodSummary } from '@/components/insights/PeriodInsights';
+import { formatGoalValue } from '@/components/modules/goals/goal-value';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
+import { WeeklyList } from '@/components/health/WeeklyList';
 import { cn } from '@/lib/cn';
+import { groupByWeek } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { timelineInsights } from '@/modules/insights';
 import {
@@ -105,8 +108,8 @@ export function TimelineView({
           ? t('items.newHabit', { name: item.habitName })
           : t('items.goalReached', {
               metric: tg(`metrics.${item.metric}`),
-              value: formatDecimal(item.value),
-              target: formatDecimal(item.target),
+              value: formatGoalValue(item.metric, item.value, (m) => tg(`units.${m}`)),
+              target: formatGoalValue(item.metric, item.target, (m) => tg(`units.${m}`)),
             });
     }
   }
@@ -150,32 +153,40 @@ export function TimelineView({
           <h2 id="timeline-list" className="text-base font-semibold">
             {t('listTitle')}
           </h2>
-          <ol className="flex flex-col gap-4">
-            {days.map((d) => (
-              <li key={d.day} className="rounded-lg border border-border bg-surface p-4">
-                <h3 className="font-semibold">
-                  <time dateTime={d.day}>{longDay(d.day)}</time>
-                </h3>
-                <p className="text-sm text-fg-muted">{t('dayItems', { count: d.items.length })}</p>
-                <ul className="mt-2 flex flex-col gap-2">
-                  {d.items.map((item, i) => (
-                    <li
-                      key={`${item.kind}-${'id' in item ? item.id : i}`}
-                      className="flex flex-wrap items-start justify-between gap-2 border-t border-border pt-2 first:border-t-0 first:pt-0"
-                    >
-                      <p>
-                        <span className="font-semibold">{t(`kindLabels.${item.kind}`)}: </span>
-                        <span className="tabular">{text(item)}</span>
-                      </p>
-                      <ConfidenceBadge level={levelOf(item)} />
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
+          <WeeklyList
+            weeks={groupByWeek(days, (d) => d.day).map((w) => ({
+              start: w.start,
+              end: w.end,
+              content: <ol className="flex flex-col gap-4">{w.items.map(dayItem)}</ol>,
+            }))}
+          />
         </section>
       )}
     </div>
   );
+
+  function dayItem(d: TimelineDay) {
+    return (
+      <li key={d.day} className="rounded-lg border border-border bg-surface p-4">
+        <h4 className="font-semibold">
+          <time dateTime={d.day}>{longDay(d.day)}</time>
+        </h4>
+        <p className="text-sm text-fg-muted">{t('dayItems', { count: d.items.length })}</p>
+        <ul className="mt-2 flex flex-col gap-2">
+          {d.items.map((item, i) => (
+            <li
+              key={`${item.kind}-${'id' in item ? item.id : i}`}
+              className="flex flex-wrap items-start justify-between gap-2 border-t border-border pt-2 first:border-t-0 first:pt-0"
+            >
+              <p>
+                <span className="font-semibold">{t(`kindLabels.${item.kind}`)}: </span>
+                <span className="tabular">{text(item)}</span>
+              </p>
+              <ConfidenceBadge level={levelOf(item)} />
+            </li>
+          ))}
+        </ul>
+      </li>
+    );
+  }
 }

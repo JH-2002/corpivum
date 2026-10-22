@@ -4,18 +4,26 @@ import { paddedDomain } from '@/components/charts/domain';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
-import { formatDecimal } from '@/components/health/format';
+import { formatMeasure, formatSignedMeasure, MEASURE_UNITS } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { HiddenValuesNotice, Masked } from '@/components/privacy-mode/Masked';
 import { StatTile } from '@/components/health/StatTile';
+import { WeeklyList } from '@/components/health/WeeklyList';
 import { SupportNotice } from '@/components/health/SupportNotice';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
-import { toLocalDateTime } from '@/lib/dates';
+import { groupByWeek, toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { bodyInsights, bodyInsightsHidden } from '@/modules/insights';
-import { BODY_FIELDS, change, latest, type BodyField, type BodyRecord } from '@/modules/body';
+import {
+  BODY_FIELDS,
+  change,
+  historyRows,
+  latest,
+  type BodyField,
+  type BodyRecord,
+} from '@/modules/body';
 import { BodyForm } from './BodyForm';
 
 /** Faixa mínima dos eixos: ±2 kg e ±2 cm, para variações pequenas não parecerem grandes (LEG-M06). */
@@ -64,7 +72,8 @@ export function BodyView({
   const level = (l: 'INFORMADO' | 'ESTIMADO') => (own ? l : 'DEMO');
   const maxDateTime = toLocalDateTime(new Date());
   const weight = latest(records, 'weightKg');
-  const height = latest(records, 'heightCm')?.value ?? latestHeightCm;
+  const heightInPeriod = latest(records, 'heightCm');
+  const height = heightInPeriod?.value ?? latestHeightCm;
   const weightChange = change(records, 'weightKg');
   const usedGirths = GIRTHS.filter((f) => records.some((r) => r[f] !== null));
   const longDay = (iso: string) =>
@@ -107,9 +116,7 @@ export function BodyView({
             <StatTile
               label={t('stats.weight')}
               value={
-                <Masked hidden={hidden}>
-                  {weight ? `${formatDecimal(weight.value)} kg` : '—'}
-                </Masked>
+                <Masked hidden={hidden}>{weight ? formatMeasure(weight.value, 'kg') : '—'}</Masked>
               }
               detail={weight ? t('stats.on', { date: longDay(weight.day) }) : undefined}
               badge={level('INFORMADO')}
@@ -118,9 +125,7 @@ export function BodyView({
               label={t('stats.change')}
               value={
                 <Masked hidden={hidden}>
-                  {weightChange !== null
-                    ? `${weightChange > 0 ? '+' : ''}${formatDecimal(weightChange)} kg`
-                    : '—'}
+                  {weightChange !== null ? formatSignedMeasure(weightChange, 'kg') : '—'}
                 </Masked>
               }
               detail={t('stats.changeHint')}
@@ -130,8 +135,15 @@ export function BodyView({
               label={t('stats.height')}
               value={
                 <Masked hidden={hidden}>
-                  {height !== null ? `${formatDecimal(height)} cm` : '—'}
+                  {height !== null ? formatMeasure(height, 'cm') : '—'}
                 </Masked>
+              }
+              detail={
+                heightInPeriod
+                  ? t('stats.on', { date: longDay(heightInPeriod.day) })
+                  : height !== null
+                    ? t('stats.heightBefore')
+                    : undefined
               }
               badge={level('INFORMADO')}
             />
@@ -193,41 +205,56 @@ export function BodyView({
               <h2 id="body-list" className="text-base font-semibold">
                 {t('listTitle')}
               </h2>
-              <ul className="flex flex-col gap-3">
-                {[...records].reverse().map((r) => (
-                  <li key={r.id} className="rounded-lg border border-border bg-surface p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <h3 className="font-semibold">{longDay(r.day)}</h3>
-                      <ConfidenceBadge level={level('INFORMADO')} />
-                    </div>
-                    <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
-                      {BODY_FIELDS.filter((f) => r[f] !== null).map((f) => (
-                        <div key={f}>
-                          <dt className="text-fg-muted">{t(`fields.${f}`)}</dt>
-                          <dd className="tabular font-semibold">{formatDecimal(r[f] ?? 0)}</dd>
-                        </div>
+              <p className="text-sm text-fg-muted">{t('historyIntro')}</p>
+              <WeeklyList
+                weeks={groupByWeek(historyRows(records), (row) => row.record.day).map((w) => ({
+                  start: w.start,
+                  end: w.end,
+                  content: (
+                    <ul className="flex flex-col gap-3">
+                      {w.items.map(({ record: r, fields }) => (
+                        <li key={r.id} className="rounded-lg border border-border bg-surface p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <h4 className="font-semibold">{longDay(r.day)}</h4>
+                            <ConfidenceBadge level={level('INFORMADO')} />
+                          </div>
+                          {fields.length > 0 ? (
+                            <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+                              {fields.map((f) => (
+                                <div key={f}>
+                                  <dt className="text-fg-muted">{t(`fields.${f}`)}</dt>
+                                  <dd className="tabular font-semibold">
+                                    {formatMeasure(r[f] ?? 0, MEASURE_UNITS[f])}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          ) : (
+                            <p className="mt-1 text-sm text-fg-muted">{t('historyInTiles')}</p>
+                          )}
+                          {own ? (
+                            <div className="mt-2">
+                              <EntryActions
+                                id={r.id}
+                                itemLabel={longDay(r.day)}
+                                deleteAction={deleteBodyAction}
+                              >
+                                <BodyForm
+                                  maxDateTime={maxDateTime}
+                                  values={{
+                                    ...r,
+                                    measuredAt: toLocalDateTime(new Date(r.measuredAt)),
+                                  }}
+                                />
+                              </EntryActions>
+                            </div>
+                          ) : null}
+                        </li>
                       ))}
-                    </dl>
-                    {own ? (
-                      <div className="mt-2">
-                        <EntryActions
-                          id={r.id}
-                          itemLabel={longDay(r.day)}
-                          deleteAction={deleteBodyAction}
-                        >
-                          <BodyForm
-                            maxDateTime={maxDateTime}
-                            values={{
-                              ...r,
-                              measuredAt: toLocalDateTime(new Date(r.measuredAt)),
-                            }}
-                          />
-                        </EntryActions>
-                      </div>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+                    </ul>
+                  ),
+                }))}
+              />
             </section>
           )}
         </>

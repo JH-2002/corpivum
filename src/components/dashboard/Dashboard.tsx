@@ -5,7 +5,13 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { Sparkline } from '@/components/charts/Sparkline';
 import { TimeChart } from '@/components/charts/TimeChart';
-import { formatDecimal, formatDuration, TREND_ARROW, trendOf } from '@/components/health/format';
+import {
+  formatDecimal,
+  formatDuration,
+  formatMeasure,
+  TREND_ARROW,
+  trendOf,
+} from '@/components/health/format';
 import { HabitCheckButton } from '@/components/health/HabitCheckButton';
 import { ScoreReviewForm } from '@/components/health/ScoreReviewForm';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
@@ -313,7 +319,7 @@ export function Dashboard({
               hidden ? (
                 <Masked hidden />
               ) : cards.body.weightKg !== null ? (
-                `${formatDecimal(cards.body.weightKg)} kg`
+                formatMeasure(cards.body.weightKg, 'kg')
               ) : null
             }
             variation={

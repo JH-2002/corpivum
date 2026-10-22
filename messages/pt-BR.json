@@ -694,6 +694,11 @@
       "intro": "Serviços que tratam dados em nome do %PRODUTO%. Banco de dados, armazenamento, filas e execução do servidor ficam no Brasil."
     }
   },
+  "weekly": {
+    "title": "Semana de {from} a {to}",
+    "more": "Ver mais semanas",
+    "count": "Mostrando {shown} de {total, plural, one {# semana} other {# semanas}}"
+  },
   "charts": {
     "legend": "Séries do gráfico (clique para mostrar ou ocultar)",
     "seriesOn": "visível",
@@ -1238,7 +1243,9 @@
   },
   "body": {
     "newTitle": "Registrar peso e medidas",
-    "listTitle": "Medições",
+    "listTitle": "Histórico de medições",
+    "historyIntro": "Cada data mostra só o que foi registrado nela. O peso e a altura mais recentes estão nos blocos acima.",
+    "historyInTiles": "Os valores desta data estão nos blocos acima.",
     "weightChart": "Peso no período",
     "girthChart": "Medidas no período",
     "fields": {
@@ -1254,6 +1261,7 @@
     "stats": {
       "weight": "Peso mais recente",
       "on": "em {date}",
+      "heightBefore": "informada antes do período",
       "change": "Variação no período",
       "changeHint": "Diferença entre o primeiro e o último peso do período.",
       "height": "Altura"

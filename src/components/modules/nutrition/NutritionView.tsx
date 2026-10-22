@@ -12,11 +12,12 @@ import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { StatTile } from '@/components/health/StatTile';
+import { WeeklyList } from '@/components/health/WeeklyList';
 import { HiddenEditNotice, Masked } from '@/components/privacy-mode/Masked';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
-import { toLocalDateTime } from '@/lib/dates';
+import { groupByWeek, toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { nutritionInsights } from '@/modules/insights';
 import {
@@ -281,60 +282,77 @@ export function NutritionView({
               <h2 id="meal-list" className="text-base font-semibold">
                 {t('listTitle')}
               </h2>
-              <ul className="flex flex-col gap-3">
-                {[...meals].reverse().map((m) => {
-                  const label = `${longDay(m.day)}, ${t(`categories.${m.category}`)}`;
-                  return (
-                    <li key={m.id} className="rounded-lg border border-border bg-surface p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h3 className="font-semibold">{longDay(m.day)}</h3>
-                        <ConfidenceBadge level={level('INFORMADO')} />
-                      </div>
-                      <p className="tabular">
-                        {t('entrySummary', {
-                          category: t(`categories.${m.category}`),
-                          time: m.time,
-                        })}
-                      </p>
-                      {m.description ? (
-                        <p className="text-sm whitespace-pre-line">{m.description}</p>
-                      ) : null}
-                      <p className="text-sm text-fg-muted">
-                        {MEAL_PERCEPTIONS.filter((p) => m[p] !== null)
-                          .map((p) =>
-                            t('entryPerception', {
-                              label: t(`perceptions.${p}`),
-                              value: m[p] ?? 0,
-                            }),
-                          )
-                          .join(' · ')}
-                      </p>
-                      {m.kcalEstimate !== null ? (
-                        <p className="flex flex-wrap items-center gap-2 text-sm">
-                          {t('entryKcal', { kcal: m.kcalEstimate })}
-                          <ConfidenceBadge level={level('ESTIMADO')} />
-                        </p>
-                      ) : null}
-                      {m.note ? <p className="mt-1 text-sm whitespace-pre-line">{m.note}</p> : null}
-                      {own ? (
-                        <div className="mt-2">
-                          <EntryActions id={m.id} itemLabel={label} deleteAction={deleteMealAction}>
-                            {hidden && estimateEnabled ? (
-                              <HiddenEditNotice />
-                            ) : (
-                              <MealForm
-                                maxDateTime={maxDateTime}
-                                estimateEnabled={estimateEnabled}
-                                values={{ ...m, eatenAt: toLocalDateTime(new Date(m.eatenAt)) }}
-                              />
-                            )}
-                          </EntryActions>
-                        </div>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
+              <WeeklyList
+                weeks={groupByWeek([...meals].reverse(), (m) => m.day).map((w) => ({
+                  start: w.start,
+                  end: w.end,
+                  content: (
+                    <ul className="flex flex-col gap-3">
+                      {w.items.map((m) => {
+                        const label = `${longDay(m.day)}, ${t(`categories.${m.category}`)}`;
+                        return (
+                          <li key={m.id} className="rounded-lg border border-border bg-surface p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <h4 className="font-semibold">{longDay(m.day)}</h4>
+                              <ConfidenceBadge level={level('INFORMADO')} />
+                            </div>
+                            <p className="tabular">
+                              {t('entrySummary', {
+                                category: t(`categories.${m.category}`),
+                                time: m.time,
+                              })}
+                            </p>
+                            {m.description ? (
+                              <p className="text-sm whitespace-pre-line">{m.description}</p>
+                            ) : null}
+                            <p className="text-sm text-fg-muted">
+                              {MEAL_PERCEPTIONS.filter((p) => m[p] !== null)
+                                .map((p) =>
+                                  t('entryPerception', {
+                                    label: t(`perceptions.${p}`),
+                                    value: m[p] ?? 0,
+                                  }),
+                                )
+                                .join(' · ')}
+                            </p>
+                            {m.kcalEstimate !== null ? (
+                              <p className="flex flex-wrap items-center gap-2 text-sm">
+                                {t('entryKcal', { kcal: m.kcalEstimate })}
+                                <ConfidenceBadge level={level('ESTIMADO')} />
+                              </p>
+                            ) : null}
+                            {m.note ? (
+                              <p className="mt-1 text-sm whitespace-pre-line">{m.note}</p>
+                            ) : null}
+                            {own ? (
+                              <div className="mt-2">
+                                <EntryActions
+                                  id={m.id}
+                                  itemLabel={label}
+                                  deleteAction={deleteMealAction}
+                                >
+                                  {hidden && estimateEnabled ? (
+                                    <HiddenEditNotice />
+                                  ) : (
+                                    <MealForm
+                                      maxDateTime={maxDateTime}
+                                      estimateEnabled={estimateEnabled}
+                                      values={{
+                                        ...m,
+                                        eatenAt: toLocalDateTime(new Date(m.eatenAt)),
+                                      }}
+                                    />
+                                  )}
+                                </EntryActions>
+                              </div>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ),
+                }))}
+              />
             </section>
           ) : null}
         </>
