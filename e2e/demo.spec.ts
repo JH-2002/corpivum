@@ -156,3 +156,43 @@ test.describe('demo: navegação inferior igual à do app e "Registrar" em modo 
     expect(sent).toEqual([]);
   });
 });
+
+test.describe('cartões com inclinação (ADR-0048)', () => {
+  test('com mouse inclinam e voltam; "Reduzir animações" desliga e persiste', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/demo');
+    const card = page.locator('[data-tilt]').first();
+    await expect(card).toBeVisible();
+    expect(await page.locator('[data-tilt]').count()).toBeGreaterThanOrEqual(4);
+    const box = await card.boundingBox();
+    if (!box) throw new Error('cartão sem caixa');
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.1);
+    await expect
+      .poll(() => card.evaluate((el) => (el as HTMLElement).style.transform))
+      .toMatch(/rotateX\(.+deg\) rotateY\(.+deg\)/);
+    await page.mouse.move(5, 5);
+    await expect.poll(() => card.evaluate((el) => (el as HTMLElement).style.transform)).toBe('');
+
+    await page.getByRole('button', { name: 'Ajuda' }).click();
+    await page.getByRole('button', { name: /Reduzir animações/ }).click();
+    await expect(page.locator('[data-tilt]')).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
+    await expect(page.locator('[data-tilt]')).toHaveCount(0);
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
+  });
+
+  test('sem efeito em tela de toque nem com prefers-reduced-motion', async ({ browser }) => {
+    for (const options of [
+      { hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } },
+      { reducedMotion: 'reduce' as const, viewport: { width: 1440, height: 900 } },
+    ]) {
+      const context = await browser.newContext({ ...options, storageState: DEMO_TOUR_SEEN_STATE });
+      const page = await context.newPage();
+      await page.goto('/demo');
+      await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
+      await expect(page.locator('[data-tilt]')).toHaveCount(0);
+      await context.close();
+    }
+  });
+});

@@ -12,6 +12,7 @@ import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsig
 import { Masked } from '@/components/privacy-mode/Masked';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
+import { TiltCard } from '@/components/ui/TiltCard';
 import type { DashboardData } from '@/modules/health/dashboard';
 import { ScoreExplanation } from './ScoreExplanation';
 
@@ -49,7 +50,10 @@ function DomainCard({
 }) {
   const t = useTranslations('dashboard');
   return (
-    <article className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+    <TiltCard
+      as="article"
+      className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4"
+    >
       <div className="flex items-start justify-between gap-2">
         <h3 className="flex items-center gap-2 font-semibold">
           <Icon className={`size-5 ${tone}`} aria-hidden="true" />
@@ -78,7 +82,7 @@ function DomainCard({
           </details>
         </>
       )}
-    </article>
+    </TiltCard>
   );
 }
 
@@ -168,6 +172,7 @@ export function Dashboard({
   const base = mode === 'publicDemo' ? '/demo' : '';
   const link = (path: string) => (links ? (`${base}${path}` as Route) : undefined);
   const b = (level: ConfidenceLevel) => badgeFor(mode, level);
+  const twinHref = link('/twin');
 
   if (data.state === 'empty') {
     return (
@@ -333,18 +338,18 @@ export function Dashboard({
 
       <TodayHabits data={data} mode={mode} links={links} />
 
-      {mode === 'publicDemo' || !links ? null : (
-        <Link
-          href="/twin"
-          className="flex items-center gap-3 rounded-lg border border-border bg-surface p-4 hover:bg-surface-muted"
-        >
-          <Orbit className="size-6 text-primary" aria-hidden="true" />
-          <span>
-            <span className="block font-semibold">{t('twin.title')}</span>
-            <span className="block text-sm text-fg-muted">{t('twin.body')}</span>
-          </span>
-        </Link>
-      )}
+      {twinHref ? (
+        <TiltCard className="rounded-lg border border-border bg-surface hover:bg-surface-muted">
+          {/* Sem prefetch: a tela do twin baixa o 3D só quando aberta (ADR-0026). */}
+          <Link href={twinHref} prefetch={false} className="flex items-center gap-3 rounded-lg p-4">
+            <Orbit className="size-6 text-primary" aria-hidden="true" />
+            <span>
+              <span className="block font-semibold">{t('twin.title')}</span>
+              <span className="block text-sm text-fg-muted">{t('twin.body')}</span>
+            </span>
+          </Link>
+        </TiltCard>
+      ) : null}
     </div>
   );
 

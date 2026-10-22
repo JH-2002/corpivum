@@ -63,6 +63,7 @@ export function PeriodHighlights({ insights, demo }: { insights: ModuleInsights;
             value={text.value(h.value)}
             detail={text.highlightDetail(h)}
             badge={demo ? 'DEMO' : h.level}
+            tilt
           />
         ))}
       </div>

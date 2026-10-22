@@ -1051,6 +1051,12 @@
       }
     }
   },
+  "motion": {
+    "reduce": "Reduzir animações",
+    "on": "Ligado",
+    "off": "Desligado",
+    "hint": "Desliga os efeitos de movimento, como a inclinação dos cartões. O sistema também pode pedir isso."
+  },
   "help": {
     "menu": "Ajuda",
     "tour": "Fazer o tour do painel",
