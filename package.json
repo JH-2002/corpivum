@@ -19,6 +19,7 @@
     "test:e2e": "playwright test",
     "test:e2e:demo": "playwright test -c playwright.demo.config.ts",
     "capturas": "node --import ./scripts/ts-loader.mjs scripts/capturas.mjs",
+    "i18n:client": "node --import ./scripts/ts-loader.mjs scripts/i18n-client-namespaces.ts --write && prettier --write src/i18n/client-namespaces.generated.ts",
     "test:perf": "playwright test --project=perf --workers=1",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import localFont from 'next/font/local';
 import { connection } from 'next/server';
 import type { ReactNode } from 'react';
-import { demoClientMessages } from '@/i18n/messages';
+import { shellMessages } from '@/i18n/client-messages';
 import { isDemoOnly } from '@/lib/demo-mode';
 import '@/styles/globals.css';
 
@@ -46,8 +46,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="pt-BR" className={inter.variable}>
       <body className="min-h-dvh antialiased">
-        {/* Modo só demo (ADR-0044): o navegador não recebe os textos jurídicos do app completo. */}
-        <NextIntlClientProvider messages={isDemoOnly() ? demoClientMessages() : undefined}>
+        {/* Só as mensagens do shell vão ao navegador; cada página acrescenta as suas (withRouteMessages, ADR-0052).
+            No modo só demo, nunca os textos jurídicos (ADR-0044). */}
+        <NextIntlClientProvider messages={shellMessages(isDemoOnly())}>
           {children}
         </NextIntlClientProvider>
       </body>
