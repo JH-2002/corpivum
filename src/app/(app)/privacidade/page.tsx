@@ -21,6 +21,7 @@ import { EXPORT_TABLES, type ExportTableName } from '@/modules/reports';
 import { getReportsService } from '@/modules/reports/server';
 import { revokeSessionAction } from '../configuracoes/seguranca/actions';
 import { grantConsentAction, revokeConsentAction } from './actions';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -79,7 +80,7 @@ function Section({
  * subprocessadores, pedidos do titular, exclusão de conta e encerramento de conta de menor. Acessível mesmo
  * com reconsentimento pendente.
  */
-export default async function PrivacyCenterPage() {
+async function PrivacyCenterPage() {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
   const session = await requireAppSession({ allowPendingUpdate: true });
   const env = getEnv();
@@ -400,3 +401,5 @@ async function RequestList({ requests }: { requests: PrivacyRequestSummary[] | n
     </ul>
   );
 }
+
+export default withRouteMessages('(app)/privacidade', PrivacyCenterPage);

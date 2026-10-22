@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { ForgotPasswordForm } from '@/components/auth/AuthForms';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.forgot');
   return { title: t('title') };
 }
 
-export default async function ForgotPasswordPage() {
+async function ForgotPasswordPage() {
   const t = await getTranslations('auth.forgot');
   return (
     <>
@@ -17,3 +18,5 @@ export default async function ForgotPasswordPage() {
     </>
   );
 }
+
+export default withRouteMessages('(auth)/recuperar-senha', ForgotPasswordPage);

@@ -6,13 +6,14 @@ import { addDays, previousRange } from '@/lib/dates';
 import { STREAK_LOOKBACK_DAYS } from '@/modules/habits';
 import { loadReminders } from '@/modules/health/screens';
 import { demoContext } from '@/app/demo/demo-data';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
   return { title: t('habits') };
 }
 
-export default async function DemoHabitsPage() {
+async function DemoHabitsPage() {
   const { range, today, source } = await demoContext();
   const [habits, checks, previousChecks, streakChecks] = await Promise.all([
     source.habits(),
@@ -37,3 +38,5 @@ export default async function DemoHabitsPage() {
     </div>
   );
 }
+
+export default withRouteMessages('demo/(shell)/habitos', DemoHabitsPage);

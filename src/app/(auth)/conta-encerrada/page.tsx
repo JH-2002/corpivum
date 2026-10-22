@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('privacyCenter');
@@ -7,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Depois do encerramento de conta de menor (LEG-F04): mensagem neutra e acolhedora, sem dados. */
-export default async function AccountClosedPage() {
+async function AccountClosedPage() {
   const t = await getTranslations('privacyCenter');
   return (
     <>
@@ -17,3 +18,5 @@ export default async function AccountClosedPage() {
     </>
   );
 }
+
+export default withRouteMessages('(auth)/conta-encerrada', AccountClosedPage);

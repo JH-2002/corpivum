@@ -8,13 +8,14 @@ import {
 } from '@/components/shell/ModulePage';
 import { ReduceMotionToggle } from '@/components/ui/ReduceMotionToggle';
 import { requireAppSession } from '@/modules/consent/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
   return { title: t('settings') };
 }
 
-export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
+async function Page({ searchParams }: { searchParams: PageSearchParams }) {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
   await requireAppSession();
   const t = await getTranslations('auth.security');
@@ -41,3 +42,5 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
     </ModulePage>
   );
 }
+
+export default withRouteMessages('(app)/configuracoes', Page);

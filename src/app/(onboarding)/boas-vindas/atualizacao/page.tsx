@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { UpdateConsentForm } from '@/components/privacy/OnboardingForms';
 import { requireUpdateSession } from '@/modules/consent/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('onboarding.update');
@@ -10,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Reconsentimento (LEG-C06): versão substancial nova pede nova escolha antes de continuar. */
-export default async function ConsentUpdatePage() {
+async function ConsentUpdatePage() {
   const { state } = await requireUpdateSession();
   const t = await getTranslations('onboarding.update');
   return (
@@ -32,3 +33,5 @@ export default async function ConsentUpdatePage() {
     </div>
   );
 }
+
+export default withRouteMessages('(onboarding)/boas-vindas/atualizacao', ConsentUpdatePage);

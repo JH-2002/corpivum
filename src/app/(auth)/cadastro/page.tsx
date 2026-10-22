@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { AgeForm } from '@/components/auth/AuthForms';
 import { hasAgeBlockCookie } from '@/modules/auth/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.signup');
@@ -13,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * §52 passos 1 e 2: boas-vindas curtas (o que o app faz e o que não faz) e a data de nascimento, que nunca
  * é guardada (LEG-F01).
  */
-export default async function SignupAgePage() {
+async function SignupAgePage() {
   // Desencoraja nova tentativa imediata, sem identificar ninguém (cookie de sessão do navegador).
   if (await hasAgeBlockCookie()) redirect('/cadastro/indisponivel');
 
@@ -50,3 +51,5 @@ export default async function SignupAgePage() {
     </>
   );
 }
+
+export default withRouteMessages('(auth)/cadastro', SignupAgePage);

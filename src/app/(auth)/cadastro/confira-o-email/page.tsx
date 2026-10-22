@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.signup');
@@ -8,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Mesma tela para e-mail novo ou já cadastrado (anti-enumeração, ADR-0014). */
-export default async function CheckEmailPage() {
+async function CheckEmailPage() {
   const t = await getTranslations('auth');
   return (
     <>
@@ -22,3 +23,5 @@ export default async function CheckEmailPage() {
     </>
   );
 }
+
+export default withRouteMessages('(auth)/cadastro/confira-o-email', CheckEmailPage);

@@ -7,6 +7,7 @@ import { readPeriod } from '@/lib/period-server';
 import { readPrivacyMode } from '@/lib/privacy-mode-server';
 import { maskBodyScreen } from '@/modules/health/mask';
 import { requireAppSession } from '@/modules/consent/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('twin');
@@ -17,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Corpo 3D (§15, §16, ADR-0026). Medidas próprias só com consentimento de saúde ativo (`healthView`:
  * sem ele, só o aviso e nenhuma leitura); no modo demo, só dados fictícios.
  */
-export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
+async function Page({ searchParams }: { searchParams: PageSearchParams }) {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
   const session = await requireAppSession();
   const preview = await readPreviewState(searchParams);
@@ -50,3 +51,5 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
     </HealthFrame>
   );
 }
+
+export default withRouteMessages('(app)/twin', Page);

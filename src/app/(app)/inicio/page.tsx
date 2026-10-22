@@ -15,6 +15,7 @@ import { buildDashboard } from '@/modules/health/dashboard';
 import { loadReminders } from '@/modules/health/screens';
 import { hasSeenTour } from '@/modules/health/server';
 import { Tour } from '@/components/tour/Tour';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
@@ -22,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Dashboard "Seu estado atual" (§11). Dados próprios (consentimento + RLS) ou demo (ADR-0021). */
-export default async function Page({ searchParams }: { searchParams: PageSearchParams }) {
+async function Page({ searchParams }: { searchParams: PageSearchParams }) {
   // Validação da sessão em cada página: layouts não re-renderizam na navegação do cliente (LEG-S04).
   const session = await requireAppSession();
   const t = await getTranslations();
@@ -87,3 +88,5 @@ export default async function Page({ searchParams }: { searchParams: PageSearchP
     </HealthFrame>
   );
 }
+
+export default withRouteMessages('(app)/inicio', Page);

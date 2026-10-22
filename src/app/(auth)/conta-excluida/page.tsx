@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('privacyCenter.deletion');
@@ -8,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Depois da exclusão de conta (LEG-D04): mensagem neutra, sem dados, com o que fica e o canal do encarregado. */
-export default async function AccountDeletedPage() {
+async function AccountDeletedPage() {
   const t = await getTranslations('privacyCenter.deletion');
   return (
     <>
@@ -22,3 +23,5 @@ export default async function AccountDeletedPage() {
     </>
   );
 }
+
+export default withRouteMessages('(auth)/conta-excluida', AccountDeletedPage);

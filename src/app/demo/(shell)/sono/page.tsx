@@ -3,13 +3,14 @@ import { getTranslations } from 'next-intl/server';
 import { SleepView } from '@/components/modules/sleep/SleepView';
 import { previousRange } from '@/lib/dates';
 import { demoContext } from '@/app/demo/demo-data';
+import { withRouteMessages } from '@/i18n/RouteMessages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav');
   return { title: t('sleep') };
 }
 
-export default async function DemoSleepPage() {
+async function DemoSleepPage() {
   const { range, today, source } = await demoContext();
   const [records, previous] = await Promise.all([
     source.sleep(range, { withText: true }),
@@ -25,3 +26,5 @@ export default async function DemoSleepPage() {
     />
   );
 }
+
+export default withRouteMessages('demo/(shell)/sono', DemoSleepPage);
