@@ -54,7 +54,8 @@ vi.mock('@/app/(app)/inicio/actions', () => ({
 const TODAY = '2026-10-07';
 const range: DateRange = { from: addDays(TODAY, -29), to: TODAY };
 const source = createDemoSource(generateDemoData(TODAY, 'America/Sao_Paulo'));
-const UNIT_VALUE = /\d+(,\d+)?\s?(kg|cm|kcal)\b/;
+// Sem `` no fim: "68,4 kgFaixa" (parágrafos colados no textContent) também conta (revisão de privacidade da 9d).
+const UNIT_VALUE = /\d+(,\d+)?\s?(kg|cm|kcal)(?![a-zà-ú])/;
 
 const body: BodyRecord[] = [
   {

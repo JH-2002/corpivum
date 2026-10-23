@@ -18,8 +18,9 @@ export interface TextFieldProps
   label: string;
   hint?: string;
   error?: string;
-  /** Exemplo de formato (9d): "Ex.: 82,5 cm". */
+  /** Exemplo (9d): "Ex.: 45 min"; com `formatOnly`, "Formato: 12,3 cm". */
   example?: string;
+  formatOnly?: boolean;
 }
 
 /**
@@ -36,19 +37,20 @@ export function TextField({
   what,
   howTo,
   example,
+  formatOnly,
   ...props
 }: TextFieldProps) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
-  const help = { what, howTo, example, unit };
+  const help = { what, howTo, example, formatOnly, unit };
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       <label htmlFor={id} className="text-sm font-semibold">
         {label}
         <UnitLabel unit={unit} />
       </label>
-      <FieldHelp id={id} {...help} />
+      <FieldHelp id={id} label={label} {...help} />
       {hint ? (
         <p id={hintId} className="text-sm text-fg-muted">
           {hint}

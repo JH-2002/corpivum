@@ -21,9 +21,12 @@ export function BodyForm({
   values,
   maxDateTime,
   example = false,
+  hideExamples = false,
 }: {
   values: BodyFormValues;
   maxDateTime: string;
+  /** Modo privacidade: sem exemplo numérico perto de "Peso" e "Cintura" (revisão de privacidade da 9d, LEG-M06). */
+  hideExamples?: boolean;
   /** Exemplo da demo (ADR-0047): o `<form>` sai sem a server action e não envia nada. */
   example?: boolean;
 }) {
@@ -61,7 +64,8 @@ export function BodyForm({
             unit={MEASURE_UNITS[field]}
             what={t(`help.${field}.what`)}
             howTo={t(`help.${field}.how`)}
-            example={t(`help.${field}.example`)}
+            example={hideExamples ? undefined : t(`help.${field}.example`)}
+            formatOnly
             hint={t('form.range', { min: BODY_RANGES[field][0], max: BODY_RANGES[field][1] })}
             defaultValue={values[field]?.toString().replace('.', ',') ?? ''}
             error={err[field]}

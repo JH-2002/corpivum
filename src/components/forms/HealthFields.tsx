@@ -84,7 +84,7 @@ export function SelectField({
         onChange={onValueChange}
         describedBy={describedBy(id, hint, error, { what })}
         invalid={Boolean(error)}
-        help={<FieldHelp id={id} what={what} howTo={howTo} />}
+        help={<FieldHelp id={id} label={label} what={what} howTo={howTo} />}
       />
       <Described id={id} hint={hint} error={error} />
     </div>

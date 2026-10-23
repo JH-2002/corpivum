@@ -216,7 +216,9 @@ test('campo explicado (9d): unidade, exemplo e "Como medir" pelo teclado, sem vi
     const form = page.locator('#novo');
     const waist = form.getByLabel('Cintura, em centímetros');
     await expect(waist).toBeVisible();
-    await expect(waist).toHaveAccessibleDescription(/Circunferência da cintura\..*Ex\.: 82,5 cm/);
+    await expect(waist).toHaveAccessibleDescription(
+      /Circunferência da cintura\..*Formato: 12,3 cm/,
+    );
     // Sufixo visual da unidade dentro do campo.
     await expect(waist.locator('xpath=following-sibling::span[1]')).toHaveText('cm');
     // "Como medir" fecha por padrão e abre com Enter, mesmo com os campos do exemplo desativados.

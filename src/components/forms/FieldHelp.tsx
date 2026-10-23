@@ -16,6 +16,11 @@ export interface FieldHelpProps {
   howTo?: ReactNode;
   /** Só o número ou o texto do exemplo; "Ex.:" e a unidade são acrescentados aqui. */
   example?: string;
+  /**
+   * O exemplo mostra só o formato ("Formato: 12,3 cm"), não um valor plausível: nas medidas do corpo, um número
+   * realista poderia ser lido como referência de corpo (LEG-M06; revisão de privacidade da 9d).
+   */
+  formatOnly?: boolean;
   unit?: FieldUnit;
 }
 
@@ -62,7 +67,19 @@ export function UnitSuffix({ unit }: { unit?: FieldUnit }) {
   );
 }
 
-export function FieldHelp({ id, what, howTo, example, unit }: FieldHelpProps & { id: string }) {
+export function FieldHelp({
+  id,
+  label,
+  what,
+  howTo,
+  example,
+  formatOnly,
+  unit,
+}: FieldHelpProps & {
+  id: string;
+  /** Nome do campo, para o "Como medir" não se repetir igual no leitor de tela (WCAG 2.4.6). */
+  label?: string;
+}) {
   const t = useTranslations('fields');
   if (!what && !howTo && !example) return null;
   return (
@@ -76,13 +93,14 @@ export function FieldHelp({ id, what, howTo, example, unit }: FieldHelpProps & {
         <details className="text-sm" data-field-how="">
           <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">
             {t('howTo')}
+            {label ? <span className="sr-only">: {label}</span> : null}
           </summary>
           <p className="pb-1 text-fg-muted">{howTo}</p>
         </details>
       ) : null}
       {example ? (
         <p id={`${id}-example`} className="text-sm text-fg-muted">
-          {t('example', { value: withUnit(example, unit) })}
+          {t(formatOnly ? 'format' : 'example', { value: withUnit(example, unit) })}
         </p>
       ) : null}
     </>

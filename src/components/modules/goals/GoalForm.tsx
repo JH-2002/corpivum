@@ -96,7 +96,6 @@ export function GoalForm({
             ? {
                 unit: 'min' as const,
                 what: t('help.targetSleep.what'),
-                example: t('help.targetSleep.example'),
               }
             : { what: t('help.target.what', { unit: t(`units.${metric}`) }) })}
           defaultValue={values.targetValue ?? ''}

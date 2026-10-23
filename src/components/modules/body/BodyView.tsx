@@ -95,7 +95,11 @@ export function BodyView({
           {t('newTitle')}
         </h2>
         {own ? (
-          <BodyForm maxDateTime={maxDateTime} values={{ measuredAt: maxDateTime, ...empty }} />
+          <BodyForm
+            maxDateTime={maxDateTime}
+            hideExamples={hidden}
+            values={{ measuredAt: maxDateTime, ...empty }}
+          />
         ) : (
           <ExampleForm publicDemo={mode === 'publicDemo'}>
             {/* Exemplo com a última medição da pessoa fictícia (nada de meta, LEG-M07). */}

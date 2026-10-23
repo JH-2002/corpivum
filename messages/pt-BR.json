@@ -1040,7 +1040,7 @@
       },
       "twinHero": {
         "title": "Seu corpo em 3D",
-        "body": "O modelo usa só as circunferências informadas. Escolha uma região para ver a medida, a data e quanto ela variou no período. Não é avaliação corporal."
+        "body": "O modelo usa só as circunferências informadas. Escolha uma região para ver os detalhes dela no período. Não é avaliação corporal."
       },
       "summary": {
         "title": "Resumo do período",
@@ -1329,7 +1329,7 @@
     },
     "form": {
       "measuredAt": "Data da medição",
-      "hint": "Preencha só o que você mediu. Use vírgula para decimais. Os exemplos mostram só o formato do número.",
+      "hint": "Preencha só o que você mediu. Use vírgula para decimais.",
       "range": "Faixa aceita: de {min} a {max}.",
       "save": "Salvar medição",
       "update": "Salvar alterações"
@@ -1341,42 +1341,42 @@
       "weightKg": {
         "what": "Seu peso na balança.",
         "how": "De preferência na mesma balança, num horário parecido e com roupas leves, para os registros serem comparáveis entre si.",
-        "example": "68,4"
+        "example": "12,3"
       },
       "heightCm": {
         "what": "Sua altura. Muda pouco: basta registrar de vez em quando.",
         "how": "Sem calçado, de costas para a parede e com os calcanhares encostados nela. Marque o topo da cabeça na parede e meça do chão até a marca.",
-        "example": "170"
+        "example": "12,3"
       },
       "waistCm": {
         "what": "Circunferência da cintura.",
-        "how": "fita na horizontal, na parte mais estreita entre as costelas e o quadril, depois de soltar o ar.",
-        "example": "82,5"
+        "how": "Fita na horizontal, na parte mais estreita entre as costelas e o quadril, depois de soltar o ar.",
+        "example": "12,3"
       },
       "hipCm": {
         "what": "Circunferência do quadril.",
-        "how": "fita na horizontal, na parte mais larga dos glúteos, com os pés juntos.",
-        "example": "98"
+        "how": "Fita na horizontal, na parte mais larga dos glúteos, com os pés juntos.",
+        "example": "12,3"
       },
       "armCm": {
         "what": "Circunferência do braço.",
-        "how": "no meio do braço, entre o ombro e o cotovelo, com o braço relaxado ao lado do corpo.",
-        "example": "30,5"
+        "how": "No meio do braço, entre o ombro e o cotovelo, com o braço relaxado ao lado do corpo.",
+        "example": "12,3"
       },
       "thighCm": {
         "what": "Circunferência da coxa.",
-        "how": "fita na horizontal, logo abaixo da virilha, na parte mais alta da coxa.",
-        "example": "55"
+        "how": "Fita na horizontal, logo abaixo da virilha, na parte mais alta da coxa.",
+        "example": "12,3"
       },
       "chestCm": {
         "what": "Circunferência do peito.",
-        "how": "fita na horizontal, passando pelos mamilos, sem apertar.",
-        "example": "95"
+        "how": "Fita na horizontal, passando pelos mamilos, sem apertar.",
+        "example": "12,3"
       },
       "bodyFatPct": {
         "what": "Percentual de gordura, se você tiver esse número de um aparelho ou de um exame. O app não calcula esse valor.",
         "how": "Copie o número que o aparelho ou o exame informou, do jeito que aparece lá.",
-        "example": "24,5"
+        "example": "12,3"
       }
     },
     "nextStep": "Use o formulário “Registrar peso e medidas” acima. Preencha só o que você mediu; cada campo explica como medir."
@@ -1729,8 +1729,7 @@
         "what": "O valor que você quer acompanhar, na unidade indicada: {unit}."
       },
       "targetSleep": {
-        "what": "A média de sono por noite que você quer acompanhar, em minutos: 450 minutos são 7 h 30 min.",
-        "example": "450"
+        "what": "A média de sono por noite que você quer acompanhar, em minutos: 60 minutos são 1 h, e 90 minutos, 1 h 30 min."
       },
       "habit": {
         "what": "Qual dos seus hábitos a meta acompanha."
@@ -2001,6 +2000,7 @@
       "kcal": "em quilocalorias",
       "min": "em minutos",
       "km": "em quilômetros"
-    }
+    },
+    "format": "Formato: {value}"
   }
 }

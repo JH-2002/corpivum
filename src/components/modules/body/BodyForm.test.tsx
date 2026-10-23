@@ -31,7 +31,7 @@ describe('formulário de medidas: campo explicado (9d; protocolo do modelo 3D, A
       const input = screen.getByLabelText(label);
       expect(input).toHaveAccessibleName(/, em centímetros$/);
       expect(input).toHaveAccessibleDescription(/^Circunferência d/);
-      expect(input).toHaveAccessibleDescription(/Ex\.: [\d,]+ cm/);
+      expect(input).toHaveAccessibleDescription(/Formato: 12,3 cm/);
       expect(input).toHaveAccessibleDescription(/Faixa aceita: de \d+ a \d+/);
       const field = input.closest('div.flex-col') as HTMLElement;
       const details = within(field).getByText('Como medir').closest('details');
