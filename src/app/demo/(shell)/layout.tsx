@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { ViewTransition, type ReactNode } from 'react';
 import { BottomNav } from '@/components/shell/BottomNav';
+import { PAGE_TRANSITION } from '@/components/shell/page-transition';
 import { Header } from '@/components/shell/Header';
 import { QuickLogDialog } from '@/components/shell/QuickLogDialog';
 import { ShellProvider } from '@/components/shell/ShellProvider';
@@ -34,8 +35,8 @@ export default async function DemoShellLayout({ children }: { children: ReactNod
               className="flex-1 px-4 py-6 pb-24 outline-none md:pb-6 lg:px-6"
             >
               <div className="mx-auto w-full max-w-6xl">
-                {/* Troca de página com esmaecimento curto (9f, ADR-0055); direta com "Reduzir animações". */}
-                <ViewTransition>{children}</ViewTransition>
+                {/* Troca de página pelo menu com esmaecimento curto (9f, ADR-0055); direta com "Reduzir animações". */}
+                <ViewTransition default={PAGE_TRANSITION}>{children}</ViewTransition>
               </div>
             </main>
             <footer className="flex flex-col gap-1 border-t border-border px-4 pt-4 pb-24 text-xs text-fg-muted md:pb-4 lg:px-6">

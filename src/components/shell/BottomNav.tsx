@@ -15,6 +15,7 @@ import {
   type ShellVariant,
 } from './nav-config';
 import { useShell } from './ShellProvider';
+import { PAGE_TRANSITION_TYPE } from './page-transition';
 
 const itemClass =
   'flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-xs';
@@ -34,6 +35,7 @@ function BottomLink({
     <li className="flex flex-1">
       <Link
         href={href}
+        transitionTypes={[PAGE_TRANSITION_TYPE]}
         aria-current={active ? 'page' : undefined}
         className={cn(itemClass, active ? 'font-semibold text-primary' : 'text-fg-muted')}
       >
