@@ -6,6 +6,7 @@ import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodSummary } from '@/components/insights/PeriodInsights';
 import { formatGoalValue } from '@/components/modules/goals/goal-value';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
+import { OpenQuickLogButton } from '@/components/shell/OpenQuickLogButton';
 import { StateView } from '@/components/ui/StateView';
 import { WeeklyList } from '@/components/health/WeeklyList';
 import { cn } from '@/lib/cn';
@@ -46,6 +47,7 @@ export function TimelineView({
   filters?: boolean;
 }) {
   const t = useTranslations('timeline');
+  const ts = useTranslations('states');
   const tm = useTranslations('privacyMode');
   const tn = useTranslations('nutrition');
   const ta = useTranslations('activity');
@@ -152,7 +154,15 @@ export function TimelineView({
       ) : null}
 
       {days.length === 0 ? (
-        <StateView state="no-data" />
+        <StateView
+          state="no-data"
+          nextStep={mode === 'own' ? t('nextStep') : ts('nextStepDemo')}
+          action={
+            mode === 'own' ? (
+              <OpenQuickLogButton>{t('nextStepAction')}</OpenQuickLogButton>
+            ) : undefined
+          }
+        />
       ) : (
         <section aria-labelledby="timeline-list" className="flex flex-col gap-4">
           <h2 id="timeline-list" className="text-base font-semibold">

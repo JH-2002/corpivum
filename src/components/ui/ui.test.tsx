@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { CONFIDENCE_LEVELS, ConfidenceBadge } from './ConfidenceBadge';
 import { IconButton } from './IconButton';
 import { SkipLink } from './SkipLink';
+import { NoRecords } from '@/components/health/NoRecords';
 import { StateView } from './StateView';
 
 describe('StateView', () => {
@@ -45,6 +46,33 @@ describe('StateView', () => {
     );
     expect(screen.getByRole('status')).toHaveTextContent('Dados parciais');
     expect(screen.getByText('conteúdo parcial')).toBeInTheDocument();
+  });
+});
+
+describe('próximo passo nos estados (9d)', () => {
+  it('sem dados e parcial dizem o próximo passo com rótulo em texto', () => {
+    const { unmount } = renderWithIntl(<StateView state="no-data" nextStep="Registre a noite." />);
+    expect(screen.getByRole('status')).toHaveTextContent('Próximo passo: Registre a noite.');
+    unmount();
+    renderWithIntl(
+      <StateView state="partial" nextStep="Registrar é opcional.">
+        <p>Conteúdo</p>
+      </StateView>,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Próximo passo: Registrar é opcional.');
+  });
+
+  it('na conta, leva ao formulário da página; na demo, sugere outro período, sem link', () => {
+    const { unmount } = renderWithIntl(<NoRecords mode="own" nextStep="Use o formulário." />);
+    expect(screen.getByRole('status')).toHaveTextContent('Próximo passo: Use o formulário.');
+    expect(screen.getByRole('link', { name: 'Ir para o formulário' })).toHaveAttribute(
+      'href',
+      '#novo',
+    );
+    unmount();
+    renderWithIntl(<NoRecords mode="publicDemo" nextStep="Use o formulário." />);
+    expect(screen.getByRole('status')).toHaveTextContent(/escolha outro período/);
+    expect(screen.queryByRole('link')).toBeNull();
   });
 });
 

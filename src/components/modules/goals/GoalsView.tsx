@@ -264,6 +264,7 @@ export function GoalsView({
           state="empty"
           emptyTitle={tp('emptyTitle')}
           emptyDescription={tp('emptyDescription')}
+          nextStep={own ? t('nextStep') : undefined}
         />
       ) : (
         <section aria-labelledby="goal-list" className="flex flex-col gap-3">

@@ -79,7 +79,10 @@
     "noDataTitle": "Sem registros neste período",
     "noDataDescription": "Escolha outro período ou faça um novo registro.",
     "partialTitle": "Dados parciais",
-    "partialDescription": "Faltam registros em parte do período. O que aparece aqui foi calculado só com os dados existentes."
+    "partialDescription": "Faltam registros em parte do período. O que aparece aqui foi calculado só com os dados existentes.",
+    "nextStepLabel": "Próximo passo:",
+    "nextStepDemo": "Na demonstração, escolha outro período no topo da tela para ver os registros de exemplo.",
+    "goToForm": "Ir para o formulário"
   },
   "badges": {
     "label": "Origem do dado: {badge}",
@@ -99,7 +102,10 @@
       "title": "Seu estado atual",
       "emptyTitle": "Boas-vindas ao %PRODUTO%",
       "emptyDescription": "Quando você registrar sono, hábitos ou medidas, seu resumo aparece aqui. Leva poucos segundos.",
-      "cta": "Fazer o primeiro registro"
+      "cta": "Fazer o primeiro registro",
+      "emptyNext": "Comece por um tema só, como uma noite de sono ou um hábito. O resto pode ficar para depois.",
+      "noDataNext": "Escolha outro período no topo da tela ou registre algo de hoje.",
+      "partialNext": "Os temas sem registro aparecem como “sem dados”. Registrar neles é opcional."
     },
     "sleep": {
       "title": "Sono",
@@ -1140,7 +1146,8 @@
         "what": "Em quantos dias da semana, quaisquer que sejam.",
         "example": "3"
       }
-    }
+    },
+    "nextStep": "Crie um hábito no formulário acima. Depois, é só marcar os dias em que ele aconteceu."
   },
   "demo": {
     "createAccount": "Criar conta",
@@ -1277,7 +1284,8 @@
       "note": {
         "what": "Guardada cifrada no servidor; não aparece para outras pessoas no app."
       }
-    }
+    },
+    "nextStep": "Use o formulário “Registrar sono” acima para anotar a última noite. Basta o horário de deitar e de acordar."
   },
   "body": {
     "newTitle": "Registrar peso e medidas",
@@ -1354,7 +1362,8 @@
         "how": "Copie o número que o aparelho ou o exame informou, do jeito que aparece lá.",
         "example": "24,5"
       }
-    }
+    },
+    "nextStep": "Use o formulário “Registrar peso e medidas” acima. Preencha só o que você mediu; cada campo explica como medir."
   },
   "twin": {
     "title": "Corpo 3D",
@@ -1452,7 +1461,8 @@
         },
         "whatToDo": "Compare cada medida com ela mesma. Mudanças pequenas entre duas datas são comuns e podem vir da própria forma de medir."
       }
-    }
+    },
+    "nextStep": "Registre circunferências em Corpo para o modelo usar a sua forma. Cada campo explica como medir."
   },
   "guardrails": {
     "title": "O app não acompanha esta meta",
@@ -1554,7 +1564,8 @@
       "note": {
         "what": "Guardada cifrada no servidor."
       }
-    }
+    },
+    "nextStep": "Use o formulário acima para registrar uma refeição. Basta o tipo e o horário; o resto é opcional."
   },
   "activity": {
     "intro": "O app registra e descreve as suas atividades. Ele não monta treino nem sugere carga ou série.",
@@ -1637,7 +1648,8 @@
       "note": {
         "what": "Guardada cifrada no servidor."
       }
-    }
+    },
+    "nextStep": "Use o formulário acima para registrar uma atividade. Basta o tipo e a duração."
   },
   "goals": {
     "intro": "Metas no seu ritmo, comparadas só com você mesmo. Dá para ajustar, arquivar ou excluir quando quiser.",
@@ -1710,7 +1722,8 @@
       "targetDay": {
         "what": "Até quando a meta vale. Opcional."
       }
-    }
+    },
+    "nextStep": "Crie uma meta no formulário acima, escolhendo o que acompanhar nos seus registros."
   },
   "reminders": {
     "title": "Lembretes",
@@ -1794,7 +1807,9 @@
       "meal": "Alimentação",
       "water": "Alimentação",
       "milestone": "Marco"
-    }
+    },
+    "nextStep": "Use “Registrar” para anotar sono, medidas, refeições, atividades ou hábitos. Cada registro aparece aqui, no dia dele.",
+    "nextStepAction": "Registrar"
   },
   "policyNotice": {
     "title": "{count, plural, one {Atualizamos um documento} other {Atualizamos documentos}}",

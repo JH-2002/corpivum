@@ -200,6 +200,7 @@ export function Dashboard({
         state="empty"
         emptyTitle={tp('emptyTitle')}
         emptyDescription={tp('emptyDescription')}
+        nextStep={tp('emptyNext')}
         action={emptyAction}
       />
     );
@@ -207,7 +208,7 @@ export function Dashboard({
   if (data.state === 'no-data') {
     return (
       <div className="flex flex-col gap-6">
-        <StateView state="no-data" action={emptyAction} />
+        <StateView state="no-data" nextStep={tp('noDataNext')} action={emptyAction} />
         {data.todayHabits.length > 0 ? <TodayHabits data={data} mode={mode} links={links} /> : null}
       </div>
     );
@@ -391,5 +392,11 @@ export function Dashboard({
     </div>
   );
 
-  return data.state === 'partial' ? <StateView state="partial">{content}</StateView> : content;
+  return data.state === 'partial' ? (
+    <StateView state="partial" nextStep={tp('partialNext')}>
+      {content}
+    </StateView>
+  ) : (
+    content
+  );
 }

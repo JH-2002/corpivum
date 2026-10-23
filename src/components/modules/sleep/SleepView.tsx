@@ -2,6 +2,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { deleteSleepAction } from '@/app/(app)/sono/actions';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { ExampleForm } from '@/components/forms/ExampleForm';
+import { NoRecords } from '@/components/health/NoRecords';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatDecimal, formatDuration } from '@/components/health/format';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
@@ -9,7 +10,6 @@ import type { HealthMode } from '@/components/health/HealthPage';
 import { StatTile } from '@/components/health/StatTile';
 import { WeeklyList } from '@/components/health/WeeklyList';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
-import { StateView } from '@/components/ui/StateView';
 import { addDays, groupByWeek, toLocalDateTime } from '@/lib/dates';
 import { sleepInsights } from '@/modules/insights';
 import type { DateRange } from '@/lib/period';
@@ -96,7 +96,7 @@ export function SleepView({
       </section>
 
       {records.length === 0 ? (
-        <StateView state="no-data" />
+        <NoRecords mode={mode} nextStep={t('nextStep')} />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

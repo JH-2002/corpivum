@@ -34,6 +34,7 @@ export function TwinBodyView({
   hidden?: boolean;
 }) {
   const t = useTranslations('disclaimer');
+  const tw = useTranslations('twin');
   const tn = useTranslations('nav');
   const demo = mode !== 'own';
   const insights = hidden
@@ -49,6 +50,7 @@ export function TwinBodyView({
       {records.length === 0 ? (
         <StateView
           state="no-data"
+          nextStep={mode === 'own' ? tw('nextStep') : undefined}
           action={
             mode === 'own' ? (
               <Link href="/corpo#novo" className={buttonClasses('secondary')}>

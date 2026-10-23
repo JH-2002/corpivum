@@ -140,6 +140,7 @@ export function HabitsView({
           state="empty"
           emptyTitle={t('emptyTitle')}
           emptyDescription={t('emptyDescription')}
+          nextStep={own ? t('nextStep') : undefined}
         />
       ) : (
         <>

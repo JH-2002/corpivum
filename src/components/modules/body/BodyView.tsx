@@ -3,6 +3,7 @@ import { deleteBodyAction } from '@/app/(app)/corpo/actions';
 import { paddedDomain } from '@/components/charts/domain';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { ExampleForm } from '@/components/forms/ExampleForm';
+import { NoRecords } from '@/components/health/NoRecords';
 import { EntryActions } from '@/components/health/EntryActions';
 import { formatMeasure, MEASURE_UNITS } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
@@ -12,7 +13,6 @@ import { StatTile } from '@/components/health/StatTile';
 import { WeeklyList } from '@/components/health/WeeklyList';
 import { SupportNotice } from '@/components/health/SupportNotice';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
-import { StateView } from '@/components/ui/StateView';
 import { groupByWeek, toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { bodyInsights, bodyInsightsHidden } from '@/modules/insights';
@@ -109,7 +109,7 @@ export function BodyView({
       </section>
 
       {records.length === 0 ? (
-        <StateView state="no-data" />
+        <NoRecords mode={mode} nextStep={t('nextStep')} />
       ) : (
         <>
           {/* Estado atual (peso e altura). A variação do peso fica só nos Destaques, sem repetir (revisão da 9d0). */}
