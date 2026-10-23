@@ -207,6 +207,32 @@ test.describe('demo: navegação inferior igual à do app e "Registrar" em modo 
   });
 });
 
+test('campo explicado (9d): unidade, exemplo e "Como medir" pelo teclado, sem violações de axe', async ({
+  page,
+}) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/demo/corpo');
+    const form = page.locator('#novo');
+    const waist = form.getByLabel('Cintura, em centímetros');
+    await expect(waist).toBeVisible();
+    await expect(waist).toHaveAccessibleDescription(/Circunferência da cintura\..*Ex\.: 82,5 cm/);
+    // Sufixo visual da unidade dentro do campo.
+    await expect(waist.locator('xpath=following-sibling::span[1]')).toHaveText('cm');
+    // "Como medir" fecha por padrão e abre com Enter, mesmo com os campos do exemplo desativados.
+    const how = form.locator('details').filter({ hasText: 'parte mais estreita' });
+    await expect(how).not.toHaveAttribute('open');
+    await how.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    await expect(how).toHaveAttribute('open');
+    await expect(how.getByText(/parte mais estreita entre as costelas e o quadril/)).toBeVisible();
+    const results = await new AxeBuilder({ page }).include('#novo').withTags(WCAG_TAGS).analyze();
+    expect(results.violations).toEqual([]);
+    await page.keyboard.press('Enter');
+    await expect(how).not.toHaveAttribute('open');
+  }
+});
+
 test.describe('cartões com inclinação (ADR-0048)', () => {
   test('com mouse inclinam e voltam; "Reduzir animações" desliga e persiste', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });

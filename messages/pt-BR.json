@@ -1038,6 +1038,10 @@
         "title": "Boas-vindas ao seu painel",
         "body": "Em poucos passos, mostramos onde fica cada informação. Você pode pular agora e reabrir o tour quando quiser pelo menu de ajuda, no topo da tela."
       },
+      "twinHero": {
+        "title": "Seu corpo em 3D",
+        "body": "O modelo usa só as circunferências informadas. Escolha uma região para ver a medida, a data e quanto ela variou no período. Não é avaliação corporal."
+      },
       "summary": {
         "title": "Resumo do período",
         "body": "Aqui você lê, em poucas frases, o que aconteceu no período escolhido. O texto compara você só com o seu próprio histórico e também serve como alternativa aos gráficos."
@@ -1053,6 +1057,18 @@
       "chart": {
         "title": "Gráficos",
         "body": "Abra “Como ler este gráfico” para entender eixos, cores e linhas. Os mesmos valores aparecem em uma tabela logo abaixo do gráfico."
+      },
+      "register": {
+        "title": "Registrar",
+        "body": "O botão Registrar fica sempre à vista: no topo da tela no computador e no centro da barra de baixo no celular."
+      },
+      "quicklog": {
+        "title": "Escolha o que registrar",
+        "body": "Ao abrir Registrar, escolha o tema: sono, hábito, medidas, refeição, atividade ou meta. O formulário abre no primeiro campo. Na demonstração, os formulários são só de exemplo e nada é salvo."
+      },
+      "formField": {
+        "title": "Cada campo se explica",
+        "body": "Abaixo do nome de cada campo aparece o que ele é e um exemplo do formato. Nas medidas, “Como medir” mostra o passo a passo, e a unidade fica dentro do campo."
       },
       "period": {
         "title": "Período",

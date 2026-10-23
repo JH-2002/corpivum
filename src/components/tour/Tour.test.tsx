@@ -62,7 +62,7 @@ describe('tour do painel (ADR-0025)', () => {
     );
     await nextFrame();
     expect(dialog()?.open).toBe(true);
-    expect(screen.getByText('Passo 1 de 4')).toBeInTheDocument();
+    expect(screen.getByText('Passo 1 de 6')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Boas-vindas ao seu painel' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Próximo' })).toHaveFocus();
   });
@@ -75,7 +75,7 @@ describe('tour do painel (ADR-0025)', () => {
     );
     await nextFrame();
     await userEvent.click(screen.getByRole('button', { name: 'Próximo' }));
-    expect(screen.getByText('Passo 2 de 4')).toBeInTheDocument();
+    expect(screen.getByText('Passo 2 de 6')).toBeInTheDocument();
     expect(screen.getByText('Resumo').closest('[data-tour]')).toHaveAttribute('data-tour-active');
     await userEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     expect(screen.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeInTheDocument();
@@ -83,7 +83,7 @@ describe('tour do painel (ADR-0025)', () => {
       'data-tour-active',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Anterior' }));
-    expect(screen.getByText('Passo 2 de 4')).toBeInTheDocument();
+    expect(screen.getByText('Passo 2 de 6')).toBeInTheDocument();
   });
 
   it('Esc pula: fecha, lembra na conta e devolve o foco ao menu de ajuda', async () => {
@@ -108,12 +108,41 @@ describe('tour do painel (ADR-0025)', () => {
       </Page>,
     );
     await nextFrame();
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < 5; i += 1) {
       await userEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     }
     await userEvent.click(screen.getByRole('button', { name: 'Concluir' }));
     expect(dialog()?.open).toBe(false);
     expect(markTourSeenAction).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-tour-active]')).toBeNull();
+  });
+
+  it('passos da 9d: Registrar no alvo visível, escolha do tema e campo explicado', async () => {
+    renderWithIntl(
+      <Page>
+        <div data-tour="register" data-testid="topo">
+          <button type="button">Registrar</button>
+        </div>
+        <div data-tour="register" data-testid="barra">
+          <button type="button">Registrar</button>
+        </div>
+        <Tour autoStart persist="server" />
+      </Page>,
+    );
+    // No celular, o do topo está escondido (`hidden md:block`) e só o da barra de baixo tem caixa.
+    const barra = screen.getByTestId('barra');
+    barra.getClientRects = () => [new DOMRect(0, 0, 60, 60)] as unknown as DOMRectList;
+    await nextFrame();
+    for (let i = 0; i < 3; i += 1) {
+      await userEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    }
+    expect(screen.getByRole('heading', { name: 'Registrar' })).toBeInTheDocument();
+    expect(barra).toHaveAttribute('data-tour-active');
+    expect(screen.getByTestId('topo')).not.toHaveAttribute('data-tour-active');
+    await userEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    expect(screen.getByRole('heading', { name: 'Escolha o que registrar' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    expect(screen.getByRole('heading', { name: 'Cada campo se explica' })).toBeInTheDocument();
     expect(document.querySelector('[data-tour-active]')).toBeNull();
   });
 
