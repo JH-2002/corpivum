@@ -1,6 +1,21 @@
+import { randomBytes } from 'node:crypto';
 import type { FieldCipher, HealthRunner } from '@/modules/health/core';
 import { isoToDbDate } from '@/lib/dates';
 import type { DemoDataset } from './generator';
+
+/**
+ * UUIDv7 (RFC 9562), o mesmo formato do `@default(uuid(7))` do schema. Gerado aqui para hábitos e atividades
+ * irem em `createMany` com os filhos já ligados: sem um `create` por linha, a transação faz um número fixo de
+ * idas ao banco e não estoura o prazo de 5 s do Prisma com a máquina carregada.
+ */
+function uuidv7(): string {
+  const bytes = randomBytes(16);
+  bytes.writeUIntBE(Date.now(), 0, 6);
+  bytes[6] = 0x70 | ((bytes[6] ?? 0) & 0x0f);
+  bytes[8] = 0x80 | ((bytes[8] ?? 0) & 0x3f);
+  const hex = bytes.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 /**
  * Grava um conjunto SINTÉTICO (gerador da demo) na conta de uma pessoa fictícia, pelo mesmo caminho do
@@ -28,7 +43,22 @@ export async function seedSyntheticData(deps: {
       noteEnc: r.note ? await seal('sleep_entries', 'note_enc', r.note) : null,
     })),
   );
-  const habitNames = await Promise.all(data.habits.map((h) => seal('habits', 'name_enc', h.name)));
+  const habits = await Promise.all(
+    data.habits.map(async (h) => ({
+      key: h.id,
+      row: {
+        id: uuidv7(),
+        userId,
+        nameEnc: await seal('habits', 'name_enc', h.name),
+        frequency: h.frequency,
+        weekdays: h.weekdays,
+        timesPerWeek: h.timesPerWeek,
+        // Criado no primeiro dia do conjunto, para as métricas contarem o período inteiro.
+        createdAt: new Date(`${h.createdDay}T12:00:00Z`),
+      },
+    })),
+  );
+  const ids = new Map(habits.map((h) => [h.key, h.row.id]));
   const meals = await Promise.all(
     data.meals.map(async (r) => ({
       userId,
@@ -47,6 +77,7 @@ export async function seedSyntheticData(deps: {
   const activities = await Promise.all(
     data.activities.map(async (r) => ({
       entry: {
+        id: uuidv7(),
         userId,
         startedAt: new Date(r.startedAt),
         type: r.type,
@@ -85,23 +116,7 @@ export async function seedSyntheticData(deps: {
         })),
       })
     ).count;
-    const ids = new Map<string, string>();
-    for (const [i, h] of data.habits.entries()) {
-      const created = await tx.habit.create({
-        data: {
-          userId,
-          nameEnc: habitNames[i] ?? new Uint8Array(),
-          frequency: h.frequency,
-          weekdays: h.weekdays,
-          timesPerWeek: h.timesPerWeek,
-          // Criado no primeiro dia do conjunto, para as métricas contarem o período inteiro.
-          createdAt: new Date(`${h.createdDay}T12:00:00Z`),
-        },
-        select: { id: true },
-      });
-      ids.set(h.id, created.id);
-      rows += 1;
-    }
+    rows += (await tx.habit.createMany({ data: habits.map((h) => h.row) })).count;
     rows += (
       await tx.habitCheck.createMany({
         data: data.checks.flatMap((c) => {
@@ -116,17 +131,14 @@ export async function seedSyntheticData(deps: {
         data: data.water.map((w) => ({ userId, day: isoToDbDate(w.day), ml: w.ml })),
       })
     ).count;
-    for (const a of activities) {
-      const created = await tx.activityEntry.create({ data: a.entry, select: { id: true } });
-      rows += 1;
-      if (a.sets.length > 0) {
-        rows += (
-          await tx.strengthSet.createMany({
-            data: a.sets.map((x) => ({ ...x, userId, activityId: created.id })),
-          })
-        ).count;
-      }
-    }
+    rows += (await tx.activityEntry.createMany({ data: activities.map((a) => a.entry) })).count;
+    rows += (
+      await tx.strengthSet.createMany({
+        data: activities.flatMap((a) =>
+          a.sets.map((x) => ({ ...x, userId, activityId: a.entry.id })),
+        ),
+      })
+    ).count;
     const habitRef = (habitId: string | null) => {
       const id = habitId === null ? undefined : ids.get(habitId);
       return id ? { habitId: id, habitUserId: userId } : { habitId: null, habitUserId: null };

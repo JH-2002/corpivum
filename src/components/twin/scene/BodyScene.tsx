@@ -18,14 +18,17 @@ import type { BodyRegion } from '@/modules/twin';
 import { HoloLoading } from '../HoloLoading';
 import { bodyLayout, type ProfilePoint } from '../layout';
 import type { BodySceneProps, BodySceneStatus } from '../types';
-import { preloadAllBodyModels } from './assets';
+import { bodyModelArrived, preloadAllBodyModels } from './assets';
 import { BodyModelMesh } from './BodyModelMesh';
 import { CameraFit, cameraDistanceFor, regionHandlers, TwinCanvas, Turntable } from './common';
 import { HologramMaterial, regionHoloState, useHoloTheme } from './Hologram';
 
 const toVectors = (points: readonly ProfilePoint[]) => points.map(([r, y]) => new Vector2(r, y));
 
-/** Tempo máximo de espera pelo modelo `.glb` antes de mostrar o corpo em código (ADR-0028). */
+/**
+ * Tempo máximo de espera pela REDE do modelo `.glb` antes de mostrar o corpo em código (ADR-0028). Arquivo
+ * recebido, a decodificação segue sem prazo: falha dela cai no fallback pelo erro, não pelo tempo.
+ */
 export const MODEL_LOAD_TIMEOUT_MS = 10_000;
 /** Tempo para o navegador restaurar um contexto WebGL perdido; sem restauração, a tela vai para 2D. */
 export const CONTEXT_RESTORE_TIMEOUT_MS = 3_000;
@@ -79,16 +82,23 @@ export function BodyScene(props: BodySceneProps) {
   useEffect(() => preloadAllBodyModels(), []);
 
   useEffect(() => {
-    if (!file || status !== 'loading') return;
+    if (!asset || status !== 'loading') return;
     const timer = setTimeout(
       () =>
         setState((s) =>
-          s.file === file && s.status === 'ready' ? s : { file, status: 'timeout' },
+          s.file === asset.file && s.status === 'ready'
+            ? s
+            : { file: asset.file, status: 'timeout' },
         ),
       MODEL_LOAD_TIMEOUT_MS,
     );
+    // Chegou pela rede: sem tempo limite (a falha, se houver, vem pelo `ModelBoundary`).
+    bodyModelArrived(asset).then(
+      () => clearTimeout(timer),
+      () => undefined,
+    );
     return () => clearTimeout(timer);
-  }, [file, status]);
+  }, [asset, status]);
 
   useEffect(
     () => () => {

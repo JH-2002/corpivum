@@ -19,6 +19,8 @@ export interface BodyPart {
 
 const MODEL_PATH = /^\/models\/[a-z0-9-]+\.[0-9a-f]{8}\.glb$/;
 const cache = new Map<string, Promise<BodyPart[]>>();
+/** Chegada de cada arquivo pela rede, antes da decodificação: o tempo limite da cena mede só isso (`bodyModelArrived`). */
+const arrivals = new Map<string, Promise<void>>();
 
 const regionOf = (material: string): BodyRegion | null =>
   BODY_REGIONS.find((r) => material === `region_${r}`) ?? null;
@@ -29,11 +31,17 @@ export function loadBodyParts(asset: BodyAsset): Promise<BodyPart[]> {
   if (cached) return cached;
   if (!MODEL_PATH.test(asset.file)) return Promise.reject(new Error('caminho de modelo inválido'));
   // Sem cookie (PR3b-M1): o arquivo é público e o pedido não precisa nem deve ser ligado à conta.
+  const bytes = fetch(asset.file, { credentials: 'omit' }).then((res) => {
+    if (!res.ok) throw new Error('modelo indisponível');
+    return res.arrayBuffer();
+  });
+  // Só o sinal de chegada, não os bytes: o buffer fica livre depois da decodificação.
+  arrivals.set(
+    asset.file,
+    bytes.then(() => undefined),
+  );
   const promise = Promise.all([
-    fetch(asset.file, { credentials: 'omit' }).then((res) => {
-      if (!res.ok) throw new Error('modelo indisponível');
-      return res.arrayBuffer();
-    }),
+    bytes,
     // O decodificador compila WebAssembly ao carregar: importado só quando há modelo, que é quando a CSP
     // inclui 'wasm-unsafe-eval' (PR3b-B1).
     import('three/addons/libs/meshopt_decoder.module.js'),
@@ -60,6 +68,16 @@ export function loadBodyParts(asset: BodyAsset): Promise<BodyPart[]> {
     });
   cache.set(asset.file, promise);
   return promise;
+}
+
+/**
+ * Resolve quando o arquivo chega pela rede, antes da decodificação e do envio à GPU. Com WebGL por software ou
+ * CPU ocupada, decodificar demora sem que falte nada: o tempo limite da cena (`MODEL_LOAD_TIMEOUT_MS`) vale
+ * só para a espera pela rede. Falha de rede ou de decodificação chega pela própria `loadBodyParts`.
+ */
+export function bodyModelArrived(asset: BodyAsset): Promise<void> {
+  void loadBodyParts(asset).catch(() => undefined);
+  return arrivals.get(asset.file) ?? Promise.reject(new Error('caminho de modelo inválido'));
 }
 
 /**

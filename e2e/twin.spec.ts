@@ -26,8 +26,9 @@ const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 /**
  * Espera o SINAL de modelo carregado (`data-twin-model`, gravado por `BodyModelMesh` quando o .glb é montado), não
- * um tempo fixo. O teto passa o prazo do próprio app para cair no corpo em código (`MODEL_LOAD_TIMEOUT_MS` = 10 s):
- * na CI o WebGL é por software e o 3D chega devagar. Um modelo errado falha logo pelo valor do atributo.
+ * um tempo fixo. O teto passa o prazo do próprio app para cair no corpo em código (`MODEL_LOAD_TIMEOUT_MS` = 10 s,
+ * só a espera pela rede; a decodificação com WebGL por software não conta). Um modelo errado falha logo pelo valor
+ * do atributo.
  */
 const MODEL_READY_MS = 25_000;
 function expectModel(canvas: Locator, model: 'feminine' | 'masculine') {
@@ -180,9 +181,10 @@ test.describe('demo público', () => {
       expect(all).toHaveLength(2);
       const models = collectModelRequests(page);
       // O início também baixa os dois modelos (depois da carga): pelos pedidos, o servidor não sabe qual
-      // corpo a pessoa vê.
+      // corpo a pessoa vê. Sinal real: a cena pede os dois ao montar, antes de desenhar o modelo da demo.
       await page.goto('/demo');
-      await expect.poll(() => [...new Set(models)].sort()).toEqual(all);
+      await expectModel(page.locator('[data-tour="twin-hero"] canvas'), DEMO_MODEL);
+      expect([...new Set(models)].sort()).toEqual(all);
 
       await page.goto('/demo/twin');
       const canvas = viewer(page).locator('canvas');
@@ -219,12 +221,13 @@ test.describe('demo público', () => {
       expect(models).toHaveLength(before);
 
       await page.reload();
+      // Primeiro o sinal do modelo desenhado (página hidratada, escolha lida); depois o seletor.
+      await expectModel(viewer(page).locator('canvas'), 'masculine');
       await expect(
         page
           .getByRole('group', { name: 'Modelo do corpo' })
           .getByRole('radio', { name: 'Masculino' }),
       ).toBeChecked();
-      await expectModel(viewer(page).locator('canvas'), 'masculine');
     });
     test.describe('carregamento do modelo (ADR-0028, revisão de carregamento)', () => {
       const status = (page: Page) => page.locator('[data-twin-status]').first();
