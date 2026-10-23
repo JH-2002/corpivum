@@ -13,7 +13,11 @@ test.use({ storageState: DEMO_TOUR_SEEN_STATE });
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
-test('o demo não cria sessão nem grava nada no banco', async ({ page, context }) => {
+// Projeto `isolado`: a contagem de linhas não pode disputar com testes que apagam contas.
+test('o demo não cria sessão nem grava nada no banco', { tag: '@isolado' }, async ({
+  page,
+  context,
+}) => {
   const start = new Date(Date.now() - 1000);
   for (const route of DEMO_ROUTES) {
     await page.goto(route.path);
