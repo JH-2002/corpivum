@@ -133,7 +133,8 @@ export function GoalsView({
           aria-label={title(goal)}
           className="h-3 w-full overflow-hidden rounded-full border border-border-strong bg-surface-muted"
         >
-          <div className="h-full bg-primary" style={{ width: `${percent}%` }} />
+          {/* Enche ao aparecer (9f); só metas de hábito, sono e atividade chegam aqui (peso e calorias, não). */}
+          <div className="hm-grow h-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
         <p className="tabular">
           {text} · {t('progress.barLabel', { percent })}

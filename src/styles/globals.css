@@ -144,8 +144,10 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 }
@@ -155,9 +157,183 @@
 [data-motion='reduced'] *::before,
 [data-motion='reduced'] *::after {
   animation-duration: 0.01ms !important;
+  animation-delay: 0s !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+  transition-delay: 0s !important;
   scroll-behavior: auto !important;
+}
+
+/*
+  Movimento e interatividade (9f, ADR-0055). Só CSS: nada aqui atrasa a primeira pintura nem o LCP (os efeitos
+  começam no hover, no clique ou depois da hidratação). Só `transform`, `opacity`, cores e sombra. Com "Reduzir
+  animações" (sistema ou app) as durações e atrasos vão a zero pelas regras acima, e os estados escondidos de
+  entrada são desfeitos abaixo. Hover só com mouse ou trackpad: nada disso aparece em telas de toque.
+*/
+@layer components {
+  /* Cartões e botões clicáveis: brilho e borda azul suave ao passar o mouse. */
+  .hm-hover {
+    transition-property: border-color, box-shadow, background-color, color, transform;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+  /* Linhas das listas (Timeline, refeições, noites, medições, sessões): destaque suave ao passar o mouse. */
+  .hm-row {
+    transition-property: border-color, background-color;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .hm-hover:hover:not(:disabled) {
+      border-color: var(--hm-hover-border);
+      box-shadow:
+        0 0 0 1px var(--hm-hover-border),
+        0 0 22px -6px var(--hm-hover-glow);
+    }
+    .hm-row:hover {
+      border-color: var(--hm-hover-border);
+      background-color: color-mix(in srgb, var(--hm-surface), var(--hm-primary) 5%);
+    }
+  }
+  /* Resposta ao pressionar (também no toque); sem ela com "Reduzir animações". */
+  .hm-press:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+@keyframes hm-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes hm-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+}
+@keyframes hm-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes hm-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes hm-spot {
+  from {
+    outline-color: transparent;
+    outline-offset: 14px;
+  }
+}
+
+/* "Ver mais": só as semanas e linhas novas entram, em sequência (`data-enter` + `--hm-enter-i` por semana). */
+[data-enter] > h3,
+[data-enter] .hm-row {
+  animation: hm-enter 280ms ease-out backwards;
+  animation-delay: calc(var(--hm-enter-i, 0) * 160ms);
+}
+[data-enter] li.hm-row:nth-child(2) {
+  animation-delay: calc(var(--hm-enter-i, 0) * 160ms + 40ms);
+}
+[data-enter] li.hm-row:nth-child(3) {
+  animation-delay: calc(var(--hm-enter-i, 0) * 160ms + 80ms);
+}
+[data-enter] li.hm-row:nth-child(4) {
+  animation-delay: calc(var(--hm-enter-i, 0) * 160ms + 120ms);
+}
+[data-enter] li.hm-row:nth-child(5) {
+  animation-delay: calc(var(--hm-enter-i, 0) * 160ms + 160ms);
+}
+[data-enter] li.hm-row:nth-child(6) {
+  animation-delay: calc(var(--hm-enter-i, 0) * 160ms + 200ms);
+}
+[data-enter] li.hm-row:nth-child(n + 7) {
+  animation-delay: calc(var(--hm-enter-i, 0) * 160ms + 240ms);
+}
+
+/* "Como medir", "Como ler este gráfico", origem: o conteúdo aberto entra suave. */
+details[open] > summary ~ * {
+  animation: hm-enter 200ms ease-out;
+}
+
+/* Marcar um hábito: pequeno "pulo" do ícone, só depois do clique (sem confete, sem número). */
+.hm-pop {
+  animation: hm-pop 260ms ease-out;
+}
+
+/* Barra de progresso de meta (hábito, sono, atividade; nunca peso nem calorias, LEG-M06/M07). */
+.hm-grow {
+  transform-origin: left;
+  animation: hm-grow 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms backwards;
+}
+
+/* Diálogo do tour: o conteúdo de cada passo esmaece; o destaque do alvo aparece se aproximando. */
+.hm-fade {
+  animation: hm-fade 200ms ease-out;
+}
+[data-tour-active] {
+  animation: hm-spot 320ms ease-out;
+}
+
+/*
+  Gráficos que se revelam ao entrar na tela (`useReveal`): da esquerda para a direita, ou só esmaecendo. O efeito
+  vai no filho: o contêiner observado fica inteiro (o IntersectionObserver do Chromium conta o `clip-path` do alvo).
+*/
+[data-reveal='draw'] > * {
+  transition: clip-path 900ms cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+[data-reveal='draw'][data-reveal-state='hidden'] > * {
+  clip-path: inset(0 100% 0 0);
+}
+[data-reveal='draw'][data-reveal-state='shown'] > * {
+  clip-path: inset(0 0 0 0);
+}
+[data-reveal='fade'] > * {
+  transition: opacity 500ms ease-out;
+}
+[data-reveal='fade'][data-reveal-state='hidden'] > * {
+  opacity: 0;
+}
+
+/* Transição entre páginas (`<ViewTransition>`): só esmaecimento curto. */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 200ms;
+}
+
+/* "Reduzir animações": nada de escala ao pressionar, nada escondido à espera de entrar, troca de página direta. */
+@media (prefers-reduced-motion: reduce) {
+  .hm-press:active {
+    transform: none;
+  }
+  [data-reveal-state='hidden'] > * {
+    clip-path: none !important;
+    opacity: 1 !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+[data-motion='reduced'] .hm-press:active {
+  transform: none;
+}
+[data-motion='reduced'] [data-reveal-state='hidden'] > * {
+  clip-path: none !important;
+  opacity: 1 !important;
+}
+[data-motion='reduced']::view-transition-group(*),
+[data-motion='reduced']::view-transition-old(*),
+[data-motion='reduced']::view-transition-new(*) {
+  animation: none !important;
 }
 
 /* Formulário de exemplo do demo (9b): campos e botão desativados continuam legíveis (contraste AA) e o botão

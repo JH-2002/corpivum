@@ -270,7 +270,7 @@ export function TwinHero({
                   aria-controls={panelId}
                   onClick={() => setSelected(r)}
                   className={cn(
-                    'inline-flex min-h-11 items-center rounded-md border px-3 text-sm font-semibold',
+                    'hm-hover hm-press inline-flex min-h-11 items-center rounded-md border px-3 text-sm font-semibold',
                     selected === r
                       ? 'border-primary bg-primary-soft text-primary-soft-fg'
                       : 'border-border-strong bg-surface hover:bg-surface-muted',
@@ -383,7 +383,7 @@ function HeroRegionPanel({
       ) : null}
       {series.length > 1 ? (
         <>
-          <Sparkline data={series} color="var(--hm-chart-1)" minSpan={4} />
+          <Sparkline data={series} color="var(--hm-chart-1)" minSpan={4} entrance="fade" />
           <p className="text-xs text-fg-muted">{th('sparkline', { count: series.length })}</p>
         </>
       ) : null}

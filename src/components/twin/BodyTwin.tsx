@@ -204,7 +204,7 @@ export function BodyTwin({
                     aria-controls={panelId}
                     onClick={() => select(r)}
                     className={cn(
-                      'inline-flex min-h-11 items-center rounded-md border px-3 text-sm font-semibold',
+                      'hm-hover hm-press inline-flex min-h-11 items-center rounded-md border px-3 text-sm font-semibold',
                       selected === r
                         ? 'border-primary bg-primary-soft text-primary-soft-fg'
                         : 'border-border-strong bg-surface hover:bg-surface-muted',

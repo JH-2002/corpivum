@@ -72,6 +72,10 @@
   /* Holograma do twin (ADR-0028): mistura aditiva sobre o fundo escuro. */
   /* Brilho do cartão com inclinação (ADR-0048): azul da marca, translúcido, atrás do texto. */
   --hm-tilt-glow: rgb(74 168 255 / 0.16);
+  /* Brilho e borda ao passar o mouse em cartões e botões clicáveis (9f, ADR-0055). */
+  --hm-hover-glow: rgb(74 168 255 / 0.28);
+  --hm-hover-border: rgb(74 168 255 / 0.55);
+  --hm-row-hover: rgb(74 168 255 / 0.05);
   --hm-holo-fill: #38bdf8;
   --hm-holo-rim: #a5e8ff;
   --hm-holo-scan: #7dd3fc;

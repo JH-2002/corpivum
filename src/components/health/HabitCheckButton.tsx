@@ -2,6 +2,7 @@
 
 import { Check, Circle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { setHabitCheckAction } from '@/app/(app)/habitos/actions';
 import { cn } from '@/lib/cn';
@@ -9,6 +10,8 @@ import { cn } from '@/lib/cn';
 function Toggle({ done, name, date }: { done: boolean; name: string; date?: string }) {
   const t = useTranslations('habits');
   const { pending } = useFormStatus();
+  // O "pulo" do ícone só depois do clique desta pessoa, nunca ao carregar a página (9f, ADR-0055).
+  const [clicked, setClicked] = useState(false);
   const label =
     date !== undefined
       ? t(done ? 'uncheckDayLabel' : 'checkDayLabel', { name, date })
@@ -19,8 +22,9 @@ function Toggle({ done, name, date }: { done: boolean; name: string; date?: stri
       disabled={pending}
       aria-pressed={done}
       aria-label={label}
+      onClick={() => setClicked(true)}
       className={cn(
-        'inline-flex items-center rounded-md border text-sm font-semibold',
+        'hm-hover hm-press inline-flex items-center rounded-md border text-sm font-semibold',
         date !== undefined ? 'size-8 justify-center sm:size-10' : 'min-h-11 gap-2 px-3',
         done
           ? 'border-success bg-success-soft text-success'
@@ -28,7 +32,7 @@ function Toggle({ done, name, date }: { done: boolean; name: string; date?: stri
       )}
     >
       {done ? (
-        <Check className="size-4" aria-hidden="true" />
+        <Check className={cn('size-4', clicked && 'hm-pop')} aria-hidden="true" />
       ) : (
         <Circle className="size-4" aria-hidden="true" />
       )}

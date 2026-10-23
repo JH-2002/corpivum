@@ -150,6 +150,7 @@ export function BodyView({
           ) : (
             <>
               <TimeChart
+                entrance="fade"
                 title={t('weightChart')}
                 badge={level('INFORMADO')}
                 guide="weight"
@@ -174,6 +175,7 @@ export function BodyView({
                 // eixo em cm com faixa mínima de ±2 cm. A tabela traz as medidas em si.
                 // Selo ESTIMADO: o desenho é uma diferença calculada; as medidas informadas estão na tabela.
                 <TimeChart
+                  entrance="fade"
                   title={t('girthChart')}
                   description={t('girthChartHint')}
                   badge={level('ESTIMADO')}
@@ -219,7 +221,10 @@ export function BodyView({
                   content: (
                     <ul className="flex flex-col gap-3">
                       {w.items.map(({ record: r, fields }) => (
-                        <li key={r.id} className="rounded-lg border border-border bg-surface p-4">
+                        <li
+                          key={r.id}
+                          className="hm-row rounded-lg border border-border bg-surface p-4"
+                        >
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <h4 className="font-semibold">{longDay(r.day)}</h4>
                             <ConfidenceBadge level={level('INFORMADO')} />
