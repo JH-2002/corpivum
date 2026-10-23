@@ -81,7 +81,8 @@ export function TimelineView({
       case 'habits':
         return t('items.habits', { count: item.done });
       case 'body': {
-        const parts: string[] = [t('items.body')];
+        // O rótulo da linha já diz "Corpo": aqui só os valores (nada de "Corpo: Medição do corpo").
+        const parts: string[] = [];
         if (item.weightKg !== null) {
           parts.push(t('items.bodyWeight', { weight: formatDecimal(item.weightKg) }));
         }
@@ -95,7 +96,11 @@ export function TimelineView({
             }),
           );
         }
-        if (item.otherFields > 0) parts.push(t('items.bodyOther', { count: item.otherFields }));
+        if (item.otherFields > 0) {
+          const key = item.weightKg !== null ? 'items.bodyOther' : 'items.bodyMeasures';
+          parts.push(t(key, { count: item.otherFields }));
+        }
+        if (parts.length === 0) parts.push(t('items.body'));
         if (hidden) parts.push(tm('valuesHidden'));
         return parts.join(' · ');
       }
@@ -166,12 +171,21 @@ export function TimelineView({
   );
 
   function dayItem(d: TimelineDay) {
+    // Um selo por cartão quando todas as linhas têm a mesma origem (na demo, sempre DEMO); se as origens
+    // diferem (registro INFORMADO e marco ESTIMADO no mesmo dia), cada linha leva o seu.
+    const levels = new Set(d.items.map(levelOf));
+    const cardLevel = levels.size === 1 ? [...levels][0] : undefined;
     return (
       <li key={d.day} className="rounded-lg border border-border bg-surface p-4">
-        <h4 className="font-semibold">
-          <time dateTime={d.day}>{longDay(d.day)}</time>
-        </h4>
-        <p className="text-sm text-fg-muted">{t('dayItems', { count: d.items.length })}</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h4 className="font-semibold">
+              <time dateTime={d.day}>{longDay(d.day)}</time>
+            </h4>
+            <p className="text-sm text-fg-muted">{t('dayItems', { count: d.items.length })}</p>
+          </div>
+          {cardLevel ? <ConfidenceBadge level={cardLevel} /> : null}
+        </div>
         <ul className="mt-2 flex flex-col gap-2">
           {d.items.map((item, i) => (
             <li
@@ -182,7 +196,7 @@ export function TimelineView({
                 <span className="font-semibold">{t(`kindLabels.${item.kind}`)}: </span>
                 <span className="tabular">{text(item)}</span>
               </p>
-              <ConfidenceBadge level={levelOf(item)} />
+              {cardLevel ? null : <ConfidenceBadge level={levelOf(item)} />}
             </li>
           ))}
         </ul>
