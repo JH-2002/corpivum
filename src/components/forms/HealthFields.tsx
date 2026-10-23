@@ -25,7 +25,9 @@ function FieldError({ id, error }: { id: string; error?: string }) {
 
 /** A dica entra na linha curta da explicação (`FieldHelp`, 9d1), não num parágrafo à parte. */
 function describedBy(id: string, error?: string, help: FieldHelpProps = {}): string | undefined {
-  return [...fieldHelpIds(id, help), error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined;
+  return (
+    [...fieldHelpIds(id, help), error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined
+  );
 }
 
 /**

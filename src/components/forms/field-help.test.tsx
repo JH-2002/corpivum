@@ -137,9 +137,16 @@ describe('campo explicado em todo formulário de registro (9d)', () => {
       const { container } = renderWithIntl(form);
       for (const how of container.querySelectorAll('details[data-field-how]')) {
         expect(how).not.toHaveAttribute('open');
-        const field = how.parentElement as HTMLElement;
-        const visible = [...field.querySelectorAll(':scope > p, :scope > div > p')].filter(
-          (p) => !p.closest('details') && !p.id.endsWith('-error'),
+      }
+      // Todo campo (bloco de rótulo + controle, ou fieldset): no máximo uma linha de ajuda visível fora do
+      // `<details>`, sem contar o erro e a cópia `sr-only` do exemplo.
+      const fields = container.querySelectorAll('form div.flex-col, form fieldset');
+      expect(fields.length).toBeGreaterThan(0);
+      for (const field of fields) {
+        if (field.querySelector('div.flex-col, fieldset')) continue; // só os blocos mais internos
+        const visible = [...field.querySelectorAll('p')].filter(
+          (p) =>
+            !p.closest('details') && !p.id.endsWith('-error') && !p.classList.contains('sr-only'),
         );
         expect(visible.length, field.textContent ?? '').toBeLessThanOrEqual(1);
       }

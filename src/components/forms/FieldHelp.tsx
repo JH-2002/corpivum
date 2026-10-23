@@ -35,7 +35,7 @@ function withUnit(value: string, unit?: FieldUnit): string {
 
 /**
  * Ids que descrevem o controle (`aria-describedby`): a linha curta (`-what`, ou `-hint` sem "o que é") e o
- * exemplo, que o leitor de tela lê mesmo com o `<details>` fechado. O "como medir" fica só no `<details>`.
+ * exemplo (cópia `sr-only` fora do `<details>`). O "como medir" fica só no `<details>`.
  */
 export function fieldHelpIds(id: string, help: FieldHelpProps): string[] {
   return [
@@ -89,6 +89,9 @@ export function FieldHelp({
   label?: string;
 }) {
   const t = useTranslations('fields');
+  const exampleText = example
+    ? t(formatOnly ? 'format' : 'example', { value: withUnit(example, unit) })
+    : null;
   return (
     <>
       {what || hint ? (
@@ -105,12 +108,22 @@ export function FieldHelp({
             {label ? <span className="sr-only">: {label}</span> : null}
           </summary>
           {howTo ? <p className="pb-1 text-fg-muted">{howTo}</p> : null}
-          {example ? (
-            <p id={`${id}-example`} className="pb-1 text-fg-muted">
-              {t(formatOnly ? 'format' : 'example', { value: withUnit(example, unit) })}
+          {/* Cópia visível; o leitor de tela lê a do `sr-only`, fora do `<details>` fechado. */}
+          {exampleText ? (
+            <p aria-hidden="true" className="pb-1 text-fg-muted">
+              {exampleText}
             </p>
           ) : null}
         </details>
+      ) : null}
+      {/*
+        Fora do `<details>`: nem todo navegador e leitor de tela descreve o campo com texto de um `<details>`
+        fechado (revisão de privacidade da 9d1).
+      */}
+      {exampleText ? (
+        <p id={`${id}-example`} className="sr-only">
+          {exampleText}
+        </p>
       ) : null}
     </>
   );

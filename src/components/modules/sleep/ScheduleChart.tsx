@@ -116,7 +116,11 @@ export function ScheduleChart({
       <ChartGuide id="sleepSchedule" badge={badge} />
       <div aria-hidden="true" className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} accessibilityLayer={false} margin={{ top: 12, right: 8, bottom: 4, left: -8 }}>
+          <BarChart
+            data={data}
+            accessibilityLayer={false}
+            margin={{ top: 12, right: 8, bottom: 4, left: -8 }}
+          >
             <CartesianGrid stroke="var(--hm-border)" strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="day"

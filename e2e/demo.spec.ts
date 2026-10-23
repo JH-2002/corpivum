@@ -225,7 +225,7 @@ test('campo explicado (9d): unidade, exemplo e "Como medir" pelo teclado, sem vi
     const how = form.locator('details').filter({ hasText: 'parte mais estreita' });
     await expect(how).not.toHaveAttribute('open');
     // Formulário leve (9d1): fechado, só a linha curta aparece; o exemplo fica dentro do "Como medir".
-    await expect(form.getByText('Formato: 12,3 cm').first()).toBeHidden();
+    await expect(how.getByText('Formato: 12,3 cm')).toBeHidden();
     await how.locator('summary').focus();
     await page.keyboard.press('Enter');
     await expect(how).toHaveAttribute('open');
