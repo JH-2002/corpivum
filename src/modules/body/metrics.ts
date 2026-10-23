@@ -40,6 +40,33 @@ export function change(records: BodyRecord[], field: BodyField): number | null {
   return first && last ? round(last.value - first.value, 1) : null;
 }
 
+/** Linha do gráfico de variação: o dia e, por campo, a diferença desde a primeira medição (`null` sem valor). */
+export type ChangeRow = { day: string } & Partial<Record<BodyField, number | null>>;
+
+/**
+ * Variação de cada campo desde a sua primeira medição no conjunto (cm ou kg): todas as séries partem de zero, e
+ * medidas de tamanhos diferentes (braço e quadril) cabem no mesmo eixo sem que a maior achate as outras.
+ */
+export function changeRows(
+  records: readonly BodyRecord[],
+  fields: readonly BodyField[],
+): ChangeRow[] {
+  const base = new Map<BodyField, number>();
+  return records.map((r) => {
+    const row: ChangeRow = { day: r.day };
+    for (const field of fields) {
+      const value = r[field];
+      if (value === null) {
+        row[field] = null;
+        continue;
+      }
+      if (!base.has(field)) base.set(field, value);
+      row[field] = round(value - base.get(field)!, 1);
+    }
+    return row;
+  });
+}
+
 /** IMC = peso / altura² (ESTIMADO). */
 export function bmi(weightKg: number | null, heightCm: number | null): number | null {
   if (!weightKg || !heightCm) return null;

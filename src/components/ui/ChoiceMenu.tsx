@@ -15,25 +15,47 @@ export interface ChoiceOption {
  * rádios nativos (`role="radiogroup"`, setas trocam, nome pelo rótulo). A opção atual tem preenchimento, peso e
  * check (a cor nunca é o único canal). Fecha com Esc (foco volta ao botão), clique fora ou foco saindo; pelo
  * teclado as setas não fecham, só o clique numa opção.
+ *
+ * Em formulário (`name`), os rádios levam o nome do campo e o valor marcado vai no envio, como num `<select>`;
+ * dentro de `<fieldset disabled>` (exemplo da demo), botão e rádios ficam desativados juntos. Sem `value`, guarda
+ * a escolha sozinho a partir de `defaultValue`.
  */
 export function ChoiceMenu({
   label,
   value,
+  defaultValue,
   options,
   onChange,
+  name,
+  describedBy,
+  invalid = false,
   className,
 }: {
   label: string;
-  value: string;
+  value?: string;
+  defaultValue?: string;
   options: readonly ChoiceOption[];
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
+  /** Nome do campo no envio do formulário. */
+  name?: string;
+  /** Ids da dica e do erro do campo: descrevem o botão e o grupo de opções (`aria-invalid` vai no grupo, onde vale). */
+  describedBy?: string;
+  invalid?: boolean;
   className?: string;
 }) {
   const ids = { label: useId(), list: useId() };
   const [open, setOpen] = useState(false);
+  const [own, setOwn] = useState(defaultValue ?? options[0]?.value ?? '');
+  // Novo `defaultValue` (o formulário passou a outro registro): a escolha volta a ele, como num `<select>`.
+  const [lastDefault, setLastDefault] = useState(defaultValue);
+  if (defaultValue !== lastDefault) {
+    setLastDefault(defaultValue);
+    setOwn(defaultValue ?? options[0]?.value ?? '');
+  }
+  const selectedValue = value ?? own;
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const current = options.find((o) => o.value === value) ?? options[0];
+  const current = options.find((o) => o.value === selectedValue) ?? options[0];
 
   useEffect(() => {
     if (!open) return;
@@ -42,12 +64,20 @@ export function ChoiceMenu({
       if (!root?.contains(event.target as Node)) setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
+      // Esc fecha; Enter numa opção também (dentro de formulário, o Enter num rádio enviaria o registro).
+      const onOption = event.target instanceof HTMLInputElement && root?.contains(event.target);
+      if (event.key !== 'Escape' && !(event.key === 'Enter' && onOption)) return;
+      event.preventDefault();
       setOpen(false);
       buttonRef.current?.focus();
     };
     const onFocusOut = (event: FocusEvent) => {
-      if (!root?.contains(event.relatedTarget as Node | null)) setOpen(false);
+      // Só fecha quando o foco vai para outro elemento fora daqui. O clique no rótulo de uma opção (que não recebe
+      // foco) leva o foco a um ancestral focável (`<main tabIndex={-1}>`) ou a lugar nenhum, e o clique ainda vai
+      // chegar à opção; clique fora já fecha pelo `pointerdown`.
+      const next = event.relatedTarget as Node | null;
+      if (!root || !next || root.contains(next) || next.contains(root)) return;
+      setOpen(false);
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -70,8 +100,12 @@ export function ChoiceMenu({
         aria-expanded={open}
         aria-controls={ids.list}
         aria-label={`${label}: ${current?.label ?? ''}`}
+        aria-describedby={describedBy}
         onClick={() => setOpen((v) => !v)}
-        className="tabular inline-flex min-h-11 items-center justify-between gap-2 rounded-md border border-border-strong bg-surface px-3 text-sm font-semibold hover:bg-surface-muted"
+        className={cn(
+          'tabular inline-flex min-h-11 items-center justify-between gap-2 rounded-md border bg-surface px-3 text-sm font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-surface',
+          invalid ? 'border-danger' : 'border-border-strong',
+        )}
       >
         {current?.label}
         <ChevronDown
@@ -83,13 +117,15 @@ export function ChoiceMenu({
         id={ids.list}
         role="radiogroup"
         aria-labelledby={ids.label}
+        aria-describedby={describedBy}
+        aria-invalid={invalid || undefined}
         className={cn(
           'absolute top-full left-0 z-40 mt-2 max-h-72 w-full min-w-56 flex-col gap-1 overflow-y-auto rounded-lg border border-border bg-surface p-1 shadow-lg',
           open ? 'flex' : 'hidden',
         )}
       >
         {options.map((option) => {
-          const selected = option.value === value;
+          const selected = option.value === current?.value;
           return (
             <label
               key={option.value}
@@ -103,11 +139,12 @@ export function ChoiceMenu({
             >
               <input
                 type="radio"
-                name={ids.list}
+                name={name ?? ids.list}
                 value={option.value}
                 checked={selected}
                 onChange={() => {
-                  onChange(option.value);
+                  if (value === undefined) setOwn(option.value);
+                  onChange?.(option.value);
                   if (lastInputWasPointer()) setOpen(false);
                 }}
                 className="sr-only"

@@ -1,3 +1,4 @@
+import { choiceButton } from './choice';
 import { createVerifiedUser, E2E_PASSWORD, e2eEmail, loginWithOwnIp } from './fixtures';
 import { expect, test, type Browser, type Locator, type Page } from '@playwright/test';
 
@@ -231,9 +232,25 @@ test.describe('fluxos críticos só com teclado (7d)', () => {
   }) => {
     const { context, page } = await freshPerson(browser, 'teclado-meta');
     await page.goto('/metas');
-    const metric = page.getByLabel('O que acompanhar');
+    // Seletor no estilo do app (9d0): Enter abre, Tab entra nas opções, as setas trocam e Enter confirma, sem
+    // enviar o formulário (o foco volta ao botão).
+    const metric = choiceButton(page, 'O que acompanhar');
     await tabTo(page, metric);
-    await metric.selectOption('weight_kg');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Tab');
+    const weight = page
+      .getByRole('radiogroup', { name: 'O que acompanhar', exact: true })
+      .locator('input[value="weight_kg"]');
+    for (let i = 0; i < 10 && !(await weight.isChecked()); i += 1) {
+      await page.keyboard.press('ArrowDown');
+    }
+    await expect(weight).toBeChecked();
+    await page.keyboard.press('Enter');
+    await expect(metric).toBeFocused();
+    await expect(metric).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('region', { name: 'Criar meta' }).getByRole('alert')).toHaveCount(
+      0,
+    );
     await tabTo(page, page.getByLabel('Alvo', { exact: true }), 5);
     await page.keyboard.type('40');
     await page.keyboard.press('Enter');

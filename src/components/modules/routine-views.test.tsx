@@ -111,6 +111,14 @@ describe('telas da rotina no modo demo', () => {
     );
     expectClean(tl.container.textContent ?? '');
     expect(screen.getByRole('link', { name: 'Tudo' })).toHaveAttribute('aria-current', 'page');
+    // Um selo DEMO por cartão de dia (não por linha), e a categoria não se repete no texto da linha.
+    const days = tl.container.querySelectorAll('ol > li');
+    expect(days.length).toBeGreaterThan(0);
+    for (const day of days) {
+      expect(day.querySelectorAll('[aria-label^="Origem"]')).toHaveLength(1);
+    }
+    expect(tl.container.textContent).not.toMatch(/(Sono|Alimentação|Corpo|Hábitos): /);
+    expect(tl.container.textContent).not.toMatch(/Água: |Medição do corpo/);
     tl.unmount();
 
     const reminders = await loadReminders(source);

@@ -1,11 +1,7 @@
 'use client';
 
-import {
-  useId,
-  type ReactNode,
-  type SelectHTMLAttributes,
-  type TextareaHTMLAttributes,
-} from 'react';
+import { useId, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { ChoiceMenu } from '@/components/ui/ChoiceMenu';
 import { cn } from '@/lib/cn';
 
 /**
@@ -42,6 +38,10 @@ function describedBy(id: string, hint?: ReactNode, error?: string): string | und
   );
 }
 
+/**
+ * Escolha de uma opção no estilo do app (9d0): o `ChoiceMenu` dos seletores, no lugar do `<select>` nativo, que
+ * abria a lista do sistema com outra aparência. O valor vai no envio do formulário pelo `name`, como antes.
+ */
 export function SelectField({
   name,
   label,
@@ -49,34 +49,33 @@ export function SelectField({
   error,
   options,
   className,
-  ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & {
+  value,
+  defaultValue,
+  onValueChange,
+}: {
   name: string;
   label: string;
   hint?: ReactNode;
   error?: string;
   options: ReadonlyArray<{ value: string; label: string }>;
+  className?: string;
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
 }) {
   const id = useId();
   return (
     <div className={cn('flex flex-col gap-1', className)}>
-      <label htmlFor={id} className="text-sm font-semibold">
-        {label}
-      </label>
-      <select
-        id={id}
+      <ChoiceMenu
         name={name}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, hint, error)}
-        className={controlClass}
-        {...props}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        label={label}
+        options={options}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={onValueChange}
+        describedBy={describedBy(id, hint, error)}
+        invalid={Boolean(error)}
+      />
       <Described id={id} hint={hint} error={error} />
     </div>
   );

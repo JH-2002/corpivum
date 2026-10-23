@@ -1984,3 +1984,34 @@ precisa ir ao navegador. No modo só demo já se tiravam `legal` e `consent` (AD
 **Consequências.** Componente de cliente novo com texto: rodar `pnpm i18n:client` (o teste lembra). Texto de
 servidor nunca vai ao navegador por acaso. Navegar entre páginas baixa as mensagens da página nova no payload RSC,
 como já acontecia com o resto da página.
+
+## ADR-0053 — Polimento das capturas do #53/#54 (antes da 9d)
+**Contexto.** A revisão das capturas depois das correções (ADR-0051) e das mensagens por rota (ADR-0052) apontou
+repetições e um gráfico difícil de ler: "Medidas no período" num eixo único de 0 a 150 cm achatava todas as
+regiões numa faixa de poucos centímetros.
+**Decisão.**
+- **Medidas no período → "Variação das medidas no período":** o gráfico mostra a diferença em cm desde a primeira
+  medição do período de cada região (`changeRows`). Todas as linhas partem de zero, com o mesmo eixo em cm, rótulos
+  com sinal e faixa mínima de ±2 cm. A tabela alternativa continua com as medidas em si (`tableData`).
+  Minigráficos por região, cada um com escala própria, foram descartados: com escalas diferentes, 1 cm no braço e
+  1 cm no quadril teriam alturas diferentes, e a comparação entre regiões enganaria. Num eixo comum de variação,
+  a mesma altura é sempre a mesma mudança, e nenhuma medida grande achata as pequenas (LEG-M06).
+- **Timeline:** o texto de cada linha não repete o rótulo ("Sono: 7 h 30 min", não "Sono: Sono: …";
+  "Alimentação: 200 ml de água"). Quando todas as linhas do dia têm a mesma origem (na demo, sempre DEMO), o
+  cartão do dia tem um selo só. Origens diferentes no mesmo dia (registro INFORMADO e marco ESTIMADO) mantêm o
+  selo por linha (regra 7).
+- **Alimentação:** sai a linha de números que repetia os Destaques (dias com refeição, água média, satisfação).
+  O total estimado de calorias do dia, que os Destaques não trazem, fica junto do controle da estimativa, com
+  selo ESTIMADO.
+- **Formulários de exemplo:** um aviso só ("nada é salvo" e, fora do modo só demo, como registrar os próprios
+  dados), no lugar de dois.
+- **Início (modo só demo):** "Sobre esta demonstração" vai para a faixa fixa do topo. Saem o cartão de abertura,
+  que repetia a faixa, e o ícone do cabeçalho. No app completo, o cartão fica, porque leva o convite para o
+  cadastro. O destaque do início ("maior mudança") repetia um indicador: virou a marca "Maior mudança do período"
+  no cartão do indicador. Nas outras telas, a grade de destaques tem tantas colunas quanto destaques (até 4), sem
+  cartão solto em meia largura.
+- **Sem `<select>` nativo:** `SelectField` usa o `ChoiceMenu`, com rádios nomeados que vão no envio do
+  formulário e desativados juntos no exemplo da demo. O tipo de relatório vira três rádios à vista, sem depender
+  de JavaScript, porque o formulário é GET.
+**Consequências.** Os e2e escolhem opções pelo helper `e2e/choice.ts` em vez de `selectOption`. O guia "Como ler
+este gráfico" das medidas descreve a variação.

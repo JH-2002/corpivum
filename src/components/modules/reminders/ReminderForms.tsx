@@ -49,7 +49,7 @@ export function ReminderForm({
           name="kind"
           label={t('form.kind')}
           value={kind}
-          onChange={(e) => setKind(e.target.value as ReminderKind)}
+          onValueChange={(v) => setKind(v as ReminderKind)}
           options={REMINDER_KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) }))}
         />
         {kind === 'habit' ? (

@@ -9,9 +9,7 @@ import { TimeChart } from '@/components/charts/TimeChart';
 import { SubmitButton } from '@/components/forms/FormFields';
 import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
-import { formatDecimal } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
-import { StatTile } from '@/components/health/StatTile';
 import { WeeklyList } from '@/components/health/WeeklyList';
 import { HiddenEditNotice, Masked } from '@/components/privacy-mode/Masked';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
@@ -21,12 +19,9 @@ import { groupByWeek, toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { nutritionInsights } from '@/modules/insights';
 import {
-  averagePerception,
-  averageWaterMl,
   dailyMealCounts,
   dailyWaterMl,
   dayKcalTotal,
-  daysWithMeals,
   MEAL_PERCEPTIONS,
   WATER_QUICK_ML,
   type MealRecord,
@@ -71,8 +66,6 @@ export function NutritionView({
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'full', timeZone: 'UTC' });
   const insights = nutritionInsights({ meals, water, previousMeals, range, today });
   const waterTodayMl = waterToday.reduce((acc, w) => acc + w.ml, 0);
-  const avgWater = averageWaterMl(water);
-  const satisfaction = averagePerception(meals, 'satisfaction');
   const kcalToday = estimateEnabled ? dayKcalTotal(meals, today) : null;
   const hasData = meals.length > 0 || water.length > 0;
 
@@ -203,7 +196,19 @@ export function NutritionView({
           className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-4 text-sm"
           aria-label={t('estimate.title')}
         >
-          <p className="flex-1">{estimateEnabled ? t('estimate.on') : t('estimate.off')}</p>
+          <div className="flex flex-1 flex-col gap-2">
+            <p>{estimateEnabled ? t('estimate.on') : t('estimate.off')}</p>
+            {/* Total do dia: o único número desta tela que os Destaques não trazem. */}
+            {estimateEnabled ? (
+              <p className="flex flex-wrap items-center gap-2">
+                <span className="text-fg-muted">{t('stats.kcalToday')}:</span>
+                <strong className="tabular">
+                  <Masked hidden={hidden}>{kcalToday !== null ? `${kcalToday} kcal` : '—'}</Masked>
+                </strong>
+                <ConfidenceBadge level="ESTIMADO" />
+              </p>
+            ) : null}
+          </div>
           <input type="hidden" name="enabled" value={estimateEnabled ? 'false' : 'true'} />
           <SubmitButton variant="secondary">
             {estimateEnabled ? t('estimate.disable') : t('estimate.enable')}
@@ -215,35 +220,7 @@ export function NutritionView({
         <StateView state="no-data" />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatTile
-              label={t('stats.mealDays')}
-              value={daysWithMeals(meals, range)}
-              badge={level('INFORMADO')}
-            />
-            <StatTile label={t('stats.meals')} value={meals.length} badge={level('INFORMADO')} />
-            <StatTile
-              label={t('stats.water')}
-              value={avgWater !== null ? t('stats.waterValue', { ml: avgWater }) : '—'}
-              badge={level('ESTIMADO')}
-            />
-            {estimateEnabled && hidden ? (
-              <StatTile
-                label={t('stats.kcalToday')}
-                value={<Masked hidden />}
-                badge={level('ESTIMADO')}
-              />
-            ) : kcalToday !== null ? (
-              <StatTile label={t('stats.kcalToday')} value={kcalToday} badge={level('ESTIMADO')} />
-            ) : (
-              <StatTile
-                label={t('stats.satisfaction')}
-                value={satisfaction !== null ? `${formatDecimal(satisfaction)} / 5` : '—'}
-                badge={level('ESTIMADO')}
-              />
-            )}
-          </div>
-
+          {/* Os números do período (dias com refeição, água, satisfação) ficam só nos Destaques. */}
           <TimeChart
             title={t('mealsChart')}
             badge={level('INFORMADO')}

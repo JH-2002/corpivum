@@ -1,4 +1,4 @@
-import { historyRows } from './metrics';
+import { changeRows, historyRows } from './metrics';
 import { BODY_FIELDS, type BodyRecord } from './types';
 
 function rec(day: string, values: Partial<BodyRecord>): BodyRecord {
@@ -36,5 +36,23 @@ describe('historyRows (Corpo sem duplicação)', () => {
     const rows = historyRows([rec('2026-10-01', { weightKg: 70 })]);
     expect(rows).toHaveLength(1);
     expect(rows[0]?.fields).toEqual([]);
+  });
+});
+
+describe('changeRows (variação desde a primeira medição)', () => {
+  it('cada medida parte de zero na sua primeira medição, com null nos dias sem valor', () => {
+    const rows = changeRows(
+      [
+        rec('2026-10-01', { waistCm: 85 }),
+        rec('2026-10-08', { waistCm: 84.4, armCm: 31 }),
+        rec('2026-10-15', { armCm: 31.5 }),
+      ],
+      ['waistCm', 'armCm'],
+    );
+    expect(rows).toEqual([
+      { day: '2026-10-01', waistCm: 0, armCm: null },
+      { day: '2026-10-08', waistCm: -0.6, armCm: 0 },
+      { day: '2026-10-15', waistCm: null, armCm: 0.5 },
+    ]);
   });
 });

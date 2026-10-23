@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/cn';
 import { StatTile } from '@/components/health/StatTile';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
 import type { ModuleInsights } from '@/modules/insights';
@@ -44,6 +45,18 @@ export function PeriodSummary({ insights, demo }: { insights: ModuleInsights; de
   );
 }
 
+/**
+ * Colunas da grade de destaques: as linhas sempre completas, sem cartão solto em meia largura (9d0). Um destaque
+ * ocupa a largura toda; dois, três e quatro dividem a linha (quatro em 2 × 2 até telas largas).
+ */
+export function highlightColumns(count: number): string {
+  if (count <= 1) return '';
+  if (count === 2) return 'sm:grid-cols-2';
+  if (count === 3) return 'sm:grid-cols-3';
+  if (count === 4) return 'sm:grid-cols-2 xl:grid-cols-4';
+  return 'sm:grid-cols-2 xl:grid-cols-3';
+}
+
 /** Destaques do período (maior variação, dias extremos, maior sequência), cada um com selo. */
 export function PeriodHighlights({ insights, demo }: { insights: ModuleInsights; demo: boolean }) {
   const t = useTranslations('insights');
@@ -55,7 +68,7 @@ export function PeriodHighlights({ insights, demo }: { insights: ModuleInsights;
       <h2 id={headingId} className="text-base font-semibold">
         {t('highlightsTitle')}
       </h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className={cn('grid gap-4', highlightColumns(insights.highlights.length))}>
         {insights.highlights.map((h) => (
           <StatTile
             key={h.key}

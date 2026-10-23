@@ -737,7 +737,7 @@
         "whatToDo": "Olhe a direção ao longo de várias medições, não um ponto isolado: o peso varia de um dia para outro. O app não define meta nem classifica valores."
       },
       "girth": {
-        "axes": "O eixo vertical mostra as circunferências informadas, em cm. Cada linha é uma medida, com traço próprio.",
+        "axes": "O eixo vertical mostra quanto cada circunferência mudou, em cm, desde a primeira medição do período (zero). Cada linha é uma medida, com traço próprio.",
         "whatToDo": "Compare cada medida com ela mesma ao longo do tempo. O app não define meta nem classifica valores."
       },
       "meals": {
@@ -761,6 +761,7 @@
   "dashboard": {
     "cardsTitle": "Indicadores do período",
     "cardNoData": "Sem registros neste período.",
+    "largestChange": "Maior mudança do período",
     "origin": "De onde vem este número",
     "scaleOutOf5": "de 5",
     "todayHabits": "Hábitos de hoje",
@@ -1144,7 +1145,9 @@
     "introTitle": "Demonstração com dados fictícios",
     "introBody": "Explore o %PRODUTO% com 90 dias de registros inventados. Nada aqui pertence a uma pessoa real e nada é gravado.",
     "startOwn": "Começar com meus próprios dados",
-    "exampleNotice": "Exemplo preenchido com dados fictícios: na demonstração nada é salvo.",
+    "exampleNotice": "Exemplo preenchido com dados fictícios: na demonstração nada é salvo. Para registrar os seus, use \"Começar com meus dados\".",
+    "exampleNoticePublic": "Exemplo preenchido com dados fictícios: na demonstração nada é salvo. Para registrar os seus, crie uma conta.",
+    "exampleNoticeDemoOnly": "Exemplo preenchido com dados fictícios: na demonstração nada é salvo.",
     "readOnlyDemoOnly": "Esta é uma demonstração pública com dados fictícios. Nada pode ser registrado aqui.",
     "aboutLink": "Sobre esta demonstração",
     "notPublicBanner": "Demonstração com dados fictícios. O app ainda não está aberto ao público."
@@ -1252,7 +1255,8 @@
     "historyIntro": "Cada data mostra só o que foi registrado nela. O peso e a altura mais recentes estão nos blocos acima.",
     "historyInTiles": "Os valores desta data estão nos blocos acima.",
     "weightChart": "Peso no período",
-    "girthChart": "Medidas no período",
+    "girthChart": "Variação das medidas no período",
+    "girthChartHint": "Diferença em cm desde a primeira medição do período de cada região: todas começam em zero. As medidas em si estão na tabela.",
     "fields": {
       "weightKg": "Peso",
       "heightCm": "Altura",
@@ -1453,11 +1457,6 @@
       "disable": "Desligar estimativa"
     },
     "stats": {
-      "mealDays": "Dias com refeição registrada",
-      "meals": "Refeições registradas",
-      "water": "Água por dia (média)",
-      "waterValue": "{ml} ml",
-      "satisfaction": "Satisfação média",
       "kcalToday": "Calorias estimadas hoje"
     },
     "mealsChart": "Refeições registradas por dia",
@@ -1645,19 +1644,20 @@
     "listTitle": "Linha do tempo",
     "dayItems": "{count, plural, one {# item} other {# itens}}",
     "items": {
-      "sleep": "Sono: {duration}",
+      "sleep": "{duration}",
       "sleepQuality": "qualidade {value}/5",
-      "activity": "{type}: {duration}",
+      "activity": "{type}, {duration}",
       "activitySets": "{count, plural, one {# série} other {# séries}}",
-      "habits": "{count, plural, one {# hábito marcado} other {# hábitos marcados}}",
-      "body": "Medição do corpo",
-      "bodyWeight": "Peso: {weight} kg",
+      "habits": "{count, plural, one {# marcado} other {# marcados}}",
+      "body": "medição registrada",
+      "bodyMeasures": "{count, plural, one {# medida} other {# medidas}}",
+      "bodyWeight": "peso {weight} kg",
       "bodyChange": "{arrow} {delta} kg em relação à medição anterior ({word, select, up {subiu} down {desceu} other {estável}})",
       "bodyOther": "{count, plural, one {mais # medida} other {mais # medidas}}",
       "meal": "{category} às {time}",
-      "water": "Água: {ml} ml",
+      "water": "{ml} ml de água",
       "goalReached": "Meta da semana alcançada: {metric} ({value} de {target})",
-      "newHabit": "Novo hábito: {name}"
+      "newHabit": "novo hábito, {name}"
     },
     "kindLabels": {
       "sleep": "Sono",

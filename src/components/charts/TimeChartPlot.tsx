@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 import type { ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { yAxisConfig } from './domain';
-import { formatNumber, shortDay } from './format';
+import { formatNumber, formatSigned, shortDay } from './format';
 import { usePrefersReducedMotion } from './reduced-motion';
 import type { ChartRow, ChartSeries } from './TimeChart';
 
@@ -46,8 +46,15 @@ export function TimeChartPlot({
   const reduced = usePrefersReducedMotion();
   const longDate = (iso: string) =>
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'medium', timeZone: 'UTC' });
-  const left = yAxisConfig(data, visible, 'left', leftDomain, formatNumber);
-  const right = yAxisConfig(data, visible, 'right', rightDomain, formatNumber);
+  // Eixo de variação (todas as séries com sinal): rótulos com +/−, e o zero é o ponto de partida.
+  const axisFormat = (axis: 'left' | 'right') => {
+    const onAxis = visible.filter((s) => (s.axis ?? 'left') === axis);
+    return onAxis.length > 0 && onAxis.every((s) => s.signed) ? formatSigned : formatNumber;
+  };
+  const leftFormat = axisFormat('left');
+  const rightFormat = axisFormat('right');
+  const left = yAxisConfig(data, visible, 'left', leftDomain, leftFormat);
+  const right = yAxisConfig(data, visible, 'right', rightDomain, rightFormat);
 
   function TooltipBody({
     active,
@@ -64,7 +71,8 @@ export function TimeChartPlot({
             if (!s || typeof p.value !== 'number') return null;
             return (
               <li key={s.key} className="tabular">
-                {s.label}: <strong>{formatNumber(p.value, s.decimals)}</strong>
+                {s.label}:{' '}
+                <strong>{(s.signed ? formatSigned : formatNumber)(p.value, s.decimals)}</strong>
                 {s.unit ? ` ${s.unit}` : ''}
               </li>
             );
@@ -93,7 +101,7 @@ export function TimeChartPlot({
           domain={left.domain}
           ticks={left.ticks}
           allowDecimals={left.allowDecimals}
-          tickFormatter={(v: number) => formatNumber(v, left.decimals)}
+          tickFormatter={(v: number) => leftFormat(v, left.decimals)}
           tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}
           width={left.width}
         />
@@ -104,7 +112,7 @@ export function TimeChartPlot({
             domain={right.domain}
             ticks={right.ticks}
             allowDecimals={right.allowDecimals}
-            tickFormatter={(v: number) => formatNumber(v, right.decimals)}
+            tickFormatter={(v: number) => rightFormat(v, right.decimals)}
             tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}
             width={right.width}
           />

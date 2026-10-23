@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, CircleUser, Info, LogOut, Plus, Settings, ShieldCheck, User } from 'lucide-react';
+import { Bell, CircleUser, LogOut, Plus, Settings, ShieldCheck, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -28,8 +28,8 @@ const menuItemClass =
  * atalho para a Central de Privacidade, menu da conta, modo privacidade (ADR-0035) e indicador DEMO quando
  * em demonstração.
  * `variant="demo"` (demo público, LEG-X02): registro rápido em modo exemplo (9b), sem notificações nem conta;
- * CTA para criar conta e link para a Política. No modo só demo (ADR-0043), sem o CTA, com o link "Sobre esta demonstração" e a
- * faixa fixa de que o app ainda não está aberto ao público.
+ * CTA para criar conta e link para a Política. No modo só demo (ADR-0043), sem o CTA e com a faixa fixa de que o app
+ * ainda não está aberto ao público, que leva o link "Sobre esta demonstração".
  */
 export function Header({
   isDemo = false,
@@ -56,7 +56,7 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
-      {variant === 'demo' ? <DemoOnlyBanner /> : null}
+      {variant === 'demo' ? <DemoOnlyBanner aboutLink /> : null}
       <div className="flex min-h-16 items-center gap-2 px-4 lg:px-6">
         <h1
           ref={titleRef}
@@ -79,19 +79,18 @@ export function Header({
 
         {variant === 'demo' ? (
           <>
-            {/* Modo só demo (ADR-0043): sem Política do app nem cadastro; no lugar, o aviso da demonstração. */}
-            <Link
-              href={demoOnly ? '/demo/sobre' : '/legal/politica-de-privacidade'}
-              aria-label={t(demoOnly ? 'header.aboutDemo' : 'header.privacyPolicy')}
-              title={t(demoOnly ? 'header.aboutDemo' : 'header.privacyPolicy')}
-              className="inline-flex size-11 items-center justify-center rounded-md text-fg hover:bg-surface-muted"
-            >
-              {demoOnly ? (
-                <Info className="size-5" aria-hidden="true" />
-              ) : (
+            {/* Modo só demo (ADR-0043): sem Política do app nem cadastro; "Sobre esta demonstração" fica na faixa
+                do topo (9d0). */}
+            {demoOnly ? null : (
+              <Link
+                href="/legal/politica-de-privacidade"
+                aria-label={t('header.privacyPolicy')}
+                title={t('header.privacyPolicy')}
+                className="inline-flex size-11 items-center justify-center rounded-md text-fg hover:bg-surface-muted"
+              >
                 <ShieldCheck className="size-5" aria-hidden="true" />
-              )}
-            </Link>
+              </Link>
+            )}
             <HelpMenu tourHref="/demo?tour=1" />
             {/* Registrar também no demo (9b): abre os formulários de exemplo, onde nada é enviado. */}
             <QuickLogButton onQuickLog={openQuickLog} />

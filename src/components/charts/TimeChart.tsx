@@ -7,7 +7,7 @@ import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/Confidenc
 import { StateView } from '@/components/ui/StateView';
 import { cn } from '@/lib/cn';
 import { ChartGuide, type ChartGuideId } from './ChartGuide';
-import { formatNumber, hasValues, valueOf } from './format';
+import { formatNumber, formatSigned, hasValues, valueOf } from './format';
 
 /**
  * O desenho (recharts, ~119 KiB gzip) vem num chunk próprio, depois da hidratação (§41, orçamento da 7d): o
@@ -32,6 +32,8 @@ export interface ChartSeries {
   decimals?: number;
   /** Contagem (refeições, sessões, hábitos): eixo só com números inteiros. */
   integer?: boolean;
+  /** Variação (diferença desde um ponto de partida): eixo e dica com sinal (+1,2 / −0,4). */
+  signed?: boolean;
 }
 
 /** Linha do gráfico: o dia e os valores das séries (número, ou `null` sem registro). */
@@ -41,6 +43,9 @@ export interface TimeChartProps<T extends ChartRow> {
   title: string;
   description?: string;
   data: readonly T[];
+  /** Valores da tabela alternativa quando o desenho mostra outra coisa (ex.: variação no gráfico, medidas na
+   * tabela). Mesmas chaves das séries; sem ele, a tabela traz os valores do gráfico. */
+  tableData?: readonly ChartRow[];
   series: readonly ChartSeries[];
   badge: ConfidenceLevel;
   height?: number;
@@ -64,6 +69,7 @@ export function TimeChart<T extends ChartRow>({
   title,
   description,
   data,
+  tableData,
   series,
   badge,
   height = 260,
@@ -172,7 +178,12 @@ export function TimeChart<T extends ChartRow>({
             />
           </div>
 
-          <ChartTable title={title} data={data} series={series} longDate={longDate} />
+          <ChartTable
+            title={title}
+            data={tableData ?? data}
+            series={tableData ? series.map((s) => ({ ...s, signed: false })) : series}
+            longDate={longDate}
+          />
         </>
       )}
     </section>
@@ -188,7 +199,7 @@ export function ChartTable({
 }: {
   title: string;
   data: readonly ChartRow[];
-  series: readonly Pick<ChartSeries, 'key' | 'label' | 'unit' | 'decimals'>[];
+  series: readonly Pick<ChartSeries, 'key' | 'label' | 'unit' | 'decimals' | 'signed'>[];
   longDate: (iso: string) => string;
 }) {
   const t = useTranslations('charts');
@@ -227,7 +238,7 @@ export function ChartTable({
                   return (
                     <td key={s.key} className="tabular border-b border-border p-2">
                       {typeof v === 'number'
-                        ? formatNumber(v, s.decimals)
+                        ? (s.signed ? formatSigned : formatNumber)(v, s.decimals)
                         : typeof v === 'string'
                           ? v
                           : t('empty')}

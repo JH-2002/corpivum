@@ -54,7 +54,9 @@ test('dados com selo DEMO, formulários só de exemplo e com caminho para criar 
   await page.goto('/demo/sono');
   const example = page.locator('#novo');
   await expect(example.getByText(/na demonstração nada é salvo/)).toBeVisible();
-  await expect(example.getByText(/demonstração pública com dados fictícios/)).toBeVisible();
+  // Um aviso só (9d0): nada é salvo e, no demo público, o caminho para criar conta.
+  await expect(example.getByText(/na demonstração nada é salvo/)).toHaveCount(1);
+  await expect(example.getByText(/crie uma conta/)).toBeVisible();
   expect(await example.locator('input, select, textarea, button').count()).toBeGreaterThan(0);
   for (const control of await example.locator('input, select, textarea, button').all()) {
     await expect(control).toBeDisabled();
@@ -76,6 +78,9 @@ test('"Como é calculado" explica componentes e pesos; na demo o Índice é comp
   await expect(table.getByText('Regularidade do sono')).toBeVisible();
   await expect(table.getByText('Atividade física', { exact: true })).toBeVisible();
   await expect(table.getByText(/^Fora:/)).toHaveCount(0);
+  // No topo: rolada até o "Como é calculado", a página deixa um selo sob o cabeçalho fixo, e o axe conta o
+  // pedaço coberto como alvo pequeno (o selo tem 24 px; a cobertura é do cabeçalho, não do selo).
+  await page.evaluate(() => window.scrollTo(0, 0));
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });

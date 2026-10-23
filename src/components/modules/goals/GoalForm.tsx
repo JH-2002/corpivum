@@ -83,7 +83,7 @@ export function GoalForm({
           name="metric"
           label={t('form.metric')}
           value={metric}
-          onChange={(e) => setMetric(e.target.value as GoalMetric)}
+          onValueChange={(v) => setMetric(v as GoalMetric)}
           error={err.metric}
           options={metrics.map((m) => ({ value: m, label: t(`metrics.${m}`) }))}
         />

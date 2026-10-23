@@ -10,6 +10,7 @@ import {
   withAdmin,
 } from './fixtures';
 import { choosePeriod, expectPeriod } from './period';
+import { chooseOption } from './choice';
 
 /**
  * Fase 2 (ADR-0021): passo 5 do onboarding (§52.5), registros de sono, hábitos e corpo
@@ -81,7 +82,7 @@ test('sono: registrar, editar e excluir', async ({ page }) => {
   await page.goto('/sono');
   await page.getByLabel('Deitei em').fill('2026-10-01T23:15');
   await page.getByLabel('Acordei em').fill('2026-10-02T07:05');
-  await page.getByLabel('Qualidade do sono (opcional)').selectOption('4');
+  await chooseOption(page, 'Qualidade do sono (opcional)', '4');
   await page.getByLabel('Nota (opcional)').fill('Nota sintética do teste.');
   await page.getByRole('button', { name: 'Salvar registro' }).click();
   await expect(page.getByRole('status').getByText('Registro salvo.')).toBeVisible();

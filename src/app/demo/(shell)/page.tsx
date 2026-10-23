@@ -23,27 +23,24 @@ async function DemoHomePage() {
   const [body, height] = await Promise.all([source.body(range), source.latestHeightCm()]);
   return (
     <div className="flex flex-col gap-6">
-      <section
-        aria-labelledby="demo-intro"
-        className="flex flex-col gap-3 rounded-lg border border-border-strong bg-surface-muted p-4 sm:flex-row sm:items-center"
-      >
-        <div className="flex-1">
-          <h2 id="demo-intro" className="font-semibold">
-            {t('introTitle')}
-          </h2>
-          <p className="text-sm text-fg-muted">{t('introBody')}</p>
-        </div>
-        {/* Modo só demo (ADR-0043): não há cadastro; o convite vira o aviso da demonstração. */}
-        {isDemoOnly() ? (
-          <Link href="/demo/sobre" className={buttonClasses('secondary')}>
-            {t('aboutLink')}
-          </Link>
-        ) : (
+      {/* Modo só demo (ADR-0043): a faixa do topo já diz que os dados são fictícios e leva "Sobre esta
+          demonstração" (9d0); o cartão só aparece no app completo, com o convite para o cadastro. */}
+      {isDemoOnly() ? null : (
+        <section
+          aria-labelledby="demo-intro"
+          className="flex flex-col gap-3 rounded-lg border border-border-strong bg-surface-muted p-4 sm:flex-row sm:items-center"
+        >
+          <div className="flex-1">
+            <h2 id="demo-intro" className="font-semibold">
+              {t('introTitle')}
+            </h2>
+            <p className="text-sm text-fg-muted">{t('introBody')}</p>
+          </div>
           <Link href="/cadastro" className={buttonClasses('primary')}>
             {t('startOwn')}
           </Link>
-        )}
-      </section>
+        </section>
+      )}
       <Dashboard
         data={hidden ? maskDashboard(data) : data}
         mode="publicDemo"
