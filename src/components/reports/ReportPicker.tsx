@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { buttonClasses } from '@/components/ui/Button';
 import { REPORT_PERIODS, type ReportPeriod } from '@/modules/reports';
@@ -25,20 +26,29 @@ export function ReportPicker({
     >
       <fieldset className="flex flex-wrap items-end gap-4">
         <legend className="mb-2 text-sm font-medium">{t('legend')}</legend>
-        <label className="flex flex-col gap-1 text-sm">
-          {t('kind')}
-          <select
-            name="tipo"
-            defaultValue={period}
-            className="min-h-11 rounded-md border border-border-strong bg-surface px-3"
-          >
+        {/* Três opções à vista, no estilo do seletor de período (9d0): rádios nativos, sem o `<select>` do sistema
+            e sem depender de JavaScript. */}
+        <fieldset className="m-0 flex flex-col gap-1 border-0 p-0 text-sm">
+          <legend className="mb-1">{t('kind')}</legend>
+          <div className="flex flex-wrap gap-1 rounded-md border border-border-strong p-1">
             {REPORT_PERIODS.map((p) => (
-              <option key={p} value={p}>
+              <label
+                key={p}
+                className="rounded relative inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-3 text-fg-muted hover:bg-surface-muted hover:text-fg has-[:checked]:bg-primary has-[:checked]:font-semibold has-[:checked]:text-primary-fg has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus"
+              >
+                <input
+                  type="radio"
+                  name="tipo"
+                  value={p}
+                  defaultChecked={p === period}
+                  className="peer sr-only"
+                />
+                <Check className="hidden size-4 shrink-0 peer-checked:block" aria-hidden="true" />
                 {t(p)}
-              </option>
+              </label>
             ))}
-          </select>
-        </label>
+          </div>
+        </fieldset>
         <label className="flex flex-col gap-1 text-sm">
           {t('reference')}
           <input

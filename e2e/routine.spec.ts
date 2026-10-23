@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { createVerifiedUser, E2E_PASSWORD, e2eEmail, loginWithOwnIp, withAdmin } from './fixtures';
+import { chooseOption } from './choice';
 
 /**
  * Fase 4 (ADR-0029): alimentação, atividade, metas com guardrails, lembretes e timeline, com dados
@@ -41,7 +42,7 @@ test('alimentação: refeição em poucos toques, água em um toque, calorias s�
   await expect(page.getByRole('spinbutton', { name: /Estimativa de calorias/ })).toHaveCount(0);
   await expectNoAxeViolations(page);
 
-  await page.getByLabel('Refeição', { exact: true }).selectOption('breakfast');
+  await chooseOption(page, 'Refeição', 'breakfast');
   await page.getByRole('button', { name: 'Registrar refeição' }).click();
   await expect(page.getByText('Registro salvo.')).toBeVisible();
   await expect(page.getByText(/Café da manhã às/)).toBeVisible();
@@ -63,7 +64,7 @@ test('atividade: séries de força e progressão por exercício, sem sugestão d
 }) => {
   await newPerson(page, 'atividade');
   await page.goto('/atividade');
-  await page.getByLabel('Tipo', { exact: true }).selectOption('strength');
+  await chooseOption(page, 'Tipo', 'strength');
   await page.getByLabel('Duração (minutos)').fill('40');
   await page.locator('summary', { hasText: 'Séries de força (opcional)' }).click();
   const sets = page.getByRole('group', { name: /Série/ });
@@ -95,7 +96,7 @@ test('metas: perda insegura é bloqueada com apoio e nada é gravado; ganho é a
   );
   await page.goto('/metas');
   await expect(page.getByRole('heading', { level: 1, name: 'Metas' })).toBeVisible();
-  await page.getByLabel('O que acompanhar').selectOption('weight_kg');
+  await chooseOption(page, 'O que acompanhar', 'weight_kg');
   await page.getByLabel('Alvo', { exact: true }).fill('55');
   await page.getByLabel('Prazo (opcional)').fill('2030-01-01');
   await page.getByRole('button', { name: 'Criar meta' }).click();
@@ -111,7 +112,7 @@ test('metas: perda insegura é bloqueada com apoio e nada é gravado; ganho é a
 
   // O formulário volta ao estado inicial depois do bloqueio (nenhum número inseguro fica na tela).
   await expect(page.getByLabel('Alvo', { exact: true })).toHaveValue('');
-  await page.getByLabel('O que acompanhar').selectOption('weight_kg');
+  await chooseOption(page, 'O que acompanhar', 'weight_kg');
   await page.getByLabel('Alvo', { exact: true }).fill('64');
   await page.getByRole('button', { name: 'Criar meta' }).click();
   await expect(page.getByText('Registro salvo.')).toBeVisible();
@@ -125,7 +126,7 @@ test('lembretes e timeline: criar lembrete e filtrar a linha do tempo', async ({
   const { userId } = await newPerson(page, 'lembretes');
   await page.goto('/habitos#lembretes');
   await page.locator('summary', { hasText: 'Criar lembrete' }).click();
-  await page.getByLabel('Tipo de lembrete').selectOption('daily_log');
+  await chooseOption(page, 'Tipo de lembrete', 'daily_log');
   await page.getByLabel('Horário', { exact: true }).fill('20:30');
   await page.getByRole('button', { name: 'Criar lembrete' }).click();
   await expect(page.getByText('Registro salvo.')).toBeVisible();
@@ -136,12 +137,12 @@ test('lembretes e timeline: criar lembrete e filtrar a linha do tempo', async ({
   await page.getByRole('button', { name: 'Adicionar 200 ml de água hoje' }).click();
   await expect(page.getByText('Hoje: 200 ml')).toBeVisible();
   await page.goto('/timeline');
-  await expect(page.getByText('Água: 200 ml')).toBeVisible();
+  await expect(page.getByText('200 ml de água')).toBeVisible();
   await page
     .getByRole('navigation', { name: 'Mostrar' })
     .getByRole('link', { name: 'Sono' })
     .click();
   await expect(page).toHaveURL(/dominio=sleep/);
-  await expect(page.getByText('Água: 200 ml')).toHaveCount(0);
+  await expect(page.getByText('200 ml de água')).toHaveCount(0);
   await expectNoAxeViolations(page);
 });

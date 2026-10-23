@@ -51,7 +51,7 @@ export function HabitForm({
         name="frequency"
         label={t('form.frequency')}
         value={frequency}
-        onChange={(e) => setFrequency(e.target.value as HabitFrequency)}
+        onValueChange={(v) => setFrequency(v as HabitFrequency)}
         options={HABIT_FREQUENCIES.map((f) => ({ value: f, label: t(`frequency.${f}`) }))}
         className="sm:max-w-xs"
       />

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { localDay } from '../src/lib/dates';
 import { createVerifiedUser, E2E_PASSWORD, e2eEmail, loginWithOwnIp, withAdmin } from './fixtures';
+import { chooseOption } from './choice';
 
 /**
  * Lacunas de e2e dos fluxos críticos encontradas na 7d (mapa completo em docs/qa/COBERTURA_E2E.md):
@@ -118,14 +119,14 @@ test.describe('metas: guardrails de ritmo e de calorias (LEG-M04, LEG-M07)', () 
     );
     await loginWithOwnIp(page, email);
     await page.goto('/metas');
-    await page.getByLabel('O que acompanhar').selectOption('weight_kg');
+    await chooseOption(page, 'O que acompanhar', 'weight_kg');
     await page.getByLabel('Alvo', { exact: true }).fill('75');
     await page.getByLabel('Prazo (opcional)').fill(dayInFuture(14));
     await page.getByRole('button', { name: 'Criar meta' }).click();
     await expectSafetyBlock(page);
     expect(await count('goals', userId)).toBe(0);
 
-    await page.getByLabel('O que acompanhar').selectOption('weight_kg');
+    await chooseOption(page, 'O que acompanhar', 'weight_kg');
     await page.getByLabel('Alvo', { exact: true }).fill('75');
     await page.getByLabel('Prazo (opcional)').fill(dayInFuture(365));
     await page.getByRole('button', { name: 'Criar meta' }).click();
@@ -148,13 +149,13 @@ test.describe('metas: guardrails de ritmo e de calorias (LEG-M04, LEG-M07)', () 
       db.query('UPDATE users SET calorie_estimate_enabled = true WHERE id = $1', [userId]),
     );
     await page.reload();
-    await page.getByLabel('O que acompanhar').selectOption('kcal_reference_day');
+    await chooseOption(page, 'O que acompanhar', 'kcal_reference_day');
     await page.getByLabel('Alvo', { exact: true }).fill('1200');
     await page.getByRole('button', { name: 'Criar meta' }).click();
     await expectSafetyBlock(page);
     expect(await count('goals', userId)).toBe(0);
 
-    await page.getByLabel('O que acompanhar').selectOption('kcal_reference_day');
+    await chooseOption(page, 'O que acompanhar', 'kcal_reference_day');
     await page.getByLabel('Alvo', { exact: true }).fill('2000');
     await page.getByRole('button', { name: 'Criar meta' }).click();
     await expect(page.getByText('Registro salvo.')).toBeVisible();
