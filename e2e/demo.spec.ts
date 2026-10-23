@@ -14,31 +14,32 @@ test.use({ storageState: DEMO_TOUR_SEEN_STATE });
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 // Projeto `isolado`: a contagem de linhas não pode disputar com testes que apagam contas.
-test('o demo não cria sessão nem grava nada no banco', { tag: '@isolado' }, async ({
-  page,
-  context,
-}) => {
-  const start = new Date(Date.now() - 1000);
-  for (const route of DEMO_ROUTES) {
-    await page.goto(route.path);
-    await expect(page.getByRole('heading', { level: 1, name: route.title })).toBeVisible();
-  }
-  // Troca de período: só a preferência de interface, em cookie de sessão.
-  await page.goto('/demo');
-  await choosePeriod(page, '7 dias');
-  await expect(page.getByText(/^\d{2}\/\d{2}\/\d{4} a \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
-  await expect
-    .poll(async () => (await context.cookies()).map((c) => c.name))
-    .toContain('__Host-hm_period');
+test(
+  'o demo não cria sessão nem grava nada no banco',
+  { tag: '@isolado' },
+  async ({ page, context }) => {
+    const start = new Date(Date.now() - 1000);
+    for (const route of DEMO_ROUTES) {
+      await page.goto(route.path);
+      await expect(page.getByRole('heading', { level: 1, name: route.title })).toBeVisible();
+    }
+    // Troca de período: só a preferência de interface, em cookie de sessão.
+    await page.goto('/demo');
+    await choosePeriod(page, '7 dias');
+    await expect(page.getByText(/^\d{2}\/\d{2}\/\d{4} a \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
+    await expect
+      .poll(async () => (await context.cookies()).map((c) => c.name))
+      .toContain('__Host-hm_period');
 
-  const cookies = await context.cookies();
-  expect(cookies.map((c) => c.name).sort()).toEqual(['__Host-hm_period']);
-  const period = cookies[0];
-  expect(period?.expires).toBe(-1); // cookie de sessão
-  expect(period?.httpOnly).toBe(true);
-  const written = await foreignRowsSince(start);
-  expect(Object.entries(written).filter(([, n]) => n !== 0)).toEqual([]);
-});
+    const cookies = await context.cookies();
+    expect(cookies.map((c) => c.name).sort()).toEqual(['__Host-hm_period']);
+    const period = cookies[0];
+    expect(period?.expires).toBe(-1); // cookie de sessão
+    expect(period?.httpOnly).toBe(true);
+    const written = await foreignRowsSince(start);
+    expect(Object.entries(written).filter(([, n]) => n !== 0)).toEqual([]);
+  },
+);
 
 test('dados com selo DEMO, formulários só de exemplo e com caminho para criar conta', async ({
   page,
