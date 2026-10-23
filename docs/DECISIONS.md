@@ -754,7 +754,9 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
     mostra `HoloLoading`: silhueta genérica com as cores `--hm-holo-*` e o texto "Carregando o modelo 3D…",
     pulsando devagar e parada com `prefers-reduced-motion`. Não é o corpo da pessoa nem o corpo em código.
   - **Corpo em código só como fallback real** (`BodyScene`): erro ao carregar o `.glb`; tempo limite de
-    `MODEL_LOAD_TIMEOUT_MS` = 10 s sem o modelo (se ele chegar depois, assume no lugar); contexto WebGL perdido
+    `MODEL_LOAD_TIMEOUT_MS` = 10 s sem o modelo (se ele chegar depois, assume no lugar; desde 2026-10-23 o prazo
+    mede só a espera pela rede: arquivo recebido, a decodificação segue sem prazo, porque com WebGL por software
+    ou CPU ocupada ela passava dos 10 s e o corpo em código aparecia sem falha nenhuma); contexto WebGL perdido
     e restaurado; variante sem arquivo no manifesto. Contexto perdido e não restaurado em
     `CONTEXT_RESTORE_TIMEOUT_MS` = 3 s: versão 2D (antes, a perda ia direto para 2D). Sem WebGL, continua o SVG
     2D e nada do 3D é baixado.
