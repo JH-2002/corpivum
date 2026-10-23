@@ -37,6 +37,13 @@ describe('formulário de medidas: campo explicado (9d; protocolo do modelo 3D, A
       const details = within(field).getByText('Como medir').closest('details');
       expect(details).not.toHaveAttribute('open');
       expect(details).toHaveTextContent(how);
+      // Formulário leve (9d1): uma linha visível (o que é + faixa); o exemplo fica no "Como medir" fechado.
+      const line = [...field.querySelectorAll('p')].filter(
+        (p) => !p.closest('details') && !p.classList.contains('sr-only'),
+      );
+      expect(line).toHaveLength(1);
+      expect(line[0]).toHaveTextContent(/^Circunferência d.*\. Faixa aceita: de \d+ a \d+\.$/);
+      expect(details).toHaveTextContent('Formato: 12,3 cm');
       const text = field.textContent ?? '';
       expect(findForbiddenTerms(text).map((t) => t.id)).toEqual([]);
     }
@@ -50,6 +57,17 @@ describe('formulário de medidas: campo explicado (9d; protocolo do modelo 3D, A
     expect(screen.getByLabelText(/^Gordura/)).toHaveAccessibleName(
       'Gordura corporal, em porcentagem',
     );
+  });
+});
+
+describe('formulário de medidas no modo privacidade (revisão de privacidade da 9d)', () => {
+  it('sem exemplo de medida, nem visível nem para o leitor de tela; "Como medir" continua', () => {
+    const { container } = renderWithIntl(
+      <BodyForm values={empty} maxDateTime="2026-10-09T23:59" hideExamples />,
+    );
+    expect(container).not.toHaveTextContent(/Formato:/);
+    expect(container.querySelector('[id$="-example"]')).toBeNull();
+    expect(screen.getAllByText('Como medir').length).toBeGreaterThan(0);
   });
 });
 

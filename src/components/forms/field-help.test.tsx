@@ -132,6 +132,28 @@ describe('campo explicado em todo formulário de registro (9d)', () => {
   });
 
   it.each(FORMS)(
+    '%s: formulário leve (9d1): uma linha visível por campo; "como medir" e exemplo fechados',
+    (_, form) => {
+      const { container } = renderWithIntl(form);
+      for (const how of container.querySelectorAll('details[data-field-how]')) {
+        expect(how).not.toHaveAttribute('open');
+      }
+      // Todo campo (bloco de rótulo + controle, ou fieldset): no máximo uma linha de ajuda visível fora do
+      // `<details>`, sem contar o erro e a cópia `sr-only` do exemplo.
+      const fields = container.querySelectorAll('form div.flex-col, form fieldset');
+      expect(fields.length).toBeGreaterThan(0);
+      for (const field of fields) {
+        if (field.querySelector('div.flex-col, fieldset')) continue; // só os blocos mais internos
+        const visible = [...field.querySelectorAll('p')].filter(
+          (p) =>
+            !p.closest('details') && !p.id.endsWith('-error') && !p.classList.contains('sr-only'),
+        );
+        expect(visible.length, field.textContent ?? '').toBeLessThanOrEqual(1);
+      }
+    },
+  );
+
+  it.each(FORMS)(
     '%s: campo com unidade traz o sufixo e a unidade por extenso no nome',
     (_, form) => {
       const { container } = renderWithIntl(form);

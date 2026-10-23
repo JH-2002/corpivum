@@ -2050,3 +2050,8 @@ capturas do #57 pediu também três ajustes.
 **Consequências.** Os nomes acessíveis dos campos com unidade mudaram ("Peso, em quilogramas"), e os e2e foram
 ajustados. O namespace `fields` vai às rotas com formulário (`pnpm i18n:client`). Textos de ajuda em RASCUNHO
 (OI-41). A 9f passa a registrar o sistema de movimento no ADR-0055.
+**Ajuste 9d1 (revisão das capturas do #58).** Os formulários ficaram pesados (três linhas de ajuda por campo).
+Agora cada campo mostra uma linha curta, "o que é" e a dica (faixa aceita, pontas da escala) juntos, e um
+`<details>` fechado: "Como medir", ou "Ver exemplo" quando o campo só tem exemplo, com o exemplo dentro. O leitor
+de tela continua recebendo a linha curta e o exemplo pelo `aria-describedby` e a unidade por extenso no nome. O
+eixo do "Horário de sono" ganhou margem em cima: o rótulo do primeiro tique (eixo invertido) era cortado.

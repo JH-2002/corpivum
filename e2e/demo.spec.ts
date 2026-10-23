@@ -224,10 +224,13 @@ test('campo explicado (9d): unidade, exemplo e "Como medir" pelo teclado, sem vi
     // "Como medir" fecha por padrão e abre com Enter, mesmo com os campos do exemplo desativados.
     const how = form.locator('details').filter({ hasText: 'parte mais estreita' });
     await expect(how).not.toHaveAttribute('open');
+    // Formulário leve (9d1): fechado, só a linha curta aparece; o exemplo fica dentro do "Como medir".
+    await expect(how.getByText('Formato: 12,3 cm')).toBeHidden();
     await how.locator('summary').focus();
     await page.keyboard.press('Enter');
     await expect(how).toHaveAttribute('open');
     await expect(how.getByText(/parte mais estreita entre as costelas e o quadril/)).toBeVisible();
+    await expect(how.getByText('Formato: 12,3 cm')).toBeVisible();
     const results = await new AxeBuilder({ page }).include('#novo').withTags(WCAG_TAGS).analyze();
     expect(results.violations).toEqual([]);
     await page.keyboard.press('Enter');

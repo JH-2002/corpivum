@@ -13,7 +13,7 @@ const inputClass =
   'aria-[invalid=true]:border-danger';
 
 export interface TextFieldProps
-  extends InputHTMLAttributes<HTMLInputElement>, Omit<FieldHelpProps, 'example'> {
+  extends InputHTMLAttributes<HTMLInputElement>, Omit<FieldHelpProps, 'example' | 'hint'> {
   name: string;
   label: string;
   hint?: string;
@@ -24,8 +24,9 @@ export interface TextFieldProps
 }
 
 /**
- * Campo com rótulo, explicação (o que é, como medir, exemplo, 9d), dica e erro ligados por aria-describedby
- * (WCAG 2.2: 1.3.1, 3.3.1, 3.3.2). A unidade aparece dentro do campo e entra por extenso no nome acessível.
+ * Campo com rótulo, explicação (o que é e dica numa linha; como medir e exemplo fechados, 9d1) e erro ligados por
+ * aria-describedby (WCAG 2.2: 1.3.1, 3.3.1, 3.3.2). A unidade aparece dentro do campo e entra por extenso no nome
+ * acessível.
  */
 export function TextField({
   name,
@@ -41,9 +42,8 @@ export function TextField({
   ...props
 }: TextFieldProps) {
   const id = useId();
-  const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
-  const help = { what, howTo, example, formatOnly, unit };
+  const help = { what, hint, howTo, example, formatOnly, unit };
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       <label htmlFor={id} className="text-sm font-semibold">
@@ -51,18 +51,13 @@ export function TextField({
         <UnitLabel unit={unit} />
       </label>
       <FieldHelp id={id} label={label} {...help} />
-      {hint ? (
-        <p id={hintId} className="text-sm text-fg-muted">
-          {hint}
-        </p>
-      ) : null}
       <div className="relative">
         <input
           id={id}
           name={name}
           aria-invalid={error ? true : undefined}
           aria-describedby={
-            [...fieldHelpIds(id, help), hintId, errorId].filter(Boolean).join(' ') || undefined
+            [...fieldHelpIds(id, help), errorId].filter(Boolean).join(' ') || undefined
           }
           className={cn(inputClass, unit && 'pr-14')}
           {...props}
