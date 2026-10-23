@@ -1,0 +1,27 @@
+# Navegador do Playwright em cache, com chave pela versão instalada do Playwright (o binário muda a cada versão).
+# Sem cache: baixa o chromium e as dependências do sistema. Com cache: só as dependências do sistema (apt), que
+# não cabem no cache. Requer `pnpm install` antes.
+# O navegador restaurado roda sem checagem de integridade: usar só em jobs sem segredos e sem permissão de escrita
+# (só a `main` grava o cache; PR lê, não grava). No primeiro miss, jobs paralelos disputam a chave e só um grava
+# ("Unable to reserve cache" nos outros é esperado).
+name: Navegadores do Playwright
+description: Instala o chromium do Playwright, reaproveitando o cache entre execuções.
+runs:
+  using: composite
+  steps:
+    - id: version
+      shell: bash
+      run: echo "playwright=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+    - id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.version.outputs.playwright }}-chromium
+    - if: steps.cache.outputs.cache-hit != 'true'
+      name: Instalar chromium e dependências do sistema
+      shell: bash
+      run: pnpm exec playwright install --with-deps chromium
+    - if: steps.cache.outputs.cache-hit == 'true'
+      name: Instalar só as dependências do sistema (chromium em cache)
+      shell: bash
+      run: pnpm exec playwright install-deps chromium
