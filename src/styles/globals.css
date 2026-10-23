@@ -334,6 +334,21 @@ details[open] > summary ~ * {
   animation: none !important;
 }
 
+/* Impressão: tudo no estado final (o IntersectionObserver não dispara ao imprimir). */
+@media print {
+  [data-reveal-state] > * {
+    clip-path: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  [data-count-up] > span:first-child {
+    opacity: 1 !important;
+  }
+  [data-count-up] > span[aria-hidden='true'] {
+    display: none;
+  }
+}
+
 /* Formulário de exemplo do demo (9b): campos e botão desativados continuam legíveis (contraste AA) e o botão
    aparece apagado pela forma (fundo neutro, borda tracejada), não pela transparência. Fora de @layer: vence
    os utilitários do botão (`disabled:opacity-60`, `bg-primary`). */

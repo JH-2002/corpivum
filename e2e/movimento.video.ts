@@ -42,7 +42,7 @@ async function sweep(page: Page, selector: string) {
   }
 }
 
-test('movimento e interatividade da 9f', async ({ page }) => {
+test('movimento e interatividade da 9f', async ({ page, browser, baseURL }) => {
   test.setTimeout(120_000);
   await page.addInitScript(() => localStorage.setItem('hm_tour_demo_seen', '1'));
 
@@ -65,6 +65,7 @@ test('movimento e interatividade da 9f', async ({ page }) => {
   // Hábitos: marcar um dia (pessoa sintética; na demo o check é só leitura).
   await page.goto('/habitos');
   const day = page.getByRole('button', { name: /^Marcar ".+" como feito em/ }).first();
+  const dayName = (await day.getAttribute('aria-label')) ?? '';
   await day.scrollIntoViewIfNeeded();
   await day.hover();
   await page.waitForTimeout(500);
@@ -102,6 +103,15 @@ test('movimento e interatividade da 9f', async ({ page }) => {
 
   const video = page.video();
   await page.close();
+
+  // Desfaz o dia marcado, fora da gravação, para o banco de teste voltar ao estado do seed.
+  const cleanup = await browser.newContext({ storageState: 'e2e/.auth/pessoa.json', baseURL });
+  const undoPage = await cleanup.newPage();
+  await undoPage.goto('/habitos');
+  const undoName = dayName.replace(/^Marcar (".+") como feito em/, 'Desmarcar $1 de');
+  await undoPage.getByRole('button', { name: undoName, exact: true }).click();
+  await expect(undoPage.getByRole('button', { name: dayName, exact: true })).toBeVisible();
+  await cleanup.close();
   if (!video) throw new Error('sem gravação');
   mkdirSync(path.dirname(OUT), { recursive: true });
   await video.saveAs(OUT);
