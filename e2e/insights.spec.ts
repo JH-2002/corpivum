@@ -71,10 +71,13 @@ test.describe('tour do painel', () => {
 
     const tour = page.getByRole('dialog', { name: 'Boas-vindas ao seu painel' });
     await expect(tour).toBeVisible();
-    await expect(page.getByText(/^Passo 1 de \d$/)).toBeVisible();
+    await expect(page.getByText(/^Passo 1 de \d+$/)).toBeVisible();
     await expectNoAxeViolations(page);
 
-    // Teclado: avança e pula com Esc.
+    // Teclado: avança (o twin do início vem logo depois das boas-vindas, 9d) e pula com Esc.
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog', { name: 'Seu corpo em 3D' })).toBeVisible();
+    await expect(page.locator('[data-tour-active]')).toHaveAttribute('data-tour', 'twin-hero');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('dialog', { name: 'Resumo do período' })).toBeVisible();
     await expect(page.locator('[data-tour-active]')).toHaveAttribute('data-tour', 'summary');

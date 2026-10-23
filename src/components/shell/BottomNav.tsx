@@ -83,7 +83,7 @@ export function BottomNav({ variant = 'app' }: { variant?: ShellVariant }) {
           icon={Orbit}
           active={isActivePath(pathname, hrefs.twin)}
         />
-        <li className="flex flex-1">
+        <li className="flex flex-1" data-tour="register">
           <button
             type="button"
             onClick={openQuickLog}

@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, ChevronDown } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { lastInputWasPointer } from './programmatic-focus';
 
@@ -30,6 +30,7 @@ export function ChoiceMenu({
   describedBy,
   invalid = false,
   className,
+  help,
 }: {
   label: string;
   value?: string;
@@ -42,6 +43,8 @@ export function ChoiceMenu({
   describedBy?: string;
   invalid?: boolean;
   className?: string;
+  /** Explicação do campo (9d), entre o rótulo e o botão, como nos campos de texto. */
+  help?: ReactNode;
 }) {
   const ids = { label: useId(), list: useId() };
   const [open, setOpen] = useState(false);
@@ -94,6 +97,7 @@ export function ChoiceMenu({
       <span id={ids.label} className="text-sm font-semibold">
         {label}
       </span>
+      {help}
       <button
         ref={buttonRef}
         type="button"

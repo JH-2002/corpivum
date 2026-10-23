@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { findForbiddenTerms } from '../../../../tests/content/forbidden-terms';
 import { renderWithIntl } from '../../../../tests/render';
 import { BodyForm, type BodyFormValues } from './BodyForm';
@@ -17,8 +17,8 @@ const empty: BodyFormValues = {
   bodyFatPct: null,
 };
 
-describe('formulário de medidas: como medir (protocolo do modelo 3D, ADR-0028)', () => {
-  it('cada circunferência tem a dica de como medir, ligada ao campo, além da faixa aceita', () => {
+describe('formulário de medidas: campo explicado (9d; protocolo do modelo 3D, ADR-0028)', () => {
+  it('cada circunferência diz como medir, o que é, um exemplo e a faixa aceita', () => {
     renderWithIntl(<BodyForm values={empty} maxDateTime="2026-10-09T23:59" />);
     const cases: [RegExp, RegExp][] = [
       [/^Peito/, /passando pelos mamilos/],
@@ -29,16 +29,27 @@ describe('formulário de medidas: como medir (protocolo do modelo 3D, ADR-0028)'
     ];
     for (const [label, how] of cases) {
       const input = screen.getByLabelText(label);
-      expect(input).toHaveAccessibleDescription(how);
+      expect(input).toHaveAccessibleName(/, em centímetros$/);
+      expect(input).toHaveAccessibleDescription(/^Circunferência d/);
+      expect(input).toHaveAccessibleDescription(/Formato: 12,3 cm/);
       expect(input).toHaveAccessibleDescription(/Faixa aceita: de \d+ a \d+/);
-      const description = (input.getAttribute('aria-describedby') ?? '')
-        .split(' ')
-        .map((id) => document.getElementById(id)?.textContent ?? '')
-        .join(' ');
-      expect(findForbiddenTerms(description).map((t) => t.id)).toEqual([]);
+      const field = input.closest('div.flex-col') as HTMLElement;
+      const details = within(field).getByText('Como medir').closest('details');
+      expect(details).not.toHaveAttribute('open');
+      expect(details).toHaveTextContent(how);
+      const text = field.textContent ?? '';
+      expect(findForbiddenTerms(text).map((t) => t.id)).toEqual([]);
     }
-    // Peso e altura não ganham dica de como medir.
-    expect(screen.getByLabelText(/^Peso/)).not.toHaveAccessibleDescription(/Como medir/);
+  });
+
+  it('a unidade aparece dentro do campo e no nome acessível', () => {
+    renderWithIntl(<BodyForm values={empty} maxDateTime="2026-10-09T23:59" />);
+    const weight = screen.getByLabelText(/^Peso/);
+    expect(weight).toHaveAccessibleName('Peso, em quilogramas');
+    expect(weight.parentElement).toHaveTextContent(/^kg$/);
+    expect(screen.getByLabelText(/^Gordura/)).toHaveAccessibleName(
+      'Gordura corporal, em porcentagem',
+    );
   });
 });
 

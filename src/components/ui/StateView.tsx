@@ -1,4 +1,4 @@
-import { AlertTriangle, CircleDashed, Info, Sprout } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CircleDashed, Info, Sprout } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
@@ -13,20 +13,37 @@ export interface StateViewProps {
   emptyDescription?: string;
   /** Ação principal (ex.: link para registrar ou "tentar novamente"). */
   action?: ReactNode;
+  /** O que fazer a seguir (9d), em texto: "Próximo passo: …". Vale para vazio, sem dados e parcial. */
+  nextStep?: string;
   /** Conteúdo exibido abaixo do aviso no estado de dados parciais. */
   children?: ReactNode;
+}
+
+/** "Próximo passo: …" com rótulo em texto (a seta é só apoio visual). */
+function NextStep({ text }: { text: string }) {
+  const t = useTranslations('states');
+  return (
+    <p className="flex items-start gap-2 text-sm">
+      <ArrowRight className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+      <span>
+        <strong className="font-semibold">{t('nextStepLabel')}</strong> {text}
+      </span>
+    </p>
+  );
 }
 
 function Panel({
   icon,
   title,
   description,
+  nextStep,
   action,
   role,
 }: {
   icon: ReactNode;
   title: string;
   description?: string;
+  nextStep?: string;
   action?: ReactNode;
   role?: 'alert' | 'status';
 }) {
@@ -40,6 +57,7 @@ function Panel({
       </span>
       <h2 className="text-lg font-semibold">{title}</h2>
       {description ? <p className="text-sm text-fg-muted">{description}</p> : null}
+      {nextStep ? <NextStep text={nextStep} /> : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </section>
   );
@@ -50,6 +68,7 @@ export function StateView({
   emptyTitle,
   emptyDescription,
   action,
+  nextStep,
   children,
 }: StateViewProps) {
   const t = useTranslations('states');
@@ -74,6 +93,7 @@ export function StateView({
           icon={<Sprout className="size-10" />}
           title={emptyTitle ?? t('noDataTitle')}
           description={emptyDescription}
+          nextStep={nextStep}
           action={action}
         />
       );
@@ -94,6 +114,7 @@ export function StateView({
           icon={<CircleDashed className="size-10" />}
           title={t('noDataTitle')}
           description={t('noDataDescription')}
+          nextStep={nextStep}
           action={action}
         />
       );
@@ -105,10 +126,13 @@ export function StateView({
             className="flex items-start gap-3 rounded-md border border-warning bg-warning-soft p-4 text-sm"
           >
             <Info className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
-            <p>
-              <strong className="font-semibold">{t('partialTitle')}.</strong>{' '}
-              {t('partialDescription')}
-            </p>
+            <div className="flex flex-col gap-2">
+              <p>
+                <strong className="font-semibold">{t('partialTitle')}.</strong>{' '}
+                {t('partialDescription')}
+              </p>
+              {nextStep ? <NextStep text={nextStep} /> : null}
+            </div>
           </div>
           {children}
         </div>

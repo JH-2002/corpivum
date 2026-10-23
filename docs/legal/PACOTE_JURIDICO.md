@@ -36,7 +36,7 @@
 | 7 | Menores de idade | OI-02 | 🔴 | Não |
 | 8 | Fornecedores e transferência internacional | OI-03, OI-11, OI-27 | 🔴 | Não |
 | 9 | Incidentes | OI-05 | 🟠 | Não |
-| 10 | Imagem corporal, alimentação e profissões regulamentadas | OI-09, OI-10, OI-13, OI-21, OI-22, OI-23, OI-24, OI-25 | 🔴 | **Sim** |
+| 10 | Imagem corporal, alimentação e profissões regulamentadas | OI-09, OI-10, OI-13, OI-21, OI-22, OI-23, OI-24, OI-25, OI-41 | 🔴 | **Sim** |
 
 ---
 
@@ -259,7 +259,7 @@ recuperação; o intervalo perdido é registrado como incidente (`BACKUP_RESTORE
 
 **Impacto.** Só documentos.
 
-## 10. Imagem corporal, alimentação e profissões regulamentadas — OI-09, OI-10, OI-21, OI-22, OI-23, OI-24, OI-25 🔴 (com revisão clínica)
+## 10. Imagem corporal, alimentação e profissões regulamentadas — OI-09, OI-10, OI-21, OI-22, OI-23, OI-24, OI-25, OI-41 🔴 (com revisão clínica)
 
 Este tema precisa de advogado(a) **e** de profissionais de saúde (nutrição, educação física, psicologia).
 
@@ -270,6 +270,7 @@ Este tema precisa de advogado(a) **e** de profissionais de saúde (nutrição, e
 | **Modelo 3D do corpo (OI-22, OI-24):** pode ser lido como avaliação corporal ou comparação com um corpo padrão? Rótulos "feminino"/"masculino", forma base, limites do desenho | Forma só pelas medidas informadas (o peso não muda a forma), sem IMC, cor neutra, aviso fixo, escolha só no navegador | Ajuste de texto ou de desenho; em último caso, retirar o 3D |
 | **Limites de segurança e textos (OI-23):** IMC mínimo 18,5 na meta, perda de até 1% por semana, piso de 1.500 kcal/dia (sem dado de sexo); só metas de perda são limitadas; meta de calorias só com a estimativa ligada; onde mostrar CVV 188 / SAMU 192; limite entre registrar e prescrever | Implementado no servidor e no banco, com testes; apoio fixo na tela de corpo, quando um limite dispara e no menu de ajuda | Mudar um limiar: migração (está no banco) e testes; retirar a meta de calorias: remoção de recurso |
 | **Quem aprova os textos (OI-13):** hoje a revisão dos avisos depende do teste de textos e do checklist de PR | CODEOWNERS só com o desenvolvimento | Incluir revisor jurídico e clínico e exigir aprovação (CHECKLIST 1.7) |
+| **Ajuda dos campos de registro (OI-41):** "como medir" do peso, da altura e do percentual de gordura; exemplos de formato das medidas; descrição da intensidade percebida; próximo passo dos estados vazios e passos novos do tour | Cada campo diz o que é, como medir (fechado por padrão) e um exemplo de formato; sem exemplo de calorias nem de alvo de meta; sem pressão para registrar (ADR-0054) | Ajuste de texto |
 | **Medidas novas (OI-25):** se antebraço e panturrilha entrarem, o consentimento atual ("peso e medidas") cobre? | Adiado pelo produto | Se não cobrir: versão nova do consentimento |
 
 ---

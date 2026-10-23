@@ -3,6 +3,7 @@
 import { useId, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { ChoiceMenu } from '@/components/ui/ChoiceMenu';
 import { cn } from '@/lib/cn';
+import { FieldHelp, fieldHelpIds, type FieldHelpProps } from './FieldHelp';
 
 /**
  * Campos dos formulários de registro (Fase 2). Rótulo, dica e erro ligados por aria-describedby
@@ -31,10 +32,16 @@ function Described({ id, hint, error }: { id: string; hint?: ReactNode; error?: 
   );
 }
 
-function describedBy(id: string, hint?: ReactNode, error?: string): string | undefined {
+function describedBy(
+  id: string,
+  hint?: ReactNode,
+  error?: string,
+  help: FieldHelpProps = {},
+): string | undefined {
   return (
-    [hint ? `${id}-hint` : null, error ? `${id}-error` : null].filter(Boolean).join(' ') ||
-    undefined
+    [...fieldHelpIds(id, help), hint ? `${id}-hint` : null, error ? `${id}-error` : null]
+      .filter(Boolean)
+      .join(' ') || undefined
   );
 }
 
@@ -52,7 +59,9 @@ export function SelectField({
   value,
   defaultValue,
   onValueChange,
-}: {
+  what,
+  howTo,
+}: Pick<FieldHelpProps, 'what' | 'howTo'> & {
   name: string;
   label: string;
   hint?: ReactNode;
@@ -73,8 +82,9 @@ export function SelectField({
         value={value}
         defaultValue={defaultValue}
         onChange={onValueChange}
-        describedBy={describedBy(id, hint, error)}
+        describedBy={describedBy(id, hint, error, { what })}
         invalid={Boolean(error)}
+        help={<FieldHelp id={id} label={label} what={what} howTo={howTo} />}
       />
       <Described id={id} hint={hint} error={error} />
     </div>
@@ -87,26 +97,30 @@ export function TextAreaField({
   hint,
   error,
   className,
+  what,
+  example,
   ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
-  name: string;
-  label: string;
-  hint?: ReactNode;
-  error?: string;
-}) {
+}: TextareaHTMLAttributes<HTMLTextAreaElement> &
+  Pick<FieldHelpProps, 'what' | 'example'> & {
+    name: string;
+    label: string;
+    hint?: ReactNode;
+    error?: string;
+  }) {
   const id = useId();
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       <label htmlFor={id} className="text-sm font-semibold">
         {label}
       </label>
+      <FieldHelp id={id} what={what} example={example} />
       <Described id={id} hint={hint} />
       <textarea
         id={id}
         name={name}
         rows={4}
         aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, hint, error)}
+        aria-describedby={describedBy(id, hint, error, { what, example })}
         className={cn(controlClass, 'py-2')}
         {...props}
       />
@@ -124,7 +138,8 @@ export function ScaleField({
   defaultValue,
   required,
   error,
-}: {
+  what,
+}: Pick<FieldHelpProps, 'what'> & {
   name: string;
   legend: string;
   low: string;
@@ -137,9 +152,12 @@ export function ScaleField({
   return (
     <fieldset
       className="flex flex-col gap-1"
-      aria-describedby={`${id}-ends${error ? ` ${id}-error` : ''}`}
+      aria-describedby={[...fieldHelpIds(id, { what }), `${id}-ends`, error ? `${id}-error` : null]
+        .filter(Boolean)
+        .join(' ')}
     >
       <legend className="text-sm font-semibold">{legend}</legend>
+      <FieldHelp id={id} what={what} />
       <p id={`${id}-ends`} className="text-sm text-fg-muted">
         1 = {low} · 5 = {high}
       </p>

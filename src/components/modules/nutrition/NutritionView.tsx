@@ -8,13 +8,13 @@ import {
 import { TimeChart } from '@/components/charts/TimeChart';
 import { SubmitButton } from '@/components/forms/FormFields';
 import { ExampleForm } from '@/components/forms/ExampleForm';
+import { NoRecords } from '@/components/health/NoRecords';
 import { EntryActions } from '@/components/health/EntryActions';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { WeeklyList } from '@/components/health/WeeklyList';
 import { HiddenEditNotice, Masked } from '@/components/privacy-mode/Masked';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
-import { StateView } from '@/components/ui/StateView';
 import { groupByWeek, toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { nutritionInsights } from '@/modules/insights';
@@ -217,7 +217,7 @@ export function NutritionView({
       ) : null}
 
       {!hasData ? (
-        <StateView state="no-data" />
+        <NoRecords mode={mode} nextStep={t('nextStep')} />
       ) : (
         <>
           {/* Os números do período (dias com refeição, água, satisfação) ficam só nos Destaques. */}

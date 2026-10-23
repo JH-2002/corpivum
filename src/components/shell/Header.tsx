@@ -124,7 +124,7 @@ const iconLinkClass =
 function QuickLogButton({ onQuickLog }: { onQuickLog: () => void }) {
   const t = useTranslations('quickLog');
   return (
-    <div className="hidden md:block">
+    <div className="hidden md:block" data-tour="register">
       <Button onClick={onQuickLog} aria-haspopup="dialog" className="shrink-0">
         <Plus className="size-4" aria-hidden="true" />
         {t('open')}

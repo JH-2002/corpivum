@@ -3,8 +3,9 @@ import { deleteBodyAction } from '@/app/(app)/corpo/actions';
 import { paddedDomain } from '@/components/charts/domain';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { ExampleForm } from '@/components/forms/ExampleForm';
+import { NoRecords } from '@/components/health/NoRecords';
 import { EntryActions } from '@/components/health/EntryActions';
-import { formatMeasure, formatSignedMeasure, MEASURE_UNITS } from '@/components/health/format';
+import { formatMeasure, MEASURE_UNITS } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { HiddenValuesNotice, Masked } from '@/components/privacy-mode/Masked';
@@ -12,13 +13,11 @@ import { StatTile } from '@/components/health/StatTile';
 import { WeeklyList } from '@/components/health/WeeklyList';
 import { SupportNotice } from '@/components/health/SupportNotice';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
-import { StateView } from '@/components/ui/StateView';
 import { groupByWeek, toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import { bodyInsights, bodyInsightsHidden } from '@/modules/insights';
 import {
   BODY_FIELDS,
-  change,
   changeRows,
   historyRows,
   latest,
@@ -75,7 +74,6 @@ export function BodyView({
   const weight = latest(records, 'weightKg');
   const heightInPeriod = latest(records, 'heightCm');
   const height = heightInPeriod?.value ?? latestHeightCm;
-  const weightChange = change(records, 'weightKg');
   const usedGirths = GIRTHS.filter((f) => records.some((r) => r[f] !== null));
   const girthChanges = changeRows(records, usedGirths);
   const longDay = (iso: string) =>
@@ -97,12 +95,17 @@ export function BodyView({
           {t('newTitle')}
         </h2>
         {own ? (
-          <BodyForm maxDateTime={maxDateTime} values={{ measuredAt: maxDateTime, ...empty }} />
+          <BodyForm
+            maxDateTime={maxDateTime}
+            hideExamples={hidden}
+            values={{ measuredAt: maxDateTime, ...empty }}
+          />
         ) : (
           <ExampleForm publicDemo={mode === 'publicDemo'}>
             {/* Exemplo com a última medição da pessoa fictícia (nada de meta, LEG-M07). */}
             <BodyForm
               example
+              hideExamples={hidden}
               maxDateTime={maxDateTime}
               values={{ measuredAt: maxDateTime, ...empty, ...exampleBody(records) }}
             />
@@ -111,10 +114,11 @@ export function BodyView({
       </section>
 
       {records.length === 0 ? (
-        <StateView state="no-data" />
+        <NoRecords mode={mode} nextStep={t('nextStep')} />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          {/* Estado atual (peso e altura). A variação do peso fica só nos Destaques, sem repetir (revisão da 9d0). */}
+          <div className="grid gap-4 sm:grid-cols-2">
             <StatTile
               label={t('stats.weight')}
               value={
@@ -122,16 +126,6 @@ export function BodyView({
               }
               detail={weight ? t('stats.on', { date: longDay(weight.day) }) : undefined}
               badge={level('INFORMADO')}
-            />
-            <StatTile
-              label={t('stats.change')}
-              value={
-                <Masked hidden={hidden}>
-                  {weightChange !== null ? formatSignedMeasure(weightChange, 'kg') : '—'}
-                </Masked>
-              }
-              detail={t('stats.changeHint')}
-              badge={level('ESTIMADO')}
             />
             <StatTile
               label={t('stats.height')}

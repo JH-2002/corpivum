@@ -2015,3 +2015,38 @@ regiões numa faixa de poucos centímetros.
   de JavaScript, porque o formulário é GET.
 **Consequências.** Os e2e escolhem opções pelo helper `e2e/choice.ts` em vez de `selectOption`. O guia "Como ler
 este gráfico" das medidas descreve a variação.
+
+## ADR-0054 — Clareza para registrar dados (9d)
+**Contexto.** O plano da 9d pedia que cada campo de registro explicasse o que é, como medir e um exemplo, com a
+unidade no campo; estados vazios com o próximo passo; e o caminho para registrar no tour. Parte já existia: o
+"como medir" das circunferências (9c), os formulários de exemplo da demo com um aviso só (ADR-0047, ADR-0053), o
+botão Registrar sempre visível (ADR-0047) e `MEASURE_UNITS` nas medidas exibidas (ADR-0051). A revisão das
+capturas do #57 pediu também três ajustes.
+**Decisão.**
+- **Campo explicado:** `TextField`, `SelectField` (no `ChoiceMenu`, entre o rótulo e o botão), `TextAreaField` e
+  `ScaleField` ganham `what`, `howTo`, `example` e `unit` (`FieldHelp`). Abaixo do rótulo: "o que é", "Como medir"
+  num `<details>` fechado e "Ex.: 82,5 cm". O "o que é" e o exemplo entram no `aria-describedby`; o "como medir"
+  fica no `<details>`, que se abre pelo teclado. A unidade é sufixo visual (`aria-hidden`) e entra por extenso no
+  nome acessível ("Cintura, em centímetros").
+- **Onde ficam os textos (desvio do plano):** o plano previa `<módulo>.fields.<campo>.{label,what,how,example,unit}`.
+  Os rótulos `body.fields.*` já servem a gráficos, listas, resumos e ao twin como texto simples; virar objeto
+  obrigaria a mexer em todos. Ficou `<módulo>.help.<campo>.{what,how,example}`, com os rótulos onde estavam. A
+  unidade vem do código (`MEASURE_UNITS` e o tipo `FieldUnit`), não do catálogo, para não haver duas fontes. Os
+  `form.*Hint` que explicavam o campo, o `body.howToMeasure` e o `UNITS` local do `BodyForm` saíram.
+- **Exemplos neutros (revisão de privacidade):** nas medidas do corpo, o exemplo mostra só o formato ("Formato:
+  12,3 cm"), um número que não é medida plausível, para não ser lido como referência de corpo (LEG-M06). O texto
+  chega igual ao leitor de tela, e no modo privacidade os exemplos somem. Calorias não têm exemplo (LEG-M07). Metas
+  não têm exemplo de alvo; a de sono explica a conversão com números neutros (60 min = 1 h). As linhas de séries de
+  força têm só a unidade da carga; a explicação é a do grupo. Cada "Como medir" leva o nome do campo para o leitor
+  de tela.
+- **Estados vazios:** `StateView` ganha `nextStep` ("Próximo passo: …", com rótulo em texto) no vazio, sem dados e
+  parcial. Nos módulos com formulário, `NoRecords` aponta para o formulário da própria página (`#novo`); na
+  demonstração, onde nada é salvo, sugere outro período. A Timeline oferece o Registrar.
+- **Tour:** novos passos `twinHero` (alvo `twin-hero`), `register` (alvo visível entre o botão do topo e o da barra
+  de baixo), `quicklog` e `formField` (sem alvo: o diálogo e os formulários ficam em outras telas).
+- **Ajustes da revisão:** Corpo sem o bloco "Variação no período" (o mesmo número dos Destaques); "Noites
+  registradas" por semana com "Ver mais", como as outras listas; eixo do "Horário de sono" do deitar mais cedo ao
+  acordar mais tarde, em múltiplos de 2 h, com tiques de 2 em 2 h e faixa mínima de 8 h (`scheduleAxis`).
+**Consequências.** Os nomes acessíveis dos campos com unidade mudaram ("Peso, em quilogramas"), e os e2e foram
+ajustados. O namespace `fields` vai às rotas com formulário (`pnpm i18n:client`). Textos de ajuda em RASCUNHO
+(OI-41). A 9f passa a registrar o sistema de movimento no ADR-0055.

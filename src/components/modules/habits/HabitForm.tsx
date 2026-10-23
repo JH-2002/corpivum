@@ -41,7 +41,8 @@ export function HabitForm({
       <TextField
         name="name"
         label={t('form.name')}
-        hint={t('form.nameHint')}
+        what={t('help.name.what')}
+        example={t('help.name.example')}
         defaultValue={values.name}
         maxLength={80}
         required
@@ -50,6 +51,7 @@ export function HabitForm({
       <SelectField
         name="frequency"
         label={t('form.frequency')}
+        what={t('help.frequency.what')}
         value={frequency}
         onValueChange={(v) => setFrequency(v as HabitFrequency)}
         options={HABIT_FREQUENCIES.map((f) => ({ value: f, label: t(`frequency.${f}`) }))}
@@ -71,6 +73,8 @@ export function HabitForm({
           min={1}
           max={7}
           label={t('form.timesPerWeek')}
+          what={t('help.timesPerWeek.what')}
+          example={t('help.timesPerWeek.example')}
           defaultValue={values.timesPerWeek ?? 3}
           error={err.timesPerWeek}
           className="sm:max-w-xs"

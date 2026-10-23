@@ -2,6 +2,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { deleteActivityAction } from '@/app/(app)/atividade/actions';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { ExampleForm } from '@/components/forms/ExampleForm';
+import { NoRecords } from '@/components/health/NoRecords';
 import { EntryActions } from '@/components/health/EntryActions';
 import {
   formatDecimal,
@@ -15,7 +16,6 @@ import { StatTile } from '@/components/health/StatTile';
 import { WeeklyList } from '@/components/health/WeeklyList';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { ConfidenceBadge } from '@/components/ui/ConfidenceBadge';
-import { StateView } from '@/components/ui/StateView';
 import { groupByWeek, toLocalDateTime } from '@/lib/dates';
 import type { DateRange } from '@/lib/period';
 import {
@@ -120,7 +120,7 @@ export function ActivityView({
       </section>
 
       {records.length === 0 ? (
-        <StateView state="no-data" />
+        <NoRecords mode={mode} nextStep={t('nextStep')} />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

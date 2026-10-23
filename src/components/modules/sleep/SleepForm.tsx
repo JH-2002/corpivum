@@ -28,6 +28,7 @@ export function SleepForm({
   example?: boolean;
 }) {
   const t = useTranslations('sleep.form');
+  const help = useTranslations('sleep.help');
   const [state, action] = useActionState(saveSleepAction, INITIAL_FORM_STATE);
   const err = state.fieldErrors ?? {};
   return (
@@ -43,6 +44,8 @@ export function SleepForm({
           name="bedAt"
           type="datetime-local"
           label={t('bedAt')}
+          what={help('bedAt.what')}
+          howTo={help('bedAt.how')}
           defaultValue={values.bedAt}
           max={maxDateTime}
           required
@@ -52,6 +55,8 @@ export function SleepForm({
           name="wakeAt"
           type="datetime-local"
           label={t('wakeAt')}
+          what={help('wakeAt.what')}
+          howTo={help('wakeAt.how')}
           defaultValue={values.wakeAt}
           max={maxDateTime}
           required
@@ -60,7 +65,7 @@ export function SleepForm({
         <SelectField
           name="quality"
           label={t('quality')}
-          hint={t('qualityHint')}
+          what={help('quality.what')}
           defaultValue={values.quality?.toString() ?? ''}
           error={err.quality}
           options={[
@@ -78,6 +83,8 @@ export function SleepForm({
           min={0}
           max={50}
           label={t('awakenings')}
+          what={help('awakenings.what')}
+          example={help('awakenings.example')}
           defaultValue={values.awakenings ?? ''}
           error={err.awakenings}
         />
@@ -85,7 +92,7 @@ export function SleepForm({
       <TextAreaField
         name="note"
         label={t('note')}
-        hint={t('noteHint')}
+        what={help('note.what')}
         maxLength={1000}
         defaultValue={values.note ?? ''}
         error={err.note}

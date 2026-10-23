@@ -65,15 +65,15 @@ test('atividade: séries de força e progressão por exercício, sem sugestão d
   await newPerson(page, 'atividade');
   await page.goto('/atividade');
   await chooseOption(page, 'Tipo', 'strength');
-  await page.getByLabel('Duração (minutos)').fill('40');
+  await page.getByLabel('Duração, em minutos').fill('40');
   await page.locator('summary', { hasText: 'Séries de força (opcional)' }).click();
   const sets = page.getByRole('group', { name: /Série/ });
   await sets.nth(0).getByLabel('Exercício').fill('Agachamento');
   await sets.nth(0).getByLabel('Repetições').fill('10');
-  await sets.nth(0).getByLabel('Carga em kg (opcional)').fill('20');
+  await sets.nth(0).getByLabel('Carga (opcional), em quilogramas').fill('20');
   await sets.nth(1).getByLabel('Exercício').fill('Agachamento');
   await sets.nth(1).getByLabel('Repetições').fill('10');
-  await sets.nth(1).getByLabel('Carga em kg (opcional)').fill('22,5');
+  await sets.nth(1).getByLabel('Carga (opcional), em quilogramas').fill('22,5');
   await page.getByRole('button', { name: 'Registrar atividade' }).click();
   await expect(page.getByText('Registro salvo.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Progressão por exercício' })).toBeVisible();

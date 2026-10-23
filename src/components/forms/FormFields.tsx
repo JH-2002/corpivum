@@ -5,42 +5,70 @@ import { useFormStatus } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { Button, type ButtonVariant } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
+import { FieldHelp, fieldHelpIds, UnitLabel, UnitSuffix, type FieldHelpProps } from './FieldHelp';
 import type { FormState } from './form-state';
 
 const inputClass =
   'min-h-11 w-full rounded-md border border-border-strong bg-surface px-3 text-base text-fg ' +
   'aria-[invalid=true]:border-danger';
 
-export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface TextFieldProps
+  extends InputHTMLAttributes<HTMLInputElement>, Omit<FieldHelpProps, 'example'> {
   name: string;
   label: string;
   hint?: string;
   error?: string;
+  /** Exemplo (9d): "Ex.: 45 min"; com `formatOnly`, "Formato: 12,3 cm". */
+  example?: string;
+  formatOnly?: boolean;
 }
 
-/** Campo com rótulo, dica e erro ligados por aria-describedby (WCAG 2.2: 1.3.1, 3.3.1, 3.3.2). */
-export function TextField({ name, label, hint, error, className, ...props }: TextFieldProps) {
+/**
+ * Campo com rótulo, explicação (o que é, como medir, exemplo, 9d), dica e erro ligados por aria-describedby
+ * (WCAG 2.2: 1.3.1, 3.3.1, 3.3.2). A unidade aparece dentro do campo e entra por extenso no nome acessível.
+ */
+export function TextField({
+  name,
+  label,
+  hint,
+  error,
+  className,
+  unit,
+  what,
+  howTo,
+  example,
+  formatOnly,
+  ...props
+}: TextFieldProps) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
+  const help = { what, howTo, example, formatOnly, unit };
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       <label htmlFor={id} className="text-sm font-semibold">
         {label}
+        <UnitLabel unit={unit} />
       </label>
+      <FieldHelp id={id} label={label} {...help} />
       {hint ? (
         <p id={hintId} className="text-sm text-fg-muted">
           {hint}
         </p>
       ) : null}
-      <input
-        id={id}
-        name={name}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={[hintId, errorId].filter(Boolean).join(' ') || undefined}
-        className={inputClass}
-        {...props}
-      />
+      <div className="relative">
+        <input
+          id={id}
+          name={name}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={
+            [...fieldHelpIds(id, help), hintId, errorId].filter(Boolean).join(' ') || undefined
+          }
+          className={cn(inputClass, unit && 'pr-14')}
+          {...props}
+        />
+        <UnitSuffix unit={unit} />
+      </div>
       {error ? (
         <p id={errorId} className="text-sm font-semibold text-danger">
           {/* Ícone textual: a cor nunca é o único canal. */}

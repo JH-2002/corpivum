@@ -10,14 +10,20 @@ import { useDialogFocusLoop } from '@/components/ui/dialog-focus';
 
 /**
  * Passos do tour do painel (ADR-0025). Cada passo aponta para um elemento marcado com
- * `data-tour="<alvo>"`; o passo some quando o alvo não está na tela (ex.: estado vazio sem gráfico).
+ * `data-tour="<alvo>"`; o passo some quando o alvo não está na tela (ex.: estado vazio sem gráfico). Passos sem alvo
+ * só explicam (o diálogo do registro rápido e os campos ficam em outras telas). Na 9d entraram o twin do início e
+ * o caminho para registrar: botão, escolha do tema e campo explicado.
  */
 export const TOUR_STEPS = [
   { id: 'welcome', target: null },
+  { id: 'twinHero', target: 'twin-hero' },
   { id: 'summary', target: 'summary' },
   { id: 'score', target: 'score' },
   { id: 'cards', target: 'cards' },
   { id: 'chart', target: 'chart' },
+  { id: 'register', target: 'register' },
+  { id: 'quicklog', target: null },
+  { id: 'formField', target: null },
   { id: 'period', target: 'period' },
   { id: 'help', target: 'help' },
 ] as const;
@@ -28,8 +34,14 @@ export const DEMO_TOUR_STORAGE_KEY = 'hm_tour_demo_seen';
 
 const ACTIVE_ATTR = 'data-tour-active';
 
+/**
+ * Alvo do passo. Quando há mais de um (o "Registrar" do topo no desktop e o da barra de baixo no celular), vale o
+ * que está visível; sem nenhum visível (ex.: ambiente sem layout), o primeiro.
+ */
 function targetOf(step: Step): HTMLElement | null {
-  return step.target ? document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`) : null;
+  if (!step.target) return null;
+  const all = [...document.querySelectorAll<HTMLElement>(`[data-tour="${step.target}"]`)];
+  return all.find((el) => el.getClientRects().length > 0) ?? all[0] ?? null;
 }
 
 function readLocalSeen(): boolean {
