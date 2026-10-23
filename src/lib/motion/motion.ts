@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { useStoredValue } from '@/lib/browser-store';
+import { MOTION_REDUCED as REDUCED, MOTION_STORAGE_KEY } from './init-script';
 
-/** Opção "Reduzir animações" (ADR-0048): só uma preferência de interface, sem dado pessoal. */
-export const MOTION_STORAGE_KEY = 'hm.motion';
-const REDUCED = 'reduced';
+export { MOTION_STORAGE_KEY };
 
 function mediaStore(query: string, serverValue: boolean) {
   const subscribe = (callback: () => void) => {
@@ -26,6 +25,16 @@ const useSystemReducedMotion = mediaStore('(prefers-reduced-motion: reduce)', tr
 
 /** Mouse ou trackpad: `(hover: hover) and (pointer: fine)`. Toque não conta. No servidor, `false`. */
 export const useFinePointer = mediaStore('(hover: hover) and (pointer: fine)', false);
+
+/**
+ * Movimento desligado pelo sistema (`prefers-reduced-motion`) ou pela opção do app. Sem efeitos colaterais: serve
+ * a gráficos, tour e twin, que antes só olhavam a preferência do sistema (9f). No servidor, reduzido.
+ */
+export function useReducedMotion(): boolean {
+  const system = useSystemReducedMotion();
+  const [stored] = useStoredValue('local', MOTION_STORAGE_KEY);
+  return system || stored === REDUCED;
+}
 
 export interface MotionPreference {
   /** Movimento desligado: pelo sistema ou pela opção do app. */
