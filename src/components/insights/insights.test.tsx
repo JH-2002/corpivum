@@ -22,7 +22,7 @@ import {
 } from '@/modules/insights/fixtures';
 import { findForbiddenTerms } from '../../../tests/content/forbidden-terms';
 import { renderWithIntl } from '../../../tests/render';
-import { PeriodInsights } from './PeriodInsights';
+import { highlightColumns, PeriodInsights } from './PeriodInsights';
 
 /**
  * Texto final da camada explicativa (ADR-0025), montado com o catálogo pt-BR real. Fecha a lacuna do
@@ -196,5 +196,14 @@ describe('modo demo (LEG-X02)', () => {
       unmount();
     }
     expect(eachDay(range)).toHaveLength(30);
+  });
+});
+
+describe('grade dos destaques (9d0)', () => {
+  it('nenhum cartão solto: as colunas acompanham a quantidade de destaques', () => {
+    expect(highlightColumns(1)).toBe('');
+    expect(highlightColumns(2)).toBe('sm:grid-cols-2');
+    expect(highlightColumns(3)).toBe('sm:grid-cols-3');
+    expect(highlightColumns(4)).toBe('sm:grid-cols-2 xl:grid-cols-4');
   });
 });

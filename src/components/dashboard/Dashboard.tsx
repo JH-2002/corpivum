@@ -1,4 +1,4 @@
-import { Moon, Orbit, PersonStanding, ListChecks, type LucideIcon } from 'lucide-react';
+import { Moon, Orbit, PersonStanding, ListChecks, Sparkles, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { useTranslations } from 'next-intl';
@@ -14,7 +14,7 @@ import {
 } from '@/components/health/format';
 import { HabitCheckButton } from '@/components/health/HabitCheckButton';
 import { ScoreReviewForm } from '@/components/health/ScoreReviewForm';
-import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
+import { PeriodSummary, summaryTextId } from '@/components/insights/PeriodInsights';
 import { Masked } from '@/components/privacy-mode/Masked';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
@@ -43,6 +43,7 @@ function DomainCard({
   origin,
   spark,
   noData,
+  largest = false,
 }: {
   title: string;
   /** Sem `href` (modo apresentação), o título não leva para fora da tela. */
@@ -55,6 +56,8 @@ function DomainCard({
   origin: string;
   spark?: ReactNode;
   noData: boolean;
+  /** O indicador que mais mudou no período (o destaque do resumo, 9d0): marcado com texto, não só cor. */
+  largest?: boolean;
 }) {
   const t = useTranslations('dashboard');
   return (
@@ -81,6 +84,12 @@ function DomainCard({
         <>
           <p className="tabular text-2xl font-bold">{value}</p>
           {variation ? <p className="text-sm text-fg-muted">{variation}</p> : null}
+          {largest ? (
+            <p className="inline-flex items-center gap-1.5 self-start rounded-full border border-primary px-2.5 py-0.5 text-xs font-semibold">
+              <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
+              {t('largestChange')}
+            </p>
+          ) : null}
           {spark}
           <details className="text-sm">
             <summary className="inline-flex min-h-11 cursor-pointer items-center text-primary">
@@ -212,6 +221,8 @@ export function Dashboard({
   const sleepTrend = trendOf(cards.sleep.deltaMinutes);
   const habitsTrend = trendOf(cards.habits.deltaPoints);
   const bodyTrend = trendOf(cards.body.changeKg);
+  // Destaque do resumo ("largest.sleep" ou "largest.habits"): o cartão desse indicador leva a marca.
+  const largest = data.insights.highlights[0]?.key.replace(/^largest\./, '');
 
   const content = (
     <div className="flex flex-col gap-6">
@@ -225,8 +236,9 @@ export function Dashboard({
           href={twinHref}
         />
       ) : null}
-      {/* Resumo em texto por regras, destaques e, se for o caso, apoio (ADR-0025). */}
-      <PeriodInsights insights={data.insights} demo={mode !== 'own'} />
+      {/* Resumo em texto por regras e, se for o caso, apoio (ADR-0025). O destaque do início (a maior mudança)
+          repetia um indicador: virou uma marca no cartão do indicador (9d0). */}
+      <PeriodSummary insights={data.insights} demo={mode !== 'own'} />
 
       <section
         aria-labelledby="dash-score"
@@ -288,6 +300,7 @@ export function Dashboard({
                 : null
             }
             origin={t('origins.sleep', { count: cards.sleep.count })}
+            largest={largest === 'sleep'}
             spark={<Sparkline data={cards.sleep.spark} color="var(--hm-chart-1)" />}
           />
           <DomainCard
@@ -306,6 +319,7 @@ export function Dashboard({
                 : null
             }
             origin={t('origins.habits', { count: cards.habits.activeHabits })}
+            largest={largest === 'habits'}
             spark={<Sparkline data={cards.habits.spark} color="var(--hm-chart-1)" />}
           />
           <DomainCard
