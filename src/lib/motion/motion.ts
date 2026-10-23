@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { useStoredValue } from '@/lib/browser-store';
-import { MOTION_REDUCED as REDUCED, MOTION_STORAGE_KEY } from './init-script';
+import { MOTION_REDUCED as REDUCED, MOTION_STORAGE_KEY } from './keys';
 
 export { MOTION_STORAGE_KEY };
 

@@ -5,13 +5,14 @@ import { HabitCheckButton } from '@/components/health/HabitCheckButton';
 import { WeeklyList } from '@/components/health/WeeklyList';
 import { CountUp, formatCount } from '@/components/ui/CountUp';
 import { Magnetic } from '@/components/ui/Magnetic';
+import { ProgressTrack } from '@/components/ui/ProgressTrack';
 import { messages } from '@/i18n/messages';
 import { addDays } from '@/lib/dates';
 import { generateDemoData } from '@/modules/demo/generator';
 import { buildDashboard } from '@/modules/health/dashboard';
 import { createDemoSource } from '@/modules/health/source';
 import { renderWithIntl } from '../../../tests/render';
-import { MOTION_INIT_SCRIPT, MOTION_STORAGE_KEY } from './init-script';
+import { MOTION_STORAGE_KEY } from './keys';
 import { useReducedMotion } from './motion';
 import { useReveal } from './reveal';
 
@@ -92,19 +93,6 @@ describe('preferência de movimento (9f, ADR-0055)', () => {
     mockMedia({ fine: true, reduced: true });
     renderWithIntl(<Probe />);
     expect(screen.getByText('reduzido')).toBeInTheDocument();
-  });
-
-  it('script inicial marca o <html> antes da hidratação só com a opção ligada, e não quebra sem storage', () => {
-    const run = () => new Function(MOTION_INIT_SCRIPT)() as void;
-    run();
-    expect(document.documentElement.dataset.motion).toBeUndefined();
-    window.localStorage.setItem(MOTION_STORAGE_KEY, 'reduced');
-    run();
-    expect(document.documentElement.dataset.motion).toBe('reduced');
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('bloqueado');
-    });
-    expect(run).not.toThrow();
   });
 });
 
@@ -197,6 +185,29 @@ describe('gráficos que se revelam ao entrar na tela', () => {
     vi.stubGlobal('IntersectionObserver', undefined);
     renderWithIntl(<Revealed kind="draw" />);
     expect(screen.getByTestId('plot')).not.toHaveAttribute('data-reveal-state');
+  });
+});
+
+describe('barra das metas', () => {
+  it('enche ao entrar na tela, sem mudar o valor lido pelo leitor de tela', () => {
+    renderWithIntl(<ProgressTrack percent={60} label="Alongar" valueText="3 de 5 dias" />);
+    const bar = screen.getByRole('progressbar', { name: 'Alongar' });
+    expect(bar).toHaveAttribute('aria-valuenow', '60');
+    expect(bar).toHaveAttribute('data-reveal', 'grow');
+    // Vem do servidor desenhada; fora da tela na primeira resposta do observador, esvazia até entrar.
+    expect(bar).not.toHaveAttribute('data-reveal-state');
+    act(() => report(false));
+    expect(bar).toHaveAttribute('data-reveal-state', 'hidden');
+    act(() => {
+      enter();
+      vi.advanceTimersByTime(20);
+    });
+    expect(bar).toHaveAttribute('data-reveal-state', 'shown');
+  });
+  it('já na tela ao hidratar: fica como veio do servidor, sem piscar', () => {
+    renderWithIntl(<ProgressTrack percent={60} label="Alongar" valueText="3 de 5 dias" />);
+    act(() => report(true));
+    expect(screen.getByRole('progressbar')).not.toHaveAttribute('data-reveal-state');
   });
 });
 

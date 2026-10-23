@@ -334,18 +334,12 @@ test.describe('movimento e interatividade (9f, ADR-0055)', () => {
     expect(results.violations).toEqual([]);
   });
 
-  test('"Reduzir animações" vale desde a primeira pintura: sem contagem, sem gráfico escondido, sem ímã', async ({
-    page,
-  }) => {
+  test('"Reduzir animações": sem contagem, sem gráfico escondido, sem ímã', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => localStorage.setItem('hm.motion', 'reduced'));
-    // Antes de qualquer JS do app: o script inicial (com nonce) já marcou o <html>.
-    await page.route('**/_next/static/chunks/**', (route) => route.abort());
     await page.goto('/demo');
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
-    await page.unroute('**/_next/static/chunks/**');
-    await page.reload();
     await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
     await expect(page.locator('[data-reveal]').first()).toBeAttached();
     await expect(page.locator('[data-reveal-state]')).toHaveCount(0);
     for (const counter of await page.locator('[data-count-up] > span:nth-child(2)').all()) {

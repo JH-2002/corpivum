@@ -2,12 +2,10 @@ import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import localFont from 'next/font/local';
-import { headers } from 'next/headers';
 import { connection } from 'next/server';
 import type { ReactNode } from 'react';
 import { shellMessages } from '@/i18n/client-messages';
 import { isDemoOnly } from '@/lib/demo-mode';
-import { MOTION_INIT_SCRIPT } from '@/lib/motion/init-script';
 import '@/styles/globals.css';
 
 // Inter variável auto-hospedada (OFL 1.1; ADR-0046), reduzida ao latino e ao peso 400–700 (27,6 KiB): servida pelo
@@ -45,14 +43,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // renderização dinâmica, e as páginas leem o ambiente na requisição, não no build. Antes isso vinha da leitura
   // de `headers()` para o script de tema, que saiu com o tema único (ADR-0046).
   await connection();
-  // Nonce da CSP gerado no proxy (ADR-0006), para o script inicial de movimento (9f, ADR-0055).
-  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
-    // O script inicial pode marcar `data-motion` antes da hidratação.
-    <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
-      <head>
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: MOTION_INIT_SCRIPT }} />
-      </head>
+    <html lang="pt-BR" className={inter.variable}>
       <body className="min-h-dvh antialiased">
         {/* Só as mensagens do shell vão ao navegador; cada página acrescenta as suas (withRouteMessages, ADR-0052).
             No modo só demo, nunca os textos jurídicos (ADR-0044). */}

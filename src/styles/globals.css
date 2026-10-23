@@ -215,11 +215,6 @@
     transform: scale(1.18);
   }
 }
-@keyframes hm-grow {
-  from {
-    transform: scaleX(0);
-  }
-}
 @keyframes hm-fade {
   from {
     opacity: 0;
@@ -267,12 +262,6 @@ details[open] > summary ~ * {
   animation: hm-pop 260ms ease-out;
 }
 
-/* Barra de progresso de meta (hábito, sono, atividade; nunca peso nem calorias, LEG-M06/M07). */
-.hm-grow {
-  transform-origin: left;
-  animation: hm-grow 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms backwards;
-}
-
 /* Diálogo do tour: o conteúdo de cada passo esmaece; o destaque do alvo aparece se aproximando. */
 .hm-fade {
   animation: hm-fade 200ms ease-out;
@@ -300,6 +289,13 @@ details[open] > summary ~ * {
 [data-reveal='fade'][data-reveal-state='hidden'] > * {
   opacity: 0;
 }
+/* Barra de progresso de meta (hábito, sono, atividade; nunca peso nem calorias, LEG-M06/M07). */
+[data-reveal='grow'] > * {
+  transition: transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+[data-reveal='grow'][data-reveal-state='hidden'] > * {
+  transform: scaleX(0);
+}
 
 /* Transição entre páginas (`<ViewTransition>`): só esmaecimento curto. */
 ::view-transition-group(*),
@@ -316,6 +312,7 @@ details[open] > summary ~ * {
   [data-reveal-state='hidden'] > * {
     clip-path: none !important;
     opacity: 1 !important;
+    transform: none !important;
   }
   ::view-transition-group(*),
   ::view-transition-old(*),
@@ -329,6 +326,7 @@ details[open] > summary ~ * {
 [data-motion='reduced'] [data-reveal-state='hidden'] > * {
   clip-path: none !important;
   opacity: 1 !important;
+  transform: none !important;
 }
 [data-motion='reduced']::view-transition-group(*),
 [data-motion='reduced']::view-transition-old(*),
