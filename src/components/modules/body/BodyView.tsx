@@ -219,7 +219,7 @@ export function BodyView({
                   start: w.start,
                   end: w.end,
                   content: (
-                    <ul className="flex flex-col gap-3">
+                    <ul key={w.start} className="flex flex-col gap-3">
                       {w.items.map(({ record: r, fields }) => (
                         <li
                           key={r.id}

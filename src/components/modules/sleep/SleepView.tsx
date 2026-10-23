@@ -151,7 +151,7 @@ export function SleepView({
                 start: w.start,
                 end: w.end,
                 content: (
-                  <ul className="flex flex-col gap-3">
+                  <ul key={w.start} className="flex flex-col gap-3">
                     {w.items.map((r) => (
                       <li
                         key={r.id}

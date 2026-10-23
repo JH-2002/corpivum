@@ -9,6 +9,7 @@ export interface WeekBlock {
   start: string;
   /** Domingo da semana (ISO). */
   end: string;
+  /** Vindo de Server Component, o elemento precisa de `key` (atravessa a fronteira RSC dentro do array). */
   content: ReactNode;
 }
 

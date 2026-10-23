@@ -172,7 +172,7 @@ export function TimelineView({
             weeks={groupByWeek(days, (d) => d.day).map((w) => ({
               start: w.start,
               end: w.end,
-              content: <ol className="flex flex-col gap-4">{w.items.map(dayItem)}</ol>,
+              content: <ol key={w.start} className="flex flex-col gap-4">{w.items.map(dayItem)}</ol>,
             }))}
           />
         </section>
