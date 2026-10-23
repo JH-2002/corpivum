@@ -8,6 +8,7 @@ import {
   seedSyntheticHealthData,
   withAdmin,
 } from './fixtures';
+import { settled } from './settle';
 
 /**
  * Modo privacidade global (ADR-0035, LEG-M06): com ele ligado, nenhum valor de peso, medida, altura ou
@@ -120,7 +121,7 @@ test('ligado, nenhum valor do corpo nem calorias no texto e no HTML das telas', 
   // Datas e quantidade de registros continuam (PR3-B3).
   await page.goto('/corpo');
   await expect(page.getByText(/medições?\. Os valores estão ocultos\./)).toBeVisible();
-  const axe = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const axe = await new AxeBuilder({ page: await settled(page) }).withTags(WCAG_TAGS).analyze();
   expect(axe.violations.map((v) => v.id)).toEqual([]);
 
   // Desligar devolve os valores.

@@ -7,6 +7,7 @@ import {
   seedSyntheticHealthData,
   withAdmin,
 } from './fixtures';
+import { settled } from './settle';
 
 /**
  * Relatórios e exportação (§29, LEG-D03, ADR-0032): gerar, baixar pelo link autenticado, isolamento entre
@@ -50,7 +51,7 @@ test('relatório na tela: rodapé fixo, sem IMC e acessível', async ({ browser 
   await page.goto('/corpo');
   await expect(page.locator('main')).not.toContainText(/\bIMC\b/);
   await page.goto('/relatorios?tipo=year');
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const results = await new AxeBuilder({ page: await settled(page) }).withTags(WCAG_TAGS).analyze();
   expect(results.violations).toEqual([]);
   await context.close();
 });

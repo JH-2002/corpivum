@@ -7,6 +7,7 @@ import {
   loginWithOwnIp,
   seedSyntheticHealthData,
 } from './fixtures';
+import { settled } from './settle';
 
 /**
  * Modo apresentação (§45, ADR-0035): tela cheia, quatro telas (painel, corpo 3D, timeline, relatório)
@@ -35,7 +36,7 @@ async function expectScreen(page: Page, name: string, position: number) {
   const unstick = await page.addStyleTag({
     content: 'header, nav { position: static !important; }',
   });
-  const axe = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const axe = await new AxeBuilder({ page: await settled(page) }).withTags(WCAG_TAGS).analyze();
   await unstick.evaluate((style) => style.parentNode?.removeChild(style));
   expect(axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(', ')}`)).toEqual(
     [],

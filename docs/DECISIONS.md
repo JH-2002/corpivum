@@ -2055,3 +2055,49 @@ Agora cada campo mostra uma linha curta, "o que é" e a dica (faixa aceita, pont
 `<details>` fechado: "Como medir", ou "Ver exemplo" quando o campo só tem exemplo, com o exemplo dentro. O leitor
 de tela continua recebendo a linha curta e o exemplo pelo `aria-describedby` e a unidade por extenso no nome. O
 eixo do "Horário de sono" ganhou margem em cima: o rótulo do primeiro tique (eixo invertido) era cortado.
+
+## ADR-0055 — Sistema de movimento e interatividade (Fase 9f)
+**Contexto.** Última sub-fase do redesenho visual. Base já existente: `TiltCard`, `useFinePointer`,
+`useMotionPreference` e a opção "Reduzir animações" (ADR-0048). Plano aprovado com três escolhas do produto: ímã
+só no Registrar do topo, no desktop; gráficos de Corpo e Alimentação só esmaecem; `/demo` no desktop entra na
+medição de performance. Acréscimos pedidos na aprovação: brilho e borda azul em todo cartão e botão clicável ao
+passar o mouse, destaque nas linhas das listas e entrada em sequência só dos itens novos do "Ver mais", tudo sem JS.
+**Decisão.**
+- **Sem biblioteca nova.** CSS, Web Animations, IntersectionObserver e o `<ViewTransition>` do React 19.3. Só
+  `transform`, `opacity`, `clip-path`, cor e sombra. Nada começa antes da hidratação nem muda o HTML do servidor,
+  então a primeira pintura e o LCP não mudam.
+- **Uma preferência só.** `useReducedMotion()` (`src/lib/motion/motion.ts`) une `prefers-reduced-motion` e a opção do
+  app; gráficos, tour e twin, que só olhavam o sistema, passam a usá-la. **Script inicial** com o nonce da CSP
+  (`MOTION_INIT_SCRIPT`, `src/lib/motion/init-script.ts`, no `<head>` do layout raiz) marca `data-motion="reduced"`
+  antes da primeira pintura: o ADR-0048 dispensava o script porque o tilt só reagia ao mouse, mas a barra das metas e
+  a entrada das listas animam sem interação. O CSS de "reduzido" também zera atrasos e desfaz os estados escondidos.
+- **Sem JS (CSS em `globals.css`):** `.hm-hover` (botões, `ChoiceMenu`, opções do Registrar, cartões com inclinação,
+  check de hábito, regiões do twin) e `.hm-row` (linhas de Timeline, refeições, noites, medições e sessões) só com
+  `(hover: hover) and (pointer: fine)`; `.hm-press` (escala 0,98 ao pressionar, também no toque, desligada com
+  "reduzido"); conteúdo de `<details>` entra suave; `data-enter` no `WeeklyList` só nas semanas novas, com as linhas
+  em sequência; pulo do ícone do hábito só depois do clique; barra das metas enche (`.hm-grow`; peso e calorias
+  não têm barra); passo do tour esmaece e o destaque do alvo aparece se aproximando.
+- **Com JS pequeno:** `CountUp` (Índice, sono médio e hábitos no início; nunca peso, medidas nem alimentação,
+  LEG-M06/M07): só conta se o número está fora da tela ao hidratar; o valor final fica no DOM (transparente durante a
+  contagem) e é o que o leitor de tela lê, os intermediários são `aria-hidden`, sem `aria-live`. `useReveal`: o
+  gráfico abre da esquerda para a direita (`draw`) ou só esmaece (`fade`: Corpo, Alimentação, relatórios e
+  mini-gráficos de medidas) ao entrar na tela; o recharts deixa de animar (`isAnimationActive={false}`), o que tira
+  trabalho da carga. O recorte vai no filho do contêiner observado: o IntersectionObserver do Chromium conta o
+  `clip-path` do próprio alvo. `Magnetic` (até 4 px, só no Registrar do topo, só com mouse; o contêiner não se move).
+  Twin: a troca de destaque de região leva 240 ms no shader, pedindo quadros só enquanto dura (`frameloop="demand"`).
+- **Troca de página:** `<ViewTransition>` em volta do conteúdo do shell (app e demo), esmaecimento de 200 ms; direta
+  com "reduzido" (regras nos pseudo-elementos `::view-transition-*`, que a regra geral não alcança). Durante a
+  transição o Next só repõe o `<title>` no fim.
+- **Desvios do plano:** o destaque do tour não desliza de um alvo ao outro (o contorno é do próprio alvo; deslizar
+  exigiria uma camada nova), ele aparece se aproximando e o texto esmaece; contagem em minutos de atividade não se
+  aplica (o início não tem cartão de atividade); a inclinação dos Destaques já existia (ADR-0048); o twin não fica
+  fora da transição de página (ela só esmaece o quadro todo, sem mover nada).
+**Testes.** Unitários (`src/lib/motion/motion.test.tsx`): preferência unida, script inicial (com e sem storage),
+contagem (formatos, visível sem contar, fora da tela conta com o valor final no DOM, "reduzido"), peso sem contagem
+no início, revelação (entra, termina sem recorte, "reduzido", sem IntersectionObserver), "Ver mais" só nas semanas
+novas, pulo só depois do clique, ímã (mouse, toque, "reduzido"). E2e (`demo.spec.ts`): desktop com mouse (contagem,
+gráfico, brilho, ímã com contêiner parado, "Ver mais" com foco e axe), "reduzido" desde a primeira pintura (o
+`<html>` marcado mesmo sem o JS do app) e toque sem inclinação, ímã nem hover. `e2e/settle.ts` espera a página
+assentar antes de todo axe (sem transição nem animação em curso, título presente, mouse fora, página no topo).
+Vídeo de revisão: `pnpm video:movimento` (projeto Playwright `video`, só sob demanda) grava
+`capturas/movimento-9f.webm`.
