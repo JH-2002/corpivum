@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import type { ReactNode } from 'react';
+import { ViewTransition, type ReactNode } from 'react';
 import { PolicyUpdateNotice } from '@/components/privacy/PolicyUpdateNotice';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { Header } from '@/components/shell/Header';
@@ -45,7 +45,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
                   documents={session.documentNotices}
                   action={acknowledgePolicyNoticeAction}
                 />
-                {children}
+                {/* Troca de página com esmaecimento curto (9f, ADR-0055); direta com "Reduzir animações". */}
+                <ViewTransition>{children}</ViewTransition>
               </div>
             </main>
             <footer className="border-t border-border px-4 pt-4 pb-24 text-xs text-fg-muted md:pb-4 lg:px-6">

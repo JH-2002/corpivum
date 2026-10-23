@@ -1,8 +1,8 @@
 'use client';
 
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
-import { AdditiveBlending, Color, FrontSide, NormalBlending } from 'three';
+import { useEffect, useMemo, useRef } from 'react';
+import { AdditiveBlending, Color, FrontSide, NormalBlending, type ShaderMaterial } from 'three';
 import { usePrefersReducedMotion } from '@/components/charts/reduced-motion';
 import { useThemeToken, useTokenColor } from '../hooks';
 
@@ -87,10 +87,48 @@ const makeUniforms = () => ({
   uBaseAlpha: { value: 0.16 },
 });
 
+/** Duração da troca de destaque de uma região (9f, ADR-0055). */
+export const HOLO_STATE_MS = 240;
+
 export function HologramMaterial({ theme, state }: { theme: HoloTheme; state: HoloState }) {
   const uniforms = useMemo(() => makeUniforms(), []);
+  const material = useRef<ShaderMaterial>(null);
+  // Troca de destaque da região em `HOLO_STATE_MS` (9f, ADR-0055), pedindo quadros só enquanto dura
+  // (`frameloop="demand"`); direta com "Reduzir animações". Mexe nos uniforms pela ref do material.
+  const reduced = usePrefersReducedMotion();
+  const invalidate = useThree((s) => s.invalidate);
+  const first = useRef(true);
+  useEffect(() => {
+    const u = material.current?.uniforms;
+    if (!u?.uSelected || !u.uDimmed) return;
+    const selected = u.uSelected;
+    const dimmed = u.uDimmed;
+    const target = { selected: state === 'selected' ? 1 : 0, dimmed: state === 'dimmed' ? 1 : 0 };
+    const from = { selected: Number(selected.value), dimmed: Number(dimmed.value) };
+    // Na primeira pintura, o estado já vem certo (sem animar a entrada do modelo).
+    if (reduced || first.current) {
+      first.current = false;
+      selected.value = target.selected;
+      dimmed.value = target.dimmed;
+      invalidate();
+      return;
+    }
+    let frame = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / HOLO_STATE_MS);
+      const e = 1 - (1 - p) ** 2;
+      selected.value = from.selected + (target.selected - from.selected) * e;
+      dimmed.value = from.dimmed + (target.dimmed - from.dimmed) * e;
+      invalidate();
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [material, state, reduced, invalidate]);
   return (
     <shaderMaterial
+      ref={material}
       vertexShader={VERTEX}
       fragmentShader={FRAGMENT}
       uniforms={uniforms}
@@ -98,8 +136,6 @@ export function HologramMaterial({ theme, state }: { theme: HoloTheme; state: Ho
       uniforms-uRim-value={theme.rim}
       uniforms-uScan-value={theme.scan}
       uniforms-uHighlight-value={theme.highlight}
-      uniforms-uSelected-value={state === 'selected' ? 1 : 0}
-      uniforms-uDimmed-value={state === 'dimmed' ? 1 : 0}
       uniforms-uBaseAlpha-value={theme.additive ? 0.12 : 0.16}
       transparent
       depthWrite={false}

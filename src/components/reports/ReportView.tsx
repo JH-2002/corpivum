@@ -90,6 +90,8 @@ export function ReportView({ model, generatedOn }: { model: ReportModel; generat
             ) : null}
             {chart && chartDoc ? (
               <TimeChart
+                // Relatório é documento: só esmaece, em qualquer tema (inclusive corpo, LEG-M06).
+                entrance="fade"
                 title={`${chartDoc.title} · ${chartDoc.caption}`}
                 badge={level(chart.badge)}
                 describedBy={`${headingId}-text`}
