@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { formatDuration } from '@/components/health/format';
 import { useReducedMotion } from '@/lib/motion/motion';
 
@@ -29,7 +29,7 @@ export function CountUp({ value, format = 'integer' }: { value: number; format?:
   const finalRef = useRef<HTMLSpanElement>(null);
   const countRef = useRef<HTMLSpanElement>(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const final = finalRef.current;
     const count = countRef.current;
     if (!final || !count) return;
@@ -38,14 +38,24 @@ export function CountUp({ value, format = 'integer' }: { value: number; format?:
       count.textContent = '';
     };
     if (reduced || typeof IntersectionObserver === 'undefined') return;
-    const box = final.getBoundingClientRect();
-    if (box.bottom > 0 && box.top < window.innerHeight) return;
-    final.style.opacity = '0';
-    count.textContent = formatCount(0, format);
     let frame = 0;
+    let first = true;
+    // A primeira resposta do observador diz se o número já está na tela, sem ler a caixa na hidratação (o que
+    // forçaria um cálculo de layout por número). Fora da tela, troca pelo 0 sem ninguém ver e conta ao entrar.
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
+        const visible = entries.some((e) => e.isIntersecting);
+        if (first) {
+          first = false;
+          if (visible) {
+            observer.disconnect();
+            return;
+          }
+          final.style.opacity = '0';
+          count.textContent = formatCount(0, format);
+          return;
+        }
+        if (!visible) return;
         observer.disconnect();
         const start = performance.now();
         const tick = (now: number) => {

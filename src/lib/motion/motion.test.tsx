@@ -35,7 +35,7 @@ function mockMedia({ fine, reduced }: { fine: boolean; reduced: boolean }) {
   })) as unknown as typeof window.matchMedia;
 }
 
-/** IntersectionObserver controlado pelo teste: `enter()` diz que todos os observados entraram na tela. */
+/** IntersectionObserver controlado pelo teste: `report(true)` diz que os observados estão na tela. */
 const observers: Array<{ cb: IntersectionObserverCallback; els: Element[] }> = [];
 class FakeObserver {
   private entry: { cb: IntersectionObserverCallback; els: Element[] };
@@ -50,27 +50,13 @@ class FakeObserver {
     this.entry.els = [];
   }
 }
-function enter() {
+function report(isIntersecting: boolean) {
   for (const o of observers) {
-    const entries = o.els.map((target) => ({ target, isIntersecting: true }));
+    const entries = o.els.map((target) => ({ target, isIntersecting }));
     if (entries.length) o.cb(entries as unknown as IntersectionObserverEntry[], {} as never);
   }
 }
-
-/** Tudo fora da tela (abaixo da dobra), como os cartões do início ao hidratar. */
-function belowTheFold() {
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
-    top: 5000,
-    bottom: 5100,
-    left: 0,
-    right: 100,
-    width: 100,
-    height: 100,
-    x: 0,
-    y: 5000,
-    toJSON: () => ({}),
-  });
-}
+const enter = () => report(true);
 
 beforeEach(() => {
   observers.length = 0;
@@ -130,26 +116,17 @@ describe('contagem dos números (CountUp)', () => {
   });
 
   it('já visível ao hidratar: mostra o valor final, sem contar', () => {
-    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
-      top: 100,
-      bottom: 140,
-      left: 0,
-      right: 100,
-      width: 100,
-      height: 40,
-      x: 0,
-      y: 100,
-      toJSON: () => ({}),
-    });
     const { container } = renderWithIntl(<CountUp value={72} />);
+    act(() => report(true));
     expect(container).toHaveTextContent(/^72$/);
     expect(container.querySelector('[aria-hidden="true"]')).toBeEmptyDOMElement();
   });
 
   it('fora da tela: conta ao entrar; o valor final continua no DOM para o leitor de tela', () => {
-    belowTheFold();
     const { container } = renderWithIntl(<CountUp value={80} format="percent" />);
     const [final, counter] = container.querySelectorAll('[data-count-up] > span');
+    // Primeira resposta do observador: fora da tela.
+    act(() => report(false));
     expect(final).toHaveTextContent('80%');
     expect(final).not.toHaveAttribute('aria-hidden');
     expect(counter).toHaveAttribute('aria-hidden', 'true');
@@ -166,9 +143,9 @@ describe('contagem dos números (CountUp)', () => {
   });
 
   it('com "Reduzir animações", não conta', () => {
-    belowTheFold();
     window.localStorage.setItem(MOTION_STORAGE_KEY, 'reduced');
     const { container } = renderWithIntl(<CountUp value={80} />);
+    act(() => report(false));
     expect(container.querySelector('[aria-hidden="true"]')).toBeEmptyDOMElement();
   });
 
