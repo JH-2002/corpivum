@@ -187,6 +187,8 @@ export async function seedSyntheticHealthData(userId: string): Promise<number> {
  * técnicas escritas por qualquer login (limites, fila, registros de acesso).
  * Só em teste com a tag `@isolado` (projeto próprio, depois da suíte paralela): as provas não têm FK para
  * users, e uma conta apagada por outro teste ao mesmo tempo deixaria prova de dono inexistente na contagem.
+ * Pela mesma razão, todo teste que exclui conta espera a purga terminar (ex.: rights.spec.ts): a varredura
+ * da subida do servidor não pode purgar sobra durante o projeto isolado.
  */
 export async function foreignRowsSince(since: Date): Promise<Record<string, number>> {
   return withAdmin(async (db) => {

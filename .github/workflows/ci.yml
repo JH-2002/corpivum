@@ -78,11 +78,12 @@ jobs:
       - run: pnpm db:deploy
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
-      # Inclui cadastro, menor sem linha no banco, revogação de sessão e CSP (LEG-S04, LEG-F01, LEG-S05).
+      # Inclui cadastro, revogação de sessão e CSP (LEG-S04, LEG-S05).
       - run: pnpm test:e2e --project=chromium --shard=${{ matrix.shard }}/2
-      # Menor e demo sem gravar nada, depois e sem nada em paralelo. Passo próprio: como dependência do `isolado`, o
-      # `chromium` não seria dividido entre as partes (rodaria inteiro em cada uma).
-      - run: pnpm test:e2e --project=isolado --no-deps --shard=${{ matrix.shard }}/2 --pass-with-no-tests
+      # Menor e demo sem linha no banco (LEG-F01, LEG-X02), depois e sem nada em paralelo. Passo próprio: como
+      # dependência do `isolado`, o `chromium` não seria dividido entre as partes. Sem shard (2 testes, nas duas
+      # partes): zero testes selecionados falha em vez de passar calado.
+      - run: pnpm test:e2e --project=isolado --no-deps
       - if: always()
         run: docker compose down -v
       - if: failure()

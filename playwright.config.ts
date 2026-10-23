@@ -55,6 +55,7 @@ export default defineConfig({
     },
     // "Nada gravado no banco" (menor de 18, demo): sozinhos, depois de toda a suíte paralela. As provas não têm
     // FK para users (LEG-R03); conta apagada por outro teste ao mesmo tempo deixaria prova de dono inexistente.
+    // `--project=chromium` sozinho não os roda: use `pnpm test:e2e` sem filtro ou `--project=isolado`.
     {
       name: 'isolado',
       use: {
