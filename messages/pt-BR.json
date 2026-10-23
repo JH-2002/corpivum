@@ -1991,6 +1991,7 @@
   },
   "fields": {
     "howTo": "Como medir",
+    "showExample": "Ver exemplo",
     "example": "Ex.: {value}",
     "unitSpoken": {
       "kg": "em quilogramas",

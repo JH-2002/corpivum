@@ -14,35 +14,18 @@ const controlClass =
   'min-h-11 w-full rounded-md border border-border-strong bg-surface px-3 text-base text-fg ' +
   'aria-[invalid=true]:border-danger';
 
-function Described({ id, hint, error }: { id: string; hint?: ReactNode; error?: string }) {
-  return (
-    <>
-      {hint ? (
-        <p id={`${id}-hint`} className="text-sm text-fg-muted">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={`${id}-error`} className="text-sm font-semibold text-danger">
-          <span aria-hidden="true">⚠ </span>
-          {error}
-        </p>
-      ) : null}
-    </>
-  );
+function FieldError({ id, error }: { id: string; error?: string }) {
+  return error ? (
+    <p id={`${id}-error`} className="text-sm font-semibold text-danger">
+      <span aria-hidden="true">⚠ </span>
+      {error}
+    </p>
+  ) : null;
 }
 
-function describedBy(
-  id: string,
-  hint?: ReactNode,
-  error?: string,
-  help: FieldHelpProps = {},
-): string | undefined {
-  return (
-    [...fieldHelpIds(id, help), hint ? `${id}-hint` : null, error ? `${id}-error` : null]
-      .filter(Boolean)
-      .join(' ') || undefined
-  );
+/** A dica entra na linha curta da explicação (`FieldHelp`, 9d1), não num parágrafo à parte. */
+function describedBy(id: string, error?: string, help: FieldHelpProps = {}): string | undefined {
+  return [...fieldHelpIds(id, help), error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined;
 }
 
 /**
@@ -82,11 +65,11 @@ export function SelectField({
         value={value}
         defaultValue={defaultValue}
         onChange={onValueChange}
-        describedBy={describedBy(id, hint, error, { what })}
+        describedBy={describedBy(id, error, { what, hint })}
         invalid={Boolean(error)}
-        help={<FieldHelp id={id} label={label} what={what} howTo={howTo} />}
+        help={<FieldHelp id={id} label={label} what={what} hint={hint} howTo={howTo} />}
       />
-      <Described id={id} hint={hint} error={error} />
+      <FieldError id={id} error={error} />
     </div>
   );
 }
@@ -113,18 +96,17 @@ export function TextAreaField({
       <label htmlFor={id} className="text-sm font-semibold">
         {label}
       </label>
-      <FieldHelp id={id} what={what} example={example} />
-      <Described id={id} hint={hint} />
+      <FieldHelp id={id} label={label} what={what} hint={hint} example={example} />
       <textarea
         id={id}
         name={name}
         rows={4}
         aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, hint, error, { what, example })}
+        aria-describedby={describedBy(id, error, { what, hint, example })}
         className={cn(controlClass, 'py-2')}
         {...props}
       />
-      <Described id={id} error={error} />
+      <FieldError id={id} error={error} />
     </div>
   );
 }
@@ -149,18 +131,14 @@ export function ScaleField({
   error?: string;
 }) {
   const id = useId();
+  const ends = `1 = ${low} · 5 = ${high}`;
   return (
     <fieldset
       className="flex flex-col gap-1"
-      aria-describedby={[...fieldHelpIds(id, { what }), `${id}-ends`, error ? `${id}-error` : null]
-        .filter(Boolean)
-        .join(' ')}
+      aria-describedby={describedBy(id, error, { what, hint: ends })}
     >
       <legend className="text-sm font-semibold">{legend}</legend>
-      <FieldHelp id={id} what={what} />
-      <p id={`${id}-ends`} className="text-sm text-fg-muted">
-        1 = {low} · 5 = {high}
-      </p>
+      <FieldHelp id={id} what={what} hint={ends} />
       <div className="flex flex-wrap gap-2">
         {[1, 2, 3, 4, 5].map((v) => (
           <label
@@ -179,7 +157,7 @@ export function ScaleField({
           </label>
         ))}
       </div>
-      <Described id={id} error={error} />
+      <FieldError id={id} error={error} />
     </fieldset>
   );
 }
@@ -202,7 +180,11 @@ export function OptionGroup({
   return (
     <fieldset className="flex flex-col gap-1" aria-describedby={hint ? `${id}-hint` : undefined}>
       <legend className="text-sm font-semibold">{legend}</legend>
-      <Described id={id} hint={hint} />
+      {hint ? (
+        <p id={`${id}-hint`} className="text-sm text-fg-muted">
+          {hint}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <label

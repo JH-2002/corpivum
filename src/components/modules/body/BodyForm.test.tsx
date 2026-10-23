@@ -37,6 +37,11 @@ describe('formulário de medidas: campo explicado (9d; protocolo do modelo 3D, A
       const details = within(field).getByText('Como medir').closest('details');
       expect(details).not.toHaveAttribute('open');
       expect(details).toHaveTextContent(how);
+      // Formulário leve (9d1): uma linha visível (o que é + faixa); o exemplo fica no "Como medir" fechado.
+      const line = [...field.querySelectorAll('p')].filter((p) => !p.closest('details'));
+      expect(line).toHaveLength(1);
+      expect(line[0]).toHaveTextContent(/^Circunferência d.*\. Faixa aceita: de \d+ a \d+\.$/);
+      expect(details).toHaveTextContent('Formato: 12,3 cm');
       const text = field.textContent ?? '';
       expect(findForbiddenTerms(text).map((t) => t.id)).toEqual([]);
     }

@@ -8,11 +8,14 @@ import type { MeasureUnit } from '@/components/health/format';
 export type FieldUnit = MeasureUnit | 'min' | 'km';
 
 /**
- * Explicação de um campo (9d): "o que é", "como medir" (aberto sob demanda) e um exemplo de formato. Os textos
- * vêm de `<módulo>.help.<campo>` (RASCUNHO `LEGAL-REVIEW`, OI-41); a unidade vem do código, nunca do texto.
+ * Explicação de um campo (9d; mais leve na 9d1): uma linha curta com o "o que é" e a dica (faixa aceita), e o
+ * "como medir" com o exemplo fechados num `<details>`, abertos só ao clicar. Os textos vêm de
+ * `<módulo>.help.<campo>` (RASCUNHO `LEGAL-REVIEW`, OI-41); a unidade vem do código, nunca do texto.
  */
 export interface FieldHelpProps {
   what?: ReactNode;
+  /** Dica curta na mesma linha do "o que é" (ex.: "Faixa aceita: de 20 a 300."). */
+  hint?: ReactNode;
   howTo?: ReactNode;
   /** Só o número ou o texto do exemplo; "Ex.:" e a unidade são acrescentados aqui. */
   example?: string;
@@ -30,11 +33,15 @@ function withUnit(value: string, unit?: FieldUnit): string {
   return unit === '%' ? `${value}%` : `${value} ${unit}`;
 }
 
-/** Ids que descrevem o controle (`aria-describedby`): o "o que é" e o exemplo. O "como medir" fica no `<details>`. */
+/**
+ * Ids que descrevem o controle (`aria-describedby`): a linha curta (`-what`, ou `-hint` sem "o que é") e o
+ * exemplo, que o leitor de tela lê mesmo com o `<details>` fechado. O "como medir" fica só no `<details>`.
+ */
 export function fieldHelpIds(id: string, help: FieldHelpProps): string[] {
-  return [help.what ? `${id}-what` : null, help.example ? `${id}-example` : null].filter(
-    (v): v is string => v !== null,
-  );
+  return [
+    help.what ? `${id}-what` : help.hint ? `${id}-hint` : null,
+    help.example ? `${id}-example` : null,
+  ].filter((v): v is string => v !== null);
 }
 
 /** Texto do rótulo lido pelo leitor de tela: a unidade por extenso ("Peso, em quilogramas"). */
@@ -71,6 +78,7 @@ export function FieldHelp({
   id,
   label,
   what,
+  hint,
   howTo,
   example,
   formatOnly,
@@ -81,27 +89,28 @@ export function FieldHelp({
   label?: string;
 }) {
   const t = useTranslations('fields');
-  if (!what && !howTo && !example) return null;
   return (
     <>
-      {what ? (
-        <p id={`${id}-what`} className="text-sm text-fg-muted">
+      {what || hint ? (
+        <p id={`${id}-${what ? 'what' : 'hint'}`} className="text-sm text-fg-muted">
           {what}
+          {what && hint ? ' ' : null}
+          {hint}
         </p>
       ) : null}
-      {howTo ? (
+      {howTo || example ? (
         <details className="text-sm" data-field-how="">
           <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary">
-            {t('howTo')}
+            {t(howTo ? 'howTo' : 'showExample')}
             {label ? <span className="sr-only">: {label}</span> : null}
           </summary>
-          <p className="pb-1 text-fg-muted">{howTo}</p>
+          {howTo ? <p className="pb-1 text-fg-muted">{howTo}</p> : null}
+          {example ? (
+            <p id={`${id}-example`} className="pb-1 text-fg-muted">
+              {t(formatOnly ? 'format' : 'example', { value: withUnit(example, unit) })}
+            </p>
+          ) : null}
         </details>
-      ) : null}
-      {example ? (
-        <p id={`${id}-example`} className="text-sm text-fg-muted">
-          {t(formatOnly ? 'format' : 'example', { value: withUnit(example, unit) })}
-        </p>
       ) : null}
     </>
   );
