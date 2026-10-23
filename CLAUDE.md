@@ -66,6 +66,9 @@ Adaptadores trocáveis: `KmsProvider`, `StorageProvider`, `MailProvider`, `JobQu
 ## Fluxo de trabalho
 - Plano antes de codar, uma fase por sessão, commits pequenos.
 - Antes de encerrar: `pnpm lint && pnpm typecheck && pnpm test`.
+- E2E local: no máximo 2 workers, como a CI (`workers: 2` nas configs do Playwright; nunca passar `--workers`
+  maior localmente); 8 workers já travaram a máquina.
+  Rodadas pesadas de verificação (suíte e2e inteira, perf) ficam para a CI; localmente, só os specs afetados.
 - Decisões → `docs/DECISIONS.md`. Dívida legal → marcar `LEGAL-REVIEW` e registrar em
   `docs/legal/OPEN_ISSUES.md`.
 - Ao tocar em dados sensíveis, auth, consentimento, exportação ou logs, rode o subagente

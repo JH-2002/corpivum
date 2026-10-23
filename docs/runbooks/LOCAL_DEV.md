@@ -63,6 +63,10 @@ pnpm lint && pnpm typecheck && pnpm test
 pnpm test:db            # integração com Postgres: RLS, sessões, MFA, limites, age gate (exige db:up)
 pnpm test:e2e           # Playwright + axe (instale o navegador uma vez: pnpm exec playwright install chromium)
 ```
+**Localmente, no máximo 2 workers no e2e**, como a CI. As configs do Playwright fixam `workers: 2` também fora da
+CI: o padrão (metade dos núcleos, 8 nesta máquina) já travou o computador. Não passe `--workers` maior que 2
+nesta máquina. Rodadas pesadas de verificação (suíte e2e inteira, perf) ficam para a CI; localmente, rode só os
+specs afetados (ex.: `pnpm test:e2e e2e/twin.spec.ts`).
 `test:db` inclui o ensaio de backup e restauração (`tests/db/backup.test.ts`): roda `pg_dump`/`pg_restore` no
 contêiner `db` e cria e destrói `healthmind_test_restore`. Precisa de `BACKUP_ENCRYPTION_KEY` no `.env` (volumes
 antigos: gere uma e acrescente) e do papel `app_backup` (`APP_BACKUP_PASSWORD`, `BACKUP_DATABASE_URL` e
