@@ -19,6 +19,8 @@ export function TwinHeroPlaceholder() {
     <section
       aria-labelledby="twin-hero-title"
       aria-busy="true"
+      // Mesmo alvo do tour do `TwinHero` (9d): o tour abre antes do chunk chegar e não pula o passo do twin.
+      data-tour="twin-hero"
       className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
     >
       <div>

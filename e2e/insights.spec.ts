@@ -71,7 +71,7 @@ test.describe('tour do painel', () => {
 
     const tour = page.getByRole('dialog', { name: 'Boas-vindas ao seu painel' });
     await expect(tour).toBeVisible();
-    await expect(page.getByText(/^Passo 1 de \d$/)).toBeVisible();
+    await expect(page.getByText(/^Passo 1 de \d+$/)).toBeVisible();
     await expectNoAxeViolations(page);
 
     // Teclado: avança (o twin do início vem logo depois das boas-vindas, 9d) e pula com Esc.
