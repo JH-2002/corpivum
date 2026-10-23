@@ -135,8 +135,8 @@ test('corpo: medição com vírgula decimal, sem IMC na tela (LEG-M06, ADR-0032)
 }) => {
   await newPerson(page, 'corpo');
   await page.goto('/corpo');
-  await page.getByLabel('Peso (kg)').fill('70,5');
-  await page.getByLabel('Altura (cm)').fill('172');
+  await page.getByLabel('Peso, em quilogramas').fill('70,5');
+  await page.getByLabel('Altura, em centímetros').fill('172');
   await page.getByRole('button', { name: 'Salvar medição' }).click();
   await expect(page.getByRole('status').getByText('Registro salvo.')).toBeVisible();
   await expect(page.getByText('70,5 kg').first()).toBeVisible();

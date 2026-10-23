@@ -1122,12 +1122,24 @@
     },
     "form": {
       "name": "Nome do hábito",
-      "nameHint": "Ex.: caminhar 20 minutos. Guardado cifrado no servidor.",
       "frequency": "Frequência",
       "weekdays": "Em quais dias",
       "timesPerWeek": "Quantas vezes por semana",
       "save": "Criar hábito",
       "update": "Salvar alterações"
+    },
+    "help": {
+      "name": {
+        "what": "O que você quer acompanhar. Guardado cifrado no servidor.",
+        "example": "caminhar 20 minutos"
+      },
+      "frequency": {
+        "what": "Em quais dias o hábito conta para você."
+      },
+      "timesPerWeek": {
+        "what": "Em quantos dias da semana, quaisquer que sejam.",
+        "example": "3"
+      }
     }
   },
   "demo": {
@@ -1233,7 +1245,6 @@
       "bedAt": "Deitei em",
       "wakeAt": "Acordei em",
       "quality": "Qualidade do sono (opcional)",
-      "qualityHint": "Como você sentiu a noite.",
       "notInformed": "Não informar",
       "qualityLevels": {
         "1": "1 — muito ruim",
@@ -1244,9 +1255,28 @@
       },
       "awakenings": "Despertares (opcional)",
       "note": "Nota (opcional)",
-      "noteHint": "Guardada cifrada no servidor; não aparece para outras pessoas no app.",
       "save": "Salvar registro",
       "update": "Salvar alterações"
+    },
+    "help": {
+      "bedAt": {
+        "what": "Quando você se deitou para dormir.",
+        "how": "Conte a hora em que se deitou para dormir de fato, mesmo que tenha ido para a cama antes."
+      },
+      "wakeAt": {
+        "what": "Quando você acordou de vez.",
+        "how": "A hora em que acordou sem voltar a dormir."
+      },
+      "quality": {
+        "what": "Como você sentiu a noite."
+      },
+      "awakenings": {
+        "what": "Quantas vezes você acordou durante a noite, do jeito que lembrar.",
+        "example": "2"
+      },
+      "note": {
+        "what": "Guardada cifrada no servidor; não aparece para outras pessoas no app."
+      }
     }
   },
   "body": {
@@ -1275,18 +1305,55 @@
     },
     "form": {
       "measuredAt": "Data da medição",
-      "hint": "Preencha só o que você mediu. Use vírgula para decimais.",
-      "range": "De {min} a {max}",
-      "rangeWithHow": "{how} Faixa aceita: de {min} a {max}.",
+      "hint": "Preencha só o que você mediu. Use vírgula para decimais. Os exemplos mostram só o formato do número.",
+      "range": "Faixa aceita: de {min} a {max}.",
       "save": "Salvar medição",
       "update": "Salvar alterações"
     },
-    "howToMeasure": {
-      "chestCm": "Como medir: fita na horizontal, passando pelos mamilos, sem apertar.",
-      "waistCm": "Como medir: fita na horizontal, na parte mais estreita entre as costelas e o quadril, depois de soltar o ar.",
-      "hipCm": "Como medir: fita na horizontal, na parte mais larga dos glúteos, com os pés juntos.",
-      "thighCm": "Como medir: fita na horizontal, logo abaixo da virilha, na parte mais alta da coxa.",
-      "armCm": "Como medir: no meio do braço, entre o ombro e o cotovelo, com o braço relaxado ao lado do corpo."
+    "help": {
+      "measuredAt": {
+        "what": "Dia e hora em que você mediu. Pode ser uma medição de outro dia."
+      },
+      "weightKg": {
+        "what": "Seu peso na balança.",
+        "how": "De preferência na mesma balança, num horário parecido e com roupas leves, para os registros serem comparáveis entre si.",
+        "example": "68,4"
+      },
+      "heightCm": {
+        "what": "Sua altura. Muda pouco: basta registrar de vez em quando.",
+        "how": "Sem calçado, de costas para a parede e com os calcanhares encostados nela. Marque o topo da cabeça na parede e meça do chão até a marca.",
+        "example": "170"
+      },
+      "waistCm": {
+        "what": "Circunferência da cintura.",
+        "how": "fita na horizontal, na parte mais estreita entre as costelas e o quadril, depois de soltar o ar.",
+        "example": "82,5"
+      },
+      "hipCm": {
+        "what": "Circunferência do quadril.",
+        "how": "fita na horizontal, na parte mais larga dos glúteos, com os pés juntos.",
+        "example": "98"
+      },
+      "armCm": {
+        "what": "Circunferência do braço.",
+        "how": "no meio do braço, entre o ombro e o cotovelo, com o braço relaxado ao lado do corpo.",
+        "example": "30,5"
+      },
+      "thighCm": {
+        "what": "Circunferência da coxa.",
+        "how": "fita na horizontal, logo abaixo da virilha, na parte mais alta da coxa.",
+        "example": "55"
+      },
+      "chestCm": {
+        "what": "Circunferência do peito.",
+        "how": "fita na horizontal, passando pelos mamilos, sem apertar.",
+        "example": "95"
+      },
+      "bodyFatPct": {
+        "what": "Percentual de gordura, se você tiver esse número de um aparelho ou de um exame. O app não calcula esse valor.",
+        "how": "Copie o número que o aparelho ou o exame informou, do jeito que aparece lá.",
+        "example": "24,5"
+      }
     }
   },
   "twin": {
@@ -1426,12 +1493,9 @@
       "eatenAt": "Quando",
       "category": "Refeição",
       "description": "O que você comeu (opcional)",
-      "descriptionHint": "Do jeito que preferir. Guardado cifrado no servidor.",
       "more": "Mais detalhes (opcional)",
       "kcal": "Estimativa de calorias (opcional)",
-      "kcalHint": "Só se você quiser. É uma estimativa sua, sem comparação.",
       "note": "Nota (opcional)",
-      "noteHint": "Guardada cifrada no servidor.",
       "save": "Registrar refeição",
       "update": "Salvar alterações"
     },
@@ -1463,7 +1527,34 @@
     "waterSeries": "Água",
     "entrySummary": "{category} às {time}",
     "entryKcal": "{kcal} kcal (estimativa)",
-    "entryPerception": "{label}: {value}/5"
+    "entryPerception": "{label}: {value}/5",
+    "help": {
+      "category": {
+        "what": "Qual refeição do dia foi."
+      },
+      "eatenAt": {
+        "what": "Quando você comeu."
+      },
+      "description": {
+        "what": "Do jeito que preferir. Guardado cifrado no servidor.",
+        "example": "pão com café e fruta"
+      },
+      "kcal": {
+        "what": "Só se você quiser. É uma estimativa sua, sem comparação."
+      },
+      "hunger": {
+        "what": "Quanta fome você sentia antes de começar."
+      },
+      "fullness": {
+        "what": "Como você se sentiu logo depois de comer."
+      },
+      "satisfaction": {
+        "what": "Quanto você gostou da refeição."
+      },
+      "note": {
+        "what": "Guardada cifrada no servidor."
+      }
+    }
   },
   "activity": {
     "intro": "O app registra e descreve as suas atividades. Ele não monta treino nem sugere carga ou série.",
@@ -1483,18 +1574,16 @@
     "form": {
       "startedAt": "Início",
       "type": "Tipo",
-      "duration": "Duração (minutos)",
+      "duration": "Duração",
       "intensity": "Intensidade percebida (opcional)",
-      "intensityHint": "De 1 (muito leve) a 10 (máxima), do jeito que você sentiu.",
-      "distance": "Distância em km (opcional)",
+      "distance": "Distância (opcional)",
       "note": "Nota (opcional)",
-      "noteHint": "Guardada cifrada no servidor.",
       "setsTitle": "Séries de força (opcional)",
       "setsHint": "Uma linha por série. Linhas vazias são ignoradas. O nome do exercício é guardado cifrado.",
       "setLegend": "Série {n}",
       "exercise": "Exercício",
       "reps": "Repetições",
-      "load": "Carga em kg (opcional)",
+      "load": "Carga (opcional)",
       "save": "Registrar atividade",
       "update": "Salvar alterações"
     },
@@ -1524,7 +1613,31 @@
     "entryIntensity": "Intensidade {value}/10",
     "entrySets": "{count, plural, one {# série} other {# séries}}",
     "entrySet": "{exercise}: {reps} × {load}",
-    "entrySetNoLoad": "{exercise}: {reps} repetições"
+    "entrySetNoLoad": "{exercise}: {reps} repetições",
+    "help": {
+      "type": {
+        "what": "O tipo de atividade que você fez."
+      },
+      "startedAt": {
+        "what": "Quando você começou."
+      },
+      "duration": {
+        "what": "Quanto tempo durou, contando do início ao fim.",
+        "example": "45"
+      },
+      "intensity": {
+        "what": "De 1 (muito leve) a 10 (máxima), do jeito que você sentiu.",
+        "how": "Pense no esforço da atividade inteira: 1 é como uma caminhada bem tranquila e 10 é o máximo que você conseguiria naquele dia.",
+        "example": "6"
+      },
+      "distance": {
+        "what": "Quanto você percorreu, se fizer sentido para a atividade.",
+        "example": "5,2"
+      },
+      "note": {
+        "what": "Guardada cifrada no servidor."
+      }
+    }
   },
   "goals": {
     "intro": "Metas no seu ritmo, comparadas só com você mesmo. Dá para ajustar, arquivar ou excluir quando quiser.",
@@ -1553,8 +1666,6 @@
     "form": {
       "metric": "O que acompanhar",
       "target": "Alvo",
-      "targetHint": "Unidade: {unit}.",
-      "sleepHint": "Em minutos: 450 = 7 h 30 min.",
       "habit": "Hábito",
       "habitNone": "Escolha um hábito",
       "targetDay": "Prazo (opcional)",
@@ -1581,7 +1692,25 @@
     "archive": "Arquivar",
     "archiveLabel": "Arquivar a meta: {name}",
     "unarchive": "Reativar",
-    "unarchiveLabel": "Reativar a meta: {name}"
+    "unarchiveLabel": "Reativar a meta: {name}",
+    "help": {
+      "metric": {
+        "what": "O que a meta acompanha nos seus registros."
+      },
+      "target": {
+        "what": "O valor que você quer acompanhar, na unidade indicada: {unit}."
+      },
+      "targetSleep": {
+        "what": "A média de sono por noite que você quer acompanhar, em minutos: 450 minutos são 7 h 30 min.",
+        "example": "450"
+      },
+      "habit": {
+        "what": "Qual dos seus hábitos a meta acompanha."
+      },
+      "targetDay": {
+        "what": "Até quando a meta vale. Opcional."
+      }
+    }
   },
   "reminders": {
     "title": "Lembretes",
@@ -1828,6 +1957,19 @@
       "demo": "Demonstração",
       "own": "Meus dados",
       "ownUnavailable": "Para apresentar seus próprios dados, a conta precisa estar no modo de dados próprios e com o uso de dados de bem-estar autorizado na Central de Privacidade."
+    }
+  },
+  "fields": {
+    "howTo": "Como medir",
+    "example": "Ex.: {value}",
+    "unitSpoken": {
+      "kg": "em quilogramas",
+      "cm": "em centímetros",
+      "pct": "em porcentagem",
+      "ml": "em mililitros",
+      "kcal": "em quilocalorias",
+      "min": "em minutos",
+      "km": "em quilômetros"
     }
   }
 }

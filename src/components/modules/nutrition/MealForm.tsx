@@ -57,6 +57,7 @@ export function MealForm({
         <SelectField
           name="category"
           label={t('form.category')}
+          what={t('help.category.what')}
           defaultValue={values.category}
           error={err.category}
           options={MEAL_CATEGORIES.map((c) => ({ value: c, label: t(`categories.${c}`) }))}
@@ -65,6 +66,7 @@ export function MealForm({
           name="eatenAt"
           type="datetime-local"
           label={t('form.eatenAt')}
+          what={t('help.eatenAt.what')}
           defaultValue={values.eatenAt}
           max={maxDateTime}
           required
@@ -74,7 +76,8 @@ export function MealForm({
       <TextField
         name="description"
         label={t('form.description')}
-        hint={t('form.descriptionHint')}
+        what={t('help.description.what')}
+        example={t('help.description.example')}
         maxLength={300}
         defaultValue={values.description ?? ''}
         error={err.description}
@@ -87,7 +90,8 @@ export function MealForm({
           min={1}
           max={5000}
           label={t('form.kcal')}
-          hint={t('form.kcalHint')}
+          unit="kcal"
+          what={t('help.kcal.what')}
           defaultValue={values.kcalEstimate ?? ''}
           error={err.kcalEstimate}
         />
@@ -104,6 +108,7 @@ export function MealForm({
               legend={t(`perceptions.${p}`)}
               low={t('perceptions.low')}
               high={t('perceptions.high')}
+              what={t(`help.${p}.what`)}
               defaultValue={values[p]}
               error={err[p]}
             />
@@ -111,7 +116,7 @@ export function MealForm({
           <TextAreaField
             name="note"
             label={t('form.note')}
-            hint={t('form.noteHint')}
+            what={t('help.note.what')}
             maxLength={1000}
             defaultValue={values.note ?? ''}
             error={err.note}

@@ -82,6 +82,7 @@ export function GoalForm({
         <SelectField
           name="metric"
           label={t('form.metric')}
+          what={t('help.metric.what')}
           value={metric}
           onValueChange={(v) => setMetric(v as GoalMetric)}
           error={err.metric}
@@ -91,11 +92,13 @@ export function GoalForm({
           name="targetValue"
           inputMode="decimal"
           label={t('form.target')}
-          hint={
-            metric === 'sleep_avg_minutes'
-              ? t('form.sleepHint')
-              : t('form.targetHint', { unit: t(`units.${metric}`) })
-          }
+          {...(metric === 'sleep_avg_minutes'
+            ? {
+                unit: 'min' as const,
+                what: t('help.targetSleep.what'),
+                example: t('help.targetSleep.example'),
+              }
+            : { what: t('help.target.what', { unit: t(`units.${metric}`) }) })}
           defaultValue={values.targetValue ?? ''}
           required
           error={err.targetValue}
@@ -104,6 +107,7 @@ export function GoalForm({
           <SelectField
             name="habitId"
             label={t('form.habit')}
+            what={t('help.habit.what')}
             defaultValue={values.habitId ?? ''}
             error={err.habitId}
             options={[
@@ -116,6 +120,7 @@ export function GoalForm({
           name="targetDay"
           type="date"
           label={t('form.targetDay')}
+          what={t('help.targetDay.what')}
           hint={metric === 'weight_kg' ? t('form.targetDayHint') : undefined}
           min={minDay}
           defaultValue={values.targetDay ?? ''}

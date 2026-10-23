@@ -57,6 +57,7 @@ export function ActivityForm({
         <SelectField
           name="type"
           label={t('form.type')}
+          what={t('help.type.what')}
           defaultValue={values.type}
           error={err.type}
           options={ACTIVITY_TYPES.map((v) => ({ value: v, label: t(`types.${v}`) }))}
@@ -65,6 +66,7 @@ export function ActivityForm({
           name="startedAt"
           type="datetime-local"
           label={t('form.startedAt')}
+          what={t('help.startedAt.what')}
           defaultValue={values.startedAt}
           max={maxDateTime}
           required
@@ -77,6 +79,9 @@ export function ActivityForm({
           min={1}
           max={1440}
           label={t('form.duration')}
+          unit="min"
+          what={t('help.duration.what')}
+          example={t('help.duration.example')}
           defaultValue={values.durationMin ?? ''}
           required
           error={err.durationMin}
@@ -88,7 +93,9 @@ export function ActivityForm({
           min={1}
           max={10}
           label={t('form.intensity')}
-          hint={t('form.intensityHint')}
+          what={t('help.intensity.what')}
+          howTo={t('help.intensity.how')}
+          example={t('help.intensity.example')}
           defaultValue={values.intensity ?? ''}
           error={err.intensity}
         />
@@ -96,6 +103,9 @@ export function ActivityForm({
           name="distanceKm"
           inputMode="decimal"
           label={t('form.distance')}
+          unit="km"
+          what={t('help.distance.what')}
+          example={t('help.distance.example')}
           defaultValue={values.distanceKm ?? ''}
           error={err.distanceKm}
         />
@@ -141,6 +151,7 @@ export function ActivityForm({
                   name="setLoad"
                   inputMode="decimal"
                   label={t('form.load')}
+                  unit="kg"
                   defaultValue={set?.loadKg ?? ''}
                 />
               </fieldset>
@@ -151,7 +162,7 @@ export function ActivityForm({
       <TextAreaField
         name="note"
         label={t('form.note')}
-        hint={t('form.noteHint')}
+        what={t('help.note.what')}
         maxLength={1000}
         defaultValue={values.note ?? ''}
         error={err.note}
