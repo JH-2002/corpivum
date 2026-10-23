@@ -166,7 +166,7 @@ describe('telas no modo privacidade', () => {
     );
     const text = container.textContent ?? '';
     expectNoValues(text);
-    expect(screen.getAllByText('oculto')).toHaveLength(3);
+    expect(screen.getAllByText('oculto')).toHaveLength(2);
     expect(screen.getAllByText('Valores ocultos').length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: 'Seus registros' })).toBeNull();
     expect(text).toContain('2 medições');

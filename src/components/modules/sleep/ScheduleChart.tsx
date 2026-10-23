@@ -32,6 +32,30 @@ function relHours(hhmm: string): number {
   return v >= 12 ? v - 24 : v;
 }
 
+/** Intervalo dos tiques do eixo de horário: sempre 2 h (revisão da 9d0). */
+export const SCHEDULE_TICK_HOURS = 2;
+
+/**
+ * Eixo do horário de sono: do deitar mais cedo ao acordar mais tarde, arredondado para fora até múltiplos de 2 h,
+ * com tiques a cada 2 h. Faixa mínima de 8 h para poucas noites parecidas não virarem barras do tamanho do eixo.
+ */
+export function scheduleAxis(rows: readonly ScheduleRow[]): {
+  domain: [number, number];
+  ticks: number[];
+} {
+  const step = SCHEDULE_TICK_HOURS;
+  const values = rows.flatMap((r) => [relHours(r.bedTime), relHours(r.wakeTime)]);
+  let lo = Math.floor(Math.min(...values) / step) * step;
+  let hi = Math.ceil(Math.max(...values) / step) * step;
+  while (hi - lo < 8) {
+    hi += step;
+    if (hi - lo < 8) lo -= step;
+  }
+  const ticks: number[] = [];
+  for (let v = lo; v <= hi; v += step) ticks.push(v);
+  return { domain: [lo, hi], ticks };
+}
+
 function hourLabel(v: number): string {
   const h = ((Math.round(v) % 24) + 24) % 24;
   return `${String(h).padStart(2, '0')}h`;
@@ -58,6 +82,7 @@ export function ScheduleChart({
   const reduced = usePrefersReducedMotion();
   const headingId = useId();
   if (rows.length === 0) return null;
+  const axis = scheduleAxis(rows);
   const data = rows.map((r) => ({ ...r, span: [relHours(r.bedTime), relHours(r.wakeTime)] }));
   const longDate = (iso: string) =>
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'medium', timeZone: 'UTC' });
@@ -100,8 +125,9 @@ export function ScheduleChart({
               minTickGap={16}
             />
             <YAxis
-              domain={[-6, 14]}
-              ticks={[-4, 0, 4, 8, 12]}
+              domain={axis.domain}
+              ticks={axis.ticks}
+              interval={0}
               tickFormatter={hourLabel}
               reversed
               tick={{ fill: 'var(--hm-fg-muted)', fontSize: 12 }}

@@ -1271,8 +1271,6 @@
       "weight": "Peso mais recente",
       "on": "em {date}",
       "heightBefore": "informada antes do período",
-      "change": "Variação no período",
-      "changeHint": "Diferença entre o primeiro e o último peso do período.",
       "height": "Altura"
     },
     "form": {

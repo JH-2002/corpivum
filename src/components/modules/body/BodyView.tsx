@@ -4,7 +4,7 @@ import { paddedDomain } from '@/components/charts/domain';
 import { TimeChart } from '@/components/charts/TimeChart';
 import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
-import { formatMeasure, formatSignedMeasure, MEASURE_UNITS } from '@/components/health/format';
+import { formatMeasure, MEASURE_UNITS } from '@/components/health/format';
 import type { HealthMode } from '@/components/health/HealthPage';
 import { PeriodInsights, summaryTextId } from '@/components/insights/PeriodInsights';
 import { HiddenValuesNotice, Masked } from '@/components/privacy-mode/Masked';
@@ -18,7 +18,6 @@ import type { DateRange } from '@/lib/period';
 import { bodyInsights, bodyInsightsHidden } from '@/modules/insights';
 import {
   BODY_FIELDS,
-  change,
   changeRows,
   historyRows,
   latest,
@@ -75,7 +74,6 @@ export function BodyView({
   const weight = latest(records, 'weightKg');
   const heightInPeriod = latest(records, 'heightCm');
   const height = heightInPeriod?.value ?? latestHeightCm;
-  const weightChange = change(records, 'weightKg');
   const usedGirths = GIRTHS.filter((f) => records.some((r) => r[f] !== null));
   const girthChanges = changeRows(records, usedGirths);
   const longDay = (iso: string) =>
@@ -114,7 +112,8 @@ export function BodyView({
         <StateView state="no-data" />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          {/* Estado atual (peso e altura). A variação do peso fica só nos Destaques, sem repetir (revisão da 9d0). */}
+          <div className="grid gap-4 sm:grid-cols-2">
             <StatTile
               label={t('stats.weight')}
               value={
@@ -122,16 +121,6 @@ export function BodyView({
               }
               detail={weight ? t('stats.on', { date: longDay(weight.day) }) : undefined}
               badge={level('INFORMADO')}
-            />
-            <StatTile
-              label={t('stats.change')}
-              value={
-                <Masked hidden={hidden}>
-                  {weightChange !== null ? formatSignedMeasure(weightChange, 'kg') : '—'}
-                </Masked>
-              }
-              detail={t('stats.changeHint')}
-              badge={level('ESTIMADO')}
             />
             <StatTile
               label={t('stats.height')}
