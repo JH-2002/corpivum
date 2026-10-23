@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { createVerifiedUser, E2E_PASSWORD, e2eEmail, withAdmin } from './fixtures';
+import { settled } from './settle';
 
 /**
  * Termos v2 e Política v2 não substanciais (ADR-0031, ADR-0041): quem aceitou a v1 segue usando o app, vê um
@@ -40,7 +41,7 @@ test('quem aceitou os Termos v1 vê o aviso uma vez e registra a ciência', asyn
     'href',
     '/legal/termos',
   );
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const results = await new AxeBuilder({ page: await settled(page) }).withTags(WCAG_TAGS).analyze();
   expect(results.violations.map((v) => v.id)).toEqual([]);
 
   await notice.getByRole('button', { name: 'Entendi' }).click();
@@ -97,7 +98,7 @@ test('quem aceitou as duas v1 vê um só aviso com Termos e Política e registra
     'href',
     '/legal/politica-de-privacidade',
   );
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const results = await new AxeBuilder({ page: await settled(page) }).withTags(WCAG_TAGS).analyze();
   expect(results.violations.map((v) => v.id)).toEqual([]);
 
   await notice.getByRole('button', { name: 'Entendi' }).click();

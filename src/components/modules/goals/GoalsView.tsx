@@ -1,6 +1,7 @@
 import { useFormatter, useTranslations } from 'next-intl';
 import { archiveGoalAction, deleteGoalAction } from '@/app/(app)/metas/actions';
 import { SubmitButton } from '@/components/forms/FormFields';
+import { ProgressTrack } from '@/components/ui/ProgressTrack';
 import { ExampleForm } from '@/components/forms/ExampleForm';
 import { EntryActions } from '@/components/health/EntryActions';
 import { GuardrailNotice } from '@/components/health/GuardrailNotice';
@@ -124,17 +125,8 @@ export function GoalsView({
           });
     return (
       <div className="flex flex-col gap-1 text-sm">
-        <div
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={percent}
-          aria-valuetext={text}
-          aria-label={title(goal)}
-          className="h-3 w-full overflow-hidden rounded-full border border-border-strong bg-surface-muted"
-        >
-          <div className="h-full bg-primary" style={{ width: `${percent}%` }} />
-        </div>
+        {/* Enche ao entrar na tela (9f); só metas de hábito, sono e atividade chegam aqui (peso e calorias, não). */}
+        <ProgressTrack percent={percent} label={title(goal)} valueText={text} />
         <p className="tabular">
           {text} · {t('progress.barLabel', { percent })}
         </p>

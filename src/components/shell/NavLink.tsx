@@ -11,6 +11,7 @@ import {
   type NavKey,
   type ShellVariant,
 } from './nav-config';
+import { PAGE_TRANSITION_TYPE } from './page-transition';
 
 interface NavLinkProps {
   /** Chave do item (serializável, pode vir de um Server Component). */
@@ -35,6 +36,7 @@ export function NavLink({ navKey, labelClassName, className, variant = 'app' }: 
   return (
     <Link
       href={item.href}
+      transitionTypes={[PAGE_TRANSITION_TYPE]}
       aria-current={active ? 'page' : undefined}
       className={cn(
         'relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors',

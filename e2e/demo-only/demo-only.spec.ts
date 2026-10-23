@@ -3,6 +3,7 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { PRODUCT_NAME } from '../../src/config/product';
 import { BODY_ASSETS } from '../../src/modules/twin/bodyAssets';
 import { DEMO_ROUTES, PAGES } from '../routes';
+import { settled } from '../settle';
 
 /**
  * Modo só demo (ADR-0043), contra o build de produção sem banco nem credenciais (playwright.demo.config.ts):
@@ -56,7 +57,7 @@ function callAction(request: APIRequestContext, path: string, id: string, args: 
 }
 
 async function expectNoAxeViolations(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const results = await new AxeBuilder({ page: await settled(page) }).withTags(WCAG_TAGS).analyze();
   expect(
     results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(', ')}`),
   ).toEqual([]);

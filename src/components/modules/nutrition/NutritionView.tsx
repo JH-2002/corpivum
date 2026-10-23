@@ -222,6 +222,7 @@ export function NutritionView({
         <>
           {/* Os números do período (dias com refeição, água, satisfação) ficam só nos Destaques. */}
           <TimeChart
+            entrance="fade"
             title={t('mealsChart')}
             badge={level('INFORMADO')}
             guide="meals"
@@ -238,6 +239,7 @@ export function NutritionView({
             ]}
           />
           <TimeChart
+            entrance="fade"
             title={t('waterChart')}
             badge={level('INFORMADO')}
             guide="water"
@@ -268,7 +270,10 @@ export function NutritionView({
                       {w.items.map((m) => {
                         const label = `${longDay(m.day)}, ${t(`categories.${m.category}`)}`;
                         return (
-                          <li key={m.id} className="rounded-lg border border-border bg-surface p-4">
+                          <li
+                            key={m.id}
+                            className="hm-row rounded-lg border border-border bg-surface p-4"
+                          >
                             <div className="flex flex-wrap items-start justify-between gap-2">
                               <h4 className="font-semibold">{longDay(m.day)}</h4>
                               <ConfidenceBadge level={level('INFORMADO')} />

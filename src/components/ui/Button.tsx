@@ -13,7 +13,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
 export function buttonClasses(variant: ButtonVariant = 'primary', className?: string): string {
   return cn(
     'inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold',
-    'transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+    // Brilho e borda ao passar o mouse e resposta ao pressionar (9f, ADR-0055; `globals.css`).
+    'hm-hover hm-press disabled:cursor-not-allowed disabled:opacity-60',
     VARIANTS[variant],
     className,
   );

@@ -255,7 +255,10 @@ export function ActivityView({
                     {w.items.map((r) => {
                       const label = `${longDay(r.day)}, ${t(`types.${r.type}`)}`;
                       return (
-                        <li key={r.id} className="rounded-lg border border-border bg-surface p-4">
+                        <li
+                          key={r.id}
+                          className="hm-row rounded-lg border border-border bg-surface p-4"
+                        >
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <h4 className="font-semibold">{longDay(r.day)}</h4>
                             <ConfidenceBadge level={level('INFORMADO')} />

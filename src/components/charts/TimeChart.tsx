@@ -6,6 +6,7 @@ import { useId, useState } from 'react';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
 import { StateView } from '@/components/ui/StateView';
 import { cn } from '@/lib/cn';
+import type { RevealKind } from '@/lib/motion/reveal';
 import { ChartGuide, type ChartGuideId } from './ChartGuide';
 import { formatNumber, formatSigned, hasValues, valueOf } from './format';
 
@@ -58,6 +59,8 @@ export interface TimeChartProps<T extends ChartRow> {
   guide?: ChartGuideId;
   /** Id do resumo em texto da tela, que descreve o período (`aria-describedby`). */
   describedBy?: string;
+  /** Entrada ao aparecer na tela (9f, ADR-0055): `draw` (padrão) ou só `fade` (corpo e alimentação, LEG-M06/M07). */
+  entrance?: RevealKind;
 }
 
 /**
@@ -78,6 +81,7 @@ export function TimeChart<T extends ChartRow>({
   className,
   guide,
   describedBy,
+  entrance = 'draw',
 }: TimeChartProps<T>) {
   const t = useTranslations('charts');
   const format = useFormatter();
@@ -175,6 +179,7 @@ export function TimeChart<T extends ChartRow>({
               hasRight={hasRight}
               leftDomain={leftDomain}
               rightDomain={rightDomain}
+              entrance={entrance}
             />
           </div>
 

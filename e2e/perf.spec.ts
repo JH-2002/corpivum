@@ -174,6 +174,13 @@ for (const { name, path, storageState, device } of [
     storageState: STORAGE_STATE,
     device: 'desktop',
   },
+  // Desktop do demo público (9f, ADR-0055): onde a contagem, o ímã e o brilho de hover rodam.
+  {
+    name: 'dashboard do demo público no desktop',
+    path: '/demo',
+    storageState: DEMO_TOUR_SEEN_STATE,
+    device: 'desktop',
+  },
 ] as const) {
   test(`${name}: interativo em até ${budget.dashboard.maxInteractiveMs} ms (4G, CPU 4×)`, async ({
     browser,

@@ -8,6 +8,7 @@ import {
   foreignRowsSince,
   withAdmin,
 } from './fixtures';
+import { settled } from './settle';
 
 /** Fluxos de conta sem sessão prévia (LEG-S04, LEG-F01). */
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -225,7 +226,9 @@ test.describe('acessibilidade das telas de conta (axe)', () => {
     await login(page, e2eEmail('a11y'), 'senha errada sintética');
     const alert = page.locator('form [role="alert"]');
     await expect(alert).toBeFocused();
-    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+    const results = await new AxeBuilder({ page: await settled(page) })
+      .withTags(WCAG_TAGS)
+      .analyze();
     expect(results.violations.map((v) => v.id)).toEqual([]);
   });
 });

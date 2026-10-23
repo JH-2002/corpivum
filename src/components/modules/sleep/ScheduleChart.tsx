@@ -15,9 +15,9 @@ import {
 } from 'recharts';
 import { ChartGuide } from '@/components/charts/ChartGuide';
 import { shortDay } from '@/components/charts/format';
-import { usePrefersReducedMotion } from '@/components/charts/reduced-motion';
 import { ChartTable } from '@/components/charts/TimeChart';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
+import { useReveal } from '@/lib/motion/reveal';
 
 export interface ScheduleRow {
   day: string;
@@ -79,7 +79,7 @@ export function ScheduleChart({
 }) {
   const t = useTranslations('sleep');
   const format = useFormatter();
-  const reduced = usePrefersReducedMotion();
+  const { ref, revealProps } = useReveal<HTMLDivElement>('draw');
   const headingId = useId();
   if (rows.length === 0) return null;
   const axis = scheduleAxis(rows);
@@ -114,7 +114,7 @@ export function ScheduleChart({
         <ConfidenceBadge level={badge} />
       </div>
       <ChartGuide id="sleepSchedule" badge={badge} />
-      <div aria-hidden="true" className="h-64">
+      <div ref={ref} aria-hidden="true" className="h-64" {...revealProps}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
@@ -139,7 +139,7 @@ export function ScheduleChart({
               width={40}
             />
             <Tooltip content={TooltipBody} />
-            <Bar dataKey="span" fill="var(--hm-chart-1)" radius={3} isAnimationActive={!reduced} />
+            <Bar dataKey="span" fill="var(--hm-chart-1)" radius={3} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </div>

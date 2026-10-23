@@ -1,7 +1,7 @@
 'use client';
 
 import { useFormatter, useTranslations } from 'next-intl';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 
 export interface WeekBlock {
@@ -25,6 +25,8 @@ export function WeeklyList({ weeks }: { weeks: readonly WeekBlock[] }) {
   const format = useFormatter();
   const listId = useId();
   const [shown, setShown] = useState(Math.min(WEEKS_STEP, weeks.length));
+  // Primeira semana revelada pelo último "Ver mais": só ela e as seguintes entram em sequência (9f, ADR-0055).
+  const [enterFrom, setEnterFrom] = useState<number | null>(null);
   const focusIndex = useRef<number | null>(null);
   const headings = useRef<Array<HTMLHeadingElement | null>>([]);
 
@@ -51,6 +53,7 @@ export function WeeklyList({ weeks }: { weeks: readonly WeekBlock[] }) {
 
   function showMore() {
     focusIndex.current = shown;
+    setEnterFrom(shown);
     setShown((n) => Math.min(n + WEEKS_STEP, weeks.length));
   }
 
@@ -62,6 +65,12 @@ export function WeeklyList({ weeks }: { weeks: readonly WeekBlock[] }) {
             key={w.start}
             aria-labelledby={`${listId}-${w.start}`}
             className="flex flex-col gap-3"
+            data-enter={enterFrom !== null && i >= enterFrom ? '' : undefined}
+            style={
+              enterFrom !== null && i >= enterFrom
+                ? ({ '--hm-enter-i': i - enterFrom } as CSSProperties)
+                : undefined
+            }
           >
             <h3
               id={`${listId}-${w.start}`}

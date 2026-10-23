@@ -9,7 +9,19 @@ pointToTestDatabase();
 const PORT = 3100;
 const isCI = Boolean(process.env.CI);
 /** Build de produção também fora da CI (medição de performance: `E2E_PROD=1 pnpm test:perf`). */
-const useProductionBuild = isCI || process.env.E2E_PROD === '1';
+/**
+ * Vídeo de revisão do movimento (`pnpm video:movimento`): também no build de produção, o que vai ao ar. Os workers
+ * releem esta config sem os argumentos da linha de comando: a marca vai numa variável que eles herdam.
+ */
+if (
+  process.argv.some(
+    (arg, i, all) => arg === '--project=video' || (arg === '--project' && all[i + 1] === 'video'),
+  )
+) {
+  process.env.HM_RECORD_VIDEO = '1';
+}
+const recordingVideo = process.env.HM_RECORD_VIDEO === '1';
+const useProductionBuild = isCI || process.env.E2E_PROD === '1' || recordingVideo;
 
 export default defineConfig({
   testDir: './e2e',
@@ -48,6 +60,21 @@ export default defineConfig({
       dependencies: ['setup'],
       fullyParallel: false,
     },
+    // Vídeo de revisão do movimento (9f, ADR-0055): só sob demanda (`pnpm video:movimento`), nunca na suíte.
+    ...(recordingVideo
+      ? [
+          {
+            name: 'video',
+            testMatch: /\.video\.ts$/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: 'e2e/.auth/pessoa.json',
+              launchOptions: { args: ['--lang=pt-BR'] },
+            },
+            dependencies: ['setup'],
+          },
+        ]
+      : []),
   ],
   webServer: {
     // No CI roda contra o build de produção (gerado antes, no job); localmente, contra o dev server.

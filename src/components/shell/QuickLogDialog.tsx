@@ -159,7 +159,7 @@ export function QuickLogDialog({ variant = 'app' }: { variant?: ShellVariant }) 
             <Link
               href={href}
               onClick={() => choose(href)}
-              className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-md border border-border p-3 text-center text-sm font-medium hover:bg-surface-muted"
+              className="hm-hover hm-press flex min-h-20 flex-col items-center justify-center gap-2 rounded-md border border-border p-3 text-center text-sm font-medium hover:bg-surface-muted"
             >
               <Icon className={`size-6 ${tone}`} aria-hidden="true" />
               {t(key)}

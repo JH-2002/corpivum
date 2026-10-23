@@ -159,10 +159,13 @@ export function Tour({
             <p className="text-sm text-fg-muted">
               {t('progress', { current: index + 1, total: steps.length })}
             </p>
-            <h2 id={titleId} className="text-lg font-semibold">
+            {/* Cada passo esmaece ao entrar (9f); a região viva continua a mesma, só o conteúdo troca. */}
+            <h2 key={`${step.id}-title`} id={titleId} className="hm-fade text-lg font-semibold">
               {t(`steps.${step.id}.title`)}
             </h2>
-            <p id={bodyId}>{t(`steps.${step.id}.body`)}</p>
+            <p key={`${step.id}-body`} id={bodyId} className="hm-fade">
+              {t(`steps.${step.id}.body`)}
+            </p>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Button variant="ghost" onClick={finish}>

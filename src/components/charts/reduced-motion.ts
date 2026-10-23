@@ -1,20 +1,11 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useReducedMotion } from '@/lib/motion/motion';
 
-const QUERY = '(prefers-reduced-motion: reduce)';
-
-function subscribe(callback: () => void) {
-  const media = window.matchMedia?.(QUERY);
-  media?.addEventListener('change', callback);
-  return () => media?.removeEventListener('change', callback);
-}
-
-/** `prefers-reduced-motion` (WCAG 2.3.3): gráficos sem animação. No servidor, assume reduzido. */
+/**
+ * Gráficos, tour e twin sem animação (WCAG 2.3.3): `prefers-reduced-motion` do sistema ou a opção "Reduzir
+ * animações" do app (9f, ADR-0055; antes só o sistema). No servidor, assume reduzido.
+ */
 export function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(
-    subscribe,
-    () => window.matchMedia?.(QUERY).matches ?? false,
-    () => true,
-  );
+  return useReducedMotion();
 }

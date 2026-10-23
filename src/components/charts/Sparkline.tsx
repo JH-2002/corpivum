@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import type { RevealKind } from '@/lib/motion/reveal';
 import { paddedDomain } from './domain';
 import { hasValues } from './format';
 
@@ -18,10 +19,13 @@ export function Sparkline({
   data,
   color,
   minSpan,
+  entrance = 'draw',
 }: {
   data: ReadonlyArray<{ day: string; value: number | null }>;
   color: string;
   minSpan?: number;
+  /** Entrada ao aparecer (9f): `fade` nas medidas do corpo (LEG-M06). */
+  entrance?: RevealKind;
 }) {
   if (!hasValues(data, ['value'])) return null;
   const domain =
@@ -33,7 +37,7 @@ export function Sparkline({
       : undefined;
   return (
     <div aria-hidden="true" className="h-10 w-full">
-      <LazySparklinePlot data={data} color={color} domain={domain} />
+      <LazySparklinePlot data={data} color={color} domain={domain} entrance={entrance} />
     </div>
   );
 }

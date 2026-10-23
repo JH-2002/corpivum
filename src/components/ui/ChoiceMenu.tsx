@@ -107,7 +107,7 @@ export function ChoiceMenu({
         aria-describedby={describedBy}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'tabular inline-flex min-h-11 items-center justify-between gap-2 rounded-md border bg-surface px-3 text-sm font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-surface',
+          'hm-hover tabular inline-flex min-h-11 items-center justify-between gap-2 rounded-md border bg-surface px-3 text-sm font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-surface',
           invalid ? 'border-danger' : 'border-border-strong',
         )}
       >
@@ -125,7 +125,7 @@ export function ChoiceMenu({
         aria-invalid={invalid || undefined}
         className={cn(
           'absolute top-full left-0 z-40 mt-2 max-h-72 w-full min-w-56 flex-col gap-1 overflow-y-auto rounded-lg border border-border bg-surface p-1 shadow-lg',
-          open ? 'flex' : 'hidden',
+          open ? 'hm-fade flex' : 'hidden',
         )}
       >
         {options.map((option) => {

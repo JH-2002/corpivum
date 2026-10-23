@@ -76,7 +76,8 @@ export function TiltCard({
       onPointerLeave={enabled ? onPointerLeave : undefined}
       className={cn(
         // `isolate` + brilho em `-z-10`: o brilho fica acima do fundo do cartão e abaixo do texto.
-        'relative isolate',
+        // Brilho e borda ao passar o mouse (9f): em todo cartão de destaque, com ou sem a inclinação.
+        'hm-hover relative isolate',
         enabled && 'transition-transform duration-200 ease-out will-change-transform',
         className,
       )}

@@ -7,6 +7,7 @@ import {
   e2eEmail,
   withAdmin,
 } from './fixtures';
+import { settled } from './settle';
 
 /**
  * Fase 1b (ADR-0019): Central de Privacidade, revogação imediata (LEG-C04), encerramento de conta de menor
@@ -24,7 +25,7 @@ async function login(page: Page, email: string) {
 }
 
 async function expectNoAxeViolations(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const results = await new AxeBuilder({ page: await settled(page) }).withTags(WCAG_TAGS).analyze();
   expect(
     results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(', ')}`),
   ).toEqual([]);

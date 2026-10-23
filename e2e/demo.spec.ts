@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { DEMO_TOUR_SEEN_STATE, foreignRowsSince } from './fixtures';
 import { DEMO_ROUTES, VIEWPORTS } from './routes';
 import { choosePeriod } from './period';
+import { settled } from './settle';
 
 /**
  * Demo público sem login (LEG-X02, §40, ADR-0021): dados fictícios com selo DEMO, sem formulários, sem
@@ -81,7 +82,7 @@ test('"Como é calculado" explica componentes e pesos; na demo o Índice é comp
   // No topo: rolada até o "Como é calculado", a página deixa um selo sob o cabeçalho fixo, e o axe conta o
   // pedaço coberto como alvo pequeno (o selo tem 24 px; a cobertura é do cabeçalho, não do selo).
   await page.evaluate(() => window.scrollTo(0, 0));
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const results = await new AxeBuilder({ page: await settled(page) }).withTags(WCAG_TAGS).analyze();
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 
@@ -231,7 +232,10 @@ test('campo explicado (9d): unidade, exemplo e "Como medir" pelo teclado, sem vi
     await expect(how).toHaveAttribute('open');
     await expect(how.getByText(/parte mais estreita entre as costelas e o quadril/)).toBeVisible();
     await expect(how.getByText('Formato: 12,3 cm')).toBeVisible();
-    const results = await new AxeBuilder({ page }).include('#novo').withTags(WCAG_TAGS).analyze();
+    const results = await new AxeBuilder({ page: await settled(page) })
+      .include('#novo')
+      .withTags(WCAG_TAGS)
+      .analyze();
     expect(results.violations).toEqual([]);
     await page.keyboard.press('Enter');
     await expect(how).not.toHaveAttribute('open');
@@ -277,5 +281,88 @@ test.describe('cartões com inclinação (ADR-0048)', () => {
       await expect(page.locator('[data-tilt]')).toHaveCount(0);
       await context.close();
     }
+  });
+});
+
+test.describe('movimento e interatividade (9f, ADR-0055)', () => {
+  test('desktop com mouse: contagem ao rolar, gráfico se revela, brilho no hover, ímã no Registrar, "Ver mais" em sequência; axe', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/demo');
+    await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
+
+    // Contagem: o valor final está sempre no DOM (o leitor de tela lê ele); o contador é aria-hidden.
+    const count = page.locator('[data-count-up]').first();
+    await expect(count.locator('span').first()).toHaveText(/^\d+$/);
+    await expect(count.locator('span').nth(1)).toHaveAttribute('aria-hidden', 'true');
+    await count.scrollIntoViewIfNeeded();
+    await expect(count.locator('span').nth(1)).toBeEmpty({ timeout: 3000 });
+
+    // Gráfico do início: revela ao entrar e termina sem recorte.
+    const plot = page.locator('[data-tour="chart"] [data-reveal="draw"]');
+    await plot.scrollIntoViewIfNeeded();
+    await expect(plot).not.toHaveAttribute('data-reveal-state', /.*/, { timeout: 5000 });
+
+    // Brilho e borda azul ao passar o mouse num cartão clicável.
+    const card = page.locator('article[data-tilt]').first();
+    await card.hover();
+    await expect.poll(() => card.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none');
+
+    // Ímã do Registrar: o desenho se move, o contêiner fica.
+    const magnetic = page.locator('[data-magnetic]');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const box = await magnetic.boundingBox();
+    if (!box) throw new Error('Registrar sem caixa');
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.9);
+    await expect
+      .poll(() => magnetic.evaluate((el) => (el.firstElementChild as HTMLElement).style.transform))
+      .toMatch(/translate\(/);
+    const after = await magnetic.boundingBox();
+    expect(after?.x).toBe(box.x);
+
+    // "Ver mais" na Timeline: só as semanas novas entram, e o foco vai para a primeira delas.
+    await page.goto('/demo/timeline');
+    const more = page.getByRole('button', { name: 'Ver mais semanas' });
+    await expect(page.locator('[data-enter]')).toHaveCount(0);
+    await more.click();
+    await expect(page.locator('[data-enter]').first()).toBeVisible();
+    await expect(page.locator('[data-enter] h3').first()).toBeFocused();
+    const results = await new AxeBuilder({ page: await settled(page) })
+      .withTags(WCAG_TAGS)
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('"Reduzir animações": sem contagem, sem gráfico escondido, sem ímã', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => localStorage.setItem('hm.motion', 'reduced'));
+    await page.goto('/demo');
+    await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
+    await expect(page.locator('[data-reveal]').first()).toBeAttached();
+    await expect(page.locator('[data-reveal-state]')).toHaveCount(0);
+    for (const counter of await page.locator('[data-count-up] > span:nth-child(2)').all()) {
+      await expect(counter).toBeEmpty();
+    }
+    await expect(page.locator('[data-magnetic]')).toHaveCount(0);
+  });
+
+  test('tela de toque: sem inclinação, sem ímã e sem brilho de hover', async ({ browser }) => {
+    const context = await browser.newContext({
+      hasTouch: true,
+      isMobile: true,
+      viewport: { width: 390, height: 844 },
+      storageState: DEMO_TOUR_SEEN_STATE,
+    });
+    const page = await context.newPage();
+    await page.goto('/demo');
+    await expect(page.getByRole('heading', { name: 'Índice de Bem-Estar' })).toBeVisible();
+    await expect(page.locator('[data-tilt]')).toHaveCount(0);
+    await expect(page.locator('[data-magnetic]')).toHaveCount(0);
+    expect(
+      await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches),
+    ).toBe(false);
+    await context.close();
   });
 });

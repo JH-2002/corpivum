@@ -186,7 +186,7 @@ export function TimelineView({
     const levels = new Set(d.items.map(levelOf));
     const cardLevel = levels.size === 1 ? [...levels][0] : undefined;
     return (
-      <li key={d.day} className="rounded-lg border border-border bg-surface p-4">
+      <li key={d.day} className="hm-row rounded-lg border border-border bg-surface p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h4 className="font-semibold">

@@ -17,6 +17,7 @@ import { ScoreReviewForm } from '@/components/health/ScoreReviewForm';
 import { PeriodSummary, summaryTextId } from '@/components/insights/PeriodInsights';
 import { Masked } from '@/components/privacy-mode/Masked';
 import { ConfidenceBadge, type ConfidenceLevel } from '@/components/ui/ConfidenceBadge';
+import { CountUp } from '@/components/ui/CountUp';
 import { StateView } from '@/components/ui/StateView';
 import { TiltCard } from '@/components/ui/TiltCard';
 import { LazyTwinHero } from '@/components/twin/LazyTwinHero';
@@ -257,7 +258,8 @@ export function Dashboard({
         ) : (
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <p className="tabular text-4xl font-bold">
-              {score.value}
+              {/* Contagem só em indicadores de rotina (9f): Índice, sono e hábitos; nunca peso (LEG-M06). */}
+              <CountUp value={score.value} />
               <span className="text-base font-normal text-fg-muted"> {t('score.outOf')}</span>
             </p>
             {scoreTrend && previousScore.value !== null ? (
@@ -292,7 +294,11 @@ export function Dashboard({
             tone="text-sleep"
             badge={b('ESTIMADO')}
             noData={cards.sleep.state === 'no-data'}
-            value={cards.sleep.avgMinutes !== null ? formatDuration(cards.sleep.avgMinutes) : null}
+            value={
+              cards.sleep.avgMinutes !== null ? (
+                <CountUp value={cards.sleep.avgMinutes} format="duration" />
+              ) : null
+            }
             variation={
               sleepTrend && cards.sleep.deltaMinutes !== null
                 ? `${TREND_ARROW[sleepTrend]} ${t(`variation.duration.${sleepTrend}`, {
@@ -311,7 +317,11 @@ export function Dashboard({
             tone="text-primary"
             badge={b('ESTIMADO')}
             noData={cards.habits.state === 'no-data'}
-            value={cards.habits.completion !== null ? `${cards.habits.completion}%` : null}
+            value={
+              cards.habits.completion !== null ? (
+                <CountUp value={cards.habits.completion} format="percent" />
+              ) : null
+            }
             variation={
               habitsTrend && cards.habits.deltaPoints !== null
                 ? `${TREND_ARROW[habitsTrend]} ${t(`variation.percent.${habitsTrend}`, {
@@ -347,7 +357,12 @@ export function Dashboard({
             origin={t('origins.body')}
             spark={
               hidden ? null : (
-                <Sparkline data={cards.body.spark} color="var(--hm-chart-1)" minSpan={4} />
+                <Sparkline
+                  data={cards.body.spark}
+                  color="var(--hm-chart-1)"
+                  minSpan={4}
+                  entrance="fade"
+                />
               )
             }
           />

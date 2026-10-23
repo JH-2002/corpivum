@@ -13,6 +13,7 @@ import {
   PrivacyModeToggle,
 } from '@/components/privacy-mode/PrivacyModeToggle';
 import { Button, buttonClasses } from '@/components/ui/Button';
+import { Magnetic } from '@/components/ui/Magnetic';
 import { Disclosure } from './Disclosure';
 import { HelpMenu } from './HelpMenu';
 import { DEMO_ITEMS, navItemForPath, type ShellVariant } from './nav-config';
@@ -125,10 +126,13 @@ function QuickLogButton({ onQuickLog }: { onQuickLog: () => void }) {
   const t = useTranslations('quickLog');
   return (
     <div className="hidden md:block" data-tour="register">
-      <Button onClick={onQuickLog} aria-haspopup="dialog" className="shrink-0">
-        <Plus className="size-4" aria-hidden="true" />
-        {t('open')}
-      </Button>
+      {/* Ímã leve só aqui, no desktop com mouse (9f, ADR-0055). */}
+      <Magnetic>
+        <Button onClick={onQuickLog} aria-haspopup="dialog" className="shrink-0">
+          <Plus className="size-4" aria-hidden="true" />
+          {t('open')}
+        </Button>
+      </Magnetic>
     </div>
   );
 }
