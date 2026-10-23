@@ -51,6 +51,23 @@ export default defineConfig({
       dependencies: ['setup'],
       // O modo só demo tem config própria (playwright.demo.config.ts, ADR-0043): outro servidor, sem banco.
       testIgnore: [/perf\.spec\.ts/, /demo-only[\\/]/],
+      grepInvert: /@isolado/,
+    },
+    // "Nada gravado no banco" (menor de 18, demo): sozinhos, depois de toda a suíte paralela. As provas não têm
+    // FK para users (LEG-R03); conta apagada por outro teste ao mesmo tempo deixaria prova de dono inexistente.
+    // `--project=chromium` sozinho não os roda: use `pnpm test:e2e` sem filtro ou `--project=isolado`.
+    {
+      name: 'isolado',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/pessoa.json',
+        launchOptions: { args: ['--lang=pt-BR'] },
+      },
+      dependencies: ['chromium'],
+      testIgnore: [/perf\.spec\.ts/, /demo-only[\\/]/],
+      grep: /@isolado/,
+      fullyParallel: false,
+      workers: 1,
     },
     // Orçamento de performance (§41, ADR-0039): job próprio na CI, sem paralelismo, só no build de produção.
     {

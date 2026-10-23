@@ -12,8 +12,6 @@ import { settled } from './settle';
 
 /** Fluxos de conta sem sessão prévia (LEG-S04, LEG-F01). */
 test.use({ storageState: { cookies: [], origins: [] } });
-// Em sequência dentro do arquivo: o teste do menor compara contagens de linhas do banco.
-test.describe.configure({ mode: 'default' });
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -130,28 +128,34 @@ test('cadastro adulto: boas-vindas → idade → conta → e-mail → onboarding
   expect(rows[0]).toEqual({ consents: 0, accepted: 2 });
 });
 
-test('menor de 18: mensagem neutra e nenhuma linha nova no banco (LEG-F01)', async ({ page }) => {
-  const start = new Date(Date.now() - 1000);
-  await page.goto('/cadastro');
-  await page.getByLabel('Data de nascimento').fill('2012-01-01');
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.getByRole('heading', { name: 'Não é possível criar uma conta' })).toBeVisible();
-  // Nenhuma linha nova fora das contas do e2e (outros testes escrevem em paralelo nas próprias contas).
-  const written = await foreignRowsSince(start);
-  expect(Object.entries(written).filter(([, n]) => n !== 0)).toEqual([]);
+test(
+  'menor de 18: mensagem neutra e nenhuma linha nova no banco (LEG-F01)',
+  { tag: '@isolado' },
+  async ({ page }) => {
+    const start = new Date(Date.now() - 1000);
+    await page.goto('/cadastro');
+    await page.getByLabel('Data de nascimento').fill('2012-01-01');
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Não é possível criar uma conta' }),
+    ).toBeVisible();
+    // Nenhuma linha nova fora das contas do e2e. Roda no projeto `isolado`: nenhum outro teste apaga contas agora.
+    const written = await foreignRowsSince(start);
+    expect(Object.entries(written).filter(([, n]) => n !== 0)).toEqual([]);
 
-  // Nova tentativa imediata volta para a mesma mensagem (cookie sem identificador).
-  await page.goto('/cadastro');
-  await expect(page).toHaveURL(/\/cadastro\/indisponivel$/);
-  // Passo 2 também não abre sem o cookie de adulto.
-  await page.goto('/cadastro/conta');
-  await expect(page).toHaveURL(/\/cadastro\/indisponivel$/);
+    // Nova tentativa imediata volta para a mesma mensagem (cookie sem identificador).
+    await page.goto('/cadastro');
+    await expect(page).toHaveURL(/\/cadastro\/indisponivel$/);
+    // Passo 2 também não abre sem o cookie de adulto.
+    await page.goto('/cadastro/conta');
+    await expect(page).toHaveURL(/\/cadastro\/indisponivel$/);
 
-  const cookies = await page.context().cookies();
-  const block = cookies.find((c) => c.name === 'hm_age_block');
-  expect(block?.value).toBe('1');
-  expect(block?.expires).toBe(-1); // cookie de sessão do navegador
-});
+    const cookies = await page.context().cookies();
+    const block = cookies.find((c) => c.name === 'hm_age_block');
+    expect(block?.value).toBe('1');
+    expect(block?.expires).toBe(-1); // cookie de sessão do navegador
+  },
+);
 
 test('login com senha errada e com e-mail inexistente mostram a mesma mensagem', async ({
   page,

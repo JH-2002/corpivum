@@ -266,7 +266,7 @@ export function NutritionView({
                   start: w.start,
                   end: w.end,
                   content: (
-                    <ul className="flex flex-col gap-3">
+                    <ul key={w.start} className="flex flex-col gap-3">
                       {w.items.map((m) => {
                         const label = `${longDay(m.day)}, ${t(`categories.${m.category}`)}`;
                         return (

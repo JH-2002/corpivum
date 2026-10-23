@@ -183,9 +183,12 @@ export async function seedSyntheticHealthData(userId: string): Promise<number> {
 
 /**
  * Linhas criadas desde `since` que NÃO pertencem a contas do e2e (por `user_id`, `subject_user_id` ou o
- * próprio `users.id`). Outros testes em paralelo só escrevem em contas do e2e; o demo público e o fluxo de
- * menor não podem escrever nada. Ficam de fora tabelas técnicas escritas por qualquer login (limites,
- * fila, registros de acesso).
+ * próprio `users.id`). O demo público e o fluxo de menor não podem escrever nada. Ficam de fora tabelas
+ * técnicas escritas por qualquer login (limites, fila, registros de acesso).
+ * Só em teste com a tag `@isolado` (projeto próprio, depois da suíte paralela): as provas não têm FK para
+ * users, e uma conta apagada por outro teste ao mesmo tempo deixaria prova de dono inexistente na contagem.
+ * Pela mesma razão, todo teste que exclui conta espera a purga terminar (ex.: rights.spec.ts): a varredura
+ * da subida do servidor não pode purgar sobra durante o projeto isolado.
  */
 export async function foreignRowsSince(since: Date): Promise<Record<string, number>> {
   return withAdmin(async (db) => {
