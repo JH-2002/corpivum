@@ -12,6 +12,13 @@ export function formatNumber(value: number, decimals = 1): string {
   });
 }
 
+/** Variação com sinal ("+1,2", "−0,4", "0"): o sinal de menos é o tipográfico, como no resto da tela. */
+export function formatSigned(value: number, decimals = 1): string {
+  const text = formatNumber(Math.abs(value), decimals);
+  if (text === formatNumber(0, decimals)) return text;
+  return `${value > 0 ? '+' : '−'}${text}`;
+}
+
 /** Valor de uma série numa linha de dados (objeto simples vindo do servidor). */
 export function valueOf(row: object, key: string): unknown {
   return (row as Record<string, unknown>)[key];

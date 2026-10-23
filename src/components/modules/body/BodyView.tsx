@@ -19,6 +19,7 @@ import { bodyInsights, bodyInsightsHidden } from '@/modules/insights';
 import {
   BODY_FIELDS,
   change,
+  changeRows,
   historyRows,
   latest,
   type BodyField,
@@ -76,6 +77,7 @@ export function BodyView({
   const height = heightInPeriod?.value ?? latestHeightCm;
   const weightChange = change(records, 'weightKg');
   const usedGirths = GIRTHS.filter((f) => records.some((r) => r[f] !== null));
+  const girthChanges = changeRows(records, usedGirths);
   const longDay = (iso: string) =>
     format.dateTime(new Date(`${iso}T12:00:00Z`), { dateStyle: 'long', timeZone: 'UTC' });
   const empty = Object.fromEntries(BODY_FIELDS.map((f) => [f, null])) as Record<BodyField, null>;
@@ -174,17 +176,26 @@ export function BodyView({
                 ]}
               />
               {usedGirths.length > 0 ? (
+                // Variação desde a primeira medição de cada região (ADR-0053): todas partem de zero, num só
+                // eixo em cm com faixa mínima de ±2 cm. A tabela traz as medidas em si.
+                // Selo ESTIMADO: o desenho é uma diferença calculada; as medidas informadas estão na tabela.
                 <TimeChart
                   title={t('girthChart')}
-                  badge={level('INFORMADO')}
+                  description={t('girthChartHint')}
+                  badge={level('ESTIMADO')}
                   guide="girth"
                   describedBy={summaryTextId('body')}
-                  data={records.map((r) => ({
+                  data={girthChanges}
+                  tableData={records.map((r) => ({
                     day: r.day,
                     ...Object.fromEntries(usedGirths.map((f) => [f, r[f]])),
                   }))}
                   leftDomain={paddedDomain(
-                    records.flatMap((r) => usedGirths.map((f) => r[f])),
+                    [
+                      ...girthChanges.flatMap((r) => usedGirths.map((f) => r[f])),
+                      -MIN_SPAN / 2,
+                      MIN_SPAN / 2,
+                    ],
                     { minSpan: MIN_SPAN },
                   )}
                   series={usedGirths.map((f) => ({
@@ -192,6 +203,7 @@ export function BodyView({
                     label: t(`fields.${f}`),
                     unit: 'cm',
                     kind: 'line' as const,
+                    signed: true,
                     color: GIRTH_STYLE[f]?.color ?? 'var(--hm-chart-1)',
                     dash: GIRTH_STYLE[f]?.dash,
                   }))}
