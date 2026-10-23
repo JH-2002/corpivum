@@ -17,7 +17,8 @@ updates:
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
-    directory: /
+    # A raiz cobre .github/workflows; ações compostas locais precisam ser listadas (ex.: o actions/cache).
+    directories: ['/', '/.github/actions/*']
     schedule:
       interval: monthly
     cooldown:
