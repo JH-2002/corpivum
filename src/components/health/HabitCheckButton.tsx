@@ -12,6 +12,8 @@ function Toggle({ done, name, date }: { done: boolean; name: string; date?: stri
   const { pending } = useFormStatus();
   // O "pulo" do ícone só depois do clique desta pessoa, nunca ao carregar a página (9f, ADR-0055).
   const [clicked, setClicked] = useState(false);
+  // Com texto visível, o nome acessível começa por ele (WCAG 2.5.3, regra label-content-name-mismatch do axe):
+  // quem usa comando de voz diz o que vê. Na grade (só ícone), o nome traz a data.
   const label =
     date !== undefined
       ? t(done ? 'uncheckDayLabel' : 'checkDayLabel', { name, date })

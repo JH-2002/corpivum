@@ -117,10 +117,10 @@ test('hábitos: criar, marcar no dashboard e ocultar sequências', async ({ page
 
   await page.goto('/inicio');
   await page
-    .getByRole('button', { name: 'Marcar "Beber água ao acordar" como feito hoje' })
+    .getByRole('button', { name: 'Marcar como feito: "Beber água ao acordar", hoje' })
     .click();
   await expect(
-    page.getByRole('button', { name: 'Desmarcar "Beber água ao acordar" de hoje' }),
+    page.getByRole('button', { name: 'Feito: "Beber água ao acordar", hoje (desmarcar)' }),
   ).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText('1 dia seguido')).toBeVisible();
 
@@ -209,7 +209,7 @@ test('revogou em outra aba e marcou um hábito: sem página de erro, com o aviso
   await page.getByRole('button', { name: 'Criar hábito' }).click();
   await expect(page.getByRole('heading', { name: 'Alongar' })).toBeVisible();
   await page.goto('/inicio');
-  const check = page.getByRole('button', { name: 'Marcar "Alongar" como feito hoje' });
+  const check = page.getByRole('button', { name: 'Marcar como feito: "Alongar", hoje' });
   await expect(check).toBeVisible();
 
   const other = await page.context().newPage();
