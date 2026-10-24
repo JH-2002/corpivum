@@ -161,7 +161,8 @@ screenshots. Claude Code wrote the implementation.
 
 ## Running locally
 
-The code is open to read; no license to use it is granted (see [License](#license)). Requirements: Node 24 and
+The instructions below are only for evaluating the project, within the limits of the [LICENSE](LICENSE): the code
+is open to read, no license to use it is granted and any other use requires permission. Requirements: Node 24 and
 pnpm 12.
 
 **Demo only** (no database or credentials):

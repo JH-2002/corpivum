@@ -158,7 +158,8 @@ capturas de tela. O Claude Code implementou o código.
 
 ## Como rodar localmente
 
-O código está aberto para leitura; o uso não é licenciado (ver [Licença](#licença)). Requisitos: Node 24 e
+As instruções abaixo servem só para avaliar o projeto, nos limites da [LICENSE](LICENSE): o código está aberto
+para leitura, nenhuma licença de uso é concedida e qualquer outro uso depende de autorização. Requisitos: Node 24 e
 pnpm 12.
 
 **Só a demonstração** (sem banco nem credenciais):
