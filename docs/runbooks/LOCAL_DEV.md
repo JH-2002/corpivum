@@ -68,6 +68,15 @@ Apaga e regrava `docs/readme/`: `twin.gif` (~8 s, até 5 MB), WebP da primeira d
 vez baixa o binário do FFmpeg (`ffmpeg-static`, ~80 MB, ADR-0056). Telas: `DESKTOP_SHOTS` e `MOBILE_SHOTS` de
 `scripts/readme-midia.mjs`.
 
+## Vídeo de vitrine
+```sh
+pnpm video:vitrine              # build com DEMO_ONLY=true e gravação de docs/readme/vitrine.mp4 (fora do Git)
+pnpm video:vitrine --sem-build  # reaproveita o build atual (só se ele foi feito com DEMO_ONLY=true)
+```
+MP4 H.264 1920×1080, 30 fps, sem áudio, entre 40 e 60 s (o script falha fora disso e mostra o tempo de cada trecho).
+Porta 3302 (`VIDEO_VITRINE_PORT` para outra). Roteiro, pausas e velocidades em `scripts/video-vitrine.mjs`
+(ADR-0057). Leva cerca de 2 minutos com o build pronto.
+
 ## Antes de commitar
 ```sh
 pnpm lint && pnpm typecheck && pnpm test

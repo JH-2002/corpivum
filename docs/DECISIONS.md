@@ -2150,3 +2150,25 @@ repositório renomeado para `corpivum`.
   atualizar à mão quando mudarem bastante.
 **Consequências.** Telas novas ou mudanças visuais grandes pedem rodar `pnpm readme:midia` de novo. O selo de CI e
 os links absolutos usam `JH-2002/corpivum`.
+
+## ADR-0057 — Vídeo de vitrine gravado por script
+**Contexto.** Vídeo para o LinkedIn a partir do build de produção da demo: MP4 H.264, 1920×1080, 30 fps, 40–60 s,
+sem áudio, com o `ffmpeg-static` do projeto. Roteiro aprovado: início com o twin girando e uma região acesa, cartões
+(inclinação e contagem), troca de regiões, twin completo e Antes × Agora, Sono, Hábitos, Timeline com "Ver mais" e
+modo apresentação. Na demo o check de Hábitos é só leitura: o vídeo mostra a grade da semana sem marcar (escolha do
+responsável), sem banco nem pessoa sintética.
+**Decisão.**
+- `pnpm video:vitrine` (`scripts/video-vitrine.mjs`), no mesmo servidor só demo de `pnpm capturas` e `pnpm
+  readme:midia` (`scripts/demo-server.mjs`). Saída em `docs/readme/vitrine.mp4`, no `.gitignore` (arquivo de
+  ~8 MB que muda a cada gravação); `pnpm readme:midia` preserva o arquivo ao trocar a pasta.
+- **Gravação pelo screencast do Chrome** (CDP, JPEG 92, janela 1280×720 com densidade 1,5 = quadros 1920×1080),
+  não pelo vídeo do Playwright, que sai com pouca nitidez e sem cursor. Cada quadro guarda o horário de chegada; o
+  FFmpeg (lista `concat` com a duração real de cada quadro) gera 30 fps constantes, x264 CRF 18, `+faststart`.
+- **Cursor desenhado na página** por script de inicialização (seta com pulso no clique, sem receber eventos).
+- **Cargas fora do vídeo:** a gravação pausa durante cada navegação e volta com a página assentada.
+- **Movimentos pelo relógio:** o progresso do mouse e da rolagem vem do tempo decorrido, não do número de passos
+  (com o 3D por software cada passo demora mais que um quadro). O script falha se a duração sair de 40–60 s.
+- **FFmpeg num módulo só:** `scripts/ffmpeg.mjs` (download sob demanda e SHA-256 conferido, ADR-0056) serve as
+  duas mídias.
+**Consequências.** Mudanças de rótulos usados pelo roteiro (regiões, "Abrir twin completo", "Antes × Agora",
+"Ver mais semanas", "Começar apresentação", "Próxima") quebram o script, que falha em vez de gravar outra coisa.

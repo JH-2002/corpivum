@@ -44,3 +44,5 @@ Thumbs.db
 
 # capturas de tela locais da demo (não versionadas)
 /capturas/
+# vídeo de vitrine (`pnpm video:vitrine`), grande demais para o Git
+/docs/readme/vitrine.mp4
