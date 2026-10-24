@@ -57,6 +57,17 @@ mostra a escolha do modelo da primeira visita e `twin-com-modelo`, o corpo 3D.
 - Precisa do Chromium do Playwright (`pnpm exec playwright install chromium`).
 - Telas novas na demo: acrescente em `PAGES` ou `SCREENS` de `scripts/capturas.mjs`.
 
+## Mídia do README
+```sh
+pnpm readme:midia              # build com DEMO_ONLY=true, GIF, capturas WebP e prévia social em docs/readme/
+pnpm readme:midia --sem-build  # reaproveita o build atual (só se ele foi feito com DEMO_ONLY=true)
+```
+Mesmo servidor da demo das capturas (`scripts/demo-server.mjs`), na porta 3301 (`README_MIDIA_PORT` para outra).
+Apaga e regrava `docs/readme/`: `twin.gif` (~8 s, até 5 MB), WebP da primeira dobra de algumas telas (desktop
+1440 px e celular 390 px) e `social-preview.png` (1280×640, para Settings → Social preview do GitHub). Na primeira
+vez baixa o binário do FFmpeg (`ffmpeg-static`, ~80 MB, ADR-0056). Telas: `DESKTOP_SHOTS` e `MOBILE_SHOTS` de
+`scripts/readme-midia.mjs`.
+
 ## Antes de commitar
 ```sh
 pnpm lint && pnpm typecheck && pnpm test
