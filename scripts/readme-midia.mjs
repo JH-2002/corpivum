@@ -5,22 +5,29 @@
 // Usa o servidor da demo no modo só demo (`scripts/demo-server.mjs`; pule o build com --sem-build se o build já é
 // desse modo). Dados 100% fictícios. O FFmpeg vem do `ffmpeg-static` (só desenvolvimento), baixado na primeira vez.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 import { DEMO_BODY_MODEL_STORAGE_KEY } from '../src/modules/twin/bodyModel.ts';
 import { BROWSER_ARGS, ROOT, createDemoServer, settle, tourSeenState } from './demo-server.mjs';
 
-const OUT = path.join(ROOT, 'docs', 'readme');
-/** Intermediários (PNG, vídeo): dentro de `capturas/`, fora do Git, apagados no fim. */
+/** Destino final; só é trocado no fim, com tudo gerado (falha no meio deixa a pasta como estava). */
+const DEST = path.join(ROOT, 'docs', 'readme');
+/** Intermediários (PNG, vídeo) e a saída em preparo: dentro de `capturas/`, fora do Git, apagados no fim. */
 const TMP = path.join(ROOT, 'capturas', '.readme-midia');
+const OUT = path.join(TMP, 'saida');
 const skipBuild = process.argv.includes('--sem-build');
-const {
-  base: BASE,
-  fail,
-  run,
-} = createDemoServer({
+const { base: BASE, run } = createDemoServer({
   label: 'readme:midia',
   port: Number(process.env.README_MIDIA_PORT ?? 3301),
   portVar: 'README_MIDIA_PORT',
@@ -63,16 +70,51 @@ const MOBILE_SHOTS = [
 
 const require = createRequire(import.meta.url);
 
-/** Caminho do FFmpeg; baixa o binário na primeira vez (o install do pacote fica desligado no pnpm-workspace). */
+/**
+ * SHA-256 do binário do FFmpeg do release `b6.1.1` do ffmpeg-static 5.3.0, por plataforma, conforme o `digest` que o
+ * GitHub publica para cada asset (`gh api repos/eugeneware/ffmpeg-static/releases/tags/b6.1.1`). O install do pacote
+ * não confere integridade; aqui, binário diferente não roda. Atualizar junto com a versão do pacote (ADR-0056).
+ */
+const FFMPEG_SHA256 = {
+  'win32-x64': '04e1307997530f9cf2fe35cba2ca7e8875ca91da02f89d6c7243df819c94ad00',
+  'linux-x64': 'e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99',
+  'linux-arm64': '6bb182d0d75d23028db82e9e4f723ca69b853d055698486e6984ddb2c06fb8ce',
+  'darwin-x64': 'ebdddc936f61e14049a2d4b549a412b8a40deeff6540e58a9f2a2da9e6b18894',
+  'darwin-arm64': 'a90e3db6a3fd35f6074b013f948b1aa45b31c6375489d39e572bea3f18336584',
+};
+/** Variáveis com que o ffmpeg-static troca o binário ou a origem do download: ignoradas. */
+const FFMPEG_OVERRIDE_VARS = ['FFMPEG_BIN', 'FFMPEG_BINARIES_URL', 'FFMPEG_BINARY_RELEASE'];
+
+let verifiedBin;
+
+/**
+ * Caminho do FFmpeg conferido pelo SHA-256; baixa o binário na primeira vez (o install do pacote fica desligado
+ * no pnpm-workspace).
+ */
 function ffmpegBin() {
-  const bin = require('ffmpeg-static');
-  if (!bin) fail('o ffmpeg-static não tem binário para esta plataforma');
+  if (verifiedBin) return verifiedBin;
+  const expected = FFMPEG_SHA256[`${process.platform}-${process.arch}`];
+  if (!expected) throw new Error(`sem SHA-256 do FFmpeg para ${process.platform}-${process.arch}`);
+  const pkgDir = path.dirname(require.resolve('ffmpeg-static/package.json'));
+  const bin = path.join(pkgDir, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
   if (!existsSync(bin)) {
     console.log('readme:midia: baixando o binário do FFmpeg (ffmpeg-static)...');
-    const pkgDir = path.dirname(require.resolve('ffmpeg-static/package.json'));
-    const result = spawnSync(process.execPath, ['install.js'], { cwd: pkgDir, stdio: 'inherit' });
-    if (result.status !== 0 || !existsSync(bin)) fail('não foi possível baixar o FFmpeg');
+    const env = { ...process.env };
+    for (const key of FFMPEG_OVERRIDE_VARS) delete env[key];
+    const result = spawnSync(process.execPath, ['install.js'], {
+      cwd: pkgDir,
+      env,
+      stdio: 'inherit',
+    });
+    if (result.status !== 0 || !existsSync(bin))
+      throw new Error('não foi possível baixar o FFmpeg');
   }
+  const actual = createHash('sha256').update(readFileSync(bin)).digest('hex');
+  if (actual !== expected) {
+    rmSync(bin, { force: true });
+    throw new Error(`o binário do FFmpeg não confere (SHA-256 ${actual}); apagado sem executar`);
+  }
+  verifiedBin = bin;
   return bin;
 }
 
@@ -123,7 +165,6 @@ async function startPresentation(page) {
 }
 
 async function screenshots(browser) {
-  const files = [];
   for (const [size, shots] of [
     [DESKTOP, DESKTOP_SHOTS],
     [MOBILE, MOBILE_SHOTS],
@@ -151,7 +192,7 @@ async function screenshots(browser) {
       }
       const png = path.join(TMP, `${name}.png`);
       await page.screenshot({ path: png });
-      files.push(toWebp(png, name));
+      toWebp(png, name);
     }
     if (size === DESKTOP) {
       await startPresentation(page);
@@ -159,7 +200,7 @@ async function screenshots(browser) {
       await settle(page);
       const png = path.join(TMP, 'relatorio_desktop.png');
       await page.screenshot({ path: png });
-      files.push(toWebp(png, 'relatorio_desktop'));
+      toWebp(png, 'relatorio_desktop');
       // Recorte do twin para a prévia social.
       await page.goto(`${BASE}/demo/twin`);
       await settle(page);
@@ -170,7 +211,6 @@ async function screenshots(browser) {
     }
     await context.close();
   }
-  return files;
 }
 
 /** Grava o início com o twin e o twin completo; devolve o vídeo e o segundo em que a cena começa. */
@@ -252,7 +292,7 @@ function toGif({ video, sceneStart }) {
     if (statSync(out).size <= GIF_MAX_BYTES) return out;
     console.log(`readme:midia: GIF com ${kib(out)} a ${fps} fps e ${width} px; tentando mais leve`);
   }
-  fail(`o GIF não coube em ${GIF_MAX_BYTES / 1024 / 1024} MB`);
+  throw new Error(`o GIF não coube em ${GIF_MAX_BYTES / 1024 / 1024} MB`);
 }
 
 function dataUrl(file, type) {
@@ -305,21 +345,26 @@ async function socialPreview(browser) {
 }
 
 async function generate() {
-  ffmpegBin();
   rmSync(TMP, { recursive: true, force: true });
-  mkdirSync(TMP, { recursive: true });
   mkdirSync(OUT, { recursive: true });
-  // Pasta só desta mídia: apaga o que sobrou de rodadas anteriores.
-  for (const entry of readdirSync(OUT)) rmSync(path.join(OUT, entry), { force: true });
-  const browser = await chromium.launch({ args: BROWSER_ARGS });
   try {
-    const files = await screenshots(browser);
-    files.push(toGif(await recordTwin(browser)));
-    files.push(await socialPreview(browser));
-    for (const file of files)
-      console.log(`readme:midia: ${path.relative(ROOT, file)} (${kib(file)})`);
+    ffmpegBin();
+    const browser = await chromium.launch({ args: BROWSER_ARGS });
+    try {
+      await screenshots(browser);
+      toGif(await recordTwin(browser));
+      await socialPreview(browser);
+    } finally {
+      await browser.close();
+    }
+    // Tudo gerado: só agora troca o conteúdo da pasta (só desta mídia).
+    mkdirSync(DEST, { recursive: true });
+    for (const entry of readdirSync(DEST)) rmSync(path.join(DEST, entry), { force: true });
+    for (const entry of readdirSync(OUT)) {
+      copyFileSync(path.join(OUT, entry), path.join(DEST, entry));
+      console.log(`readme:midia: docs/readme/${entry} (${kib(path.join(DEST, entry))})`);
+    }
   } finally {
-    await browser.close();
     rmSync(TMP, { recursive: true, force: true });
   }
 }

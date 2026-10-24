@@ -46,8 +46,8 @@ Um app web para adultos (18+) no Brasil acompanharem o próprio corpo e a própr
 - **Demonstração pública** com uma pessoa fictícia, que roda sem banco de dados.
 
 > **Não é dispositivo médico.** É um produto de bem-estar e autoacompanhamento: não diagnostica, não trata, não
-> prescreve dieta nem treino e não substitui profissional de saúde. Metas fora de limites de segurança são
-> bloqueadas, com indicação de ajuda profissional. Ver [`docs/INTENDED_USE.md`](docs/INTENDED_USE.md).
+> monitora doenças, não sugere doses, não prescreve dieta nem treino e não substitui profissional de saúde.
+> Metas fora de limites de segurança são bloqueadas, com indicação de ajuda profissional. Ver [`docs/INTENDED_USE.md`](docs/INTENDED_USE.md).
 
 ## Capturas
 

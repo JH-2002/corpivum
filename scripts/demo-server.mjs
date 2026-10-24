@@ -7,6 +7,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEMO_FORBIDDEN_VARS } from '../src/lib/demo-env.ts';
 
+/**
+ * Senhas do docker-compose (`.env.example`): o app não as lê, mas o Next carrega o `.env` local; em branco, nada do
+ * banco chega ao processo da demo.
+ */
+const COMPOSE_SECRET_VARS = [
+  'POSTGRES_SUPERUSER_PASSWORD',
+  'APP_MIGRATOR_PASSWORD',
+  'APP_USER_PASSWORD',
+  'APP_OPERATOR_PASSWORD',
+  'APP_WORKER_PASSWORD',
+  'APP_BACKUP_PASSWORD',
+];
+
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const isWindows = process.platform === 'win32';
 const NEXT_BIN = path.join(ROOT, 'node_modules', 'next', 'dist', 'bin', 'next');
@@ -22,7 +35,7 @@ export function createDemoServer({ label, port, portVar }) {
   // `upgrade-insecure-requests`, que quebra em http://localhost.
   const buildEnv = {
     ...process.env,
-    ...Object.fromEntries(DEMO_FORBIDDEN_VARS.map((key) => [key, ''])),
+    ...Object.fromEntries([...DEMO_FORBIDDEN_VARS, ...COMPOSE_SECRET_VARS].map((key) => [key, ''])),
     DEMO_ONLY: 'true',
     NEXT_TELEMETRY_DISABLED: '1',
   };

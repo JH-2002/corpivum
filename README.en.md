@@ -48,9 +48,9 @@ A web app for adults (18+) in Brazil to keep track of their own body and routine
 - **A label on every value shown:** MEASURED, REPORTED, ESTIMATED, INFERRED or DEMO.
 - **Public demo** with a fictitious person, running without a database.
 
-> **Not a medical device.** It is a wellness and self-tracking product: it does not diagnose, treat, prescribe
-> diets or workouts, or replace a health professional. Goals beyond safety limits are blocked and the app points
-> to professional help. See [`docs/INTENDED_USE.md`](docs/INTENDED_USE.md) (in Portuguese).
+> **Not a medical device.** It is a wellness and self-tracking product: it does not diagnose, treat or monitor
+> diseases, suggest doses or prescribe diets or workouts, or replace a health professional. Goals beyond safety
+> limits are blocked and the app points to professional help. See [`docs/INTENDED_USE.md`](docs/INTENDED_USE.md) (in Portuguese).
 
 ## Screenshots
 

@@ -2135,6 +2135,17 @@ repositório renomeado para `corpivum`.
   devDependency fixa. O download do binário (~80 MB) no install fica desligado (`allowBuilds: false`) para não
   pesar em todo job da CI; o script baixa na primeira vez. Ferramenta local, nada dele vai para o app publicado,
   por isso fica fora de `THIRD_PARTY_NOTICES.md`, como as demais dependências de desenvolvimento.
+- **Integridade do binário (revisão de privacidade):** o install do pacote baixa o executável sem conferir hash e
+  aceita trocar binário e origem por variáveis (`FFMPEG_BIN`, `FFMPEG_BINARIES_URL`, `FFMPEG_BINARY_RELEASE`). O
+  script ignora essas variáveis e só executa o binário se o SHA-256 bater com a tabela fixa por plataforma
+  (`FFMPEG_SHA256`, tirada do `digest` que o GitHub publica para cada asset do release `b6.1.1`); se não bater,
+  apaga e falha. A tabela muda junto com a versão do pacote.
+- **Transitivas novas no `pnpm audit`:** o pacote traz `@derhuerst/http-basic`, `https-proxy-agent` 5 e outras, só
+  usadas no download. Um alerta nelas não alcança o app publicado nem a CI (o install está desligado), mas aparece
+  no `pnpm audit`: avaliar como as demais exceções de ferramenta de desenvolvimento (ADR-0009).
+- **Falha no meio não estraga `docs/readme/`:** tudo é gerado em `capturas/.readme-midia/` e copiado só no fim.
+- **Servidor da demo também sem as senhas do docker-compose** (`POSTGRES_SUPERUSER_PASSWORD`,
+  `APP_*_PASSWORD`), além de `DEMO_FORBIDDEN_VARS`: o app não as lê, mas o Next carrega o `.env` local.
 - **Números do README** vêm de um único run verde da CI em `main`, com a data na linha "Números da CI de …";
   atualizar à mão quando mudarem bastante.
 **Consequências.** Telas novas ou mudanças visuais grandes pedem rodar `pnpm readme:midia` de novo. O selo de CI e
