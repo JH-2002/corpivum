@@ -199,6 +199,9 @@ async function navigate(page, mouse, recorder, link, prepare) {
   await recorder.pause();
   await page.waitForLoadState('load');
   await settle(page);
+  // Roteiro só na demo: um link que levasse ao app completo para a gravação.
+  if (!new URL(page.url()).pathname.startsWith('/demo'))
+    throw new Error(`saiu da demo: ${page.url()}`);
   if (prepare) await prepare();
   // O cursor aparece no lugar de antes.
   await page.mouse.move(mouse.x + 1, mouse.y);
@@ -333,6 +336,8 @@ async function record() {
   ffmpegBin();
   rmSync(TMP, { recursive: true, force: true });
   mkdirSync(TMP, { recursive: true });
+  // Ctrl+C encerra pelo `demo-server` sem passar pelo `finally`: os quadros saem também nesse caso.
+  process.on('exit', () => rmSync(TMP, { recursive: true, force: true }));
   try {
     const browser = await chromium.launch({ args: BROWSER_ARGS });
     let segments;
