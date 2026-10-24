@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePrefersReducedMotion } from '@/components/charts/reduced-motion';
+import { Button } from '@/components/ui/Button';
 import { useWebGLSupport } from './hooks';
 import { SceneLoading } from './LazyScenes';
 import type { HoverInfo } from './types';
@@ -49,7 +50,8 @@ export function TwinViewport<R extends string>({
   onHoverEnd: () => void;
   tooltip: (region: R) => ReactNode;
   onDrag: (radians: number) => void;
-  scene: (onFail: () => void) => ReactNode;
+  /** `onSlow`: o modelo está demorando (`SLOW_LOAD_MS`); a área oferece a versão 2D sem parar a carga. */
+  scene: (onFail: () => void, onSlow: (slow: boolean) => void) => ReactNode;
   fallback: ReactNode;
   /** Mostra o 2D mesmo com WebGL (celular que não carrega o 3D sozinho, ADR-0049). */
   prefer2D?: boolean;
@@ -58,10 +60,12 @@ export function TwinViewport<R extends string>({
   const t = useTranslations('twin.viewer');
   const support = useWebGLSupport();
   const [failed, setFailed] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const [chose2D, setChose2D] = useState(false);
   const [box, setBox] = useState<{ left: number; top: number; width: number } | null>(null);
   const lastX = useRef<number | null>(null);
   const reduced = usePrefersReducedMotion();
-  const use3D = support === 'yes' && !failed && !prefer2D;
+  const use3D = support === 'yes' && !failed && !prefer2D && !chose2D;
 
   useEffect(() => {
     if (!hover) return;
@@ -106,7 +110,7 @@ export function TwinViewport<R extends string>({
           <SceneLoading />
         ) : use3D ? (
           <SceneBoundary onError={() => setFailed(true)}>
-            {scene(() => setFailed(true))}
+            {scene(() => setFailed(true), setSlow)}
           </SceneBoundary>
         ) : (
           fallback
@@ -125,6 +129,25 @@ export function TwinViewport<R extends string>({
         ) : null}
       </div>
       <p className="text-sm text-fg-muted">{use3D ? t('dragHint') : null}</p>
+      {/* Fora da área `role="img"`: botão dentro de imagem fica oculto para leitor de tela. */}
+      <div role="status" className="empty:-mt-2">
+        {use3D && slow ? (
+          <div
+            className="flex flex-wrap items-center gap-x-3 gap-y-2"
+            data-testid="twin-slow-notice"
+          >
+            <p className="text-sm text-fg-muted">{t('slow')}</p>
+            <Button variant="secondary" onClick={() => setChose2D(true)}>
+              {t('show2D')}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+      {chose2D && support === 'yes' && !failed ? (
+        <p className="text-sm text-fg-muted" data-testid="twin-chose-2d-notice">
+          {t('chose2D')}
+        </p>
+      ) : null}
       {support === 'no' || failed ? (
         <p className="text-sm text-fg-muted" data-testid="twin-fallback-notice">
           {t('fallback')}

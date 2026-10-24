@@ -1,9 +1,10 @@
 # Navegador do Playwright em cache, com chave pela versão instalada do Playwright (o binário muda a cada versão).
 # Sem cache: baixa o chromium e as dependências do sistema. Com cache: só as dependências do sistema (apt), que
 # não cabem no cache. Requer `pnpm install` antes.
-# O navegador restaurado roda sem checagem de integridade: usar só em jobs sem segredos e sem permissão de escrita
-# (só a `main` grava o cache; PR lê, não grava). No primeiro miss, jobs paralelos disputam a chave e só um grava
-# ("Unable to reserve cache" nos outros é esperado).
+# O navegador restaurado roda sem checagem de integridade: usar só em jobs sem segredos e sem permissão de escrita.
+# Escopo do cache (regra do GitHub): PR grava também, mas só no escopo do próprio PR (`refs/pull/N/merge`), que
+# só ele lê; um PR lê o cache da `main`, e a `main` nunca lê cache de PR. No primeiro miss, jobs paralelos
+# disputam a chave e só um grava ("Unable to reserve cache" nos outros é esperado).
 name: Navegadores do Playwright
 description: Instala o chromium do Playwright, reaproveitando o cache entre execuções.
 runs:

@@ -133,7 +133,7 @@ export function BodyTwin({
                 </>
               )}
               onDrag={turntable.drag}
-              scene={(onFail) => (
+              scene={(onFail, onSlow) => (
                 <LazyBodyScene
                   shape={shape}
                   model={model}
@@ -143,6 +143,7 @@ export function BodyTwin({
                   onSelect={select}
                   onHover={setHover}
                   onFail={onFail}
+                  onSlow={onSlow}
                   compact={compact}
                 />
               )}

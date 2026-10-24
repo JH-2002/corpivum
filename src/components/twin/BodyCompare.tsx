@@ -120,7 +120,7 @@ export function BodyCompare({
         }}
         onDrag={turntable.drag}
         className="h-[300px] sm:h-[380px]"
-        scene={(onFail) => (
+        scene={(onFail, onSlow) => (
           <LazyBodyScene
             shape={shapes[side]}
             model={model}
@@ -130,6 +130,7 @@ export function BodyCompare({
             onSelect={setSelected}
             onHover={(info) => setHover(info ? { side, info } : null)}
             onFail={onFail}
+            onSlow={onSlow}
             compact={compact}
           />
         )}

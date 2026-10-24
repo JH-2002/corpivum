@@ -760,6 +760,12 @@ regra antiga do modelo humano em `docs/ASSETS.md`; a divergência fica no SPEC_A
     e restaurado; variante sem arquivo no manifesto. Contexto perdido e não restaurado em
     `CONTEXT_RESTORE_TIMEOUT_MS` = 3 s: versão 2D (antes, a perda ia direto para 2D). Sem WebGL, continua o SVG
     2D e nada do 3D é baixado.
+  - **Carga lenta (2026-10-23):** `SLOW_LOAD_MS` = 20 s sem o modelo pronto e sem erro (carregando, ou corpo em
+    código pelo tempo limite da rede): abaixo da área do modelo, fora do `role="img"` e numa região `role="status"`,
+    aparece "Está demorando mais que o esperado. O modelo 3D continua carregando." com o botão "Ver versão 2D". A
+    cena segue tentando até a pessoa escolher; escolhido o 2D, a cena 3D sai e o aviso passa a "Você está vendo a
+    versão 2D, com as mesmas informações." (não o de navegador sem 3D). A escolha vale até recarregar a página.
+    Rede de segurança para a decodificação sem prazo (ver o tempo limite acima). Teste: `slow-load.test.tsx`.
   - **Pré-carregamento:** assim que a tela do twin abre num navegador com WebGL, `usePreloadBodyScene`
     (`LazyScenes.tsx`, por `import()` dinâmico, sem pôr o three.js na entrada da rota) começa a baixar o chunk
     3D, os **dois** `.glb` e o decodificador meshopt, inclusive antes da escolha da variante. Pelos pedidos,

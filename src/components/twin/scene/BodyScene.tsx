@@ -18,6 +18,7 @@ import type { BodyRegion } from '@/modules/twin';
 import { HoloLoading } from '../HoloLoading';
 import { bodyLayout, type ProfilePoint } from '../layout';
 import type { BodySceneProps, BodySceneStatus } from '../types';
+import { useSlowLoad } from '../useSlowLoad';
 import { bodyModelArrived, preloadAllBodyModels } from './assets';
 import { BodyModelMesh } from './BodyModelMesh';
 import { CameraFit, cameraDistanceFor, regionHandlers, TwinCanvas, Turntable } from './common';
@@ -64,7 +65,7 @@ type ModelStatus = 'loading' | 'ready' | 'error' | 'timeout';
  *   Contexto perdido e não restaurado em `CONTEXT_RESTORE_TIMEOUT_MS`: `onFail` (versão 2D).
  */
 export function BodyScene(props: BodySceneProps) {
-  const { model, angle, instant, compact, onFail, onStatus } = props;
+  const { model, angle, instant, compact, onFail, onStatus, onSlow } = props;
   const asset = model ? BODY_ASSETS[model] : undefined;
   const file = asset?.file ?? null;
   const [state, setState] = useState<{ file: string | null; status: ModelStatus }>({
@@ -137,6 +138,11 @@ export function BodyScene(props: BodySceneProps) {
       ? 'error'
       : status;
   useEffect(() => onStatus?.(shown), [shown, onStatus]);
+  // Ainda sem o modelo e sem erro (carregando, ou corpo em código pelo tempo limite da rede): a espera continua.
+  const slow = useSlowLoad(
+    context === 'ok' && asset && (status === 'loading' || status === 'timeout') ? asset.file : null,
+  );
+  useEffect(() => onSlow?.(slow), [slow, onSlow]);
 
   return (
     <div className="relative h-full w-full" data-twin-status={!model ? 'choose' : status}>

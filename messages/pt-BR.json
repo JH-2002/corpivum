@@ -1395,7 +1395,10 @@
       "loading": "Carregando o modelo 3D…",
       "fallback": "Este navegador não exibe 3D aqui. Você está vendo uma versão 2D com as mesmas informações.",
       "dragHint": "Arraste o modelo para girar, ou use os botões.",
-      "choose": "O corpo em 3D aparece depois que você escolher o modelo."
+      "choose": "O corpo em 3D aparece depois que você escolher o modelo.",
+      "slow": "Está demorando mais que o esperado. O modelo 3D continua carregando.",
+      "show2D": "Ver versão 2D",
+      "chose2D": "Você está vendo a versão 2D, com as mesmas informações."
     },
     "controls": {
       "label": "Controles do modelo",
