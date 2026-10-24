@@ -209,7 +209,7 @@ export function TwinHero({
             onDrag={turntable.drag}
             prefer2D={support === 'yes' && !allow3D}
             className="h-[min(62vh,640px)] min-h-[340px]"
-            scene={(onFail) => (
+            scene={(onFail, onSlow) => (
               <div className="relative h-full w-full">
                 {started ? (
                   <div
@@ -227,6 +227,7 @@ export function TwinHero({
                       onSelect={setSelected}
                       onHover={setHover}
                       onFail={onFail}
+                      onSlow={onSlow}
                       compact={compact}
                       onStatus={setStatus}
                     />

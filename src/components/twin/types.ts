@@ -30,6 +30,8 @@ export interface BodySceneProps extends SceneCommon<BodyRegion> {
    * quando sai de `loading`/`choose` (modelo pronto, ou o corpo em código como fallback real).
    */
   onStatus?: (status: BodySceneStatus) => void;
+  /** Modelo sem ficar pronto nem falhar há `SLOW_LOAD_MS`: a interface oferece a versão 2D (ADR-0028). */
+  onSlow?: (slow: boolean) => void;
 }
 
 export type BodySceneStatus = 'choose' | 'loading' | 'ready' | 'error' | 'timeout';
