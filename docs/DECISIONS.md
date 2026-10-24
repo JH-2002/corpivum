@@ -2118,3 +2118,24 @@ entrou na tela), espera transição e animações acabarem e o título voltar, t
 da cobertura automática o alvo coberto pelo cabeçalho fixo no meio da rolagem, que a 9f não mudou).
 Vídeo de revisão: `pnpm video:movimento` (projeto Playwright `video`, só sob demanda) grava
 `capturas/movimento-9f.webm`.
+
+## ADR-0056 — README de portfólio e mídia gerada por script
+**Contexto.** O repositório é público só para visualização (LICENSE, todos os direitos reservados) e serve de
+vitrine. O README ainda descrevia a Fase 0 com o nome antigo. Plano aprovado com: README em pt-BR e em inglês,
+GIF do twin, capturas desktop e celular, números reais da CI, nenhuma afirmação de conformidade legal e o
+repositório renomeado para `corpivum`.
+**Decisão.**
+- **Mídia reproduzível:** `pnpm readme:midia` (`scripts/readme-midia.mjs`) sobe a demo no modo só demo (dados
+  fictícios, sem banco nem credenciais) e grava em `docs/readme/` o GIF (~8 s, até 5 MB, com tentativas mais leves
+  se passar), capturas WebP da primeira dobra e a prévia social 1280×640 (sobe à mão em Settings). `capturas/`
+  continua fora do Git; os intermediários ficam em `capturas/.readme-midia/` e são apagados no fim.
+- **Servidor da demo num lugar só:** `scripts/demo-server.mjs` (build, porta livre, `next start`, encerramento)
+  passa a servir `pnpm capturas` e `pnpm readme:midia`, sem mudar o comportamento das capturas.
+- **FFmpeg só em desenvolvimento:** `ffmpeg-static` 5.3.0 (GPL-3.0-or-later; o binário é do FFmpeg) como
+  devDependency fixa. O download do binário (~80 MB) no install fica desligado (`allowBuilds: false`) para não
+  pesar em todo job da CI; o script baixa na primeira vez. Ferramenta local, nada dele vai para o app publicado,
+  por isso fica fora de `THIRD_PARTY_NOTICES.md`, como as demais dependências de desenvolvimento.
+- **Números do README** vêm de um único run verde da CI em `main`, com a data na linha "Números da CI de …";
+  atualizar à mão quando mudarem bastante.
+**Consequências.** Telas novas ou mudanças visuais grandes pedem rodar `pnpm readme:midia` de novo. O selo de CI e
+os links absolutos usam `JH-2002/corpivum`.

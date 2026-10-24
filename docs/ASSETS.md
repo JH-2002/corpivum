@@ -55,6 +55,12 @@ Assets externos: os dois modelos do corpo da Fase 3b (ADR-0028), gerados pelo pi
 | `docs/brand/corpivum-favicon.svg`, `src/app/icon.svg`, `src/app/apple-icon.png`, `public/brand/corpivum-icone-*.png` | Desenhado no projeto (2026-10-21) | Projeto | Código do projeto | Não exigida | Sim | `65ac24e78930e9992947946b97a88aebf654e1b54de98a7c7a6f27983ce0fa0b` (SVG) | Fase 9a, 2026-10-21 |
 | `src/app/fonts/inter-latin-400-700.woff2` | npm `@fontsource-variable/inter` 5.3.0 (Inter v4, `inter-latin-wght-normal.woff2`, SHA-256 `3100e775…bd4c62`), obtido em 2026-10-21 | The Inter Project Authors (rsms/inter) | SIL OFL 1.1 (`src/app/fonts/LICENSE-Inter.txt`), sem nome reservado | Licença distribuída junto do arquivo; nenhuma atribuição na interface | Sim. Modificada com `fonttools` 4.67: eixo de peso limitado a 400–700 (`varLib.instancer`) e subconjunto latino com só as features usadas (`subset`), ADR-0046 | `43302704d1a037a8c40ff839dfa07b83ce6bca32f40ba118a1c0decb8ee691d2` | Fase 9a, 2026-10-21 |
 
+### Mídia do README (ADR-0056)
+
+| Asset | Origem | Autor | Licença | Atribuição | Uso comercial / modificação | SHA-256 | Revisão |
+|---|---|---|---|---|---|---|---|
+| `docs/readme/*.webp`, `docs/readme/twin.gif`, `docs/readme/social-preview.png` | Capturas e gravação da demonstração (dados fictícios) por `pnpm readme:midia`, convertidas com FFmpeg (`ffmpeg-static`); a prévia social usa o símbolo de `public/brand/` e a fonte Inter | Projeto | Código do projeto (marca: ver acima) | Não exigida | Sim | Regerados pelo script; sem hash fixo | README de portfólio, 2026-10-24 |
+
 Bibliotecas e ferramentas (código, não assets) seguem a política de dependências da ADR-0009: `three`
 (MIT), `@react-three/fiber` (MIT) e, só no pipeline, `gltfpack` (MIT). O MPFB2 (código GPL) roda só no
 Blender da pessoa responsável e não entra no repositório; os assets dele usados aqui (malha base e targets do
