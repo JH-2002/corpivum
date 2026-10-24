@@ -117,10 +117,22 @@ export function Tour({
     if (!step) return;
     // O foco fica no botão principal a cada passo; o texto novo é anunciado pela região `aria-live`.
     primaryRef.current?.focus();
-    const target = targetOf(step);
+    let target = targetOf(step);
     target?.setAttribute(ACTIVE_ATTR, '');
     target?.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
-    return () => target?.removeAttribute(ACTIVE_ATTR);
+    // O alvo pode ser trocado durante o passo (ex.: o twin do início sai do marcador de carregamento para a cena
+    // quando o chunk chega): o contorno passa para o elemento novo com o mesmo `data-tour`.
+    const observer = new MutationObserver(() => {
+      if (target?.isConnected && target.hasAttribute(ACTIVE_ATTR)) return;
+      target?.removeAttribute(ACTIVE_ATTR);
+      target = targetOf(step);
+      target?.setAttribute(ACTIVE_ATTR, '');
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      target?.removeAttribute(ACTIVE_ATTR);
+    };
   }, [step, reduced]);
 
   const finish = useCallback(() => {
