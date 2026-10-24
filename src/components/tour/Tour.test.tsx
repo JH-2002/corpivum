@@ -1,5 +1,6 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { renderWithIntl } from '../../../tests/render';
 
 const markTourSeenAction = vi.fn(async () => {});
@@ -208,5 +209,47 @@ describe('tour do painel (ADR-0025)', () => {
     expect(dialog()?.open).toBe(false);
     spy.mockRestore();
     set.mockRestore();
+  });
+
+  it('alvo trocado durante o passo (twin do início carregando): o contorno passa para o elemento novo', async () => {
+    function Hero() {
+      const [loaded, setLoaded] = useState(false);
+      // Elementos diferentes (como o marcador de carregamento e a cena): o React troca o nó.
+      const node = loaded ? (
+        <section key="cena" data-tour="twin-hero" data-testid="cena">
+          Cena
+        </section>
+      ) : (
+        <div key="marcador" data-tour="twin-hero" data-testid="marcador">
+          Carregando
+        </div>
+      );
+      return (
+        <>
+          {node}
+          <button type="button" hidden onClick={() => setLoaded(true)}>
+            chunk chegou
+          </button>
+        </>
+      );
+    }
+    renderWithIntl(
+      <Page>
+        <Hero />
+        <Tour autoStart persist="server" />
+      </Page>,
+    );
+    await nextFrame();
+    await userEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    expect(screen.getByTestId('marcador')).toHaveAttribute('data-tour-active');
+
+    fireEvent.click(screen.getByText('chunk chegou'));
+    await act(async () => {});
+    expect(screen.getByTestId('cena')).toHaveAttribute('data-tour-active');
+    expect(document.querySelectorAll('[data-tour-active]')).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    expect(screen.getByTestId('cena')).not.toHaveAttribute('data-tour-active');
+    expect(screen.getByText('Resumo').closest('[data-tour]')).toHaveAttribute('data-tour-active');
   });
 });
